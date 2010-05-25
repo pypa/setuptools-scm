@@ -41,9 +41,13 @@ def version_from_hg_id(cachefile=None):
         if len(l) > 1: # tag found
             version = l[-1]
             if l[0].endswith('+'): # propagate the dirty status to the tag
-                version += '+' # XXX add date?!
+                version += '+'
         elif len(l) == 1: #no tag found
-            version = commands.getoutput('hg parents --template "{latesttag}+{latesttagdistance}-"' = l[0]
+            cmd = 'hg parents --template "{latesttag}+{latesttagdistance}-"'
+            version = commands.getoutput(cmd) + l[0]
+
+        if version.endswith('+'):
+            version += time.strftime('%Y%m%d')
 
 
 
