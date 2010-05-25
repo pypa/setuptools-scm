@@ -37,7 +37,7 @@ def version_from_hg_id(cachefile=None):
         import commands
         l = commands.getoutput('hg id -i -t').strip().split()
         while len(l) > 1 and l[-1][0].isalpha(): # remove non-numbered tags
-            l.pop
+            l.pop()
         if len(l) > 1: # tag found
             version = l[-1]
             if l[0].endswith('+'): # propagate the dirty status to the tag
@@ -48,6 +48,7 @@ def version_from_hg_id(cachefile=None):
 
         if version.endswith('+'):
             version += time.strftime('%Y%m%d')
+        return version
 
 
 
@@ -90,7 +91,7 @@ def get_version(cachefile=None):
     try:
         version = None
         for method in methods:
-            version = methods
+            version = method()
             if version:
                 return version
     finally:

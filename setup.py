@@ -18,6 +18,7 @@ setup(
         'Topic :: Software Development :: Version Control',
         'Topic :: System :: Software Distribution',
         'Topic :: Utilities',
-    ])
+    ],
+)
 
-    
+
