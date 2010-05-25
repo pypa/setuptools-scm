@@ -21,15 +21,18 @@ import os
 def version_from_cachefile(cachefile=None):
     if not cachefile:
         return
-	#replaces 'with open()' from py2.6
-	fd = open(cachefile)
-	fd.readline() # remove the comment
-	try:
-		line = fd.readline()
-		version_string = line.split(' = ')[1].strip()
-		return version_string[1:-1].decode('string-escape')
-	except: # any error means invalid cachefile
-		fd.close()
+    #replaces 'with open()' from py2.6
+    fd = open(cachefile)
+    fd.readline() # remove the comment
+    version = None
+    try:
+        line = fd.readline()
+        version_string = line.split(' = ')[1].strip()
+        version = version_string[1:-1].decode('string-escape')
+    except: # any error means invalid cachefile
+        pass
+    fd.close()
+    return version
 
 
 def version_from_hg_id(cachefile=None):
