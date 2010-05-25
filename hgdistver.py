@@ -43,7 +43,7 @@ def version_from_hg_id(cachefile=None):
             if l[0].endswith('+'): # propagate the dirty status to the tag
                 version += '+'
         elif len(l) == 1: #no tag found
-            cmd = 'hg parents --template "{latesttag}+{latesttagdistance}-"'
+            cmd = 'hg parents --template "{latesttag}.dev{latesttagdistance}-"'
             version = commands.getoutput(cmd) + l[0]
 
         if version.endswith('+'):
