@@ -1,2 +1,5 @@
 hgdistver_version.py
 MANIFEST
+hgdistver.egg-info
+dist
+build

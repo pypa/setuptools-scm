@@ -7,7 +7,7 @@ setup(
     description='utility lib to generate python package version infos from mercurial tags',
     long_description=hgdistver.__doc__,
     license='MIT',
-    packages=[
+    py_modules=[
         'hgdistver',
     ],
     classifiers=[

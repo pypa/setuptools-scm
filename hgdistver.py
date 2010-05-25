@@ -47,6 +47,7 @@ def version_from_hg_id(cachefile=None):
             version = commands.getoutput(cmd) + l[0]
 
         if version.endswith('+'):
+            import time
             version += time.strftime('%Y%m%d')
         return version
 
