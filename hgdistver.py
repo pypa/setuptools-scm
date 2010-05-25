@@ -77,6 +77,13 @@ def version_from_archival(cachefile=None):
         data = _data_from_archival('.hg_archival')
         return _archival_to_version(data)
 
+def version_from_sdist_pkginfo(cachefile=None):
+    if cachefile is None and os.path.exists('PKG-INFO'):
+        data = _data_from_archival('PKG-INFO')
+        version = data.get('Version')
+        if version != 'UNKNOWN':
+            return version
+
 def write_cachefile(path, version):
     fd = open(path, 'w')
     try:
@@ -90,6 +97,7 @@ methods = [
     version_from_hg_id,
     version_from_archival,
     version_from_cachefile,
+    version_from_sdist_pkginfo,
 ]
 
 def get_version(cachefile=None):
