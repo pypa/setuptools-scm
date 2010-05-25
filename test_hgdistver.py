@@ -1,12 +1,12 @@
-from hgdistver import \
-    data_from_archival, \
+from hgdistver import _data_from_archival, \
     _archival_to_version
+
 
 def test_data_from_archival(tmpdir):
     tmpfile = tmpdir.join('test.archival')
     tmpfile.write('name: test\nrevision: 1')
 
-    res = data_from_archival(tmpfile)
+    res = _data_from_archival(tmpfile)
     assert res == {
         'name': 'test',
         'revision': '1',
