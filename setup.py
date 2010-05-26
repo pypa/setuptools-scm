@@ -3,7 +3,7 @@ import hgdistver
 setup(
     name='hgdistver',
     version=hgdistver.get_version(),
-    author_mail='Ronny Pfannschmidt <Ronny.Pfannschmidt@gmx.de>',
+    author_email='Ronny Pfannschmidt <Ronny.Pfannschmidt@gmx.de>',
     description='utility lib to generate python package version infos from mercurial tags',
     long_description=open('README.txt').read(),
     license='MIT',
