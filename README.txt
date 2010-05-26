@@ -4,16 +4,16 @@ hgdistver
 This module is a simple drop-in to support setup.py
 in mercurial based projects.
 
-Its supposed to generate version numbers from mercurials metadata.
+Its supposed to generate version numbers from mercurials meta-data.
 
-it uses 4 stategies to archive its taks:
+It uses 4 strategies to archive its task:
 
-1. try to directly ask hg for the metadata
+1. try to directly ask hg for the meta-data
 2. try to infer it from the `.hg_archival.txt` file
-3. try to use the cachefile if it exists
-4. try to read the version from the 'PKG-INFO' file sdists contain
+3. try to use the cache file if it exists
+4. try to read the version from the 'PKG-INFO' file sdists contain (this is a nasty abuse)
 
-the most simple usage is::
+The most simple usage is::
 
     from setuptools import setup
     from hgdistver import get_version
@@ -23,6 +23,6 @@ the most simple usage is::
         ...,
     )
 
-get_version takes the optional argument cachefile,
+`get_version` takes the optional argument `cachefile`,
 which causes it to store the version info in a python script instead
-of abusing PKG-INFO from a sdist
+of abusing PKG-INFO from a sdist.
