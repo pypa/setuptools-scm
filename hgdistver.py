@@ -53,7 +53,7 @@ def _data_from_archival(path):
 def version_from_archival(cachefile=None):
     #XXX: asumes cwd is repo root
     if os.path.exists('.hg_archival.txt'):
-        data = _data_from_archival('.hg_archival')
+        data = _data_from_archival('.hg_archival.txt')
         return _archival_to_version(data)
 
 def version_from_sdist_pkginfo(cachefile=None):
