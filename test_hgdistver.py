@@ -4,8 +4,19 @@ from hgdistver import _data_from_archival, \
 import hgdistver
 import py
 code = py.code.Source(hgdistver)
-
+setup_code = py.code.Source("""
+    import hgdistver
+    from setuptools import setup
+    setup(
+        name='test',
+        version=hgdistver.get_version())
+""")
 from subprocess import call, Popen, PIPE
+
+
+def write_base(path):
+    path.join('hgdistver.py').write(code)
+    path.join('setup.py').write(setup_code)
 
 def spv(path):
     p = Popen(['python', 'setup.py', '--version'],
@@ -15,20 +26,13 @@ def spv(path):
              )
     ver, _ = p.communicate()
     return ver.strip()
-    
+
 
 class sbrepo(object):
     def __init__(self, path):
         self.path = path
         self._hg('init')
-        self.join('hgdistver.py').write(code)
-        self.join('setup.py').write(py.code.Source("""
-            import hgdistver
-            from setuptools import setup
-            setup(
-                name='test',
-                version=hgdistver.get_version())
-        """))
+        write_base(self.path)
         self.add('hgdistver.py', 'setup.py')
 
     def add(self, *files):
@@ -109,3 +113,20 @@ def test_version_from_hg_id(wd):
     wd.up('0.1')
     at_tag_01 = spv(wd.path)
     assert at_tag_01 == '0.1'
+
+def test_version_from_archival(tmpdir):
+    write_base(tmpdir)
+    tmpdir.join('.hg_archival.txt').write(
+        'node: 000000000000\n'
+        'tag: 0.1\n'
+    )
+    assert spv(tmpdir) == '0.1'
+
+
+    tmpdir.join('.hg_archival.txt').write(
+        'node: 000000000000\n'
+        'latesttag: 0.1\n'
+        'latesttagdistance: 3\n'
+    )
+
+    assert spv(tmpdir) == '0.1.dev3-000000000000'
