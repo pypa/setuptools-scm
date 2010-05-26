@@ -63,8 +63,7 @@ class sbrepo(object):
 
 def pytest_funcarg__wd(request):
     tmpdir = request.getfuncargvalue('tmpdir')
-    repo = tmpdir.ensure('repo', dir=True)
-    return sbrepo(repo)
+    return sbrepo(tmpdir)
 
 def test_data_from_archival(tmpdir):
     tmpfile = tmpdir.join('test.archival')
