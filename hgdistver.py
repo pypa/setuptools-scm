@@ -85,7 +85,7 @@ def get_version(cachefile=None):
     try:
         version = None
         for method in methods:
-            version = method()
+            version = method(cachefile=cachefile)
             if version:
                 return version
     finally:

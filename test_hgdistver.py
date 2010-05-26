@@ -104,11 +104,11 @@ def test_version_from_hg_id(wd):
 
     after_first_commit = spv(wd.path)
 
-    assert after_first_commit == '0.0.dev1-aad680a426ca'
+    assert after_first_commit.startswith('0.0.dev1-')
 
     wd.tag('0.1')
     after_tag_01 = spv(wd.path)
-    assert after_tag_01 == '0.1.dev1-f1f433a7680a'
+    assert after_tag_01.startswith('0.1.dev1-')
 
     wd.up('0.1')
     at_tag_01 = spv(wd.path)
@@ -130,3 +130,16 @@ def test_version_from_archival(tmpdir):
     )
 
     assert spv(tmpdir) == '0.1.dev3-000000000000'
+
+
+def test_version_from_cachefile(tmpdir):
+    write_base(tmpdir)
+    sp = tmpdir.join('setup.py')
+    sp.write(sp.read().replace('()', '(cachefile="test.txt")'))
+
+    tmpdir.join('test.txt').write(
+        '# comment\n'
+        'version = "1.0"'
+    )
+
+    assert spv(tmpdir) == '1.0'
