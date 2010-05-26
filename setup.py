@@ -5,7 +5,7 @@ setup(
     version=hgdistver.get_version(),
     author_mail='Ronny Pfannschmidt <Ronny.Pfannschmidt@gmx.de>',
     description='utility lib to generate python package version infos from mercurial tags',
-    long_description=hgdistver.__doc__,
+    long_description=open('README.txt').read(),
     license='MIT',
     py_modules=[
         'hgdistver',

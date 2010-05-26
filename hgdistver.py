@@ -1,22 +1,4 @@
-"""
-    hgdistver
-    ~~~~~~~~~
-
-    This module is a simple drop-in to support setup.py
-    in mercurial based projects.
-
-    Its supposed to generate version numbers from mercurials metadata
-    and optionally store them in a cache file which may be a text or python
-
-    However using cachefiles is strongly suggested,
-    cause distutils/setuptools won't store version numbers in sdists.
-
-    >>> from hgdistver import get_version
-    >>> version = get_version(cachefile='mypkg/__version__.py')
-"""
-
 import os
-
 
 def version_from_cachefile(cachefile=None):
     if not cachefile:
@@ -33,7 +15,6 @@ def version_from_cachefile(cachefile=None):
         pass
     fd.close()
     return version
-
 
 def version_from_hg_id(cachefile=None):
     """stolen logic from mercurials setup.py as well"""
@@ -54,8 +35,6 @@ def version_from_hg_id(cachefile=None):
             import time
             version += time.strftime('%Y%m%d')
         return version
-
-
 
 def _archival_to_version(data):
     """stolen logic from mercurials setup.py"""
