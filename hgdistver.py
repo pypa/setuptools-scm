@@ -30,6 +30,8 @@ def version_from_hg_id(cachefile=None):
         elif len(l) == 1: #no tag found
             cmd = 'hg parents --template "{latesttag}.dev{latesttagdistance}-"'
             version = commands.getoutput(cmd) + l[0]
+            if version[:4] == 'null':
+                version = '0.0' + version[4:]
 
         if version.endswith('+'):
             import time
