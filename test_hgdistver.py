@@ -143,3 +143,9 @@ def test_version_from_cachefile(tmpdir):
     )
 
     assert spv(tmpdir) == '1.0'
+
+
+def test_version_from_pkginfo(tmpdir):
+    write_base(tmpdir)
+    tmpdir.join('PKG-INFO').write('Version: 0.1')
+    assert spv(tmpdir) == '0.1'
