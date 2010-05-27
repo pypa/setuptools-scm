@@ -91,17 +91,26 @@ def test_archival_to_version():
     for expected, data in archival_mapping.items():
         assert _archival_to_version(data) == expected
 
-def test_version_from_hg_id(wd):
-    initial = spv(wd.path)
+
+
+def pytest_generate_tests(metafunc):
+    if hasattr(metafunc.function, 'methods'):
+        from functools import partial
+        for method in metafunc.function.methods.args:
+            metafunc.addcall(id=method, funcargs={'log_spv': partial(spv, method=method)})
+
+@py.test.mark.methods('version_from_hg15_parents', 'version_from_hg_log_with_tags')
+def test_version_from_hg_id(wd, log_spv):
+    initial = log_spv(wd.path)
     assert initial.startswith('0.0.dev0-' + '0'*12 + '+') #uses node when no tag
     wd.commit(message='commit')
 
-    after_first_commit = spv(wd.path)
+    after_first_commit = log_spv(wd.path)
 
     assert after_first_commit.startswith('0.0.dev1-')
 
     wd.tag('0.1')
-    after_tag_01 = spv(wd.path)
+    after_tag_01 = log_spv(wd.path)
     assert after_tag_01.startswith('0.1.dev1-')
 
     wd.up('0.1')
