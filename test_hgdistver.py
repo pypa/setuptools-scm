@@ -16,10 +16,9 @@ from subprocess import call, Popen, PIPE
 
 def write_base(path):
     path.join('hgdistver.py').write(code)
-    path.join('setup.py').write(setup_code)
 
-def spv(path):
-    p = Popen(['python', 'setup.py', '--version'],
+def spv(path, method='get_version', **kw):
+    p = Popen(['python', '-c', 'import hgdistver;print hgdistver.%s(**%r)' % (method, kw)  ],
               cwd=str(path),
               stdout=PIPE,
               stderr=PIPE,
@@ -33,7 +32,7 @@ class sbrepo(object):
         self.path = path
         self._hg('init')
         write_base(self.path)
-        self.add('hgdistver.py', 'setup.py')
+        self.add('hgdistver.py')
 
     def add(self, *files):
         self._hg('add', *files)
@@ -56,11 +55,6 @@ class sbrepo(object):
     def _hg(self, *args):
         return call(['hg'] + [str(arg) for arg in args],
                     cwd=str(self.path))
-
-    def _sp(self, *args):
-            return call(
-                ['python', 'setup.py'] + [str(arg) for arg in args],
-                cwd=str(self.path))
 
     def join(self, name):
         return self.path.join(name)
@@ -134,15 +128,13 @@ def test_version_from_archival(tmpdir):
 
 def test_version_from_cachefile(tmpdir):
     write_base(tmpdir)
-    sp = tmpdir.join('setup.py')
-    sp.write(sp.read().replace('()', '(cachefile="test.txt")'))
 
     tmpdir.join('test.txt').write(
         '# comment\n'
         'version = "1.0"'
     )
 
-    assert spv(tmpdir) == '1.0'
+    assert spv(tmpdir, cachefile='test.txt') == '1.0'
 
 
 def test_version_from_pkginfo(tmpdir):
