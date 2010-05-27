@@ -33,9 +33,6 @@ def version_from_hg_id(cachefile=None):
             if version[:4] == 'null':
                 version = '0.0' + version[4:]
 
-        if version.endswith('+'):
-            import time
-            version += time.strftime('%Y%m%d')
         return version
 
 def _archival_to_version(data):
@@ -87,6 +84,9 @@ def get_version(cachefile=None):
         for method in methods:
             version = method(cachefile=cachefile)
             if version:
+                if version.endswith('+'):
+                    import time
+                    version += time.strftime('%Y%m%d')
                 return version
     finally:
         if cachefile and version:
