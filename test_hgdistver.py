@@ -93,7 +93,7 @@ def test_archival_to_version():
 
 def test_version_from_hg_id(wd):
     initial = spv(wd.path)
-    assert initial.startswith('0'*12 + '+') #uses node when no tag
+    assert initial.startswith('0.0.dev0-' + '0'*12 + '+') #uses node when no tag
     wd.commit(message='commit')
 
     after_first_commit = spv(wd.path)
