@@ -33,8 +33,10 @@ def version_from_hg_id(cachefile=None):
 def version_from_hg15_parents(cachefile=None):
     if os.path.isdir('.hg'):
         node = commands.getoutput('hg id -i')
+        if node == '000000000000+':
+            return '0.0.dev0-' + node
 
-        cmd = 'hg parents --template "{latesttag} {latesttagdistance}'
+        cmd = 'hg parents --template "{latesttag} {latesttagdistance}"'
         out = commands.getoutput(cmd)
         try:
             tag, dist = out.split()
