@@ -1,9 +1,18 @@
 import os
 import commands
 import subprocess
+def getoutput(cmd, cwd):
+    p = subprocess.Popen(cmd,
+                         shell=True,
+                         stdout=subprocess.PIPE,
+                         cwd=cwd)
+    out, _ = p.communicate()
+    return out
 
 
-def version_from_cachefile(cachefile=None):
+def version_from_cachefile(root, cachefile=None):
+    #XXX: for now we ignore root
+    print cachefile
     if not cachefile:
         return
     #replaces 'with open()' from py2.6
@@ -20,10 +29,10 @@ def version_from_cachefile(cachefile=None):
     return version
 
 
-def version_from_hg_id(cachefile=None):
+def version_from_hg_id(root, cachefile=None):
     """stolen logic from mercurials setup.py as well"""
-    if os.path.isdir('.hg'):
-        l = commands.getoutput('hg id -i -t').strip().split()
+    if os.path.isdir(os.path.join(root, '.hg')):
+        l = getoutput('hg id -i -t', root).strip().split()
         while len(l) > 1 and l[-1][0].isalpha():  # remove non-numbered tags
             l.pop()
         if len(l) > 1:  # tag found
@@ -33,21 +42,21 @@ def version_from_hg_id(cachefile=None):
             return version
 
 
-def version_from_hg15_parents(cachefile=None):
-    if os.path.isdir('.hg'):
+def version_from_hg15_parents(root, cachefile=None):
+    if os.path.isdir(os.path.join(root, '.hg')):
         hgver = commands.getoutput(
             'python -c '
             '"import mercurial.__version__;'
             'print mercurial.__version__.version"')
 
         if hgver < 1.5:
-            return version_from_hg_log_with_tags()
-        node = commands.getoutput('hg id -i')
-        if node == '000000000000+':
+            return version_from_hg_log_with_tags(root)
+        node = getoutput('hg id -i', root).strip()
+        if node.strip('+') == '000000000000':
             return '0.0.dev0-' + node
 
         cmd = 'hg parents --template "{latesttag} {latesttagdistance}"'
-        out = commands.getoutput(cmd)
+        out = getoutput(cmd, root)
         try:
             tag, dist = out.split()
             if tag == 'null':
@@ -57,12 +66,15 @@ def version_from_hg15_parents(cachefile=None):
             pass  # unpacking failed, old hg
 
 
-def version_from_hg_log_with_tags(cachefile=None):
-    if os.path.isdir('.hg'):
-        node = commands.getoutput('hg id -i')
-        cmd = r'hg log -r %s:0 --template "{tags}\n"'
+def version_from_hg_log_with_tags(root, cachefile=None):
+    if os.path.isdir(os.path.join(root, '.hg')):
+        node = getoutput('hg id -i', root).strip()
+        cmd = r'hg log -r %s:0 --template "{tags} \n"'
         cmd = cmd % node.rstrip('+')
-        proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+        proc = subprocess.Popen(cmd,
+                                cwd=root,
+                                shell=True,
+                                stdout=subprocess.PIPE )
         dist = -1  # no revs vs one rev is tricky
 
         for dist, line in enumerate(proc.stdout):
@@ -89,16 +101,17 @@ def _data_from_archival(path):
     return dict(data.items())
 
 
-def version_from_archival(cachefile=None):
-    #XXX: asumes cwd is repo root
-    if os.path.exists('.hg_archival.txt'):
-        data = _data_from_archival('.hg_archival.txt')
+def version_from_archival(root, cachefile=None):
+    archival = os.path.join(root, '.hg_archival.txt')
+    if os.path.exists(archival):
+        data = _data_from_archival(archival)
         return _archival_to_version(data)
 
 
-def version_from_sdist_pkginfo(cachefile=None):
-    if cachefile is None and os.path.exists('PKG-INFO'):
-        data = _data_from_archival('PKG-INFO')
+def version_from_sdist_pkginfo(root, cachefile=None):
+    pkginfo = os.path.join(root, 'PKG-INFO')
+    if cachefile is None and os.path.exists(pkginfo):
+        data = _data_from_archival(pkginfo)
         version = data.get('Version')
         if version != 'UNKNOWN':
             return version
@@ -123,11 +136,15 @@ methods = [
 ]
 
 
-def get_version(cachefile=None):
+def get_version(cachefile=None, root=None):
+    if root is None:
+        root = os.getcwd()
+    if cachefile is not None:
+        cachefile = os.path.join(root, cachefile)
     try:
         version = None
         for method in methods:
-            version = method(cachefile=cachefile)
+            version = method(root=root, cachefile=cachefile)
             if version:
                 if version.endswith('+'):
                     import time
