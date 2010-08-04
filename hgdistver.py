@@ -12,7 +12,6 @@ def getoutput(cmd, cwd):
 
 def version_from_cachefile(root, cachefile=None):
     #XXX: for now we ignore root
-    print cachefile
     if not cachefile:
         return
     #replaces 'with open()' from py2.6
