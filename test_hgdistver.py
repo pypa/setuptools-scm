@@ -112,8 +112,9 @@ def test_version_from_archival(tmpdir):
         'node: 000000000000\n'
         'tag: 0.1\n'
     )
+    subdir = tmpdir.join('test').ensure(dir=True)
     assert get_version(tmpdir) == '0.1'
-
+    assert get_version(subdir) == '0.1'
 
     tmpdir.join('.hg_archival.txt').write(
         'node: 000000000000\n'

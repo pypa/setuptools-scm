@@ -101,10 +101,11 @@ def _data_from_archival(path):
 
 
 def version_from_archival(root, cachefile=None):
-    archival = os.path.join(root, '.hg_archival.txt')
-    if os.path.exists(archival):
-        data = _data_from_archival(archival)
-        return _archival_to_version(data)
+    for parent in root, os.path.dirname(root):
+        archival = os.path.join(parent, '.hg_archival.txt')
+        if os.path.exists(archival):
+            data = _data_from_archival(archival)
+            return _archival_to_version(data)
 
 
 def version_from_sdist_pkginfo(root, cachefile=None):
@@ -129,9 +130,9 @@ methods = [
     version_from_hg_id,
     version_from_hg15_parents,
     version_from_hg_log_with_tags,
-    version_from_archival,
     version_from_cachefile,
     version_from_sdist_pkginfo,
+    version_from_archival,
 ]
 
 
