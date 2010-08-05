@@ -35,7 +35,10 @@ class sbrepo(object):
         self._hg('up', rev)
 
     def _hg(self, *args):
-        return call(['hg'] + [str(arg) for arg in args],
+        return call([
+            'python2', '-c',
+            'from mercurial import dispatch;dispatch.run()'
+        ] + [str(arg) for arg in args],
                     cwd=str(self.path))
 
     def join(self, name):

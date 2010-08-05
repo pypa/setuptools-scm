@@ -4,10 +4,17 @@ def getoutput(cmd, cwd='.'):
     p = subprocess.Popen(cmd,
                          shell=True,
                          stdout=subprocess.PIPE,
-                         cwd=cwd)
+                         cwd=cwd,
+                         env={},
+                        )
     out, _ = p.communicate()
     return out.decode() # will kill us sometimes
 
+hg_prefix = 'python2 -c "from mercurial import dispatch;dispatch.run()" '
+
+
+def hg(args, cwd='.'):
+    return getoutput(hg_prefix + args, cwd)
 
 def version_from_cachefile(root, cachefile=None):
     #XXX: for now we ignore root
@@ -30,7 +37,7 @@ def version_from_cachefile(root, cachefile=None):
 def version_from_hg_id(root, cachefile=None):
     """stolen logic from mercurials setup.py as well"""
     if os.path.isdir(os.path.join(root, '.hg')):
-        l = getoutput('hg id -i -t', root).strip().split()
+        l = hg('id -i -t', root).strip().split()
         while len(l) > 1 and str(l[-1][0]).isalpha():  # remove non-numbered tags
             l.pop()
         if len(l) > 1:  # tag found
@@ -42,7 +49,7 @@ def version_from_hg_id(root, cachefile=None):
 
 def version_from_hg15_parents(root, cachefile=None):
     if os.path.isdir(os.path.join(root, '.hg')):
-        hgver_out = getoutput('hg --version')
+        hgver_out = hg('--version')
         hgver_out = hgver_out.splitlines()[0].rstrip(')')
         hgver = hgver_out.split('version ')[-1]
         if hgver < '1.5':
@@ -51,8 +58,8 @@ def version_from_hg15_parents(root, cachefile=None):
         if node.strip('+') == '000000000000':
             return '0.0.dev0-' + node
 
-        cmd = 'hg parents --template "{latesttag} {latesttagdistance}"'
-        out = getoutput(cmd, root)
+        cmd = 'parents --template "{latesttag} {latesttagdistance}"'
+        out = hg(cmd, root)
         try:
             tag, dist = out.split()
             if tag == 'null':
@@ -65,12 +72,14 @@ def version_from_hg15_parents(root, cachefile=None):
 def version_from_hg_log_with_tags(root, cachefile=None):
     if os.path.isdir(os.path.join(root, '.hg')):
         node = getoutput('hg id -i', root).strip()
-        cmd = r'hg log -r %s:0 --template "{tags} \n"'
+        cmd = r'log -r %s:0 --template "{tags} \n"'
         cmd = cmd % node.rstrip('+')
-        proc = subprocess.Popen(cmd,
+        proc = subprocess.Popen(hg_prefix + cmd,
                                 cwd=root,
                                 shell=True,
-                                stdout=subprocess.PIPE )
+                                stdout=subprocess.PIPE,
+                                env={'ew':'why'},
+                               )
         dist = -1  # no revs vs one rev is tricky
 
         for dist, line in enumerate(proc.stdout):
