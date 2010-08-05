@@ -34,11 +34,8 @@ class sbrepo(object):
         self._hg('up', rev)
 
     def _hg(self, *args):
-        import sys
-        return call(
-            ['hg'] + [str(arg) for arg in args],
-            cwd=str(self.path),
-        )
+        cmd = ' '.join(['hg'] + [repr(str(arg)) for arg in args])
+        return call(cmd, cwd=str(self.path), shell=1)
 
     def join(self, name):
         return self.path.join(name)
