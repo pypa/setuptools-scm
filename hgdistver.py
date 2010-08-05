@@ -1,7 +1,6 @@
 import os
-import commands
 import subprocess
-def getoutput(cmd, cwd):
+def getoutput(cmd, cwd='.'):
     p = subprocess.Popen(cmd,
                          shell=True,
                          stdout=subprocess.PIPE,
@@ -43,7 +42,7 @@ def version_from_hg_id(root, cachefile=None):
 
 def version_from_hg15_parents(root, cachefile=None):
     if os.path.isdir(os.path.join(root, '.hg')):
-        hgver = commands.getoutput(
+        hgver = getoutput(
             'python -c '
             '"import mercurial.__version__;'
             'print mercurial.__version__.version"')
