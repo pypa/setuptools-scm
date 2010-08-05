@@ -6,7 +6,7 @@ def getoutput(cmd, cwd='.'):
                          stdout=subprocess.PIPE,
                          cwd=cwd)
     out, _ = p.communicate()
-    return out
+    return out.decode() # will kill us sometimes
 
 
 def version_from_cachefile(root, cachefile=None):
@@ -31,23 +31,21 @@ def version_from_hg_id(root, cachefile=None):
     """stolen logic from mercurials setup.py as well"""
     if os.path.isdir(os.path.join(root, '.hg')):
         l = getoutput('hg id -i -t', root).strip().split()
-        while len(l) > 1 and l[-1][0].isalpha():  # remove non-numbered tags
+        while len(l) > 1 and str(l[-1][0]).isalpha():  # remove non-numbered tags
             l.pop()
         if len(l) > 1:  # tag found
-            version = l[-1]
-            if l[0].endswith('+'):  # propagate the dirty status to the tag
+            version = str(l[-1])
+            if str(l[0]).endswith('+'):  # propagate the dirty status to the tag
                 version += '+'
             return version
 
 
 def version_from_hg15_parents(root, cachefile=None):
     if os.path.isdir(os.path.join(root, '.hg')):
-        hgver = getoutput(
-            'python -c '
-            '"import mercurial.__version__;'
-            'print mercurial.__version__.version"')
-
-        if hgver < 1.5:
+        hgver_out = getoutput('hg --version')
+        hgver_out = hgver_out.splitlines()[0].rstrip(')')
+        hgver = hgver_out.split('version ')[-1]
+        if hgver < '1.5':
             return version_from_hg_log_with_tags(root)
         node = getoutput('hg id -i', root).strip()
         if node.strip('+') == '000000000000':
@@ -76,6 +74,7 @@ def version_from_hg_log_with_tags(root, cachefile=None):
         dist = -1  # no revs vs one rev is tricky
 
         for dist, line in enumerate(proc.stdout):
+            line = line.decode()
             tags = [t for t in line.split() if not t.isalpha()]
             if tags:
                 return '%s.dev%s-%s' % (tags[0], dist, node)
