@@ -2,6 +2,7 @@ from hgdistver import _data_from_archival, \
     _archival_to_version
 import os
 import hgdistver
+from hgdistver import hg
 import py
 from subprocess import call, Popen, PIPE
 
@@ -10,39 +11,7 @@ def get_version(path, method='get_version', **kw):
     root = str(path)
     return call(root=root, **kw)
 
-class sbrepo(object):
-    def __init__(self, path):
-        self.path = path
-        self._hg('init')
 
-    def add(self, *files):
-        self._hg('add', *files)
-
-    def commit(self, message):
-        self._hg('commit',
-                 '-m', message,
-                 '-u', 'test',
-                 '-d', '0 0',
-                )
-    def tag(self, tag):
-        self._hg('tag', tag,
-                 '-m', 'added tag %s' % tag,
-                 '-u', 'test',
-                 '-d', '0 0')
-
-    def up(self, rev):
-        self._hg('up', rev)
-
-    def _hg(self, *args):
-        cmd = ' '.join(['hg'] + ['"%s"'% arg for arg in args])
-        return call(cmd, cwd=str(self.path), shell=1)
-
-    def join(self, name):
-        return self.path.join(name)
-
-def pytest_funcarg__wd(request):
-    tmpdir = request.getfuncargvalue('tmpdir')
-    return sbrepo(tmpdir)
 
 def test_data_from_archival(tmpdir):
     tmpfile = tmpdir.join('test.archival')
@@ -87,23 +56,25 @@ def pytest_funcarg__get_log_version(request):
     return get_log_version
 
 @py.test.mark.methods('version_from_hg15_parents', 'version_from_hg_log_with_tags')
-def test_version_from_hg_id(wd, get_log_version):
-    initial = get_log_version(wd.path)
+def test_version_from_hg_id(tmpdir, get_log_version):
+    cwd = str(tmpdir)
+    hg('init', cwd)
+    initial = get_log_version(cwd)
     assert initial.startswith('0.0.dev0-' + '0'*12 ) #uses node when no tag
-    wd.path.join('test.txt').write('test')
-    wd.add('test.txt')
-    wd.commit(message='commit')
+    tmpdir.join('test.txt').write('test')
+    hg('add test.txt', cwd)
+    hg('commit -m commit -u test -d "0 0"', cwd)
 
-    after_first_commit = get_log_version(wd.path)
+    after_first_commit = get_log_version(tmpdir)
 
     assert after_first_commit.startswith('0.0.dev1-')
 
-    wd.tag('0.1')
-    after_tag_01 = get_log_version(wd.path)
+    hg('tag 0.1 -u test -d "0 0"', cwd)
+    after_tag_01 = get_log_version(cwd)
     assert after_tag_01.startswith('0.1.dev1-')
 
-    wd.up('0.1')
-    at_tag_01 = get_version(wd.path)
+    hg('up 0.1', cwd)
+    at_tag_01 = get_version(cwd)
     assert at_tag_01 == '0.1'
 
 def test_version_from_archival(tmpdir):
