@@ -1,4 +1,4 @@
-from setuptools import setup
+from distutils.core import setup
 import hgdistver
 setup(
     name='hgdistver',
