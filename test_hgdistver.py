@@ -42,8 +42,11 @@ class sbrepo(object):
                 'python2', '-c',
                 'from mercurial import dispatch;dispatch.run()'
             ]
-        return call(prefix + [str(arg) for arg in args],
-                    cwd=str(self.path))
+        return call(
+            prefix + [str(arg) for arg in args],
+            cwd=str(self.path),
+            shell=True,
+        )
 
     def join(self, name):
         return self.path.join(name)
