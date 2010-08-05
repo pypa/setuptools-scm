@@ -20,7 +20,7 @@ def version_from_cachefile(root, cachefile=None):
     try:
         line = fd.readline()
         version_string = line.split(' = ')[1].strip()
-        version = version_string[1:-1].decode('string-escape')
+        version = version_string[1:-1]
     except:  # any error means invalid cachefile
         pass
     fd.close()
