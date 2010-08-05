@@ -155,9 +155,9 @@ def test_root_parameter_pass_by(monkeypatch):
 
 def test_cachefiile_join(monkeypatch):
     def assert_join(root, cachefile):
-        assert cachefile == '/tmp/cachefile'
+        assert cachefile == os.path.join('tmp', 'cachefile')
     monkeypatch.setattr(hgdistver, 'methods', [assert_join])
-    hgdistver.get_version(root='/tmp', cachefile='cachefile')
+    hgdistver.get_version(root='tmp', cachefile='cachefile')
 
 
 
