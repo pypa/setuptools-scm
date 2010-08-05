@@ -12,7 +12,7 @@ def getoutput(cmd, cwd='.'):
     return out.decode() # will kill us sometimes
 
 hg_prefix = 'python2 -c "from mercurial import dispatch;dispatch.run()" '
-if sys.platform == 'winnt':
+if sys.platform == 'win32':
     hg_prefix = 'hg '
 
 def hg(args, cwd='.'):
