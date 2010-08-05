@@ -4,7 +4,6 @@ import os
 import hgdistver
 import py
 from subprocess import call, Popen, PIPE
-from functools import partial
 
 def get_version(path, method='get_version', **kw):
     call = getattr(hgdistver, method)
