@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 def getoutput(cmd, cwd='.'):
     p = subprocess.Popen(cmd,
@@ -11,7 +12,8 @@ def getoutput(cmd, cwd='.'):
     return out.decode() # will kill us sometimes
 
 hg_prefix = 'python2 -c "from mercurial import dispatch;dispatch.run()" '
-
+if sys.platform == 'winnt':
+    hg_prefix = 'hg '
 
 def hg(args, cwd='.'):
     return getoutput(hg_prefix + args, cwd)
