@@ -6,7 +6,6 @@ def getoutput(cmd, cwd='.'):
                          shell=True,
                          stdout=subprocess.PIPE,
                          cwd=cwd,
-                         env={},
                         )
     out, _ = p.communicate()
     return out.decode() # will kill us sometimes
