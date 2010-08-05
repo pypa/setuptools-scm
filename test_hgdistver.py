@@ -35,17 +35,9 @@ class sbrepo(object):
 
     def _hg(self, *args):
         import sys
-        if sys.platform == 'win32':
-            prefix = ['hg']
-        else:
-            prefix = [
-                'python2', '-c',
-                'from mercurial import dispatch;dispatch.run()'
-            ]
         return call(
-            prefix + [str(arg) for arg in args],
+            ['hg'] + [str(arg) for arg in args],
             cwd=str(self.path),
-            shell=True,
         )
 
     def join(self, name):

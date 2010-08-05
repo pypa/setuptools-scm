@@ -10,9 +10,7 @@ def getoutput(cmd, cwd='.'):
     out, _ = p.communicate()
     return out.decode() # will kill us sometimes
 
-hg_prefix = 'python2 -c "from mercurial import dispatch;dispatch.run()" '
-if sys.platform == 'win32':
-    hg_prefix = 'hg '
+hg_prefix = 'hg '
 
 def hg(args, cwd='.'):
     return getoutput(hg_prefix + args, cwd)
