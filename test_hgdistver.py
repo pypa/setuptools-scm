@@ -34,8 +34,8 @@ class sbrepo(object):
         self._hg('up', rev)
 
     def _hg(self, *args):
-        import sys:
-        if sys.platform == 'win32'
+        import sys
+        if sys.platform == 'win32':
             prefix = ['hg']
         else:
             prefix = [
