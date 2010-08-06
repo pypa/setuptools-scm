@@ -71,13 +71,12 @@ def version_from_hg15_parents(root, cachefile=None):
 def version_from_hg_log_with_tags(root, cachefile=None):
     if os.path.isdir(os.path.join(root, '.hg')):
         node = getoutput('hg id -i', root).strip()
-        cmd = r'log -r %s:0 --template "{tags} \n"'
+        cmd = r'hg log -r %s:0 --template "{tags} \n"'
         cmd = cmd % node.rstrip('+')
-        proc = subprocess.Popen(hg_prefix + cmd,
+        proc = subprocess.Popen(cmd,
                                 cwd=root,
                                 shell=True,
                                 stdout=subprocess.PIPE,
-                                env={'ew':'why'},
                                )
         dist = -1  # no revs vs one rev is tricky
 
