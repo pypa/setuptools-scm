@@ -10,10 +10,9 @@ def getoutput(cmd, cwd='.'):
     out, _ = p.communicate()
     return out.decode() # will kill us sometimes
 
-hg_prefix = 'hg '
 
 def hg(args, cwd='.'):
-    return getoutput(hg_prefix + args, cwd)
+    return getoutput('hg ' + args, cwd).strip()
 
 def version_from_cachefile(root, cachefile=None):
     #XXX: for now we ignore root
@@ -53,7 +52,7 @@ def version_from_hg15_parents(root, cachefile=None):
         hgver = hgver_out.split('version ')[-1]
         if hgver < '1.5':
             return version_from_hg_log_with_tags(root)
-        node = getoutput('hg id -i', root).strip()
+        node = hg('id -i', root)
         if node.strip('+') == '000000000000':
             return '0.0.dev0-' + node
 
