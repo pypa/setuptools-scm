@@ -69,6 +69,7 @@ def version_from_hg15_parents(root, cachefile=None):
 
 
 def version_from_hg_log_with_tags(root, cachefile=None):
+    #NOTE: this is only a fallback called from version_from_hg15_parents
     if os.path.isdir(os.path.join(root, '.hg')):
         node = getoutput('hg id -i', root).strip()
         cmd = r'hg log -r %s:0 --template "{tags} \n"'
@@ -134,7 +135,6 @@ def write_cachefile(path, version):
 methods = [
     version_from_hg_id,
     version_from_hg15_parents,
-    version_from_hg_log_with_tags,
     version_from_cachefile,
     version_from_sdist_pkginfo,
     version_from_archival,
