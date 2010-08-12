@@ -35,14 +35,15 @@ def version_from_cachefile(root, cachefile=None):
 def version_from_hg_id(root, cachefile=None):
     """stolen logic from mercurials setup.py as well"""
     if os.path.isdir(os.path.join(root, '.hg')):
-        l = hg('id -i -t', root).strip().split()
-        while len(l) > 1 and str(l[-1][0]).isalpha():  # remove non-numbered tags
-            l.pop()
-        if len(l) > 1:  # tag found
-            version = str(l[-1])
-            if str(l[0]).endswith('+'):  # propagate the dirty status to the tag
-                version += '+'
-            return version
+        l = hg('id -i -t', root).split()
+        node = l.pop(0)
+        for tag in l:
+            #XXX: find better guess if version-number logic
+            if tag[0].isdigit():
+                version = tag
+                if node[-1] == '+':  # propagate the dirty status to the tag
+                    version += '+'
+                return version
 
 
 def version_from_hg15_parents(root, cachefile=None):
