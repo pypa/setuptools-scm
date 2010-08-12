@@ -158,3 +158,7 @@ def get_version(cachefile=None, root=None):
     finally:
         if cachefile and version:
             write_cachefile(cachefile, version)
+
+
+if __name__ == '__main__':
+    print('Guessed Version %s' % (get_version(),))
