@@ -34,60 +34,52 @@ def version_from_cachefile(root, cachefile=None):
 
 def version_from_hg_id(root, cachefile=None):
     """stolen logic from mercurials setup.py as well"""
-    if os.path.isdir(os.path.join(root, '.hg')):
-        l = hg('id -i -t', root).split()
-        node = l.pop(0)
-        for tag in l:
-            #XXX: find better guess if version-number logic
-            if tag[0].isdigit():
-                version = tag
-                if node[-1] == '+':  # propagate the dirty status to the tag
-                    version += '+'
-                return version
+    l = hg('id -i -t', root).split()
+    node = l.pop(0)
+    for tag in l:
+        #XXX: find better guess if version-number logic
+        if tag[0].isdigit():
+            version = tag
+            if node[-1] == '+':  # propagate the dirty status to the tag
+                version += '+'
+            return version
 
 
 def version_from_hg15_parents(root, cachefile=None):
-    if os.path.isdir(os.path.join(root, '.hg')):
-        hgver_out = hg('--version')
-        hgver_out = hgver_out.splitlines()[0].rstrip(')')
-        hgver = hgver_out.split('version ')[-1]
-        if hgver < '1.5':
-            return version_from_hg_log_with_tags(root)
-        node = hg('id -i', root)
-        if node.strip('+') == '000000000000':
-            return '0.0.dev0-' + node
+    node = hg('id -i', root)
+    if node.strip('+') == '000000000000':
+        return '0.0.dev0-' + node
 
-        cmd = 'parents --template "{latesttag} {latesttagdistance}"'
-        out = hg(cmd, root)
-        try:
-            tag, dist = out.split()
-            if tag == 'null':
-                tag = '0.0'
-            return '%s.dev%s-%s' % (tag, dist, node)
-        except ValueError:
-            pass  # unpacking failed, old hg
+    cmd = 'parents --template "{latesttag} {latesttagdistance}"'
+    out = hg(cmd, root)
+    try:
+        tag, dist = out.split()
+        if tag == 'null':
+            tag = '0.0'
+        return '%s.dev%s-%s' % (tag, dist, node)
+    except ValueError:
+        pass  # unpacking failed, old hg
 
 
 def version_from_hg_log_with_tags(root, cachefile=None):
     #NOTE: this is only a fallback called from version_from_hg15_parents
-    if os.path.isdir(os.path.join(root, '.hg')):
-        node = getoutput('hg id -i', root).strip()
-        cmd = r'hg log -r %s:0 --template "{tags} \n"'
-        cmd = cmd % node.rstrip('+')
-        proc = subprocess.Popen(cmd,
-                                cwd=root,
-                                shell=True,
-                                stdout=subprocess.PIPE,
-                               )
-        dist = -1  # no revs vs one rev is tricky
+    node = hg('id -i', root)
+    cmd = r'hg log -r %s:0 --template "{tags} \n"'
+    cmd = cmd % node.rstrip('+')
+    proc = subprocess.Popen(cmd,
+                            cwd=root,
+                            shell=True,
+                            stdout=subprocess.PIPE,
+                           )
+    dist = -1  # no revs vs one rev is tricky
 
-        for dist, line in enumerate(proc.stdout):
-            line = line.decode()
-            tags = [t for t in line.split() if not t.isalpha()]
-            if tags:
-                return '%s.dev%s-%s' % (tags[0], dist, node)
+    for dist, line in enumerate(proc.stdout):
+        line = line.decode()
+        tags = [t for t in line.split() if not t.isalpha()]
+        if tags:
+            return '%s.dev%s-%s' % (tags[0], dist, node)
 
-        return  '0.0.dev%s-%s' % (dist + 1, node)
+    return  '0.0.dev%s-%s' % (dist + 1, node)
 
 
 def version_from_hg(root, cachefile=None):
