@@ -90,6 +90,22 @@ def version_from_hg_log_with_tags(root, cachefile=None):
         return  '0.0.dev%s-%s' % (dist + 1, node)
 
 
+def version_from_hg(root, cachefile=None):
+    # no .hg means no way to get it
+    if not os.path.isdir(os.path.join(root, '.hg')):
+        return
+    # if id has a tag we are lucky
+    version_from_id = version_from_hg_id(root)
+    if version_from_id:
+        return version_from_id
+    hgver_out = hg('--version')
+    hgver_out = hgver_out.splitlines()[0].rstrip(')')
+    hgver = hgver_out.split('version ')[-1]
+    if hgver < '1.5':
+        return version_from_hg_log_with_tags(root)
+    else:
+        return version_from_hg15_parents(root)
+
 def _archival_to_version(data):
     """stolen logic from mercurials setup.py"""
     if 'tag' in data:
@@ -133,8 +149,7 @@ def write_cachefile(path, version):
 
 
 methods = [
-    version_from_hg_id,
-    version_from_hg15_parents,
+    version_from_hg,
     version_from_cachefile,
     version_from_sdist_pkginfo,
     version_from_archival,
