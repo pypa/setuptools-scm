@@ -1,10 +1,10 @@
-from hgdistver import _data_from_archival, \
-    _archival_to_version
 import os
-import hgdistver
-from hgdistver import hg
 import py
-from subprocess import call, Popen, PIPE
+
+import hgdistver
+from hgdistver import hg, \
+    _data_from_archival, \
+    _archival_to_version
 
 def get_version(path, method='get_version', **kw):
     call = getattr(hgdistver, method)
