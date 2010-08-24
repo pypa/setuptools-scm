@@ -1,3 +1,8 @@
+"""
+:copyright: 2010 by Ronny Pfannschmidt
+:license: MIT
+
+"""
 import os
 import sys
 import subprocess
