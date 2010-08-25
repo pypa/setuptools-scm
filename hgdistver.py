@@ -53,7 +53,7 @@ def version_from_hg_id(root, cachefile=None):
 def version_from_hg15_parents(root, cachefile=None):
     node = hg('id -i', root)
     if node.strip('+') == '000000000000':
-        return '0.0.dev0-' + node
+        return '0.0.post0-' + node
 
     cmd = 'parents --template "{latesttag} {latesttagdistance}"'
     out = hg(cmd, root)
@@ -61,7 +61,7 @@ def version_from_hg15_parents(root, cachefile=None):
         tag, dist = out.split()
         if tag == 'null':
             tag = '0.0'
-        return '%s.dev%s-%s' % (tag, dist, node)
+        return '%s.post%s-%s' % (tag, dist, node)
     except ValueError:
         pass  # unpacking failed, old hg
 
@@ -82,9 +82,9 @@ def version_from_hg_log_with_tags(root, cachefile=None):
         line = line.decode()
         tags = [t for t in line.split() if not t.isalpha()]
         if tags:
-            return '%s.dev%s-%s' % (tags[0], dist, node)
+            return '%s.post%s-%s' % (tags[0], dist, node)
 
-    return  '0.0.dev%s-%s' % (dist + 1, node)
+    return  '0.0.post%s-%s' % (dist + 1, node)
 
 
 def version_from_hg(root, cachefile=None):
@@ -108,7 +108,7 @@ def _archival_to_version(data):
     if 'tag' in data:
         return data['tag']
     elif 'latesttag' in data:
-        return '%(latesttag)s.dev%(latesttagdistance)s-%(node).12s' % data
+        return '%(latesttag)s.post%(latesttagdistance)s-%(node).12s' % data
     else:
         return data.get('node', '')[:12]
 

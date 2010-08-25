@@ -26,7 +26,7 @@ def test_data_from_archival(tmpdir):
 
 archival_mapping = {
     '1.0': {'tag': '1.0'},
-    '1.0.dev3-000000000000': {
+    '1.0.post3-000000000000': {
         'latesttag': '1.0',
         'latesttagdistance': '3',
         'node': '0'*20,
@@ -60,18 +60,18 @@ def test_version_from_hg_id(tmpdir, get_log_version):
     cwd = str(tmpdir)
     hg('init', cwd)
     initial = get_log_version(cwd)
-    assert initial.startswith('0.0.dev0-' + '0'*12 ) #uses node when no tag
+    assert initial.startswith('0.0.post0-' + '0'*12 ) #uses node when no tag
     tmpdir.join('test.txt').write('test')
     hg('add test.txt', cwd)
     hg('commit -m commit -u test -d "0 0"', cwd)
 
     after_first_commit = get_log_version(tmpdir)
 
-    assert after_first_commit.startswith('0.0.dev1-')
+    assert after_first_commit.startswith('0.0.post1-')
 
     hg('tag 0.1 -u test -d "0 0"', cwd)
     after_tag_01 = get_log_version(cwd)
-    assert after_tag_01.startswith('0.1.dev1-')
+    assert after_tag_01.startswith('0.1.post1-')
 
     hg('up 0.1', cwd)
     at_tag_01 = get_version(cwd)
@@ -92,7 +92,7 @@ def test_version_from_archival(tmpdir):
         'latesttagdistance: 3\n'
     )
 
-    assert get_version(tmpdir) == '0.1.dev3-000000000000'
+    assert get_version(tmpdir) == '0.1.post3-000000000000'
 
 
 def test_version_from_cachefile(tmpdir):
