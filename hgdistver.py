@@ -6,6 +6,8 @@
 import os
 import sys
 import subprocess
+
+
 def getoutput(cmd, cwd='.'):
     p = subprocess.Popen(cmd,
                          shell=True,
@@ -13,11 +15,12 @@ def getoutput(cmd, cwd='.'):
                          cwd=cwd,
                         )
     out, _ = p.communicate()
-    return out.decode() # will kill us sometimes
+    return out.decode()  # will kill us sometimes
 
 
 def hg(args, cwd='.'):
     return getoutput('hg ' + args, cwd).strip()
+
 
 def version_from_cachefile(root, cachefile=None):
     #XXX: for now we ignore root
@@ -102,6 +105,7 @@ def version_from_hg(root, cachefile=None):
         return version_from_hg_log_with_tags(root)
     else:
         return version_from_hg15_parents(root)
+
 
 def _archival_to_version(data):
     """stolen logic from mercurials setup.py"""
