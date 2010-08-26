@@ -6,6 +6,16 @@ from hgdistver import hg, \
     _data_from_archival, \
     _archival_to_version
 
+
+def pytest_generate_tests(metafunc):
+    if hasattr(metafunc.function, 'cases'):
+        for case in metafunc.function.cases.args:
+            metafunc.addcall(
+                id=case,
+                param=case,
+            )
+
+
 def get_version(path, method='get_version', **kw):
     call = getattr(hgdistver, method)
     root = str(path)
@@ -39,25 +49,24 @@ archival_mapping = {
 
 }
 
-def test_archival_to_version():
-    for expected, data in archival_mapping.items():
-        assert _archival_to_version(data) == expected
+def pytest_funcarg__expected(request):
+    return request.param
+
+def pytest_funcarg__data(request):
+    return archival_mapping[request.param]
+
+@py.test.mark.cases(*archival_mapping)
+def test_archival_to_version(expected, data):
+    assert _archival_to_version(data) == expected
 
 
-def pytest_generate_tests(metafunc):
-    if hasattr(metafunc.function, 'methods'):
-        for method in metafunc.function.methods.args:
-            metafunc.addcall(
-                id=method,
-                param=method,
-            )
 
 def pytest_funcarg__get_log_version(request):
     def get_log_version(path):
         return get_version(path, method=request.param)
     return get_log_version
 
-@py.test.mark.methods('version_from_hg15_parents', 'version_from_hg_log_with_tags')
+@py.test.mark.cases('version_from_hg15_parents', 'version_from_hg_log_with_tags')
 def test_version_from_hg_id(tmpdir, get_log_version):
     cwd = str(tmpdir)
     hg('init', cwd)
