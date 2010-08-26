@@ -50,7 +50,7 @@ def tags_to_versions(tags):
 
 def version_from_cachefile(root, cachefile=None):
     #XXX: for now we ignore root
-    if not cachefile:
+    if not cachefile or not os.path.exists(cachefile):
         return
     #replaces 'with open()' from py2.6
     fd = open(cachefile)
@@ -155,7 +155,7 @@ def version_from_archival(root, cachefile=None):
 
 def version_from_sdist_pkginfo(root, cachefile=None):
     pkginfo = os.path.join(root, 'PKG-INFO')
-    if cachefile is None and os.path.exists(pkginfo):
+    if os.path.exists(pkginfo):
         data = _data_from_archival(pkginfo)
         version = data.get('Version')
         if version != 'UNKNOWN':

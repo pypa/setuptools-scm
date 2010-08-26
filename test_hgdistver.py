@@ -138,5 +138,11 @@ def test_cachefile_join(monkeypatch):
     monkeypatch.setattr(hgdistver, 'methods', [assert_join])
     hgdistver.get_version(root='tmp', cachefile='cachefile')
 
+def test_recreate_cachefile_from_pkginfo(tmpdir):
+    tmpdir.join('PKG-INFO').write('Version: 0.1')
+    assert not tmpdir.join('cachefile.txt').check()
+    ver = get_version(tmpdir, cachefile='cachefile.txt')
+    assert ver == '1.0'
+    assert tmpdir.join('cachefile.txt').check()
 
 
