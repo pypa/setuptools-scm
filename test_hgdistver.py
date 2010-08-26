@@ -34,6 +34,8 @@ archival_mapping = {
     '0'*12: {
         'node': '0'*20,
     },
+    '1.2.2': {'tag': 'release-1.2.2'},
+    '1.2.2a1': {'tag': 'release-1.2.2a1'},
 
 }
 
@@ -121,7 +123,7 @@ def test_root_parameter_pass_by(monkeypatch):
     monkeypatch.setattr(hgdistver, 'methods', [assert_root_tmp])
     hgdistver.get_version(root='/tmp')
 
-def test_cachefiile_join(monkeypatch):
+def test_cachefile_join(monkeypatch):
     def assert_join(root, cachefile):
         assert cachefile == os.path.join('tmp', 'cachefile')
     monkeypatch.setattr(hgdistver, 'methods', [assert_join])

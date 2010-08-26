@@ -3,6 +3,7 @@
 :license: MIT
 
 """
+import re
 import os
 import subprocess
 
@@ -20,6 +21,32 @@ def getoutput(cmd, cwd='.'):
 def hg(args, cwd='.'):
     return getoutput('hg ' + args, cwd).strip()
 
+# extended pep 386 regex
+# see http://www.python.org/dev/peps/pep-0386/#the-new-versioning-algorithm
+version_re = r"""^
+(?P<prefix>\w+-?)?         # any text, may have a dash
+                              # custom to deal with tag prefixes
+(?P<version>\d+\.\d+)         # minimum 'N.N'
+(?P<extraversion>(?:\.\d+)*)  # any number of extra '.N' segments
+(?P<prerelfullversion>
+(:?
+    (?P<prerel>[abc]|rc)         # 'a' = alpha, 'b' = beta
+                                 # 'c' or 'rc' = release candidate
+    (?P<prerelversion>\d+(?:\.\d+)*)
+)?)
+# we dont mach those, its our job to generate them
+##(?P<postdev>(\.post(?P<post>\d+))?(\.dev(?P<dev>\d+))?)?
+$"""
+
+def tag_to_version(tag):
+    match = re.match(version_re, tag, re.VERBOSE)
+    if match is not None:
+        return ''.join(match.group(
+            'version', 'extraversion','prerelfullversion',
+        ))
+
+def tags_to_versions(tags):
+    return list(filter(None, map(tag_to_version, tags)))
 
 def version_from_cachefile(root, cachefile=None):
     #XXX: for now we ignore root
@@ -43,13 +70,9 @@ def version_from_hg_id(root, cachefile=None):
     """stolen logic from mercurials setup.py as well"""
     l = hg('id -i -t', root).split()
     node = l.pop(0)
-    for tag in l:
-        #XXX: find better guess if version-number logic
-        if tag[0].isdigit():
-            version = tag
-            if node[-1] == '+':  # propagate the dirty status to the tag
-                version += '+'
-            return version
+    tags = tags_to_versions(l)
+    if tags:
+        return tags[0] + node[12:] # '' or '+'
 
 
 def version_from_hg15_parents(root, cachefile=None):
@@ -82,7 +105,7 @@ def version_from_hg_log_with_tags(root, cachefile=None):
 
     for dist, line in enumerate(proc.stdout):
         line = line.decode()
-        tags = [t for t in line.split() if not t.isalpha()]
+        tags = tags_to_versions(line.split())
         if tags:
             return '%s.post%s-%s' % (tags[0], dist, node)
 
@@ -109,7 +132,7 @@ def version_from_hg(root, cachefile=None):
 def _archival_to_version(data):
     """stolen logic from mercurials setup.py"""
     if 'tag' in data:
-        return data['tag']
+        return tag_to_version(data['tag'])
     elif 'latesttag' in data:
         return '%(latesttag)s.post%(latesttagdistance)s-%(node).12s' % data
     else:
