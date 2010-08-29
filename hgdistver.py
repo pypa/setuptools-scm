@@ -7,19 +7,16 @@ import re
 import os
 import subprocess
 
-
-def getoutput(cmd, cwd='.'):
-    p = subprocess.Popen(cmd,
-                         shell=True,
-                         stdout=subprocess.PIPE,
-                         cwd=cwd,
-                        )
-    out, _ = p.communicate()
-    return out.decode()  # will kill us sometimes
-
-
 def hg(args, cwd='.'):
-    return getoutput('hg ' + args, cwd).strip()
+    p = subprocess.Popen(
+        'hg ' + args,
+        shell=True,
+        stdout=subprocess.PIPE,
+        cwd=cwd,
+        env=dict(os.environ, HGPLAIN='1')
+    )
+    out, _ = p.communicate()
+    return out.strip().decode()  # will kill us sometimes
 
 # extended pep 386 regex
 # see http://www.python.org/dev/peps/pep-0386/#the-new-versioning-algorithm
