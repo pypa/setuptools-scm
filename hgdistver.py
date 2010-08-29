@@ -13,10 +13,15 @@ def hg(args, cwd='.'):
         shell=True,
         stdout=subprocess.PIPE,
         cwd=cwd,
-        env=dict(os.environ, HGPLAIN='1')
+        env=dict(os.environ,
+                 # try to disable i18n
+                 LC_ALL='C',
+                 LANGUAGE='',
+                 HGPLAIN='1',
+                )
     )
     out, _ = p.communicate()
-    return out.strip().decode()  # will kill us sometimes
+    return out.strip().decode()  # will kill us on hg lacking HGPLAIN support
 
 # extended pep 386 regex
 # see http://www.python.org/dev/peps/pep-0386/#the-new-versioning-algorithm
