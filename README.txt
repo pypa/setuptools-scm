@@ -4,6 +4,8 @@ hgdistver
 This module is a simple drop-in to support setup.py
 in mercurial based projects.
 
+Alternatively it can be a setup time requirement.
+
 Its supposed to generate version numbers from mercurials meta-data.
 It tries to use the current tag and
 falls back to the next reachable tagged ancestor and
@@ -29,3 +31,16 @@ The most simple usage is::
 `get_version` takes the optional argument `cachefile`,
 which causes it to store the version info in a python script instead
 of abusing PKG-INFO from a sdist.
+
+
+The setup requirement usage is::
+
+    from setuptools import setup
+    setup(
+        ...,
+        get_version_from_hg=True,
+        setup_requires=['hgdistver'],
+        ...,
+    )
+
+The requirement usage doesn't yet support cachefile.
