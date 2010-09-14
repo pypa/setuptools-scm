@@ -204,7 +204,11 @@ def get_version(cachefile=None, root=None):
 
 def setuptools_version_keyword(dist, keyword, value):
     if value:
-        dist.metadata.version = get_version()
+        dist.metadata.version = get_version(
+            cachefile=getattr(dist, 'cache_hg_version_to', None))
+
+def setuptools_cachefile_keyword(dist, keyword, value):
+    pass
 
 if __name__ == '__main__':
     print('Guessed Version %s' % (get_version(),))

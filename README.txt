@@ -43,4 +43,4 @@ The setup requirement usage is::
         ...,
     )
 
-The requirement usage doesn't yet support cachefile.
+The requirement uses the setup argument cache_hg_version_to instead of cachefile.
