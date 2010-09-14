@@ -88,6 +88,8 @@ def version_from_hg15_parents(root, cachefile=None):
         tag, dist = out.split()
         if tag == 'null':
             tag = '0.0'
+        else:
+            tag = tag_to_version(tag)
         return '%s.post%s-%s' % (tag, dist, node)
     except ValueError:
         pass  # unpacking failed, old hg

@@ -66,6 +66,7 @@ def pytest_funcarg__get_log_version(request):
         return get_version(path, method=request.param)
     return get_log_version
 
+#XXX: better tests for tag prefixes
 @py.test.mark.cases('version_from_hg15_parents', 'version_from_hg_log_with_tags')
 def test_version_from_hg_id(tmpdir, get_log_version):
     cwd = str(tmpdir)
@@ -80,11 +81,11 @@ def test_version_from_hg_id(tmpdir, get_log_version):
 
     assert after_first_commit.startswith('0.0.post1-')
 
-    hg('tag 0.1 -u test -d "0 0"', cwd)
+    hg('tag v0.1 -u test -d "0 0"', cwd)
     after_tag_01 = get_log_version(cwd)
     assert after_tag_01.startswith('0.1.post1-')
 
-    hg('up 0.1', cwd)
+    hg('up v0.1', cwd)
     at_tag_01 = get_version(cwd)
     assert at_tag_01 == '0.1'
 
