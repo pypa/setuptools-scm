@@ -77,7 +77,7 @@ def test_version_from_hg_id(tmpdir, get_log_version):
     hg('add test.txt', cwd)
     hg('commit -m commit -u test -d "0 0"', cwd)
 
-    after_first_commit = get_log_version(tmpdir)
+    after_first_commit = get_log_version(cwd)
 
     assert after_first_commit.startswith('0.0.post1-')
 
