@@ -200,5 +200,9 @@ def get_version(cachefile=None, root=None):
             write_cachefile(cachefile, version)
 
 
+def setuptools_version_keyword(dist, keyword, value):
+    if value:
+        dist.metadata.version = get_version()
+
 if __name__ == '__main__':
     print('Guessed Version %s' % (get_version(),))

@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 import hgdistver
 setup(
     name='hgdistver',
@@ -12,6 +12,11 @@ setup(
     py_modules=[
         'hgdistver',
     ],
+    entry_points={
+        'distutils.setup_keywords': [
+            'guess_version_from_hg = hgdistver:setuptools_version_keyword',
+        ],
+    },
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
