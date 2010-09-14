@@ -64,11 +64,14 @@ def test_archival_to_version(expected, data):
 def pytest_funcarg__get_log_version(request):
     def get_log_version(path):
         return get_version(path, method=request.param)
+    get_log_version.kind = request.param
     return get_log_version
 
 #XXX: better tests for tag prefixes
 @py.test.mark.cases('version_from_hg15_parents', 'version_from_hg_log_with_tags')
 def test_version_from_hg_id(tmpdir, get_log_version):
+    if hg('--version') < '1.5' and 'parents' in get_log_version.kind:
+        py.test.skip('hg too old, this test needs >=1.5')
     cwd = str(tmpdir)
     hg('init', cwd)
     initial = get_log_version(cwd)
