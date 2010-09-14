@@ -70,7 +70,9 @@ def pytest_funcarg__get_log_version(request):
 #XXX: better tests for tag prefixes
 @py.test.mark.cases('version_from_hg15_parents', 'version_from_hg_log_with_tags')
 def test_version_from_hg_id(tmpdir, get_log_version):
-    if hg('--version') < '1.5' and 'parents' in get_log_version.kind:
+    hgv = hg('--version')
+    print hgv
+    if hgv < '1.5' and 'parents' in get_log_version.kind:
         py.test.skip('hg too old, this test needs >=1.5')
     cwd = str(tmpdir)
     hg('init', cwd)
