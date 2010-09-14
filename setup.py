@@ -14,7 +14,7 @@ setup(
     ],
     entry_points={
         'distutils.setup_keywords': [
-            'guess_version_from_hg = hgdistver:setuptools_version_keyword',
+            'get_version_from_hg = hgdistver:setuptools_version_keyword',
         ],
     },
     classifiers=[
