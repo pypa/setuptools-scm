@@ -14,6 +14,8 @@ def hg(args, cwd='.'):
         stdout=subprocess.PIPE,
         cwd=cwd,
         env=dict(os.environ,
+                 #disable hgrc processing other than .hg/hgrc
+                 HGRCPATH='',
                  # try to disable i18n
                  LC_ALL='C',
                  LANGUAGE='',
@@ -21,7 +23,7 @@ def hg(args, cwd='.'):
                 )
     )
     out, _ = p.communicate()
-    return out.strip().decode()  # will kill us on hg lacking HGPLAIN support
+    return out.strip().decode()
 
 # extended pep 386 regex
 # see http://www.python.org/dev/peps/pep-0386/#the-new-versioning-algorithm
@@ -115,6 +117,11 @@ def version_from_hg_log_with_tags(root, cachefile=None):
 
     return  '0.0.post%s-%s' % (dist + 1, node)
 
+def _hg_version():
+    hgver_out = hg('--version')
+    hgver_out = hgver_out.splitlines()[0].rstrip(')')
+    return hgver_out.split('version ')[-1]
+
 
 def version_from_hg(root, cachefile=None):
     # no .hg means no way to get it
@@ -124,10 +131,7 @@ def version_from_hg(root, cachefile=None):
     version_from_id = version_from_hg_id(root)
     if version_from_id:
         return version_from_id
-    hgver_out = hg('--version')
-    hgver_out = hgver_out.splitlines()[0].rstrip(')')
-    hgver = hgver_out.split('version ')[-1]
-    if hgver < '1.5':
+    if _hg_version() < '1.5':
         return version_from_hg_log_with_tags(root)
     else:
         return version_from_hg15_parents(root)
