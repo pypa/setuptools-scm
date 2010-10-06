@@ -115,12 +115,9 @@ def test_version_from_archival(tmpdir):
 
 
 def test_version_from_cachefile(tmpdir):
-    tmpdir.join('test.txt').write(
-        '# comment\n'
-        'version = "1.0"'
-    )
-
+    hgdistver.write_cachefile(str(tmpdir/'test.txt'), '1.0')
     assert get_version(tmpdir, cachefile='test.txt') == '1.0'
+
 
 
 def test_version_from_pkginfo(tmpdir):
