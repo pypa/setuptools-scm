@@ -10,6 +10,7 @@ import re
 import os
 import subprocess
 
+
 def hg(args, cwd='.'):
     p = subprocess.Popen(
         'hg ' + args,
@@ -45,15 +46,18 @@ version_re = r"""^
 ##(?P<postdev>(\.post(?P<post>\d+))?(\.dev(?P<dev>\d+))?)?
 $"""
 
+
 def tag_to_version(tag):
     match = re.match(version_re, tag, re.VERBOSE)
     if match is not None:
         return ''.join(match.group(
-            'version', 'extraversion','prerelfullversion',
+            'version', 'extraversion', 'prerelfullversion',
         ))
+
 
 def tags_to_versions(tags):
     return list(filter(None, map(tag_to_version, tags)))
+
 
 def version_from_cachefile(root, cachefile=None):
     #XXX: for now we ignore root
@@ -79,7 +83,7 @@ def version_from_hg_id(root, cachefile=None):
     node = l.pop(0)
     tags = tags_to_versions(l)
     if tags:
-        return tags[0] + node[12:] # '' or '+'
+        return tags[0] + node[12:]  # '' or '+'
 
 
 def version_from_hg15_parents(root, cachefile=None):
@@ -119,6 +123,7 @@ def version_from_hg_log_with_tags(root, cachefile=None):
             return '%s.post%s-%s' % (tags[0], dist, node)
 
     return  '0.0.post%s-%s' % (dist + 1, node)
+
 
 def _hg_version():
     hgver_out = hg('--version')
@@ -213,6 +218,7 @@ def setuptools_version_keyword(dist, keyword, value):
     if value:
         dist.metadata.version = get_version(
             cachefile=getattr(dist, 'cache_hg_version_to', None))
+
 
 def setuptools_cachefile_keyword(dist, keyword, value):
     pass
