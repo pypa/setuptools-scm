@@ -161,7 +161,10 @@ def _data_from_archival(path):
         content = fp.read()
     finally:
         fp.close()
-    return dict(x.split(': ') for x in content.splitlines())
+    # the complex conditions come from reading pseudo-mime-messages
+    return dict(x.split(': ', 1) 
+                for x in content.splitlines()
+                if x.strip() and ': ' in x)
 
 def version_from_archival(root, cachefile=None):
     for parent in root, os.path.dirname(root):
