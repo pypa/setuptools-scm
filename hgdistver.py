@@ -213,7 +213,7 @@ def get_version(cachefile=None, root=None):
                 if version.endswith('+'):
                     import time
                     version += time.strftime('%Y%m%d')
-                return version
+                return str(version)
     finally:
         if cachefile and version:
             write_cachefile(cachefile, version)
