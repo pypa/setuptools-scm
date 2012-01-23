@@ -1,5 +1,6 @@
 import os
 import py
+import pytest
 
 import hgdistver
 from hgdistver import hg, \
@@ -11,12 +12,10 @@ from hgdistver import hg, \
 
 def pytest_generate_tests(metafunc):
     if hasattr(metafunc.function, 'cases'):
-        for case in metafunc.function.cases.args:
-            metafunc.addcall(
-                id=case,
-                param=case,
-            )
+        metafunc.parametrize('case', metafunc.function.cases.args, indirect=True)
 
+def pytest_funcarg__case(request):
+    return request.param
 
 def get_version(path, method='get_version', **kw):
     call = getattr(hgdistver, method)
@@ -29,7 +28,7 @@ def test_data_from_archival(tmpdir):
     tmpfile = tmpdir.join('test.archival')
     tmpfile.write('name: test\nrevision: 1')
 
-    res = _data_from_archival(tmpfile)
+    res = _data_from_archival(str(tmpfile))
     assert res == {
         'name': 'test',
         'revision': '1',
@@ -51,22 +50,21 @@ archival_mapping = {
 
 }
 
-def pytest_funcarg__expected(request):
-    return request.param
+def pytest_funcarg__data(request): return request.param
+def pytest_funcarg__expected(request): return request.param
 
-def pytest_funcarg__data(request):
-    return archival_mapping[request.param]
-
-@py.test.mark.cases(*archival_mapping)
+@pytest.mark.parametrize('expected data'.split(), archival_mapping.items(), archival_mapping)
 def test_archival_to_version(expected, data):
     assert _archival_to_version(data) == expected
 
 
 
 def pytest_funcarg__get_log_version(request):
+    case = request.getfuncargvalue('case')
+
     def get_log_version(path):
-        return get_version(path, method=request.param)
-    get_log_version.kind = request.param
+        return get_version(path, method=case)
+    get_log_version.__name__ = case
     return get_log_version
 
 #XXX: better tests for tag prefixes

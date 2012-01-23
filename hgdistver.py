@@ -156,10 +156,12 @@ def _archival_to_version(data):
 
 
 def _data_from_archival(path):
-    import email
-    data = email.message_from_file(open(str(path)))
-    return dict(data.items())
-
+    fp = open(path)
+    try:
+        content = fp.read()
+    finally:
+        fp.close()
+    return dict(x.split(': ') for x in content.splitlines())
 
 def version_from_archival(root, cachefile=None):
     for parent in root, os.path.dirname(root):
