@@ -8,13 +8,13 @@
 
 import re
 import os
+import shlex
 import subprocess
 
 
-def hg(args, cwd='.'):
+def do(cmd, cwd='.'):
     p = subprocess.Popen(
-        'hg ' + args,
-        shell=True,
+        shlex.split(cmd),
         stdout=subprocess.PIPE,
         cwd=cwd,
         env=dict(os.environ,
@@ -79,7 +79,7 @@ def version_from_cachefile(root, cachefile=None):
 
 def version_from_hg_id(root, cachefile=None):
     """stolen logic from mercurials setup.py as well"""
-    l = hg('id -i -t', root).split()
+    l = do('hg id -i -t', root).split()
     node = l.pop(0)
     tags = tags_to_versions(l)
     if tags:
@@ -87,12 +87,12 @@ def version_from_hg_id(root, cachefile=None):
 
 
 def version_from_hg15_parents(root, cachefile=None):
-    node = hg('id -i', root)
+    node = do('hg id -i', root)
     if node.strip('+') == '000000000000':
         return '0.0.post0-' + node
 
-    cmd = 'parents --template "{latesttag} {latesttagdistance}"'
-    out = hg(cmd, root)
+    cmd = 'hg parents --template "{latesttag} {latesttagdistance}"'
+    out = do(cmd, root)
     try:
         tag, dist = out.split()
         if tag == 'null':
@@ -106,7 +106,7 @@ def version_from_hg15_parents(root, cachefile=None):
 
 def version_from_hg_log_with_tags(root, cachefile=None):
     #NOTE: this is only a fallback called from version_from_hg15_parents
-    node = hg('id -i', root)
+    node = do('hg id -i', root)
     cmd = r'hg log -r %s:0 --template "{tags} \n"'
     cmd = cmd % node.rstrip('+')
     proc = subprocess.Popen(cmd,
@@ -126,7 +126,7 @@ def version_from_hg_log_with_tags(root, cachefile=None):
 
 
 def _hg_version():
-    hgver_out = hg('--version')
+    hgver_out = do('hg --version')
     hgver_out = hgver_out.splitlines()[0].rstrip(')')
     return hgver_out.split('version ')[-1]
 

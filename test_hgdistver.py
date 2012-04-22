@@ -3,7 +3,7 @@ import py
 import pytest
 
 import hgdistver
-from hgdistver import hg, \
+from hgdistver import do, \
     _data_from_archival, \
     _archival_to_version, \
     _hg_version
@@ -75,22 +75,22 @@ def test_version_from_hg_id(tmpdir, get_log_version):
     if hgv < '1.5' and 'parents' in get_log_version.kind:
         py.test.skip('hg too old, this test needs >=1.5')
     cwd = str(tmpdir)
-    hg('init', cwd)
+    do('hg init', cwd)
     initial = get_log_version(cwd)
     assert initial.startswith('0.0.post0-' + '0'*12 ) #uses node when no tag
     tmpdir.join('test.txt').write('test')
-    hg('add test.txt', cwd)
-    hg('commit -m commit -u test -d "0 0"', cwd)
+    do('hg add test.txt', cwd)
+    do('hg commit -m commit -u test -d "0 0"', cwd)
 
     after_first_commit = get_log_version(cwd)
 
     assert after_first_commit.startswith('0.0.post1-')
 
-    hg('tag v0.1 -u test -d "0 0"', cwd)
+    do('hg tag v0.1 -u test -d "0 0"', cwd)
     after_tag_01 = get_log_version(cwd)
     assert after_tag_01.startswith('0.1.post1-')
 
-    hg('up v0.1', cwd)
+    do('hg up v0.1', cwd)
     at_tag_01 = get_version(cwd)
     assert at_tag_01 == '0.1'
 
