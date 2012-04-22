@@ -106,6 +106,16 @@ def version_from_hg_id(root, cachefile=None):
         return tags[0] + node[12:]  # '' or '+'
 
 
+def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
+    st = do('hg st --no-status --change %s' % node, root)
+
+    trace('normalize', locals())
+    if int(dist) == 1 and st == '.hgtags':
+        return tag
+    else:
+        return '%s.post%s-%s' % (tag, dist, node)
+
+
 def version_from_hg15_parents(root, cachefile=None):
     node = do('hg id -i', root)
     if node.strip('+') == '000000000000':
@@ -119,7 +129,7 @@ def version_from_hg15_parents(root, cachefile=None):
             tag = '0.0'
         else:
             tag = tag_to_version(tag)
-        return '%s.post%s-%s' % (tag, dist, node)
+        return _hg_tagdist_normalize_tagcommit(root, tag, dist, node)
     except ValueError:
         pass  # unpacking failed, old hg
 
@@ -140,7 +150,7 @@ def version_from_hg_log_with_tags(root, cachefile=None):
         line = line.decode()
         tags = tags_to_versions(line.split())
         if tags:
-            return '%s.post%s-%s' % (tags[0], dist, node)
+            return _hg_tagdist_normalize_tagcommit(root, tags[0], dist, node)
 
     return  '0.0.post%s-%s' % (dist + 1, node)
 

@@ -106,7 +106,13 @@ def test_version_from_hg_id(tmpdir, method):
 
     do('hg tag v0.1 -u test -d "0 0"', cwd)
     after_tag_01 = get_version(cwd, method=method)
-    assert after_tag_01.startswith('0.1.post1-')
+    assert after_tag_01 == '0.1'
+
+    tmpdir.join('test.txt').write('test2')
+    do('hg commit -m commit2 -u test -d "0 0"', cwd)
+
+    second_after_tag_01 = get_version(cwd, method=method)
+    assert second_after_tag_01.startswith('0.1.post2')
 
     do('hg up v0.1', cwd)
     at_tag_01 = get_version(cwd)
