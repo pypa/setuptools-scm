@@ -33,7 +33,7 @@ def do_ex(cmd, cwd='.'):
 def do(cmd, cwd='.'):
     out, err, ret = do_ex(cmd, cwd)
     if ret:
-        print err
+        print(err)
     return out
 
 # extended pep 386 regex
@@ -157,7 +157,6 @@ def version_from_git(root, cachefile=None):
         return
     valid_retcode = do_ex('git rev-parse --verify --quiet HEAD', root)
     if valid_retcode[2]:
-        print valid_retcode
         return "0.0.post0"
 
     out, err, ret = do_ex('git describe --dirty --tags --always', root)
