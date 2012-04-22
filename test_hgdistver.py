@@ -10,10 +10,6 @@ from hgdistver import do, do_ex, \
 
 
 
-def pytest_generate_tests(metafunc):
-    if hasattr(metafunc.function, 'cases'):
-        metafunc.parametrize('case', metafunc.function.cases.args, indirect=True)
-
 def pytest_funcarg__case(request):
     return request.param
 
@@ -66,16 +62,6 @@ def test_archival_to_version(expected, data):
     assert _archival_to_version(data) == expected
 
 
-
-def pytest_funcarg__get_log_version(request):
-    case = request.getfuncargvalue('case')
-
-    def get_log_version(path):
-        return get_version(path, method=case)
-    get_log_version.__name__ = case
-    return get_log_version
-
-
 def test_version_from_git(tmpdir):
     cwd = str(tmpdir)
     do('git init', cwd)
@@ -101,26 +87,26 @@ def test_version_from_git(tmpdir):
 
 
 #XXX: better tests for tag prefixes
-@py.test.mark.cases('version_from_hg15_parents', 'version_from_hg_log_with_tags')
-def test_version_from_hg_id(tmpdir, get_log_version):
+@py.test.mark.parametrize('method', ['version_from_hg15_parents', 'version_from_hg_log_with_tags'])
+def test_version_from_hg_id(tmpdir, method):
     hgv = _hg_version()
     print(hgv)
-    if hgv < '1.5' and 'parents' in get_log_version.kind:
+    if hgv < '1.5' and 'parents' in method:
         py.test.skip('hg too old, this test needs >=1.5')
     cwd = str(tmpdir)
     do('hg init', cwd)
-    initial = get_log_version(cwd)
+    initial = get_version(cwd, method=method)
     assert initial.startswith('0.0.post0-' + '0'*12 ) #uses node when no tag
     tmpdir.join('test.txt').write('test')
     do('hg add test.txt', cwd)
     do('hg commit -m commit -u test -d "0 0"', cwd)
 
-    after_first_commit = get_log_version(cwd)
+    after_first_commit = get_version(cwd, method=method)
 
     assert after_first_commit.startswith('0.0.post1-')
 
     do('hg tag v0.1 -u test -d "0 0"', cwd)
-    after_tag_01 = get_log_version(cwd)
+    after_tag_01 = get_version(cwd, method=method)
     assert after_tag_01.startswith('0.1.post1-')
 
     do('hg up v0.1', cwd)
