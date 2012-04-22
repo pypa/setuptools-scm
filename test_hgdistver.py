@@ -9,7 +9,6 @@ from hgdistver import do, do_ex, \
     _hg_version
 
 
-
 def pytest_funcarg__case(request):
     return request.param
 

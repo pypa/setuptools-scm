@@ -8,11 +8,21 @@
 
 import re
 import os
+import sys
 import shlex
 import subprocess
 
+def trace_debug(*k):
+    sys.stdout.write(' '.join(map(str,k)))
+    sys.stdout.write('\n')
+    sys.stdout.flush()
+
+def trace(*k):
+    pass
+
 
 def do_ex(cmd, cwd='.'):
+    trace('cmd', cmd)
     p = subprocess.Popen(
         shlex.split(cmd),
         stdout=subprocess.PIPE,
@@ -28,6 +38,9 @@ def do_ex(cmd, cwd='.'):
                 )
     )
     out, err = p.communicate()
+    trace('out', repr(out))
+    trace('err', repr(err))
+    trace('ret', p.returncode)
     return out.strip().decode(), err.strip().decode(), p.returncode
 
 def do(cmd, cwd='.'):
