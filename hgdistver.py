@@ -280,5 +280,43 @@ def setuptools_version_keyword(dist, keyword, value):
 def setuptools_cachefile_keyword(dist, keyword, value):
     pass
 
+
+
+def find_hg_files(dirname=''):
+    return do('hg st -armdc --no-status', dirname or '.').splitlines()
+
+def find_git_files(dirname=''):
+
+    return do('git ls-files', dirname or '.').splitlines()
+
+
+
+def findroot(path, req):
+    old = None
+    while path != old:
+        if os.path.exists(os.path.join(path, req)):
+            return path
+        old = path
+        path = os.path.dirname(path)
+
+
+def find_files(dirname=''):
+    abs = os.path.abspath(dirname)
+    hg = findroot(abs, '.hg')
+    git = findroot(abs, '.git')
+    if hg and git:
+        m = max(hg, git)
+        if max is hg:
+            git = None
+    if hg:
+        return find_hg_files(dirname)
+    elif git:
+        return find_git_files(dirname)
+
+
+
 if __name__ == '__main__':
     print('Guessed Version %s' % (get_version(),))
+    if 'ls' in sys.argv:
+        for fname in find_files('.'):
+            print fname
