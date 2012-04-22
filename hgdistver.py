@@ -12,10 +12,11 @@ import shlex
 import subprocess
 
 
-def do(cmd, cwd='.'):
+def do_ex(cmd, cwd='.'):
     p = subprocess.Popen(
         shlex.split(cmd),
         stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         cwd=cwd,
         env=dict(os.environ,
                  #disable hgrc processing other than .hg/hgrc
@@ -26,8 +27,14 @@ def do(cmd, cwd='.'):
                  HGPLAIN='1',
                 )
     )
-    out, _ = p.communicate()
-    return out.strip().decode()
+    out, err = p.communicate()
+    return out.strip().decode(), err.strip().decode(), p.returncode
+
+def do(cmd, cwd='.'):
+    out, err, ret = do_ex(cmd, cwd)
+    if ret:
+        print err
+    return out
 
 # extended pep 386 regex
 # see http://www.python.org/dev/peps/pep-0386/#the-new-versioning-algorithm
@@ -145,6 +152,28 @@ def version_from_hg(root, cachefile=None):
         return version_from_hg15_parents(root)
 
 
+def version_from_git(root, cachefile=None):
+    if not os.path.exists(os.path.join(root, '.git')):
+        return
+    valid_retcode = do_ex('git rev-parse --verify --quiet HEAD', root)
+    if valid_retcode[2]:
+        print valid_retcode
+        return "0.0.post0"
+
+    out, err, ret = do_ex('git describe --dirty --tags --always', root)
+    if '-' not in out and '.' not in out:
+        revs = do('git rev-list HEAD', root)
+        count = revs.count('\n')
+        return '0.0.post%s-%s' % (count + 1, out)
+    if ret:
+        return
+    if '-' not in out:
+        return tag_to_version(out)
+    else:
+        tag, number, node = out.split('-')
+        return '%s.post%s-%s' % (tag_to_version(tag), number, node)
+
+
 def _archival_to_version(data):
     """stolen logic from mercurials setup.py"""
     if 'tag' in data:
@@ -194,6 +223,7 @@ def write_cachefile(path, version):
 
 methods = [
     version_from_hg,
+    version_from_git,
     version_from_cachefile,
     version_from_sdist_pkginfo,
     version_from_archival,

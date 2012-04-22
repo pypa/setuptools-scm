@@ -3,7 +3,7 @@ import py
 import pytest
 
 import hgdistver
-from hgdistver import do, \
+from hgdistver import do, do_ex, \
     _data_from_archival, \
     _archival_to_version, \
     _hg_version
@@ -21,6 +21,14 @@ def get_version(path, method='get_version', **kw):
     call = getattr(hgdistver, method)
     root = str(path)
     return call(root=root, **kw)
+
+@pytest.mark.parametrize('cmd', ['ls', 'dir'])
+def test_do(cmd, tmpdir):
+
+    if not py.path.local.sysfind('ls'):
+        pytest.skip(cmd + ' not found')
+    do(cmd, str(tmpdir))
+
 
 
 
@@ -66,6 +74,31 @@ def pytest_funcarg__get_log_version(request):
         return get_version(path, method=case)
     get_log_version.__name__ = case
     return get_log_version
+
+
+def test_version_from_git(tmpdir):
+    cwd = str(tmpdir)
+    do('git init', cwd)
+    initial = get_version(cwd)
+    assert initial == '0.0.post0'
+    tmpdir.join('test.txt').write('test')
+    do('git add test.txt', cwd)
+    do('git commit -m commit', cwd)
+    after_first_commit = get_version(cwd)
+
+    assert after_first_commit.startswith('0.0.post1-')
+
+    do('git tag v0.1', cwd)
+    at_tag_01 = get_version(cwd)
+    assert at_tag_01 == '0.1'
+
+    tmpdir.join('test.txt').write('test2')
+    do('git add test.txt', cwd)
+    do('git commit -m commit', cwd)
+    after_tag_01 = get_version(cwd)
+    assert after_tag_01.startswith('0.1.post1-')
+
+
 
 #XXX: better tests for tag prefixes
 @py.test.mark.cases('version_from_hg15_parents', 'version_from_hg_log_with_tags')
