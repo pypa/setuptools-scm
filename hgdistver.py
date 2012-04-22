@@ -22,7 +22,7 @@ def trace(*k):
 
 
 def do_ex(cmd, cwd='.'):
-    trace('cmd', cmd)
+    trace('cmd', repr(cmd))
     p = subprocess.Popen(
         shlex.split(cmd),
         stdout=subprocess.PIPE,
@@ -107,7 +107,7 @@ def version_from_hg_id(root, cachefile=None):
 
 
 def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
-    st = do('hg st --no-status --change %s' % node, root)
+    st = do('hg st --no-status --change %s' % str(node), root)
 
     trace('normalize', locals())
     if int(dist) == 1 and st == '.hgtags':
