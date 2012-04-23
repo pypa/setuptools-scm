@@ -305,7 +305,7 @@ def find_files(dirname=''):
     hg = findroot(abs, '.hg')
     git = findroot(abs, '.git')
     if hg and git:
-        if hg > git:
+        if hg >= git: #prefer hg in case of both, could be hg-git
             git = None
     if hg:
         return find_hg_files(dirname)
