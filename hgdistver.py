@@ -318,4 +318,4 @@ if __name__ == '__main__':
     print('Guessed Version %s' % (get_version(),))
     if 'ls' in sys.argv:
         for fname in find_files('.'):
-            print fname
+            print(fname)
