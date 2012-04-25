@@ -5,8 +5,6 @@ python:
   - "3.2"
 
 install:
- - apt-get install mercurial
- - pip install pytest
- - python setup.py install
+ - sudo apt-get install mercurial
 
 script: py.test --junitxml=travis.junit
