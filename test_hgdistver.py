@@ -72,6 +72,7 @@ def test_version_from_git(tmpdir):
     after_first_commit = get_version(cwd)
 
     assert after_first_commit.startswith('0.0.post1-')
+    assert not after_first_commit.endswith('1-')
 
     do('git tag v0.1', cwd)
     at_tag_01 = get_version(cwd)

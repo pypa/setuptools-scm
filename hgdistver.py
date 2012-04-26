@@ -178,14 +178,16 @@ def version_from_hg(root, cachefile=None):
 def version_from_git(root, cachefile=None):
     if not os.path.exists(os.path.join(root, '.git')):
         return
-    valid_retcode = do_ex('git rev-parse --verify --quiet HEAD', root)
-    if valid_retcode[2]:
+    rev_node, _, ret = do_ex('git rev-parse --verify --quiet HEAD', root)
+    if ret:
         return "0.0.post0"
 
-    out, err, ret = do_ex('git describe --dirty --tags --always', root)
+    out, err, ret = do_ex('git describe --dirty --tags', root)
     if '-' not in out and '.' not in out:
         revs = do('git rev-list HEAD', root)
         count = revs.count('\n')
+        if ret:
+            out = rev_node[:7]
         return '0.0.post%s-%s' % (count + 1, out)
     if ret:
         return
