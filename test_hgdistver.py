@@ -81,6 +81,8 @@ def test_version_from_git(tmpdir):
     assert at_tag_01 == '0.1'
 
     tmpdir.join('test.txt').write('test2')
+    dirty_tag_01 = get_version(cwd)
+    assert dirty_tag_01.startswith('0.1.post0-')
     do('git add test.txt', cwd)
     do('git commit -m commit', cwd)
     after_tag_01 = get_version(cwd)

@@ -38,9 +38,12 @@ def do_ex(cmd, cwd='.'):
                 )
     )
     out, err = p.communicate()
-    trace('out', repr(out))
-    trace('err', repr(err))
-    trace('ret', p.returncode)
+    if out:
+        trace('out', repr(out))
+    if err:
+        trace('err', repr(err))
+    if p.returncode:
+        trace('ret', p.returncode)
     return out.strip().decode(), err.strip().decode(), p.returncode
 
 def do(cmd, cwd='.'):
@@ -195,11 +198,14 @@ def version_from_git(root, cachefile=None):
         return _version('0.0', distance=count + 1, node=out)
     if ret:
         return
+    dirty = out.endswith('-dirty')
+    if dirty:
+        out = out.rsplit('-', 1)[0]
     if '-' not in out:
-        return _version(out)
+        return _version(out, node=rev_node[:7], dirty=dirty)
     else:
         tag, number, node = out.split('-')
-        return _version(tag, distance=number, node=node)
+        return _version(tag, distance=number, node=node, dirty=dirty)
 
 
 def _archival_to_version(data):
@@ -263,7 +269,7 @@ def format_version(version):
     if not isinstance(version, dict):
         return version
     elif version['dirty']:
-        return "%(tag)s.post%(distance)s-%(node)s+%(stime)s" % version
+        return "%(tag)s.post%(distance)s-%(node)s+%(time)s" % version
     elif version['distance']:
         return "%(tag)s.post%(distance)s-%(node)s" % version
     else:
