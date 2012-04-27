@@ -6,7 +6,7 @@ import hgdistver
 from hgdistver import do, do_ex, \
     _data_from_archival, \
     _archival_to_version, \
-    _hg_version
+    _hg_version, format_version
 
 
 def pytest_funcarg__case(request):
@@ -15,7 +15,8 @@ def pytest_funcarg__case(request):
 def get_version(path, method='get_version', **kw):
     call = getattr(hgdistver, method)
     root = str(path)
-    return call(root=root, **kw)
+    data = call(root=root, **kw)
+    return format_version(data)
 
 @pytest.mark.parametrize('cmd', ['ls', 'dir'])
 def test_do(cmd, tmpdir):
@@ -45,7 +46,7 @@ archival_mapping = {
         'latesttagdistance': '3',
         'node': '0'*20,
     },
-    '0'*12: {
+    '0.0': {
         'node': '0'*20,
     },
     '1.2.2': {'tag': 'release-1.2.2'},
@@ -58,14 +59,15 @@ def pytest_funcarg__expected(request): return request.param
 
 @pytest.mark.parametrize('expected data'.split(), archival_mapping.items(), archival_mapping)
 def test_archival_to_version(expected, data):
-    assert _archival_to_version(data) == expected
+
+    assert format_version(_archival_to_version(data)) == expected
 
 
 def test_version_from_git(tmpdir):
     cwd = str(tmpdir)
     do('git init', cwd)
     initial = get_version(cwd)
-    assert initial == '0.0.post0'
+    assert initial == '0.0'
     tmpdir.join('test.txt').write('test')
     do('git add test.txt', cwd)
     do('git commit -m commit', cwd)
@@ -96,7 +98,7 @@ def test_version_from_hg_id(tmpdir, method):
     cwd = str(tmpdir)
     do('hg init', cwd)
     initial = get_version(cwd, method=method)
-    assert initial.startswith('0.0.post0-' + '0'*12 ) #uses node when no tag
+    assert initial == '0.0'
     tmpdir.join('test.txt').write('test')
     do('hg add test.txt', cwd)
     do('hg commit -m commit -u test -d "0 0"', cwd)

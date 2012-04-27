@@ -79,6 +79,11 @@ def tags_to_versions(tags):
     return list(filter(None, map(tag_to_version, tags)))
 
 
+def _version(tag, distance=0, node=None, dirty=False):
+    tag = tag_to_version(tag)
+    return locals()
+
+
 def version_from_cachefile(root, cachefile=None):
     #XXX: for now we ignore root
     if not cachefile or not os.path.exists(cachefile):
@@ -103,7 +108,7 @@ def version_from_hg_id(root, cachefile=None):
     node = l.pop(0)
     tags = tags_to_versions(l)
     if tags:
-        return tags[0] + node[12:]  # '' or '+'
+        return _version(tags[0], dirty=node[-1] == '+')  # '' or '+'
 
 
 def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
@@ -111,15 +116,15 @@ def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
 
     trace('normalize', locals())
     if int(dist) == 1 and st == '.hgtags':
-        return tag
+        return _version(tag)
     else:
-        return '%s.post%s-%s' % (tag, dist, node)
+        return _version(tag, distance=dist, node=node)
 
 
 def version_from_hg15_parents(root, cachefile=None):
     node = do('hg id -i', root)
     if node.strip('+') == '000000000000':
-        return '0.0.post0-' + node
+        return _version('0.0', dirty=node[-1]=='+')
 
     cmd = 'hg parents --template "{latesttag} {latesttagdistance}"'
     out = do(cmd, root)
@@ -127,8 +132,7 @@ def version_from_hg15_parents(root, cachefile=None):
         tag, dist = out.split()
         if tag == 'null':
             tag = '0.0'
-        else:
-            tag = tag_to_version(tag)
+            dist = 1
         return _hg_tagdist_normalize_tagcommit(root, tag, dist, node)
     except ValueError:
         pass  # unpacking failed, old hg
@@ -152,7 +156,7 @@ def version_from_hg_log_with_tags(root, cachefile=None):
         if tags:
             return _hg_tagdist_normalize_tagcommit(root, tags[0], dist, node)
 
-    return  '0.0.post%s-%s' % (dist + 1, node)
+    return  _version('0.0', distance=dist + 1, node=node)
 
 
 def _hg_version():
@@ -180,7 +184,7 @@ def version_from_git(root, cachefile=None):
         return
     rev_node, _, ret = do_ex('git rev-parse --verify --quiet HEAD', root)
     if ret:
-        return "0.0.post0"
+        return _version('0.0')
 
     out, err, ret = do_ex('git describe --dirty --tags', root)
     if '-' not in out and '.' not in out:
@@ -188,24 +192,26 @@ def version_from_git(root, cachefile=None):
         count = revs.count('\n')
         if ret:
             out = rev_node[:7]
-        return '0.0.post%s-%s' % (count + 1, out)
+        return _version('0.0', distance=count + 1, node=out)
     if ret:
         return
     if '-' not in out:
-        return tag_to_version(out)
+        return _version(out)
     else:
         tag, number, node = out.split('-')
-        return '%s.post%s-%s' % (tag_to_version(tag), number, node)
+        return _version(tag, distance=number, node=node)
 
 
 def _archival_to_version(data):
     """stolen logic from mercurials setup.py"""
     if 'tag' in data:
-        return tag_to_version(data['tag'])
+        return _version(data['tag'])
     elif 'latesttag' in data:
-        return '%(latesttag)s.post%(latesttagdistance)s-%(node).12s' % data
+        return _version(data['latesttag'],
+                        distance=data['latesttagdistance'],
+                        node=data['node'][:12])
     else:
-        return data.get('node', '')[:12]
+        return _version('0.0', node=data.get('node', '')[:12])
 
 
 def _data_from_archival(path):
@@ -248,11 +254,20 @@ def write_cachefile(path, version):
 methods = [
     version_from_hg,
     version_from_git,
+    version_from_archival,
     version_from_cachefile,
     version_from_sdist_pkginfo,
-    version_from_archival,
 ]
 
+def format_version(version):
+    if not isinstance(version, dict):
+        return version
+    elif version['dirty']:
+        return "%(tag)s.post%(distance)s-%(node)s+%(stime)s" % version
+    elif version['distance']:
+        return "%(tag)s.post%(distance)s-%(node)s" % version
+    else:
+        return version['tag']
 
 def get_version(cachefile=None, root=None):
     if root is None:
@@ -263,10 +278,12 @@ def get_version(cachefile=None, root=None):
         version = None
         for method in methods:
             version = method(root=root, cachefile=cachefile)
-            if version:
-                if version.endswith('+'):
+            if isinstance(version, dict):
+                if version['dirty']:
                     import time
-                    version += time.strftime('%Y%m%d')
+                    version['time'] = time.strftime('%Y%m%d')
+                version = format_version(version)
+            if version:
                 return str(version)
     finally:
         if cachefile and version:
