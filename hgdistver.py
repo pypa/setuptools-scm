@@ -11,6 +11,7 @@ import os
 import sys
 import shlex
 import subprocess
+import datetime
 
 def trace_debug(*k):
     sys.stdout.write(' '.join(map(str,k)))
@@ -84,6 +85,7 @@ def tags_to_versions(tags):
 
 def _version(tag, distance=0, node=None, dirty=False):
     tag = tag_to_version(tag)
+    time = datetime.date.today().strftime('%Y%m%d')
     return locals()
 
 
@@ -115,13 +117,15 @@ def version_from_hg_id(root, cachefile=None):
 
 
 def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
+    dirty = node.endswith('+')
+    node = node.strip('+')
     st = do('hg st --no-status --change %s' % str(node), root)
 
     trace('normalize', locals())
-    if int(dist) == 1 and st == '.hgtags':
+    if int(dist) == 1 and st == '.hgtags' and not dirty:
         return _version(tag)
     else:
-        return _version(tag, distance=dist, node=node)
+        return _version(tag, distance=dist, node=node, dirty=dirty)
 
 
 def version_from_hg15_parents(root, cachefile=None):

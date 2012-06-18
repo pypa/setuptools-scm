@@ -1,4 +1,5 @@
 import os
+import re
 import py
 import pytest
 
@@ -114,6 +115,11 @@ def test_version_from_hg_id(tmpdir, method):
     assert after_tag_01 == '0.1'
 
     tmpdir.join('test.txt').write('test2')
+
+    after_tag_01_with_changes = get_version(cwd, method=method)
+    regex = r'0.1.post1-.{12}\+\d+$'
+    assert re.match(regex, after_tag_01_with_changes)
+
     do('hg commit -m commit2 -u test -d "0 0"', cwd)
 
     second_after_tag_01 = get_version(cwd, method=method)
