@@ -13,10 +13,6 @@ from hgdistver import (
 )
 
 
-def pytest_funcarg__case(request):
-    return request.param
-
-
 def get_version(path, method='get_version', **kw):
     call = getattr(hgdistver, method)
     root = str(path)
