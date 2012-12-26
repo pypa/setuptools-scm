@@ -59,17 +59,17 @@ archival_mapping = {
 }
 
 
-def pytest_funcarg__data(request):
+@pytest.fixture(params=archival_mapping.keys())
+#                ids=archival_mapping)
+def expected(request):
     return request.param
 
 
-def pytest_funcarg__expected(request):
-    return request.param
+@pytest.fixture
+def data(expected):
+    return archival_mapping[expected]
 
 
-@pytest.mark.parametrize('expected data'.split(),
-                         archival_mapping.items(),
-                         archival_mapping)
 def test_archival_to_version(expected, data):
 
     assert format_version(_archival_to_version(data)) == expected
