@@ -13,10 +13,12 @@ import shlex
 import subprocess
 import datetime
 
+
 def trace_debug(*k):
-    sys.stdout.write(' '.join(map(str,k)))
+    sys.stdout.write(' '.join(map(str, k)))
     sys.stdout.write('\n')
     sys.stdout.flush()
+
 
 def trace(*k):
     pass
@@ -29,15 +31,17 @@ def do_ex(cmd, cwd='.'):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=cwd,
-        env=dict(os.environ,
-                 #disable hgrc processing other than .hg/hgrc
-                 HGRCPATH='',
-                 # try to disable i18n
-                 LC_ALL='C',
-                 LANGUAGE='',
-                 HGPLAIN='1',
-                )
+        env=dict(
+            os.environ,
+            #disable hgrc processing other than .hg/hgrc
+            HGRCPATH='',
+            # try to disable i18n
+            LC_ALL='C',
+            LANGUAGE='',
+            HGPLAIN='1',
+        )
     )
+
     out, err = p.communicate()
     if out:
         trace('out', repr(out))
@@ -46,6 +50,7 @@ def do_ex(cmd, cwd='.'):
     if p.returncode:
         trace('ret', p.returncode)
     return out.strip().decode(), err.strip().decode(), p.returncode
+
 
 def do(cmd, cwd='.'):
     out, err, ret = do_ex(cmd, cwd)
@@ -80,13 +85,20 @@ def tag_to_version(tag):
 
 
 def tags_to_versions(tags):
-    return list(filter(None, map(tag_to_version, tags)))
+    versions = map(tag_to_version, tags)
+    return list(filter(None, versions))
 
 
 def _version(tag, distance=0, node=None, dirty=False):
     tag = tag_to_version(tag)
     time = datetime.date.today().strftime('%Y%m%d')
-    return locals()
+    return dict(
+        tag=tag,
+        distance=distance,
+        node=node,
+        dirty=dirty,
+        time=time,
+    )
 
 
 def version_from_cachefile(root, cachefile=None):
@@ -131,7 +143,7 @@ def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
 def version_from_hg15_parents(root, cachefile=None):
     node = do('hg id -i', root)
     if node.strip('+') == '000000000000':
-        return _version('0.0', dirty=node[-1]=='+')
+        return _version('0.0', dirty=node[-1] == '+')
 
     cmd = 'hg parents --template "{latesttag} {latesttagdistance}"'
     out = do(cmd, root)
@@ -150,11 +162,12 @@ def version_from_hg_log_with_tags(root, cachefile=None):
     node = do('hg id -i', root)
     cmd = r'hg log -r %s:0 --template "{tags} \n"'
     cmd = cmd % node.rstrip('+')
-    proc = subprocess.Popen(cmd,
-                            cwd=root,
-                            shell=True,
-                            stdout=subprocess.PIPE,
-                           )
+    proc = subprocess.Popen(
+        cmd,
+        cwd=root,
+        shell=True,
+        stdout=subprocess.PIPE,
+    )
     dist = -1  # no revs vs one rev is tricky
 
     for dist, line in enumerate(proc.stdout):
@@ -163,7 +176,7 @@ def version_from_hg_log_with_tags(root, cachefile=None):
         if tags:
             return _hg_tagdist_normalize_tagcommit(root, tags[0], dist, node)
 
-    return  _version('0.0', distance=dist + 1, node=node)
+    return _version('0.0', distance=dist + 1, node=node)
 
 
 def _hg_version():
@@ -231,9 +244,10 @@ def _data_from_archival(path):
     finally:
         fp.close()
     # the complex conditions come from reading pseudo-mime-messages
-    return dict(x.split(': ', 1) 
+    return dict(x.split(': ', 1)
                 for x in content.splitlines()
                 if x.strip() and ': ' in x)
+
 
 def version_from_archival(root, cachefile=None):
     for parent in root, os.path.dirname(root):
@@ -269,6 +283,7 @@ methods = [
     version_from_sdist_pkginfo,
 ]
 
+
 def format_version(version):
     if not isinstance(version, dict):
         return version
@@ -278,6 +293,7 @@ def format_version(version):
         return "%(tag)s.post%(distance)s-%(node)s" % version
     else:
         return version['tag']
+
 
 def get_version(cachefile=None, root=None):
     if root is None:
@@ -310,14 +326,12 @@ def setuptools_cachefile_keyword(dist, keyword, value):
     pass
 
 
-
 def find_hg_files(dirname=''):
     return do('hg st -armdc --no-status', dirname or '.').splitlines()
 
+
 def find_git_files(dirname=''):
-
     return do('git ls-files', dirname or '.').splitlines()
-
 
 
 def findroot(path, req):
@@ -334,13 +348,12 @@ def find_files(dirname=''):
     hg = findroot(abs, '.hg')
     git = findroot(abs, '.git')
     if hg and git:
-        if hg >= git: #prefer hg in case of both, could be hg-git
+        if hg >= git:  # prefer hg in case of both, could be hg-git
             git = None
     if hg:
         return find_hg_files(dirname)
     elif git:
         return find_git_files(dirname)
-
 
 
 if __name__ == '__main__':

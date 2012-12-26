@@ -4,14 +4,18 @@ import py
 import pytest
 
 import hgdistver
-from hgdistver import do, do_ex, \
-    _data_from_archival, \
-    _archival_to_version, \
-    _hg_version, format_version
+from hgdistver import (
+    do,
+    _data_from_archival,
+    _archival_to_version,
+    _hg_version,
+    format_version,
+)
 
 
 def pytest_funcarg__case(request):
     return request.param
+
 
 def get_version(path, method='get_version', **kw):
     call = getattr(hgdistver, method)
@@ -19,14 +23,13 @@ def get_version(path, method='get_version', **kw):
     data = call(root=root, **kw)
     return format_version(data)
 
+
 @pytest.mark.parametrize('cmd', ['ls', 'dir'])
 def test_do(cmd, tmpdir):
 
     if not py.path.local.sysfind('ls'):
         pytest.skip(cmd + ' not found')
     do(cmd, str(tmpdir))
-
-
 
 
 def test_data_from_archival(tmpdir):
@@ -55,10 +58,18 @@ archival_mapping = {
 
 }
 
-def pytest_funcarg__data(request): return request.param
-def pytest_funcarg__expected(request): return request.param
 
-@pytest.mark.parametrize('expected data'.split(), archival_mapping.items(), archival_mapping)
+def pytest_funcarg__data(request):
+    return request.param
+
+
+def pytest_funcarg__expected(request):
+    return request.param
+
+
+@pytest.mark.parametrize('expected data'.split(),
+                         archival_mapping.items(),
+                         archival_mapping)
 def test_archival_to_version(expected, data):
 
     assert format_version(_archival_to_version(data)) == expected
@@ -90,9 +101,10 @@ def test_version_from_git(tmpdir):
     assert after_tag_01.startswith('0.1.post1-')
 
 
-
 #XXX: better tests for tag prefixes
-@py.test.mark.parametrize('method', ['version_from_hg15_parents', 'version_from_hg_log_with_tags'])
+@py.test.mark.parametrize('method', [
+    'version_from_hg15_parents',
+    'version_from_hg_log_with_tags'])
 def test_version_from_hg_id(tmpdir, method):
     hgv = _hg_version()
     print(hgv)
@@ -129,6 +141,7 @@ def test_version_from_hg_id(tmpdir, method):
     at_tag_01 = get_version(cwd)
     assert at_tag_01 == '0.1'
 
+
 def test_version_from_archival(tmpdir):
     tmpdir.join('.hg_archival.txt').write(
         'node: 000000000000\n'
@@ -152,7 +165,6 @@ def test_version_from_cachefile(tmpdir):
     assert get_version(tmpdir, cachefile='test.txt') == '1.0'
 
 
-
 def test_version_from_pkginfo(tmpdir):
     tmpdir.join('PKG-INFO').write('Version: 0.1')
     assert get_version(tmpdir, method='version_from_sdist_pkginfo') == '0.1'
@@ -164,11 +176,13 @@ def test_root_parameter_creation(monkeypatch):
     monkeypatch.setattr(hgdistver, 'methods', [assert_cwd])
     hgdistver.get_version()
 
+
 def test_root_parameter_pass_by(monkeypatch):
     def assert_root_tmp(root, cachefile):
         assert root == '/tmp'
     monkeypatch.setattr(hgdistver, 'methods', [assert_root_tmp])
     hgdistver.get_version(root='/tmp')
+
 
 def test_cachefile_join(monkeypatch):
     def assert_join(root, cachefile):
@@ -176,11 +190,10 @@ def test_cachefile_join(monkeypatch):
     monkeypatch.setattr(hgdistver, 'methods', [assert_join])
     hgdistver.get_version(root='tmp', cachefile='cachefile')
 
+
 def test_recreate_cachefile_from_pkginfo(tmpdir):
     tmpdir.join('PKG-INFO').write('Version: 0.1')
     assert not tmpdir.join('cachefile.txt').check()
     ver = get_version(tmpdir, cachefile='cachefile.txt')
     assert ver == '0.1'
     assert tmpdir.join('cachefile.txt').check()
-
-
