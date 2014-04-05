@@ -4,3 +4,4 @@ hgdistver.egg-info
 dist
 build
 \.tox
+\.cache

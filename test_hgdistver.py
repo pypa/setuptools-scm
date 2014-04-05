@@ -65,7 +65,7 @@ def test_data_from_mime(wd):
 
 archival_mapping = {
     '1.0': {'tag': '1.0'},
-    '1.0.post3-000000000000': {
+    '1.1.dev3-000000000000': {
         'latesttag': '1.0',
         'latesttagdistance': '3',
         'node': '0'*20,
@@ -74,7 +74,7 @@ archival_mapping = {
         'node': '0'*20,
     },
     '1.2.2': {'tag': 'release-1.2.2'},
-    '1.2.2a1': {'tag': 'release-1.2.2a1'},
+    '1.2.2.dev0': {'tag': 'release-1.2.2.dev'},
 
 }
 
@@ -101,17 +101,17 @@ def test_version_from_git(wd):
     wd('git add test.txt')
     wd('git commit -m commit')
 
-    assert wd.version.startswith('0.0.post1-')
+    assert wd.version.startswith('0.1.dev1-')
     assert not wd.version.endswith('1-')
 
     wd('git tag v0.1')
     assert wd.version == '0.1'
 
     wd.write('test.txt', 'test2')
-    assert wd.version.startswith('0.1.post0-')
+    assert wd.version.startswith('0.2.dev0-')
     wd('git add test.txt')
     wd('git commit -m commit')
-    assert wd.version.startswith('0.1.post1-')
+    assert wd.version.startswith('0.2.dev1-')
 
 
 # XXX: better tests for tag prefixes
@@ -122,22 +122,25 @@ def test_version_from_hg_id(wd):
     wd('hg add test.txt')
     wd('hg commit -m commit -u test -d "0 0"')
 
-    assert wd.version.startswith('0.0.post1-')
+    assert wd.version.startswith('0.1.dev1-')
 
+    # tagging commit is considered the tag
     wd('hg tag v0.1 -u test -d "0 0"')
     assert wd.version == '0.1'
     wd.write('test.txt', 'test2')
 
     wd('hg commit -m commit2 -u test -d "0 0"')
 
-    assert wd.version.startswith('0.1.post2')
+    assert wd.version.startswith('0.2.dev2')
 
     wd('hg up v0.1')
     assert wd.version == '0.1'
 
+    # commit originating from the taged revision
+    # that is not a actual tag
     wd.write('test.txt', 'test2')
     wd('hg commit -m commit3 -u test -d "0 0"')
-    assert wd.version.startswith('0.1.post1-')
+    assert wd.version.startswith('0.2.dev1-')
 
 
 def test_version_from_archival(tmpdir):
@@ -155,7 +158,7 @@ def test_version_from_archival(tmpdir):
         'latesttagdistance: 3\n'
     )
 
-    assert get_version(tmpdir) == '0.1.post3-000000000000'
+    assert get_version(tmpdir) == '0.2.dev3-000000000000'
 
 
 def test_version_from_cachefile(tmpdir):

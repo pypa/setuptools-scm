@@ -73,15 +73,21 @@ version_re = r"""^
     (?P<prerelversion>\d+(?:\.\d+)*)
 )?)
 # we dont mach those, its our job to generate them
-##(?P<postdev>(\.post(?P<post>\d+))?(\.dev(?P<dev>\d+))?)?
+# we match those and dev should have nothing that follows
+##
+(?P<postdev>
+    (\.post(?P<post>\d+))?
+    (\.dev(?P<dev>\d+)?)?
+)?
 $"""
 
 
 def tag_to_version(tag):
+    trace(tag)
     match = re.match(version_re, tag, re.VERBOSE)
     if match is not None:
         return ''.join(match.group(
-            'version', 'extraversion', 'prerelfullversion',
+            'version', 'extraversion', 'prerelfullversion', 'postdev'
         ))
 
 
@@ -90,11 +96,15 @@ def tags_to_versions(tags):
     return list(filter(None, versions))
 
 
-def _version(tag, distance=0, node=None, dirty=False):
-    tag = tag_to_version(tag)
+def _version(tag, distance=None, node=None, dirty=False):
+    version = tag_to_version(tag)
+    trace('version', version)
+    assert version is not None, 'cant parse version %s' % tag
+    if (version.endswith('.dev') and distance is None) or dirty:
+        distance = 0
     time = datetime.date.today().strftime('%Y%m%d')
     return dict(
-        tag=tag,
+        tag=version,
         distance=distance,
         node=node,
         dirty=dirty,
@@ -186,6 +196,7 @@ def version_from_git(root, cachefile=None):
 
 def _archival_to_version(data):
     """stolen logic from mercurials setup.py"""
+    trace('data', data)
     if 'tag' in data:
         return _version(data['tag'])
     elif 'latesttag' in data:
@@ -245,17 +256,32 @@ methods = [
 ]
 
 
+def guess_next_tag(tag):
+    prefix, tail = tag.rsplit('.', 1)
+    if tail.isdigit():
+        return '%s.%s.dev' % (prefix, int(tail) + 1)
+    else:
+        assert tail == 'dev', 'broken version data'
+        return tag
+
+
 def format_version(version):
     if not isinstance(version, dict):
         trace('string')
         return version
 
+    version['next_tag'] = guess_next_tag(version['tag'])
+    if version['node'] is not None:
+        version['xnode'] = '-' + version['node']
+    else:
+        version['xnode'] = ''
+
     if version['dirty']:
         import time
-        version['time'] = time.strftime('%Y%m%d')
-        return "%(tag)s.post%(distance)s-%(node)s+%(time)s" % version
-    elif version['distance']:
-        return "%(tag)s.post%(distance)s-%(node)s" % version
+        version['time'] = time.strftime('+%Y%m%d')
+        return "%(next_tag)s%(distance)s%(xnode)s%(time)s" % version
+    elif version['distance'] is not None:
+        return "%(next_tag)s%(distance)s%(xnode)s" % version
     else:
         return str(version['tag'])
 
