@@ -72,9 +72,8 @@ version_re = r"""^
                                  # 'c' or 'rc' = release candidate
     (?P<prerelversion>\d+(?:\.\d+)*)
 )?)
-# we dont mach those, its our job to generate them
-# we match those and dev should have nothing that follows
-##
+# we dont mach those, its our job to generate dev markers
+# we match those and dev should have nothing that follow
 (?P<postdev>
     (\.post(?P<post>\d+))?
     (\.dev(?P<dev>\d+)?)?
