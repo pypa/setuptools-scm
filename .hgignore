@@ -5,3 +5,4 @@ dist
 build
 \.tox
 \.cache
+\.env
