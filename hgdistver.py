@@ -33,7 +33,7 @@ def do_ex(cmd, cwd='.'):
         cwd=cwd,
         env=dict(
             os.environ,
-            #disable hgrc processing other than .hg/hgrc
+            # disable hgrc processing other than .hg/hgrc
             HGRCPATH='',
             # try to disable i18n
             LC_ALL='C',
@@ -103,10 +103,10 @@ def _version(tag, distance=0, node=None, dirty=False):
 
 
 def version_from_cachefile(root, cachefile=None):
-    #XXX: for now we ignore root
+    # XXX: for now we ignore root
     if not cachefile or not os.path.exists(cachefile):
         return
-    #replaces 'with open()' from py2.6
+    # replaces 'with open()' from py2.6
     fd = open(cachefile)
     fd.readline()  # remove the comment
     version = None
@@ -207,6 +207,7 @@ def _data_from_archival(path):
         if ': ' in x)
     trace('data', data)
     return data
+
 
 def version_from_archival(root, cachefile=None):
     for parent in root, os.path.dirname(root):

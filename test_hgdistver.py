@@ -1,5 +1,4 @@
 import os
-import re
 import py
 import pytest
 
@@ -115,7 +114,7 @@ def test_version_from_git(wd):
     assert wd.version.startswith('0.1.post1-')
 
 
-#XXX: better tests for tag prefixes
+# XXX: better tests for tag prefixes
 def test_version_from_hg_id(wd):
     wd('hg init')
     assert wd.version == '0.0'

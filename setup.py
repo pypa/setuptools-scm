@@ -6,7 +6,8 @@ setup(
     version=hgdistver.get_version(),
     author='Ronny Pfannschmidt',
     author_email='Ronny Pfannschmidt <Ronny.Pfannschmidt@gmx.de>',
-    description='utility lib to generate python package version infos from mercurial tags',
+    description=('utility to generate python package '
+                 'version infos from mercurial/git tags'),
     long_description=open('README.txt').read(),
     license='MIT',
     py_modules=[
@@ -29,5 +30,3 @@ setup(
         'Topic :: Utilities',
     ],
 )
-
-
