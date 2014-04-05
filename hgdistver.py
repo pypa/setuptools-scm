@@ -164,13 +164,13 @@ def version_from_git(root, cachefile=None):
     rev_node, _, ret = do_ex('git rev-parse --verify --quiet HEAD', root)
     if ret:
         return _version('0.0')
-
+    rev_node = rev_node[:7]
     out, err, ret = do_ex('git describe --dirty --tags', root)
     if '-' not in out and '.' not in out:
         revs = do('git rev-list HEAD', root)
         count = revs.count('\n')
         if ret:
-            out = rev_node[:7]
+            out = rev_node
         return _version('0.0', distance=count + 1, node=out)
     if ret:
         return
@@ -178,7 +178,7 @@ def version_from_git(root, cachefile=None):
     if dirty:
         out = out.rsplit('-', 1)[0]
     if '-' not in out:
-        return _version(out, node=rev_node[:7], dirty=dirty)
+        return _version(out, node=rev_node, dirty=dirty)
     else:
         tag, number, node = out.split('-')
         return _version(tag, distance=number, node=node, dirty=dirty)
