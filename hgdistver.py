@@ -196,7 +196,7 @@ def _archival_to_version(data):
         return _version('0.0', node=data.get('node', '')[:12])
 
 
-def _data_from_archival(path):
+def _data_from_mime(path):
     with open(path) as fp:
         content = fp.read()
     trace('content', repr(content))
@@ -213,7 +213,7 @@ def version_from_archival(root, cachefile=None):
     for parent in root, os.path.dirname(root):
         archival = os.path.join(parent, '.hg_archival.txt')
         if os.path.exists(archival):
-            data = _data_from_archival(archival)
+            data = _data_from_mime(archival)
             return _archival_to_version(data)
 
 
@@ -221,7 +221,7 @@ def version_from_sdist_pkginfo(root, cachefile=None):
     pkginfo = os.path.join(root, 'PKG-INFO')
     if os.path.exists(pkginfo):
         trace('pkginfo', pkginfo)
-        data = _data_from_archival(pkginfo)
+        data = _data_from_mime(pkginfo)
         version = data.get('Version')
         if version != 'UNKNOWN':
             return version

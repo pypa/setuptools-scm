@@ -5,7 +5,7 @@ import pytest
 import hgdistver
 from hgdistver import (
     do,
-    _data_from_archival,
+    _data_from_mime,
     _archival_to_version,
     format_version,
 )
@@ -51,12 +51,12 @@ def wd(tmpdir):
     return Wd(tmpdir)
 
 
-def test_data_from_archival(wd):
+def test_data_from_mime(wd):
     tmpfile = wd.write(
         'test.archival',
         'name: test\nrevision: 1')
 
-    res = _data_from_archival(str(tmpfile))
+    res = _data_from_mime(str(tmpfile))
     assert res == {
         'name': 'test',
         'revision': '1',
