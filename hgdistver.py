@@ -1,3 +1,4 @@
+from __future__ import print_function
 """
 :copyright: 2010 by Ronny Pfannschmidt
 :license: MIT
@@ -15,8 +16,7 @@ import datetime
 
 
 def trace_debug(*k):
-    sys.stdout.write(' '.join(map(str, k)))
-    sys.stdout.write('\n')
+    print(*k)
     sys.stdout.flush()
 
 
@@ -55,6 +55,7 @@ def do_ex(cmd, cwd='.'):
 def do(cmd, cwd='.'):
     out, err, ret = do_ex(cmd, cwd)
     if ret:
+        trace('ret', ret)
         print(err)
     return out
 
@@ -119,15 +120,6 @@ def version_from_cachefile(root, cachefile=None):
     return version
 
 
-def version_from_hg_id(root, cachefile=None):
-    """stolen logic from mercurials setup.py as well"""
-    l = do('hg id -i -t', root).split()
-    node = l.pop(0)
-    tags = tags_to_versions(l)
-    if tags:
-        return _version(tags[0], dirty=node[-1] == '+')  # '' or '+'
-
-
 def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
     dirty = node.endswith('+')
     node = node.strip('+')
@@ -140,63 +132,30 @@ def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
         return _version(tag, distance=dist, node=node, dirty=dirty)
 
 
-def version_from_hg15_parents(root, cachefile=None):
-    node = do('hg id -i', root)
-    if node.strip('+') == '000000000000':
+def version_from_hg(root, cachefile=None):
+    # no .hg means no way to get it
+    if not os.path.isdir(os.path.join(root, '.hg')):
+        return
+    l = do('hg id -i -t', root).split()
+    node = l.pop(0)
+    tags = tags_to_versions(l)
+    if tags:
+        return _version(tags[0], dirty=node[-1] == '+')  # '' or '+'
+
+    if node.strip('+') == '0'*12:
+        trace('initial node', root)
         return _version('0.0', dirty=node[-1] == '+')
 
-    cmd = 'hg parents --template "{latesttag} {latesttagdistance}"'
+    cmd = 'hg parents --template "{node} {latesttag} {latesttagdistance}"'
     out = do(cmd, root)
     try:
-        tag, dist = out.split()
+        node, tag, dist = out.split()
         if tag == 'null':
             tag = '0.0'
             dist = 1
         return _hg_tagdist_normalize_tagcommit(root, tag, dist, node)
     except ValueError:
         pass  # unpacking failed, old hg
-
-
-def version_from_hg_log_with_tags(root, cachefile=None):
-    #NOTE: this is only a fallback called from version_from_hg15_parents
-    node = do('hg id -i', root)
-    cmd = r'hg log -r %s:0 --template "{tags} \n"'
-    cmd = cmd % node.rstrip('+')
-    proc = subprocess.Popen(
-        cmd,
-        cwd=root,
-        shell=True,
-        stdout=subprocess.PIPE,
-    )
-    dist = -1  # no revs vs one rev is tricky
-
-    for dist, line in enumerate(proc.stdout):
-        line = line.decode()
-        tags = tags_to_versions(line.split())
-        if tags:
-            return _hg_tagdist_normalize_tagcommit(root, tags[0], dist, node)
-
-    return _version('0.0', distance=dist + 1, node=node)
-
-
-def _hg_version():
-    hgver_out = do('hg --version')
-    hgver_out = hgver_out.splitlines()[0].rstrip(')')
-    return hgver_out.split('version ')[-1]
-
-
-def version_from_hg(root, cachefile=None):
-    # no .hg means no way to get it
-    if not os.path.isdir(os.path.join(root, '.hg')):
-        return
-    # if id has a tag we are lucky
-    version_from_id = version_from_hg_id(root)
-    if version_from_id:
-        return version_from_id
-    if _hg_version() < '1.5':
-        return version_from_hg_log_with_tags(root)
-    else:
-        return version_from_hg15_parents(root)
 
 
 def version_from_git(root, cachefile=None):
@@ -238,16 +197,16 @@ def _archival_to_version(data):
 
 
 def _data_from_archival(path):
-    fp = open(path)
-    try:
+    with open(path) as fp:
         content = fp.read()
-    finally:
-        fp.close()
+    trace('content', repr(content))
     # the complex conditions come from reading pseudo-mime-messages
-    return dict(x.split(': ', 1)
-                for x in content.splitlines()
-                if x.strip() and ': ' in x)
-
+    data = dict(
+        x.split(': ', 1)
+        for x in content.splitlines()
+        if ': ' in x)
+    trace('data', data)
+    return data
 
 def version_from_archival(root, cachefile=None):
     for parent in root, os.path.dirname(root):
@@ -260,6 +219,7 @@ def version_from_archival(root, cachefile=None):
 def version_from_sdist_pkginfo(root, cachefile=None):
     pkginfo = os.path.join(root, 'PKG-INFO')
     if os.path.exists(pkginfo):
+        trace('pkginfo', pkginfo)
         data = _data_from_archival(pkginfo)
         version = data.get('Version')
         if version != 'UNKNOWN':
@@ -286,34 +246,41 @@ methods = [
 
 def format_version(version):
     if not isinstance(version, dict):
+        trace('string')
         return version
-    elif version['dirty']:
+
+    if version['dirty']:
+        import time
+        version['time'] = time.strftime('%Y%m%d')
         return "%(tag)s.post%(distance)s-%(node)s+%(time)s" % version
     elif version['distance']:
         return "%(tag)s.post%(distance)s-%(node)s" % version
     else:
-        return version['tag']
+        return str(version['tag'])
+
+
+def _extract_version(root, cachefile):
+    version = None
+    for method in methods:
+        version = method(root=root, cachefile=cachefile)
+        if version:
+            trace('method', method.__name__, version)
+            return format_version(version)
 
 
 def get_version(cachefile=None, root=None):
     if root is None:
         root = os.getcwd()
+    trace('root', repr(root))
     if cachefile is not None:
         cachefile = os.path.join(root, cachefile)
-    try:
-        version = None
-        for method in methods:
-            version = method(root=root, cachefile=cachefile)
-            if isinstance(version, dict):
-                if version['dirty']:
-                    import time
-                    version['time'] = time.strftime('%Y%m%d')
-                version = format_version(version)
-            if version:
-                return str(version)
-    finally:
-        if cachefile and version:
-            write_cachefile(cachefile, version)
+    trace('cachefile', repr(cachefile))
+
+    version = _extract_version(root, cachefile)
+
+    if cachefile and version:
+        write_cachefile(cachefile, version)
+    return version
 
 
 def setuptools_version_keyword(dist, keyword, value):
@@ -357,7 +324,7 @@ def find_files(dirname=''):
 
 
 if __name__ == '__main__':
-    print('Guessed Version %s' % (get_version(),))
+    print('Guessed Version', get_version())
     if 'ls' in sys.argv:
         for fname in find_files('.'):
             print(fname)

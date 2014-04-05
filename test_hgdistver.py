@@ -8,12 +8,11 @@ from hgdistver import (
     do,
     _data_from_archival,
     _archival_to_version,
-    _hg_version,
     format_version,
 )
 
 
-def get_version(path, method='get_version', **kw):
+def get_version(path, method='get_version', __tracebackhide__=False, **kw):
     call = getattr(hgdistver, method)
     root = str(path)
     data = call(root=root, **kw)
@@ -28,9 +27,35 @@ def test_do(cmd, tmpdir):
     do(cmd, str(tmpdir))
 
 
-def test_data_from_archival(tmpdir):
-    tmpfile = tmpdir.join('test.archival')
-    tmpfile.write('name: test\nrevision: 1')
+class Wd(object):
+    def __init__(self, cwd):
+        self.cwd = cwd
+
+    def __call__(self, cmd):
+        do(cmd, str(self.cwd))
+
+    def write(self, name, value):
+        filename = self.cwd.join(name)
+        filename.write(value)
+        return filename
+
+    @property
+    def version(self):
+        __tracebackhide__ = True
+        version = get_version(self.cwd, __tracebackhide__=True)
+        print(version)
+        return version
+
+
+@pytest.fixture
+def wd(tmpdir):
+    return Wd(tmpdir)
+
+
+def test_data_from_archival(wd):
+    tmpfile = wd.write(
+        'test.archival',
+        'name: test\nrevision: 1')
 
     res = _data_from_archival(str(tmpfile))
     assert res == {
@@ -55,8 +80,7 @@ archival_mapping = {
 }
 
 
-@pytest.fixture(params=archival_mapping.keys())
-#                ids=archival_mapping)
+@pytest.fixture(params=sorted(archival_mapping))
 def expected(request):
     return request.param
 
@@ -71,71 +95,50 @@ def test_archival_to_version(expected, data):
     assert format_version(_archival_to_version(data)) == expected
 
 
-def test_version_from_git(tmpdir):
-    cwd = str(tmpdir)
-    do('git init', cwd)
-    initial = get_version(cwd)
-    assert initial == '0.0'
-    tmpdir.join('test.txt').write('test')
-    do('git add test.txt', cwd)
-    do('git commit -m commit', cwd)
-    after_first_commit = get_version(cwd)
+def test_version_from_git(wd):
+    wd('git init')
+    assert wd.version == '0.0'
+    wd.write('test.txt', 'test')
+    wd('git add test.txt')
+    wd('git commit -m commit')
 
-    assert after_first_commit.startswith('0.0.post1-')
-    assert not after_first_commit.endswith('1-')
+    assert wd.version.startswith('0.0.post1-')
+    assert not wd.version.endswith('1-')
 
-    do('git tag v0.1', cwd)
-    at_tag_01 = get_version(cwd)
-    assert at_tag_01 == '0.1'
+    wd('git tag v0.1')
+    assert wd.version == '0.1'
 
-    tmpdir.join('test.txt').write('test2')
-    dirty_tag_01 = get_version(cwd)
-    assert dirty_tag_01.startswith('0.1.post0-')
-    do('git add test.txt', cwd)
-    do('git commit -m commit', cwd)
-    after_tag_01 = get_version(cwd)
-    assert after_tag_01.startswith('0.1.post1-')
+    wd.write('test.txt', 'test2')
+    assert wd.version.startswith('0.1.post0-')
+    wd('git add test.txt')
+    wd('git commit -m commit')
+    assert wd.version.startswith('0.1.post1-')
 
 
 #XXX: better tests for tag prefixes
-@py.test.mark.parametrize('method', [
-    'version_from_hg15_parents',
-    'version_from_hg_log_with_tags'])
-def test_version_from_hg_id(tmpdir, method):
-    hgv = _hg_version()
-    print(hgv)
-    if hgv < '1.5' and 'parents' in method:
-        py.test.skip('hg too old, this test needs >=1.5')
-    cwd = str(tmpdir)
-    do('hg init', cwd)
-    initial = get_version(cwd, method=method)
-    assert initial == '0.0'
-    tmpdir.join('test.txt').write('test')
-    do('hg add test.txt', cwd)
-    do('hg commit -m commit -u test -d "0 0"', cwd)
+def test_version_from_hg_id(wd):
+    wd('hg init')
+    assert wd.version == '0.0'
+    wd.write('test.txt', 'test')
+    wd('hg add test.txt')
+    wd('hg commit -m commit -u test -d "0 0"')
 
-    after_first_commit = get_version(cwd, method=method)
+    assert wd.version.startswith('0.0.post1-')
 
-    assert after_first_commit.startswith('0.0.post1-')
+    wd('hg tag v0.1 -u test -d "0 0"')
+    assert wd.version == '0.1'
+    wd.write('test.txt', 'test2')
 
-    do('hg tag v0.1 -u test -d "0 0"', cwd)
-    after_tag_01 = get_version(cwd, method=method)
-    assert after_tag_01 == '0.1'
+    wd('hg commit -m commit2 -u test -d "0 0"')
 
-    tmpdir.join('test.txt').write('test2')
+    assert wd.version.startswith('0.1.post2')
 
-    after_tag_01_with_changes = get_version(cwd, method=method)
-    regex = r'0.1.post1-.{12}\+\d+$'
-    assert re.match(regex, after_tag_01_with_changes)
+    wd('hg up v0.1')
+    assert wd.version == '0.1'
 
-    do('hg commit -m commit2 -u test -d "0 0"', cwd)
-
-    second_after_tag_01 = get_version(cwd, method=method)
-    assert second_after_tag_01.startswith('0.1.post2')
-
-    do('hg up v0.1', cwd)
-    at_tag_01 = get_version(cwd)
-    assert at_tag_01 == '0.1'
+    wd.write('test.txt', 'test2')
+    wd('hg commit -m commit3 -u test -d "0 0"')
+    assert wd.version.startswith('0.1.post1-')
 
 
 def test_version_from_archival(tmpdir):
