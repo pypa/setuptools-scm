@@ -18,6 +18,7 @@ setup(
             'get_version_from_hg = hgdistver:setuptools_version_keyword',
             'get_version_from_scm = hgdistver:setuptools_version_keyword',
             'cache_hg_version_to = hgdistver:setuptools_cachefile_keyword',
+            'guess_next_version = hgdistver:setuptools_cachefile_keyword',
         ],
     },
     classifiers=[

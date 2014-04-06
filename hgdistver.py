@@ -72,7 +72,7 @@ version_re = r"""^
                                  # 'c' or 'rc' = release candidate
     (?P<prerelversion>\d+(?:\.\d+)*)
 )?)
-# we dont mach those, its our job to generate dev markers
+# we dont mach those, its our job to generate dontev markers
 # we match those and dev should have nothing that follow
 (?P<postdev>
     (\.post(?P<post>\d+))?
@@ -264,37 +264,50 @@ def guess_next_tag(tag):
         return tag
 
 
-def format_version(version):
+FORMATS = {
+    # mapping (guess, dirty, distance not None) -> formatstring
+
+    (True, True, True): "%(next_tag)s%(distance)s%(xnode)s%(time)s",
+    (True, True, False): "%(next_tag)s%(distance)s%(xnode)s%(time)s",
+    (True, False, True): "%(next_tag)s%(distance)s%(xnode)s",
+    (True, False, False): "%(tag)s",
+    (False, True, True): "%(tag)s.post%(distance)s%(xnode)s%(time)s",
+    (False, True, False): "%(tag)s.post%(distance)s%(xnode)s%(time)s",
+    (False, False, True): "%(tag)s.post%(distance)s%(xnode)s",
+    (False, False, False): "%(tag)s",
+}
+
+
+def format_version(version, guess_next=True):
     if not isinstance(version, dict):
         trace('string')
         return version
 
     version['next_tag'] = guess_next_tag(version['tag'])
+
     if version['node'] is not None:
         version['xnode'] = '-' + version['node']
     else:
         version['xnode'] = ''
 
-    if version['dirty']:
-        import time
-        version['time'] = time.strftime('+%Y%m%d')
-        return "%(next_tag)s%(distance)s%(xnode)s%(time)s" % version
-    elif version['distance'] is not None:
-        return "%(next_tag)s%(distance)s%(xnode)s" % version
-    else:
-        return str(version['tag'])
+    import time
+    version['time'] = time.strftime('+%Y%m%d')
+    key = guess_next, version['dirty'], version['distance'] is not None
+    formatstring = FORMATS[key]
+    trace('format', key, formatstring)
+    return formatstring % version
 
 
-def _extract_version(root, cachefile):
+def _extract_version(root, cachefile, guess_next):
     version = None
     for method in methods:
         version = method(root=root, cachefile=cachefile)
         if version:
             trace('method', method.__name__, version)
-            return format_version(version)
+            return format_version(version, guess_next)
 
 
-def get_version(cachefile=None, root=None):
+def get_version(cachefile=None, root=None, guess_next=True):
     if root is None:
         root = os.getcwd()
     trace('root', repr(root))
@@ -302,7 +315,7 @@ def get_version(cachefile=None, root=None):
         cachefile = os.path.join(root, cachefile)
     trace('cachefile', repr(cachefile))
 
-    version = _extract_version(root, cachefile)
+    version = _extract_version(root, cachefile, guess_next)
 
     if cachefile and version:
         write_cachefile(cachefile, version)
@@ -312,7 +325,8 @@ def get_version(cachefile=None, root=None):
 def setuptools_version_keyword(dist, keyword, value):
     if value:
         dist.metadata.version = get_version(
-            cachefile=getattr(dist, 'cache_hg_version_to', None))
+            cachefile=getattr(dist, 'cache_hg_version_to', None),
+            guess_next=getattr(dist, 'guess_next_version', True))
 
 
 def setuptools_cachefile_keyword(dist, keyword, value):
@@ -320,7 +334,7 @@ def setuptools_cachefile_keyword(dist, keyword, value):
 
 
 def find_hg_files(dirname=''):
-    return do('hg st -armdc --no-status', dirname or '.').splitlines()
+    return do('hg st -armdc --no-status .', dirname or '.').splitlines()
 
 
 def find_git_files(dirname=''):
