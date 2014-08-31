@@ -161,7 +161,7 @@ def version_from_hg(root, cachefile=None):
         node, tag, dist = out.split()
         if tag == 'null':
             tag = '0.0'
-            dist = 1
+            dist = int(dist) + 1
         return _hg_tagdist_normalize_tagcommit(root, tag, dist, node)
     except ValueError:
         pass  # unpacking failed, old hg
