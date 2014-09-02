@@ -1,4 +1,4 @@
-v0.20
+v0.19
 =======
 
 * configurable next version guessing
