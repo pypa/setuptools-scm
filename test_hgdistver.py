@@ -122,7 +122,7 @@ def test_version_from_hg_id(wd):
     wd('hg add test.txt')
     wd('hg commit -m commit -u test -d "0 0"')
 
-    assert wd.version.startswith('0.1.dev1-')
+    assert wd.version.startswith('0.1.dev2-')
 
     # tagging commit is considered the tag
     wd('hg tag v0.1 -u test -d "0 0"')
