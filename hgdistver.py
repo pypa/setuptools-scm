@@ -326,8 +326,8 @@ def setuptools_version_keyword(dist, keyword, value):
     if value:
         dist.metadata.version = get_version(
             cachefile=getattr(dist, 'cache_hg_version_to', None),
-            guess_next=getattr(dist, 'guess_next_version', True)
-                       is not False)
+            guess_next=(getattr(dist, 'guess_next_version', True)
+                        is not False))
 
 
 def setuptools_cachefile_keyword(dist, keyword, value):
