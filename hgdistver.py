@@ -13,7 +13,8 @@ import sys
 import shlex
 import subprocess
 import datetime
-
+import pkginfo
+__version__ = pkginfo.get_metadata('hgdistver').version
 
 def trace_debug(*k):
     print(*k)
