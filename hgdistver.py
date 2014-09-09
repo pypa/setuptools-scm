@@ -174,7 +174,7 @@ def version_from_git(root, cachefile=None):
     if ret:
         return _version('0.0')
     rev_node = rev_node[:7]
-    out, err, ret = do_ex('git describe --dirty --tags', root)
+    out, err, ret = do_ex('git describe --dirty --tags --long', root)
     if '-' not in out and '.' not in out:
         revs = do('git rev-list HEAD', root)
         count = revs.count('\n')
@@ -186,11 +186,13 @@ def version_from_git(root, cachefile=None):
     dirty = out.endswith('-dirty')
     if dirty:
         out = out.rsplit('-', 1)[0]
-    if '-' not in out:
-        return _version(out, node=rev_node, dirty=dirty)
-    else:
-        tag, number, node = out.split('-')
+
+    tag, number, node = out.rsplit('-', 2)
+    number = int(number)
+    if number:
         return _version(tag, distance=number, node=node, dirty=dirty)
+    else:
+        return _version(tag, dirty=dirty, node=node)
 
 
 def _archival_to_version(data):

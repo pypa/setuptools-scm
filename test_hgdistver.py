@@ -112,7 +112,8 @@ def test_version_from_git(wd):
     wd('git add test.txt')
     wd('git commit -m commit')
     assert wd.version.startswith('0.2.dev1-')
-
+    wd('git tag version-0.2')
+    assert wd.version.startswith('0.2')
 
 # XXX: better tests for tag prefixes
 def test_version_from_hg_id(wd):
