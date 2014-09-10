@@ -13,8 +13,8 @@ import sys
 import shlex
 import subprocess
 import datetime
-import pkginfo
-__version__ = pkginfo.get_metadata('hgdistver').version
+import pkg_resources
+
 
 def trace_debug(*k):
     print(*k)
@@ -365,6 +365,23 @@ def find_files(dirname=''):
         return find_hg_files(dirname)
     elif git:
         return find_git_files(dirname)
+
+
+def _get_own_version():
+    root = os.path.dirname(os.path.realpath(__file__))
+    version = get_version(root=root)
+    if not version:
+        try:
+            dist = pkg_resources.get_distribution('hgdistver')
+        except pkg_resources.DistributionNotFound:
+            pass
+        else:
+            if os.path.realpath(dist.location) == root:
+                version = dist.version
+    return version
+
+
+__version__ = _get_own_version()
 
 
 if __name__ == '__main__':
