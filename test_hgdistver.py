@@ -115,6 +115,7 @@ def test_version_from_git(wd):
     wd('git tag version-0.2')
     assert wd.version.startswith('0.2')
 
+
 # XXX: better tests for tag prefixes
 def test_version_from_hg_id(wd):
     wd('hg init')
@@ -206,9 +207,9 @@ def test_own_version():
     do('python setup.py develop')
     obtained = get_version('.')
 
-    import pkginfo
-    pgkversion = pkginfo.get_metadata('hgdistver').version
-
-    print hgdistver.__version__
-    print pgkversion
+    import pkg_resources
+    dist = pkg_resources.get_distribution('hgdistver')
+    pgkversion = dist.version
+    print (hgdistver.__version__)
+    print(pgkversion)
     assert pgkversion == obtained
