@@ -1,3 +1,8 @@
+v0.21
+======
+
+* fix the own version attribute (thanks stefan)
+
 v0.20
 ======
 
