@@ -376,7 +376,7 @@ def _get_own_version():
         except pkg_resources.DistributionNotFound:
             pass
         else:
-            if os.path.realpath(dist.location) == root:
+            if os.path.samefile(dist.location, root):
                 version = dist.version
     return version
 
