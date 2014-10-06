@@ -1,3 +1,9 @@
+v0.22
+=====
+
+* windows compatibility fix (thanks stefan)
+  use samefile since it does path normalisation
+
 v0.21
 ======
 
