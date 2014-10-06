@@ -1,3 +1,8 @@
+v0.22
+=====
+
+* fix own __version__ verification logic under windows (thanks stefan)
+
 v0.21
 ======
 
