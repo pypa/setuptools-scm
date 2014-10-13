@@ -368,7 +368,7 @@ def find_files(dirname=''):
 
 
 def _get_own_version():
-    root = os.path.dirname(os.path.realpath(__file__))
+    root = os.path.normcase(os.path.dirname(os.path.realpath(__file__)))
     version = get_version(root=root)
     if not version:
         try:
@@ -376,7 +376,7 @@ def _get_own_version():
         except pkg_resources.DistributionNotFound:
             pass
         else:
-            if os.path.samefile(dist.location, root):
+            if os.path.normcase(os.path.realpath(dist.location)) == root:
                 version = dist.version
     return version
 
