@@ -1,5 +1,8 @@
 from setuptools import setup
 import hgdistver
+with open('README.rst') as fp:
+    long_description = fp.read()
+
 setup(
     name='hgdistver',
     url='http://bitbucket.org/RonnyPfannschmidt/hgdistver/',
@@ -8,7 +11,7 @@ setup(
     author_email='Ronny Pfannschmidt <Ronny.Pfannschmidt@gmx.de>',
     description=('utility to generate python package '
                  'version infos from mercurial/git tags'),
-    long_description=open('README.txt').read(),
+    long_description=long_description,
     license='MIT',
     py_modules=[
         'hgdistver',
