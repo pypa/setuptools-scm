@@ -1,3 +1,12 @@
+v0.23
+=====
+
+* windows compatibility fix (thanks stefan)
+  drop samefile since its missing in
+  some python2 versions on windows
+* add tests to the source tarballs
+
+
 v0.22
 =====
 
