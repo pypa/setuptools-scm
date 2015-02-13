@@ -368,23 +368,6 @@ def find_files(dirname=''):
         return find_git_files(dirname)
 
 
-def _get_own_version():
-    root = os.path.normcase(os.path.dirname(os.path.realpath(__file__)))
-    version = get_version(root=root)
-    if not version:
-        try:
-            dist = pkg_resources.get_distribution('hgdistver')
-        except pkg_resources.DistributionNotFound:
-            pass
-        else:
-            if os.path.normcase(os.path.realpath(dist.location)) == root:
-                version = dist.version
-    return version
-
-
-__version__ = _get_own_version()
-
-
 if __name__ == '__main__':
     print('Guessed Version', get_version())
     if 'ls' in sys.argv:
