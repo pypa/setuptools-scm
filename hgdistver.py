@@ -19,7 +19,6 @@ def trace_debug(*k):
 def trace(*k):
     pass
 
-trace = trace_debug
 
 def do_ex(cmd, cwd='.'):
     trace('cmd', repr(cmd))
