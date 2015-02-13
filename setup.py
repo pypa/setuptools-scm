@@ -30,7 +30,7 @@ setup = partial(
             'guess_next_version = hgdistver:setuptools_cachefile_keyword',
         ],
         'setuptools.file_finders': [
-            'hg = hgdistver:find_hg_files',
+            'hg = hgdistver:find_files',
         ]
     },
     classifiers=[

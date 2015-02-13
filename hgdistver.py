@@ -335,7 +335,7 @@ def setuptools_cachefile_keyword(dist, keyword, value):
 
 
 def find_hg_files(dirname='.'):
-    return do('hg st -armdc --no-status .', dirname or '.').splitlines()
+    return do('hg st locate -I ' + (dirname or '.')).splitlines()
 
 
 def find_git_files(dirname=''):
