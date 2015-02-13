@@ -1,19 +1,14 @@
 from __future__ import print_function
 """
-:copyright: 2010 by Ronny Pfannschmidt
+:copyright: 2010-2015 by Ronny Pfannschmidt
 :license: MIT
-
 """
-
-# Genscript Metadata
-
 import re
 import os
 import sys
 import shlex
 import subprocess
 import datetime
-import pkg_resources
 
 
 def trace_debug(*k):
