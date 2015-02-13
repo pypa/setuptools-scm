@@ -1,19 +1,25 @@
-from setuptools import setup
+from functools import partial
+import setuptools
 import hgdistver
 with open('README.rst') as fp:
     long_description = fp.read()
 
-setup(
+
+setup = partial(
+    setuptools.setup,
     name='hgdistver',
     url='http://bitbucket.org/RonnyPfannschmidt/hgdistver/',
-    version=hgdistver.get_version(),
+    get_version_from_scm=True,
     author='Ronny Pfannschmidt',
-    author_email='Ronny Pfannschmidt <Ronny.Pfannschmidt@gmx.de>',
+    author_email='opensource@ronnypfannschmidt.de',
     description=('utility to generate python package '
                  'version infos from mercurial/git tags'),
     long_description=long_description,
     license='MIT',
     py_modules=[
+        'hgdistver',
+    ],
+    setup_requires=[
         'hgdistver',
     ],
     entry_points={
@@ -34,3 +40,5 @@ setup(
         'Topic :: Utilities',
     ],
 )
+if __name__ == '__main__':
+    setup()
