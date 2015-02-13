@@ -19,6 +19,7 @@ def trace_debug(*k):
 def trace(*k):
     pass
 
+trace = trace_debug
 
 def do_ex(cmd, cwd='.'):
     trace('cmd', repr(cmd))
@@ -333,7 +334,7 @@ def setuptools_cachefile_keyword(dist, keyword, value):
     pass
 
 
-def find_hg_files(dirname=''):
+def find_hg_files(dirname='.'):
     return do('hg st -armdc --no-status .', dirname or '.').splitlines()
 
 

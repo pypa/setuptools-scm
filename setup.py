@@ -29,6 +29,9 @@ setup = partial(
             'cache_hg_version_to = hgdistver:setuptools_cachefile_keyword',
             'guess_next_version = hgdistver:setuptools_cachefile_keyword',
         ],
+        'setuptools.file_finders': [
+            'hg = hgdistver:find_hg_files',
+        ]
     },
     classifiers=[
         'Development Status :: 4 - Beta',
