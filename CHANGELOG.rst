@@ -4,6 +4,8 @@ v0.24
 * dont drop dirty flag on node finding
 * use dashes for time again,
   for normalisation on devpi instances
+* remove the own version attribute,
+  it was too fragile to test for
 
 v0.23
 =====
