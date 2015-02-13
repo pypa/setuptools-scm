@@ -149,17 +149,18 @@ def version_from_hg(root, cachefile=None):
     l = do('hg id -i -t', root).split()
     node = l.pop(0)
     tags = tags_to_versions(l)
+    dirty = node[-1] == '+'
     if tags:
-        return _version(tags[0], dirty=node[-1] == '+')  # '' or '+'
+        return _version(tags[0], dirty=dirty)
 
     if node.strip('+') == '0'*12:
         trace('initial node', root)
-        return _version('0.0', dirty=node[-1] == '+')
+        return _version('0.0', dirty=dirty)
 
-    cmd = 'hg parents --template "{node} {latesttag} {latesttagdistance}"'
+    cmd = 'hg parents --template "{latesttag} {latesttagdistance}"'
     out = do(cmd, root)
     try:
-        node, tag, dist = out.split()
+        tag, dist = out.split()
         if tag == 'null':
             tag = '0.0'
             dist = int(dist) + 1
@@ -294,7 +295,7 @@ def format_version(version, guess_next=True):
         version['xnode'] = ''
 
     import time
-    version['time'] = time.strftime('+%Y%m%d')
+    version['time'] = time.strftime('-%Y%m%d')
     key = guess_next, version['dirty'], version['distance'] is not None
     formatstring = FORMATS[key]
     trace('format', key, formatstring)
