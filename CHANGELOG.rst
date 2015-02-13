@@ -1,3 +1,10 @@
+v0.24
+======
+
+* dont drop dirty flag on node finding
+* use dashes for time again,
+  for normalisation on devpi instances
+
 v0.23
 =====
 
