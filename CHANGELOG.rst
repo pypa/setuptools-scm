@@ -1,3 +1,9 @@
+v0.25
+======
+
+* fix pep440 support
+  this reshuffles the complete code for version guessing
+
 v0.24
 ======
 
