@@ -19,8 +19,9 @@ setup = partial(
         'hgdistver',
     ],
     setup_requires=[
-        'hgdistver',
+        'hgdistver[files]',
     ],
+    extras_require={'files': []},
     entry_points={
         'distutils.setup_keywords': [
             'get_version_from_hg = hgdistver:setuptools_version_keyword',
@@ -29,7 +30,7 @@ setup = partial(
             'guess_next_version = hgdistver:setuptools_cachefile_keyword',
         ],
         'setuptools.file_finders': [
-            'hg = hgdistver:find_files',
+            'hgdistver = hgdistver:find_files [files]',
         ],
     },
     classifiers=[

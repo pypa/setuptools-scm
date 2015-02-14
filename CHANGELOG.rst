@@ -6,6 +6,8 @@ v0.24
   for normalisation on devpi instances
 * remove the own version attribute,
   it was too fragile to test for
+* include file finding
+
 
 v0.23
 =====

@@ -95,7 +95,7 @@ def _version(tag, distance=None, node=None, dirty=False):
     version = tag_to_version(tag)
     trace('version', version)
     assert version is not None, 'cant parse version %s' % tag
-    if (version.endswith('.dev') and distance is None) or dirty:
+    if (version.endswith('.dev') and distance is None):
         distance = 0
     time = datetime.date.today().strftime('%Y%m%d')
     return dict(
@@ -334,7 +334,7 @@ def setuptools_cachefile_keyword(dist, keyword, value):
 
 
 find_files_commands = {
-    '.hg': 'hg st locate -I .',
+    '.hg': 'hg locate -I .',
     '.git': 'git ls-files',
 }
 
@@ -356,6 +356,7 @@ def find_files(path='.'):
         path = '.'
     abs = os.path.abspath(path)
     type = findtype(abs)
+    trace('type', type)
     if type is None:
         return []
     return do(find_files_commands[type], path).splitlines()
