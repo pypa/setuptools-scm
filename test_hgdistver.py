@@ -11,11 +11,13 @@ from hgdistver import (
 )
 
 
-def get_version(path, method='get_version', __tracebackhide__=False, **kw):
+def get_version(root, method='get_version', __tracebackhide__=False, **kw):
     call = getattr(hgdistver, method)
-    root = str(path)
-    data = call(root=root, **kw)
-    return format_version(data)
+    data = call(root=root.strpath, **kw)
+    if isinstance(data, dict):
+        return format_version(data)
+    else:
+        return data
 
 
 @pytest.mark.parametrize('cmd', ['ls', 'dir'])
@@ -64,7 +66,7 @@ def test_data_from_mime(wd):
 
 archival_mapping = {
     '1.0': {'tag': '1.0'},
-    '1.1.dev3-000000000000': {
+    '1.1.dev3+n000000000000': {
         'latesttag': '1.0',
         'latesttagdistance': '3',
         'node': '0'*20,
@@ -102,17 +104,17 @@ def test_version_from_git(wd):
     wd('git add test.txt')
     wd('git commit -m commit')
 
-    assert wd.version.startswith('0.1.dev1-')
+    assert wd.version.startswith('0.1.dev1+')
     assert not wd.version.endswith('1-')
 
     wd('git tag v0.1')
     assert wd.version == '0.1'
 
     wd.write('test.txt', 'test2')
-    assert wd.version.startswith('0.2.dev0-')
+    assert wd.version.startswith('0.2.dev0+')
     wd('git add test.txt')
     wd('git commit -m commit')
-    assert wd.version.startswith('0.2.dev1-')
+    assert wd.version.startswith('0.2.dev1+')
     wd('git tag version-0.2')
     assert wd.version.startswith('0.2')
 
@@ -125,7 +127,7 @@ def test_version_from_hg_id(wd):
     wd('hg add test.txt')
     wd('hg commit -m commit -u test -d "0 0"')
 
-    assert wd.version.startswith('0.1.dev2-')
+    assert wd.version.startswith('0.1.dev2+')
 
     # tagging commit is considered the tag
     wd('hg tag v0.1 -u test -d "0 0"')
@@ -143,7 +145,7 @@ def test_version_from_hg_id(wd):
     # that is not a actual tag
     wd.write('test.txt', 'test2')
     wd('hg commit -m commit3 -u test -d "0 0"')
-    assert wd.version.startswith('0.2.dev1-')
+    assert wd.version.startswith('0.2.dev1+')
 
 
 def test_version_from_archival(tmpdir):
@@ -161,7 +163,7 @@ def test_version_from_archival(tmpdir):
         'latesttagdistance: 3\n'
     )
 
-    assert get_version(tmpdir) == '0.2.dev3-000000000000'
+    assert get_version(tmpdir) == '0.2.dev3+n000000000000'
 
 
 def test_version_from_cachefile(tmpdir):

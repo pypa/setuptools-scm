@@ -9,6 +9,7 @@ import sys
 import shlex
 import subprocess
 import datetime
+import time
 
 
 def trace_debug(*k):
@@ -54,6 +55,7 @@ def do(cmd, cwd='.'):
         trace('ret', ret)
         print(err)
     return out
+
 
 # extended pep 386 regex
 # see http://www.python.org/dev/peps/pep-0386/#the-new-versioning-algorithm
@@ -263,38 +265,34 @@ def guess_next_tag(tag):
         return tag
 
 
-FORMATS = {
-    # mapping (guess, dirty, distance not None) -> formatstring
-
-    (True, True, True): "%(next_tag)s%(distance)s%(xnode)s%(time)s",
-    (True, True, False): "%(next_tag)s0%(xnode)s%(time)s",
-    (True, False, True): "%(next_tag)s%(distance)s%(xnode)s",
-    (True, False, False): "%(tag)s",
-    (False, True, True): "%(tag)s.post%(distance)s%(xnode)s%(time)s",
-    (False, True, False): "%(tag)s.post0%(xnode)s%(time)s",
-    (False, False, True): "%(tag)s.post%(distance)s%(xnode)s",
-    (False, False, False): "%(tag)s",
-}
-
-
 def format_version(version, guess_next=True):
-    if not isinstance(version, dict):
-        trace('string')
-        return version
+    trace(version)
+    exact = version['distance'] is None
+    dirty = version['dirty']
+    local_part = ''
 
-    version['next_tag'] = guess_next_tag(version['tag'])
+    if version['node']:
+        local_part += '+n' + version['node']
+        if dirty:
+            local_part += time.strftime('.d%Y%m%d')
+    elif dirty:
+        local_part += time.strftime('+d%Y%m%d')
 
-    if version['node'] is not None:
-        version['xnode'] = '-' + version['node']
+    # change on top of tag
+    if dirty and exact:
+        version['distance'] = 0
+        exact = False
+
+    # we are clean
+    if exact:
+        return version['tag']
+
+    if guess_next:
+        start = guess_next_tag(version['tag'])
     else:
-        version['xnode'] = ''
-
-    import time
-    version['time'] = time.strftime('-%Y%m%d')
-    key = guess_next, version['dirty'], version['distance'] is not None
-    formatstring = FORMATS[key]
-    trace('format', key, formatstring)
-    return formatstring % version
+        start = version['tag'] + '.post'
+    assert version['distance'] is not None
+    return start + str(version['distance']) + local_part
 
 
 def _extract_version(root, cachefile, guess_next):
@@ -303,7 +301,10 @@ def _extract_version(root, cachefile, guess_next):
         version = method(root=root, cachefile=cachefile)
         if version:
             trace('method', method.__name__, version)
-            return format_version(version, guess_next)
+            if isinstance(version, dict):
+                return format_version(version, guess_next)
+            else:
+                return version
 
 
 def get_version(cachefile=None, root=None, guess_next=True):
