@@ -8,7 +8,7 @@ v0.24
 * remove the own version attribute,
   it was too fragile to test for
 * include file finding
-
+* handle edge cases around dirty tagged versions
 
 v0.23
 =====
