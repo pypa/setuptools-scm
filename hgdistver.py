@@ -333,34 +333,32 @@ def setuptools_cachefile_keyword(dist, keyword, value):
     pass
 
 
-def find_hg_files(dirname='.'):
-    return do('hg st locate -I ' + (dirname or '.')).splitlines()
+find_files_commands = {
+    '.hg': 'hg st locate -I .',
+    '.git': 'git ls-files',
+}
 
 
-def find_git_files(dirname=''):
-    return do('git ls-files', dirname or '.').splitlines()
-
-
-def findroot(path, req):
+def findtype(path):
+    # TODO: fail on posix filesystem boundaries
+    known_types = '.hg', '.git'
     old = None
     while path != old:
-        if os.path.exists(os.path.join(path, req)):
-            return path
+        for req in known_types:
+            if os.path.exists(os.path.join(path, req)):
+                return req
         old = path
         path = os.path.dirname(path)
 
 
-def find_files(dirname=''):
-    abs = os.path.abspath(dirname)
-    hg = findroot(abs, '.hg')
-    git = findroot(abs, '.git')
-    if hg and git:
-        if hg >= git:  # prefer hg in case of both, could be hg-git
-            git = None
-    if hg:
-        return find_hg_files(dirname)
-    elif git:
-        return find_git_files(dirname)
+def find_files(path='.'):
+    if not path:
+        path = '.'
+    abs = os.path.abspath(path)
+    type = findtype(abs)
+    if type is None:
+        return []
+    return do(find_files_commands[type], path).splitlines()
 
 
 if __name__ == '__main__':

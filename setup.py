@@ -1,6 +1,5 @@
 from functools import partial
 import setuptools
-import hgdistver
 with open('README.rst') as fp:
     long_description = fp.read()
 
@@ -31,7 +30,7 @@ setup = partial(
         ],
         'setuptools.file_finders': [
             'hg = hgdistver:find_files',
-        ]
+        ],
     },
     classifiers=[
         'Development Status :: 4 - Beta',

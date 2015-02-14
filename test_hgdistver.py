@@ -200,16 +200,3 @@ def test_recreate_cachefile_from_pkginfo(tmpdir):
     ver = get_version(tmpdir, cachefile='cachefile.txt')
     assert ver == '0.1'
     assert tmpdir.join('cachefile.txt').check()
-
-
-def test_own_version():
-    import hgdistver
-    do('python setup.py develop')
-    obtained = get_version('.')
-
-    import pkg_resources
-    dist = pkg_resources.get_distribution('hgdistver')
-    pgkversion = dist.version
-    print (hgdistver.__version__)
-    print(pgkversion)
-    assert pgkversion == obtained
