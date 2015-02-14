@@ -20,8 +20,7 @@ def get_version(path, method='get_version', __tracebackhide__=False, **kw):
 
 @pytest.mark.parametrize('cmd', ['ls', 'dir'])
 def test_do(cmd, tmpdir):
-
-    if not py.path.local.sysfind('ls'):
+    if not py.path.local.sysfind(cmd):
         pytest.skip(cmd + ' not found')
     do(cmd, str(tmpdir))
 
@@ -96,6 +95,8 @@ def test_archival_to_version(expected, data):
 
 def test_version_from_git(wd):
     wd('git init')
+    wd('git config user.email test@example.com')
+    wd('git config user.name "a test"')
     assert wd.version == '0.0'
     wd.write('test.txt', 'test')
     wd('git add test.txt')

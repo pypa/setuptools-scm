@@ -267,11 +267,11 @@ FORMATS = {
     # mapping (guess, dirty, distance not None) -> formatstring
 
     (True, True, True): "%(next_tag)s%(distance)s%(xnode)s%(time)s",
-    (True, True, False): "%(next_tag)s%(distance)s%(xnode)s%(time)s",
+    (True, True, False): "%(next_tag)s0%(xnode)s%(time)s",
     (True, False, True): "%(next_tag)s%(distance)s%(xnode)s",
     (True, False, False): "%(tag)s",
     (False, True, True): "%(tag)s.post%(distance)s%(xnode)s%(time)s",
-    (False, True, False): "%(tag)s.post%(distance)s%(xnode)s%(time)s",
+    (False, True, False): "%(tag)s.post0%(xnode)s%(time)s",
     (False, False, True): "%(tag)s.post%(distance)s%(xnode)s",
     (False, False, False): "%(tag)s",
 }
