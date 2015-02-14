@@ -2,8 +2,9 @@ v0.24
 ======
 
 * dont drop dirty flag on node finding
+* fix distance for dirty flagged versions
 * use dashes for time again,
-  for normalisation on devpi instances
+  its normalisation with setuptools
 * remove the own version attribute,
   it was too fragile to test for
 * include file finding
