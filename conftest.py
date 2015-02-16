@@ -1,4 +1,4 @@
 
 def pytest_sessionstart():
-    import hgdistver
-    hgdistver.trace = hgdistver.trace_debug
+    import setuptools_scm
+    setuptools_scm.trace = setuptools_scm.trace_debug

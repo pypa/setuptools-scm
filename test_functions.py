@@ -1,6 +1,6 @@
 import time
 import pytest
-from hgdistver import format_version, guess_next_tag
+from setuptools_scm import format_version, guess_next_tag
 
 
 @pytest.mark.parametrize('tag, expected', [

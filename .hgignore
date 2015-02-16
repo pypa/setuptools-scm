@@ -1,6 +1,6 @@
 hgdistver_version.py
-MANIFEST
-hgdistver.egg-info
+MANIFEST$
+.*\.egg-info
 dist
 build
 \.tox

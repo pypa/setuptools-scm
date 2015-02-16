@@ -2,8 +2,8 @@ import os
 import py
 import pytest
 
-import hgdistver
-from hgdistver import (
+import setuptools_scm
+from setuptools_scm import (
     do,
     _data_from_mime,
     _archival_to_version,
@@ -12,7 +12,7 @@ from hgdistver import (
 
 
 def get_version(root, method='get_version', __tracebackhide__=False, **kw):
-    call = getattr(hgdistver, method)
+    call = getattr(setuptools_scm, method)
     data = call(root=root.strpath, **kw)
     if isinstance(data, dict):
         return format_version(data)
@@ -166,9 +166,9 @@ def test_version_from_archival(tmpdir):
     assert get_version(tmpdir) == '0.2.dev3+n000000000000'
 
 
-def test_version_from_cachefile(tmpdir):
-    hgdistver.write_cachefile(str(tmpdir/'test.txt'), '1.0')
-    assert get_version(tmpdir, cachefile='test.txt') == '1.0'
+def test_version_from_cache_file(tmpdir):
+    setuptools_scm.write_cache_file(str(tmpdir/'test.txt'), '1.0')
+    assert get_version(tmpdir, cache_file='test.txt') == '1.0'
 
 
 def test_version_from_pkginfo(tmpdir):
@@ -177,29 +177,29 @@ def test_version_from_pkginfo(tmpdir):
 
 
 def test_root_parameter_creation(monkeypatch):
-    def assert_cwd(root, cachefile=None):
+    def assert_cwd(root, cache_file=None):
         assert root == os.getcwd()
-    monkeypatch.setattr(hgdistver, 'methods', [assert_cwd])
-    hgdistver.get_version()
+    monkeypatch.setattr(setuptools_scm, 'methods', [assert_cwd])
+    setuptools_scm.get_version()
 
 
 def test_root_parameter_pass_by(monkeypatch):
-    def assert_root_tmp(root, cachefile):
+    def assert_root_tmp(root, cache_file):
         assert root == '/tmp'
-    monkeypatch.setattr(hgdistver, 'methods', [assert_root_tmp])
-    hgdistver.get_version(root='/tmp')
+    monkeypatch.setattr(setuptools_scm, 'methods', [assert_root_tmp])
+    setuptools_scm.get_version(root='/tmp')
 
 
-def test_cachefile_join(monkeypatch):
-    def assert_join(root, cachefile):
-        assert cachefile == os.path.join('tmp', 'cachefile')
-    monkeypatch.setattr(hgdistver, 'methods', [assert_join])
-    hgdistver.get_version(root='tmp', cachefile='cachefile')
+def test_cache_file_join(monkeypatch):
+    def assert_join(root, cache_file):
+        assert cache_file == os.path.join('tmp', 'cache_file')
+    monkeypatch.setattr(setuptools_scm, 'methods', [assert_join])
+    setuptools_scm.get_version(root='tmp', cache_file='cache_file')
 
 
-def test_recreate_cachefile_from_pkginfo(tmpdir):
+def test_recreate_cache_file_from_pkginfo(tmpdir):
     tmpdir.join('PKG-INFO').write('Version: 0.1')
-    assert not tmpdir.join('cachefile.txt').check()
-    ver = get_version(tmpdir, cachefile='cachefile.txt')
+    assert not tmpdir.join('cache_file.txt').check()
+    ver = get_version(tmpdir, cache_file='cache_file.txt')
     assert ver == '0.1'
-    assert tmpdir.join('cachefile.txt').check()
+    assert tmpdir.join('cache_file.txt').check()
