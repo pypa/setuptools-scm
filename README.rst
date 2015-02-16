@@ -58,7 +58,7 @@ To use setuptools_scm in other python code
 one can use the get_version function::
 
     from setuptools_scm import get_version
-    my_version = get_version(cache)
+    my_version = get_version(cachefile='_version.py')
 
 It suports the keys of the setup.py use_scm_version
 flag as keyword arguments.
