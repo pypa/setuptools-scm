@@ -203,3 +203,20 @@ def test_recreate_cache_file_from_pkginfo(tmpdir):
     ver = get_version(tmpdir, cache_file='cache_file.txt')
     assert ver == '0.1'
     assert tmpdir.join('cache_file.txt').check()
+
+
+def test_find_files_stop_at_root_hg(wd):
+    wd('hg init')
+    wd.write('test.txt', 'test')
+    wd('hg add .')
+    wd('hg commit -m test -u test')
+    wd.cwd.ensure('project/setup.cfg')
+    assert setuptools_scm.find_files(str(wd.cwd/'project')) == []
+
+def test_find_files_stop_at_root_hg(wd):
+    wd('git init')
+    wd.write('test.txt', 'test')
+    wd('git add .')
+    wd('git commit -m test -u test')
+    wd.cwd.ensure('project/setup.cfg')
+    assert setuptools_scm.find_files(str(wd.cwd/'project')) == []
