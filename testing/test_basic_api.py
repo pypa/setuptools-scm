@@ -5,10 +5,11 @@ import pytest
 import setuptools_scm
 from setuptools_scm import (
     do,
-    _data_from_mime,
-    _archival_to_version,
     format_version,
 )
+
+from setuptools_scm.utils import data_from_mime
+from setuptools_scm.hg import archival_to_version
 
 
 def get_version(root, method='get_version', __tracebackhide__=False, **kw):
@@ -57,7 +58,7 @@ def test_data_from_mime(wd):
         'test.archival',
         'name: test\nrevision: 1')
 
-    res = _data_from_mime(str(tmpfile))
+    res = data_from_mime(str(tmpfile))
     assert res == {
         'name': 'test',
         'revision': '1',
@@ -92,7 +93,7 @@ def data(expected):
 
 def test_archival_to_version(expected, data):
 
-    assert format_version(_archival_to_version(data)) == expected
+    assert format_version(archival_to_version(data)) == expected
 
 
 def test_version_from_git(wd):
@@ -153,9 +154,7 @@ def test_version_from_archival(tmpdir):
         'node: 000000000000\n'
         'tag: 0.1\n'
     )
-    subdir = tmpdir.join('test').ensure(dir=True)
     assert get_version(tmpdir) == '0.1'
-    assert get_version(subdir) == '0.1'
 
     tmpdir.join('.hg_archival.txt').write(
         'node: 000000000000\n'
@@ -173,28 +172,29 @@ def test_version_from_cache_file(tmpdir):
 
 def test_version_from_pkginfo(tmpdir):
     tmpdir.join('PKG-INFO').write('Version: 0.1')
-    assert get_version(tmpdir, method='version_from_sdist_pkginfo') == '0.1'
+    assert get_version(tmpdir) == '0.1'
 
 
 def test_root_parameter_creation(monkeypatch):
     def assert_cwd(root, cache_file=None):
         assert root == os.getcwd()
-    monkeypatch.setattr(setuptools_scm, 'methods', [assert_cwd])
+    monkeypatch.setattr(setuptools_scm, 'version_from_scm', assert_cwd)
     setuptools_scm.get_version()
 
 
 def test_root_parameter_pass_by(monkeypatch):
-    def assert_root_tmp(root, cache_file):
+    def assert_root_tmp(root):
         assert root == '/tmp'
-    monkeypatch.setattr(setuptools_scm, 'methods', [assert_root_tmp])
+    monkeypatch.setattr(setuptools_scm, 'version_from_scm', assert_root_tmp)
     setuptools_scm.get_version(root='/tmp')
 
 
-def test_cache_file_join(monkeypatch):
-    def assert_join(root, cache_file):
-        assert cache_file == os.path.join('tmp', 'cache_file')
-    monkeypatch.setattr(setuptools_scm, 'methods', [assert_join])
-    setuptools_scm.get_version(root='tmp', cache_file='cache_file')
+def test_cache_file_join(monkeypatch, tmpdir):
+    def assert_join(cache_file, version):
+        assert cache_file == tmpdir.join('cache_file').strpath
+    monkeypatch.setattr(setuptools_scm, '_extract_version', lambda *k: '1')
+    monkeypatch.setattr(setuptools_scm, 'write_cache_file', assert_join)
+    setuptools_scm.get_version(root=tmpdir.strpath, cache_file='cache_file')
 
 
 def test_recreate_cache_file_from_pkginfo(tmpdir):
@@ -213,7 +213,8 @@ def test_find_files_stop_at_root_hg(wd):
     wd.cwd.ensure('project/setup.cfg')
     assert setuptools_scm.find_files(str(wd.cwd/'project')) == []
 
-def test_find_files_stop_at_root_hg(wd):
+
+def test_find_files_stop_at_root_git(wd):
     wd('git init')
     wd.write('test.txt', 'test')
     wd('git add .')
