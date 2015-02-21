@@ -22,7 +22,7 @@ with open('README.rst') as fp:
 setup = partial(
     setuptools.setup,
     name='setuptools-scm',
-    url='http://bitbucket.org/pypa/setptools_scm/',
+    url='http://bitbucket.org/pypa/setuptools_scm/',
     # pass here since entrypints are not yet registred
     use_scm_version={
         'version_scheme': guess_next_dev_version,
