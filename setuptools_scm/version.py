@@ -16,7 +16,8 @@ def callable_or_entrypoint(group, callable_or_name):
 
 def tag_to_version(tag):
     trace('tag', tag)
-    version = tag.rsplit('-', 1)[-1]
+    # lstrip the v because of py2/py3 differences in setuptools
+    version = tag.rsplit('-', 1)[-1].lstrip('v')
     version = parse_version(version)
     trace('version', repr(version))
     if isinstance(version, SetuptoolsVersion):
@@ -58,7 +59,7 @@ class ScmVersion(object):
 
 
 def meta(tag, distance=None, dirty=False, node=None, **kw):
-    if isinstance(tag, str):
+    if not isinstance(tag, SetuptoolsVersion):
         tag = tag_to_version(tag)
     trace('version', tag)
 

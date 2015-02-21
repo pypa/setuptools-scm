@@ -126,12 +126,12 @@ def test_version_from_hg_id(wd):
 
     # tagging commit is considered the tag
     wd('hg tag v0.1 -u test -d "0 0"')
-    assert wd.version == 'v0.1'
+    assert wd.version == '0.1'
     wd.write('test.txt', 'test2')
 
     wd('hg commit -m commit2 -u test -d "0 0"')
 
-    assert wd.version.startswith('v0.2.dev2')
+    assert wd.version.startswith('0.2.dev2')
 
     wd('hg up v0.1')
     assert wd.version == '0.1'
@@ -140,7 +140,7 @@ def test_version_from_hg_id(wd):
     # that is not a actual tag
     wd.write('test.txt', 'test2')
     wd('hg commit -m commit3 -u test -d "0 0"')
-    assert wd.version.startswith('v0.2.dev1+')
+    assert wd.version.startswith('0.2.dev1+')
 
 
 def test_version_from_archival(tmpdir):

@@ -1,5 +1,5 @@
-from .utils import do, do_ex, trace
-from .version import meta, tag_to_version
+from .utils import do, do_ex
+from .version import meta
 
 FILES_COMMAND = 'git ls-files'
 
@@ -23,9 +23,8 @@ def parse(root):
         out = out.rsplit('-', 1)[0]
 
     tag, number, node = out.rsplit('-', 2)
-    version = tag_to_version(tag)
     number = int(number)
     if number:
-        return meta(version, distance=number, node=node, dirty=dirty)
+        return meta(tag, distance=number, node=node, dirty=dirty)
     else:
-        return meta(version, dirty=dirty, node=node)
+        return meta(tag, dirty=dirty, node=node)
