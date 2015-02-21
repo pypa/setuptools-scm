@@ -13,7 +13,7 @@ import setuptools
 
 from setuptools_scm.version import (
     guess_next_dev_version,
-    get_local_node_and_time,
+    get_local_node_and_date,
 )
 
 with open('README.rst') as fp:
@@ -26,7 +26,7 @@ setup = partial(
     # pass here since entrypints are not yet registred
     use_scm_version={
         'version_scheme': guess_next_dev_version,
-        'local_scheme': get_local_node_and_time,
+        'local_scheme': get_local_node_and_date,
     },
     author='Ronny Pfannschmidt',
     author_email='opensource@ronnypfannschmidt.de',
@@ -55,7 +55,7 @@ setup = partial(
         ],
         'setuptools_scm.version_scheme': [
             'guess-next-dev = setuptools_scm.version:guess_next_dev_version',
-            'postrelease = setuptools_scm.version:postrelease_version',
+            'post-release = setuptools_scm.version:postrelease_version',
         ],
         'setuptools_scm.local_scheme': [
             'node-and-date = setuptools_scm.version:get_local_node_and_date',

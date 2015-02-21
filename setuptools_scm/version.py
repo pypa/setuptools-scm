@@ -57,7 +57,7 @@ class ScmVersion(object):
             node=self.node, dirty=self.dirty, extra=self.extra)
 
 
-def meta(tag, distance=None, node=None, dirty=False, **kw):
+def meta(tag, distance=None, dirty=False, node=None, **kw):
     if isinstance(tag, str):
         tag = tag_to_version(tag)
     trace('version', tag)
@@ -105,7 +105,10 @@ def get_local_dirty_tag(version):
 
 
 def postrelease_version(version):
-    return version.format_with('{tag}.post{distance}')
+    if version.exact:
+        return version.format_with('{tag}')
+    else:
+        return version.format_with('{tag}.post{distance}')
 
 
 def format_version(version, **config):

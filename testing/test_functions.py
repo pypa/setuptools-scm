@@ -1,7 +1,11 @@
-import time
 import pytest
 import pkg_resources
-from setuptools_scm.version import guess_next_version, meta
+from setuptools_scm.version import guess_next_version, meta, format_version
+
+
+class MockTime(object):
+    def __format__(self, *k):
+        return 'time'
 
 
 @pytest.mark.parametrize('tag, expected', [
@@ -14,24 +18,32 @@ def test_next_tag(tag, expected):
     assert guess_next_version(version, 0) == expected
 
 
+VERSIONS = {
+    'exact': meta('1.1', None, False),
+    'zerodistance': meta('1.1', 0, False),
+    'dirty': meta('1.1', None, True),
+    'distance': meta('1.1', 3, False),
+    'distancedirty': meta('1.1', 3, True),
+}
 
 
-@pytest.mark.parametrize('tag, distance, dirty, current, guessed', [
-    ('1.1', None, False, '1.1', '1.1'),
-    ('1.1', 0, False, '1.1.post0+n00', '1.2.dev0+n00'),
-    ('1.1', 0, True, '1.1.post0+n00.time', '1.2.dev0+n00.time'),
-    ('1.1', 3, False, '1.1.post3+n00', '1.2.dev3+n00'),
-    ('1.1', 3, True, '1.1.post3+n00.time', '1.2.dev3+n00.time'),
-    pytest.mark.xfail(('1.1.dev', 3, False, '1.1.dev3', '1.1.dev3'),
-                      reason='missed case'),
-    ])
-@pytest.mark.parametrize('take_guess', [True, False])
-@pytest.mark.skipif
-def test_format_version(take_guess, tag, distance, dirty,
-                        current, guessed, monkeypatch):
-    monkeypatch.setattr(time, 'strftime', lambda x: x[0] + 'time')
-    version = dict(locals(), node='00')
-    if take_guess:
-        assert format_version(version, True) == guessed
-    else:
-        assert format_version(version, False) == current
+@pytest.mark.parametrize('version,scheme,expected', [
+    ('exact', 'guess-next-dev node-and-date', '1.1'),
+    ('zerodistance', 'guess-next-dev node-and-date', '1.2.dev0+nNone'),
+    ('dirty', 'guess-next-dev node-and-date', '1.2.dev0+nNone.dtime'),
+    ('distance', 'guess-next-dev node-and-date', '1.2.dev3+nNone'),
+    ('distancedirty', 'guess-next-dev node-and-date', '1.2.dev3+nNone.dtime'),
+    ('exact', 'post-release node-and-date', '1.1'),
+    ('zerodistance', 'post-release node-and-date', '1.1.post0+nNone'),
+    ('dirty', 'post-release node-and-date', '1.1.post0+nNone.dtime'),
+    ('distance', 'post-release node-and-date', '1.1.post3+nNone'),
+    ('distancedirty', 'post-release node-and-date', '1.1.post3+nNone.dtime'),
+])
+def test_format_version(version, monkeypatch, scheme, expected):
+    version = VERSIONS[version]
+    monkeypatch.setattr(version, 'time', MockTime())
+    vs, ls = scheme.split()
+    assert format_version(
+        version,
+        version_scheme=vs,
+        local_scheme=ls) == expected
