@@ -15,7 +15,7 @@ in case the last component is .dev, the version will be unchanged.
 
 .. warning::
 
-    Semver advisses not using patch numbers in initial versions,
+    Semver advises mot to use patch numbers in initial versions,
     (i.e. 2.0 instead of 2.0.0).
     This will yield potential mistakes/errors
     when tagging using the shorthand version.
