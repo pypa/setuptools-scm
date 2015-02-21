@@ -11,12 +11,22 @@ And it provides a file finder for both scm, so MANIFEST.in is no longer needed.
 
 By default, it will increment the last component of the version by one
 and append .dev{distance}
-in case the last component is .dev, the version will be unchanges
+in case the last component is .dev, the version will be unchanged.
 
-This requires always using all components in tags (i.e. 2.0.0 instead of 2.0)
-to avoid counting up at the wrong level
-and inadvertedly releasing a higher version
-(i.e. 2.1.devX instead of 2.0.1.devX)
+.. warning::
+
+    Semver advisses not using patch numbers in initial versions,
+    (i.e. 2.0 instead of 2.0.0).
+    This will yield potential mistakes/errors
+    when tagging using the shorthand version.
+    Since the default heusterics of setuptools_scm increments
+    the last number component it is necessary
+    to add the full patch version (i.e. tag v2.0.0),
+    else the logic will increment the last number of the tag.
+    which for a 2.0 tag would be the 2.1.devX version.
+
+    Future versions of setuptools_scm will switch to semver by default,
+    hiding the the old behaviour as configurable option
 
 
 It uses various strategies to archive its task:
