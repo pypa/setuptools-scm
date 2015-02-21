@@ -43,21 +43,18 @@ you an provide a mapping with options instead of simple truth value.
 
 currently supported configuration keys are:
 
-:guess_next:
-    guess the next versions, the default is True
-
-    if it is set to false, setuptoos_scm will fall back
-    to using the .post{distance}
-:cache_file:
-    a filename to use for the cache_file which will
-    be a python module with only the version as attribute
-
+:version_scheme:
+    configures how the local version number is constructed
+    either a entrypoint name or a callable
+:local_scheme:
+    configures how the local component of the version is constructed
+    either a entrypoint name or a callable
 
 To use setuptools_scm in other python code
 one can use the get_version function::
 
     from setuptools_scm import get_version
-    my_version = get_version(cache_file='_version.py')
+    my_version = get_version()
 
 It suports the keys of the setup.py use_scm_version
 flag as keyword arguments.
@@ -69,7 +66,7 @@ extending setuptools_scm
 adding new scm
 ~~~~~~~~~~~~~~
 
-setuptools_scm provides 2 entrypoints for extension
+setuptools_scm provides 2 entrypoints for adding new scms
 
 :setuptools_scm.parse_scm:
     a function used to parse the metadata of the current workdir
@@ -83,3 +80,21 @@ setuptools_scm provides 2 entrypoints for extension
     or a callable, that given a pathname will return
 
     also use then name of your scm control directory as name of the entrypoint
+
+
+version number constructions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:setuptools_scm.version_scheme:
+    configures how the version number is constructed
+
+    availiable implementations:
+    :guess-next-dev: automatically guess the next development version
+    :post-release: generate post release versions
+
+:setuptools_scm.local_scheme:
+    configures how the local part of a version is rendered
+
+    availiable implementations:
+    :node-and-date: adds the node on dev versions and the date on dirty wokdir
+    :dirty-tag: adds +dirty if the current workdir has changes
