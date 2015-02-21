@@ -5,11 +5,11 @@ from __future__ import print_function
 """
 import os
 import sys
-import time
 from pkg_resources import iter_entry_points
 
 
 from .utils import do, trace
+from .version import format_version
 
 
 def version_from_cachefile(root, cache_file=None):
@@ -25,7 +25,7 @@ def version_from_cachefile(root, cache_file=None):
         version_string = line.split(' = ')[1].strip()
         version = version_string[1:-1]
     except:  # any error means invalid cachefile
-        pass
+        trace('invalid cachefile')
     fd.close()
     return version
 
@@ -45,69 +45,29 @@ def version_from_scm(root):
         return ep.load()(root)
 
 
-def guess_next_tag(tag):
-    prefix, tail = tag.rsplit('.', 1)
-    if tail.isdigit():
-        return '%s.%s.dev' % (prefix, int(tail) + 1)
-    else:
-        assert tail == 'dev', 'broken version data'
-        return tag
-
-
-def format_version(version, guess_next=True):
-    trace(version)
-    exact = version['distance'] is None
-    dirty = version['dirty']
-    local_part = ''
-
-    if version['node']:
-        local_part += '+n' + version['node']
-        if dirty:
-            local_part += time.strftime('.d%Y%m%d')
-    elif dirty:
-        local_part += time.strftime('+d%Y%m%d')
-
-    # change on top of tag
-    if dirty and exact:
-        version['distance'] = 0
-        exact = False
-
-    # we are clean
-    if exact:
-        return version['tag']
-
-    if guess_next:
-        start = guess_next_tag(version['tag'])
-    else:
-        start = version['tag'] + '.post'
-    assert version['distance'] is not None
-    return start + str(version['distance']) + local_part
-
-
-def _extract_version(root, cache_file, guess_next):
-    version = None
-    version = version_from_scm(root)
-    if not version and cache_file:
-        version = version_from_cachefile(root, cache_file)
-    if version:
-        if isinstance(version, dict):
-            return format_version(version, guess_next)
-        else:
-            return version
-
-
-def get_version(cache_file=None, root='.', guess_next=True):
+def get_version(cache_file=None, root='.',
+                version_scheme='guess-next-dev',
+                local_scheme='node-and-date',
+                ):
     root = os.path.abspath(root)
     trace('root', repr(root))
     if cache_file is not None:
         cache_file = os.path.join(root, cache_file)
         trace('cache_file', repr(cache_file))
 
-    version = _extract_version(root, cache_file, guess_next)
+    version = version_from_scm(root)
 
-    if cache_file and version:
-        write_cache_file(cache_file, version)
-    return version
+    if version:
+        if isinstance(version, str):
+            return version
+        version = format_version(
+            version, version_scheme=version_scheme, local_scheme=local_scheme)
+        assert version, version
+        if cache_file:
+            write_cache_file(cache_file, version)
+        return version
+    elif cache_file:
+        return version_from_cachefile(root, cache_file)
 
 
 def _ovalue(obj, name, default):
@@ -118,11 +78,14 @@ def _ovalue(obj, name, default):
 
 
 def setuptools_version_keyword(dist, keyword, value):
-    if value:
-        dist.metadata.version = get_version(
-            cache_file=_ovalue(value, 'cache_file', None),
-            guess_next=_ovalue(value, 'guess_next', True),
-        )
+    if not value:
+        return
+    if value is True:
+        value = {}
+    try:
+        dist.metadata.version = get_version(**value)
+    except Exception as e:
+        trace('error', e)
 
 
 def find_matching_entrypoint(path, entrypoint):

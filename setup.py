@@ -11,15 +11,23 @@ once before running sdist in a fresh checkouts
 from functools import partial
 import setuptools
 
+from setuptools_scm.version import (
+    guess_next_dev_version,
+    get_local_node_and_time,
+)
+
 with open('README.rst') as fp:
     long_description = fp.read()
-
 
 setup = partial(
     setuptools.setup,
     name='setuptools-scm',
     url='http://bitbucket.org/pypa/setptools_scm/',
-    use_scm_version=True,
+    # pass here since entrypints are not yet registred
+    use_scm_version={
+        'version_scheme': guess_next_dev_version,
+        'local_scheme': get_local_node_and_time,
+    },
     author='Ronny Pfannschmidt',
     author_email='opensource@ronnypfannschmidt.de',
     description=('the blessed package to manage your versions by scm tags'),
@@ -44,6 +52,14 @@ setup = partial(
         'setuptools_scm.files_command': [
             '.hg = setuptools_scm.hg:FILES_COMMAND',
             '.git = setuptools_scm.git:FILES_COMMAND',
+        ],
+        'setuptools_scm.version_scheme': [
+            'guess-next-dev = setuptools_scm.version:guess_next_dev_version',
+            'postrelease = setuptools_scm.version:postrelease_version',
+        ],
+        'setuptools_scm.local_scheme': [
+            'node-and-date = setuptools_scm.version:get_local_node_and_date',
+            'dirty-tag = setuptools_scm.version:get_local_dirty_tag',
         ],
     },
     classifiers=[

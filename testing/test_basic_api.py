@@ -81,19 +81,13 @@ archival_mapping = {
 }
 
 
-@pytest.fixture(params=sorted(archival_mapping))
-def expected(request):
-    return request.param
-
-
-@pytest.fixture
-def data(expected):
-    return archival_mapping[expected]
-
-
+@pytest.mark.parametrize('expected,data', sorted(archival_mapping.items()))
 def test_archival_to_version(expected, data):
-
-    assert format_version(archival_to_version(data)) == expected
+    version = archival_to_version(data)
+    assert format_version(
+        version,
+        version_scheme='guess-next-dev',
+        local_scheme='node-and-date') == expected
 
 
 def test_version_from_git(wd):
@@ -132,12 +126,12 @@ def test_version_from_hg_id(wd):
 
     # tagging commit is considered the tag
     wd('hg tag v0.1 -u test -d "0 0"')
-    assert wd.version == '0.1'
+    assert wd.version == 'v0.1'
     wd.write('test.txt', 'test2')
 
     wd('hg commit -m commit2 -u test -d "0 0"')
 
-    assert wd.version.startswith('0.2.dev2')
+    assert wd.version.startswith('v0.2.dev2')
 
     wd('hg up v0.1')
     assert wd.version == '0.1'
@@ -146,7 +140,7 @@ def test_version_from_hg_id(wd):
     # that is not a actual tag
     wd.write('test.txt', 'test2')
     wd('hg commit -m commit3 -u test -d "0 0"')
-    assert wd.version.startswith('0.2.dev1+')
+    assert wd.version.startswith('v0.2.dev1+')
 
 
 def test_version_from_archival(tmpdir):
@@ -163,11 +157,6 @@ def test_version_from_archival(tmpdir):
     )
 
     assert get_version(tmpdir) == '0.2.dev3+n000000000000'
-
-
-def test_version_from_cache_file(tmpdir):
-    setuptools_scm.write_cache_file(str(tmpdir/'test.txt'), '1.0')
-    assert get_version(tmpdir, cache_file='test.txt') == '1.0'
 
 
 def test_version_from_pkginfo(tmpdir):
@@ -187,22 +176,6 @@ def test_root_parameter_pass_by(monkeypatch):
         assert root == '/tmp'
     monkeypatch.setattr(setuptools_scm, 'version_from_scm', assert_root_tmp)
     setuptools_scm.get_version(root='/tmp')
-
-
-def test_cache_file_join(monkeypatch, tmpdir):
-    def assert_join(cache_file, version):
-        assert cache_file == tmpdir.join('cache_file').strpath
-    monkeypatch.setattr(setuptools_scm, '_extract_version', lambda *k: '1')
-    monkeypatch.setattr(setuptools_scm, 'write_cache_file', assert_join)
-    setuptools_scm.get_version(root=tmpdir.strpath, cache_file='cache_file')
-
-
-def test_recreate_cache_file_from_pkginfo(tmpdir):
-    tmpdir.join('PKG-INFO').write('Version: 0.1')
-    assert not tmpdir.join('cache_file.txt').check()
-    ver = get_version(tmpdir, cache_file='cache_file.txt')
-    assert ver == '0.1'
-    assert tmpdir.join('cache_file.txt').check()
 
 
 def test_find_files_stop_at_root_hg(wd):

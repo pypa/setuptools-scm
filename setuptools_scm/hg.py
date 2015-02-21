@@ -1,6 +1,6 @@
 import os
 from .utils import do, trace, data_from_mime
-from .version import meta, tags_to_versions
+from .version import meta, tags_to_versions, tag_to_version
 
 FILES_COMMAND = 'hg locate -I .'
 
@@ -48,7 +48,7 @@ def archival_to_version(data):
         return meta(data['tag'])
     elif 'latesttag' in data:
         return meta(data['latesttag'],
-                    distance=data['latesttagdistance'],
+                    distance=data['latesttagdistance']  ,
                     node=data['node'][:12])
     else:
         return meta('0.0', node=data.get('node', '')[:12])
