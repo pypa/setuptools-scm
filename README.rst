@@ -62,9 +62,9 @@ To use setuptools_scm simple modify your project's setup.py file like this:
 2. Add :code:`'setuptools_scm'` to the :code:`setup_requires` parameter
 
    E.g.:
-   
+
    .. code:: python
-   
+
        from setuptools import setup
        setup(
            ...,
@@ -72,7 +72,7 @@ To use setuptools_scm simple modify your project's setup.py file like this:
            setup_requires=['setuptools_scm'],
            ...,
        )
-   
+
 In order to configure the way ``use_scm_version`` works you can provide
 a mapping with options instead of simple boolean value.
 
@@ -148,3 +148,26 @@ Version number construction
     :node-and-date: adds the node on dev versions and the date on dirty
                     workdir (default)
     :dirty-tag: adds :code:`+dirty` if the current workdir has changes
+
+
+Importing in setup.py
+~~~~~~~~~~~~~~~~~~~~~
+
+To support usage in :code:`setup.py` passing a callable into use_scm_version
+is supported.
+
+Within that callable, setuptools_scm is availiable for import.
+The callable must return the configuration.
+
+
+.. code:: python
+
+    def myversion():
+        from setuptools_scm.version import dirty_tag
+        def clean_scheme(version):
+            if not version.dirty:
+                return '+clean'
+            else:
+                return dirty_tag(version)
+
+        return {'local_scheme': clean_scheme}

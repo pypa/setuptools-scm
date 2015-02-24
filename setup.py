@@ -7,27 +7,29 @@ will generate partial data
 its critical to run egg_info
 once before running sdist in a fresh checkouts
 """
-
-from functools import partial
+import pkg_resources
 import setuptools
 
-from setuptools_scm.version import (
-    guess_next_dev_version,
-    get_local_node_and_date,
-)
+
+def scm_config():
+
+    from setuptools_scm.version import (
+        guess_next_dev_version,
+        get_local_node_and_date,
+    )
+    return dict(
+        version_scheme=guess_next_dev_version,
+        local_scheme=get_local_node_and_date,
+    )
 
 with open('README.rst') as fp:
     long_description = fp.read()
 
-setup = partial(
-    setuptools.setup,
+arguments = dict(
     name='setuptools-scm',
     url='http://bitbucket.org/pypa/setuptools_scm/',
     # pass here since entrypints are not yet registred
-    use_scm_version={
-        'version_scheme': guess_next_dev_version,
-        'local_scheme': get_local_node_and_date,
-    },
+    use_scm_version=scm_config,
     author='Ronny Pfannschmidt',
     author_email='opensource@ronnypfannschmidt.de',
     description=('the blessed package to manage your versions by scm tags'),
@@ -35,6 +37,12 @@ setup = partial(
     license='MIT',
     packages=[
         'setuptools_scm',
+    ],
+    install_requires=[
+        'setuptools>=12'
+    ],
+    setup_requires=[
+        'setuptools>=12'
     ],
     entry_points={
         'distutils.setup_keywords': [
@@ -72,5 +80,7 @@ setup = partial(
         'Topic :: Utilities',
     ],
 )
+
 if __name__ == '__main__':
-    setup()
+    pkg_resources.require('setuptools>=12')
+    setuptools.setup(**arguments)

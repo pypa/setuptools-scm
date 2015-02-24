@@ -1,8 +1,10 @@
 hgdistver_version.py
 MANIFEST$
 .*\.egg-info
-dist
-build
-\.tox
-\.cache
-\.env
+dist/
+build/
+\.tox/
+\.cache/
+\.env/
+\.eggs/
+README.html

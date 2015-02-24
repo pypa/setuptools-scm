@@ -1,10 +1,8 @@
-from __future__ import print_function
 """
 :copyright: 2010-2015 by Ronny Pfannschmidt
 :license: MIT
 """
 import os
-import sys
 from pkg_resources import iter_entry_points
 
 
@@ -49,6 +47,8 @@ def setuptools_version_keyword(dist, keyword, value):
         return
     if value is True:
         value = {}
+    if getattr(value, '__call__', None):
+        value = value()
     try:
         dist.metadata.version = get_version(**value)
     except Exception as e:
@@ -78,9 +78,3 @@ def find_files(path='.'):
             return command(path)
     else:
         return []
-
-if __name__ == '__main__':
-    print('Guessed Version', get_version())
-    if 'ls' in sys.argv:
-        for fname in find_files('.'):
-            print(fname)
