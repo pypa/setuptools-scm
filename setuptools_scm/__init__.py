@@ -7,7 +7,7 @@ from pkg_resources import iter_entry_points
 
 
 from .utils import do, trace
-from .version import format_version
+from .version import format_version, _warn_if_setuptools_outdated
 
 
 def version_from_scm(root):
@@ -43,6 +43,7 @@ def _ovalue(obj, name, default):
 
 
 def setuptools_version_keyword(dist, keyword, value):
+    _warn_if_setuptools_outdated()
     if not value:
         return
     if value is True:

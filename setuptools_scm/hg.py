@@ -21,6 +21,8 @@ def parse(root):
     l = do('hg id -i -t', root).split()
     node = l.pop(0)
     tags = tags_to_versions(l)
+    # filter tip in degraded mode on old setuptools
+    tags = [x for x in tags if x != 'tip']
     dirty = node[-1] == '+'
     if tags:
         return meta(tags[0], dirty=dirty)

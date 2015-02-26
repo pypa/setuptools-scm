@@ -1,8 +1,20 @@
+from __future__ import print_function
 import datetime
 import re
 from .utils import trace
 
-from pkg_resources import parse_version, SetuptoolsVersion, iter_entry_points
+from pkg_resources import iter_entry_points
+
+try:
+    from pkg_resources import parse_version, SetuptoolsVersion
+except ImportError as e:
+    parse_version = SetuptoolsVersion = None
+
+
+def _warn_if_setuptools_outdated():
+    if parse_version is None:
+        print("your setuptools is too old (<12)")
+        print("setuptools_scm functionality is degraded")
 
 
 def callable_or_entrypoint(group, callable_or_name):
@@ -18,6 +30,8 @@ def tag_to_version(tag):
     trace('tag', tag)
     # lstrip the v because of py2/py3 differences in setuptools
     version = tag.rsplit('-', 1)[-1].lstrip('v')
+    if parse_version is None:
+        return version
     version = parse_version(version)
     trace('version', repr(version))
     if isinstance(version, SetuptoolsVersion):
@@ -59,7 +73,7 @@ class ScmVersion(object):
 
 
 def meta(tag, distance=None, dirty=False, node=None, **kw):
-    if not isinstance(tag, SetuptoolsVersion):
+    if parse_version is not None and not isinstance(tag, SetuptoolsVersion):
         tag = tag_to_version(tag)
     trace('version', tag)
 

@@ -38,12 +38,6 @@ arguments = dict(
     packages=[
         'setuptools_scm',
     ],
-    install_requires=[
-        'setuptools>=12'
-    ],
-    setup_requires=[
-        'setuptools>=12'
-    ],
     entry_points={
         'distutils.setup_keywords': [
             'use_scm_version = setuptools_scm:setuptools_version_keyword'
@@ -82,5 +76,4 @@ arguments = dict(
 )
 
 if __name__ == '__main__':
-    pkg_resources.require('setuptools>=12')
     setuptools.setup(**arguments)
