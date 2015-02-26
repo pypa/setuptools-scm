@@ -11,10 +11,15 @@ pip usage is recommended
 """
 from __future__ import print_function
 import os
+import sys
 import setuptools
+PROBLEMATIC_COMMANDS = 'install', 'develop', 'easy_install', 'bdist_egg'
 
 if not os.path.isdir('setuptools_scm.egg-info'):
     print(__doc__)
+
+    if any(c in sys.argv for c in PROBLEMATIC_COMMANDS):
+        sys.exit('please run `python setup.py egg_info` first')
 
 
 def scm_config():
