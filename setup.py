@@ -1,18 +1,21 @@
 """
 important note:
 
-this package is self-using,
+the setup of setuptools_scm is self-using,
 the first execution of setup.py egg_info
 will generate partial data
 its critical to run egg_info
 once before running sdist in a fresh checkouts
 """
-import pkg_resources
+from __future__ import print_function
+import os
 import setuptools
+
+if not os.path.isdir('setuptools_scm.egg-info'):
+    print(__doc__)
 
 
 def scm_config():
-
     from setuptools_scm.version import (
         guess_next_dev_version,
         get_local_node_and_date,
