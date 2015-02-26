@@ -1,11 +1,13 @@
-"""
+"""\
 important note:
 
 the setup of setuptools_scm is self-using,
-the first execution of setup.py egg_info
+the first execution of `python setup.py egg_info`
 will generate partial data
-its critical to run egg_info
-once before running sdist in a fresh checkouts
+its critical to run `python setup.py egg_info`
+once before running sdist or easy_install on a fresh checkouts
+
+pip usage is recommended
 """
 from __future__ import print_function
 import os
