@@ -1,3 +1,32 @@
+
+v1.3.0
+======
+
+* support setuptools easy_install egg creation details
+  by hardwireing the version in the sdist
+
+v1.2.0
+======
+
+* enhance self-use
+
+v1.1.0
+=======
+
+* enable self-use
+
+v1.0.0
+=======
+
+* documentation enhancements
+
+v0.26
+======
+
+* rename to setuptools_scm
+* split into package, add lots of entry points for extension
+* pluggable version schemes
+
 v0.25
 ======
 
