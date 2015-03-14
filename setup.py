@@ -53,7 +53,7 @@ class sdist(sdist_orig):
         finalized = template.replace(
             'use_scm_version=scm_config,\n',
             'version="%s",\n' % ver)
-        os.unlink(target)
+        os.remove(target)
         with open(target, 'w') as fp:
             fp.write(finalized)
 
