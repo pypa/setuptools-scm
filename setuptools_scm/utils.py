@@ -16,6 +16,13 @@ def trace(*k):
         sys.stdout.flush()
 
 
+def ensure_stripped_str(str_or_bytes):
+    if isinstance(str_or_bytes, str):
+        return str_or_bytes.strip()
+    else:
+        return str_or_bytes.decode('utf-8', 'surogate_escape').strip()
+
+
 def do_ex(cmd, cwd='.'):
     trace('cmd', repr(cmd))
     p = subprocess.Popen(
@@ -41,7 +48,7 @@ def do_ex(cmd, cwd='.'):
         trace('err', repr(err))
     if p.returncode:
         trace('ret', p.returncode)
-    return out.strip().decode(), err.strip().decode(), p.returncode
+    return ensure_stripped_str(out), ensure_stripped_str(err), p.returncode
 
 
 def do(cmd, cwd='.'):

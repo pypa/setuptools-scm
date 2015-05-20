@@ -1,3 +1,8 @@
+v1.4.0
+======
+
+* propper handling for sdist
+
 
 v1.3.0
 ======
