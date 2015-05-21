@@ -2,6 +2,7 @@ v1.4.0
 ======
 
 * propper handling for sdist
+* fix file-finder failure from windows
 
 
 v1.3.0
