@@ -8,3 +8,4 @@ build/
 \.env/
 \.eggs/
 README.html
+setuptools_scm.sublime-workspace
