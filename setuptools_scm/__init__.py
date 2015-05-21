@@ -73,9 +73,17 @@ def find_files(path='.'):
     ep = find_matching_entrypoint(abs, 'setuptools_scm.files_command')
     if ep:
         command = ep.load()
-        if isinstance(command, str):
-            return do(ep.load(), path).splitlines()
-        else:
-            return command(path)
+        try:
+            if isinstance(command, str):
+                return do(ep.load(), path).splitlines()
+            else:
+                return command(path)
+        except Exception as e:
+            import traceback
+            print("File Finder Failed for %s" % ep)
+            traceback.print_exc()
+            return []
+
     else:
         return []
+
