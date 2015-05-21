@@ -3,7 +3,7 @@ v1.4.0
 
 * propper handling for sdist
 * fix file-finder failure from windows
-
+* resuffle docs
 
 v1.3.0
 ======
