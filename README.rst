@@ -1,21 +1,46 @@
 setuptools_scm
 ===============
 
-About
------
+:code:`setuptools_scm` handles managing your python package versions
+in scm metadata.
+It also handles file finders for the suppertes scm's
 
-:code:`setuptools_scm` is a simple utility for the ``setup_requires``
-feature of setuptools for use in `Mercurial <http://mercurial.selenic.com/>`_
-and `Git <http://git-scm.com/>`_ based projects.
 
-It uses metadata from the SCM to generate the **version** of a project
-and is able to list the files belonging to that project
-(which makes the :code:`MANIFEST.in` file unnecessary in many cases).
+Setup.py usage
+--------------
 
-It falls back to ``PKG-INFO``/``.hg_archival.txt`` when necessary.
+To use setuptools_scm just modify your project's setup.py file like this:
 
-Default behavior
-----------------
+1. Add :code:`'setuptools_scm'` to the :code:`setup_requires` parameter
+2. Add the :code:`use_scm_version` parameter and set it to ``True``
+
+
+   E.g.:
+
+   .. code:: python
+
+       from setuptools import setup
+       setup(
+           ...,
+           use_scm_version=True,
+           setup_requires=['setuptools_scm'],
+           ...,
+       )
+
+
+Programmatic usage
+------------------
+
+In oder to use setuptools_scm for sphinx config
+
+.. code:: python
+
+    from setuptools_scm import get_version
+    version = get_version()
+
+
+Default versioning scheme
+--------------------------
 
 In the standard configuration setuptools_scm takes a look at 3 things:
 
@@ -25,13 +50,13 @@ In the standard configuration setuptools_scm takes a look at 3 things:
 
 and uses roughly the following logic to render the version:
 
-no distance and clean:
+:code:`no distance and clean`:
     :code:`{tag}`
-distance and clean:
+:code:`distance and clean`:
     :code:`{next_version}.dev{distance}+n{revision hash}`
-no distance and not clean:
+:code:`no distance and not clean`:
     :code:`{tag}+dYYYMMMDD`
-distance and not clean:
+:code:`distance and not clean`:
     :code:`{next_version}.dev{distance}+n{revision hash}.dYYYMMMDD`
 
 The next version is calculated by adding ``1`` to the last numeric component
@@ -52,31 +77,29 @@ accordingly.
     `SemVer <http://semver.org/>`_ by default hiding the the old behavior
     as an configurable option.
 
-Setup.py usage
---------------
 
-To use setuptools_scm simple modify your project's setup.py file like this:
+Builtin mechanisms for obtaining version numbers
+--------------------------------------------------
 
-1. Add the :code:`use_scm_version` parameter and set it to ``True``
+1. the scm itself (git/hg)
+2. :code:`.hg_archival` files (mercurial archives)
+3. PKG-INFO
 
-2. Add :code:`'setuptools_scm'` to the :code:`setup_requires` parameter
+.. note::
 
-   E.g.:
+    git archives are not supported due to git shortcomings
 
-   .. code:: python
 
-       from setuptools import setup
-       setup(
-           ...,
-           use_scm_version=True,
-           setup_requires=['setuptools_scm'],
-           ...,
-       )
+Configuration Parameters
+------------------------------
 
 In order to configure the way ``use_scm_version`` works you can provide
 a mapping with options instead of simple boolean value.
 
 The Currently supported configuration keys are:
+
+:root:
+    cwd relative path to use for finding the scm root, defaults to :code:`.`
 
 :version_scheme:
     configures how the local version number is constructed.
@@ -96,6 +119,7 @@ To use setuptools_scm in other Python code you can use the
 
 It optionally accepts the keys of the ``use_scm_version`` parameter as
 keyword arguments.
+
 
 Extending setuptools_scm
 ------------------------
