@@ -61,6 +61,7 @@ class sdist(sdist_orig):
 arguments = dict(
     name='setuptools_scm',
     url='http://bitbucket.org/pypa/setuptools_scm/',
+    zip_safe=True,
     # pass here since entrypints are not yet registred
     use_scm_version=scm_config,
     author='Ronny Pfannschmidt',
