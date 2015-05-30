@@ -108,6 +108,11 @@ The Currently supported configuration keys are:
 :local_scheme:
     configures how the local component of the version is constructed
     either an entrypoint name or a callable
+:write_to:
+    declares a text file or python file which is replaced with a file
+    containing the current version.
+    its ideal or creating a version.py file within the package
+
 
 To use setuptools_scm in other Python code you can use the
 ``get_version`` function:

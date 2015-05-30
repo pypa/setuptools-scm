@@ -1,3 +1,10 @@
+v1.5.0
+=======
+
+* moved setuptools integration related code to own file
+* support storing version strings into a module/text file
+  using the :code:`write_to` coniguration parameter
+
 v1.4.0
 ======
 
