@@ -71,32 +71,31 @@ arguments = dict(
     packages=[
         'setuptools_scm',
     ],
-    entry_points={
-        'distutils.setup_keywords': [
-            'use_scm_version = setuptools_scm:setuptools_version_keyword'
-        ],
-        'setuptools.file_finders': [
-            'setuptools_scm = setuptools_scm:find_files',
-        ],
-        'setuptools_scm.parse_scm': [
-            '.hg = setuptools_scm.hg:parse',
-            '.git = setuptools_scm.git:parse',
-            '.hg_archival.txt = setuptools_scm.hg:parse_archival',
-            'PKG-INFO = setuptools_scm.hacks:parse_pkginfo',
-        ],
-        'setuptools_scm.files_command': [
-            '.hg = setuptools_scm.hg:FILES_COMMAND',
-            '.git = setuptools_scm.git:FILES_COMMAND',
-        ],
-        'setuptools_scm.version_scheme': [
-            'guess-next-dev = setuptools_scm.version:guess_next_dev_version',
-            'post-release = setuptools_scm.version:postrelease_version',
-        ],
-        'setuptools_scm.local_scheme': [
-            'node-and-date = setuptools_scm.version:get_local_node_and_date',
-            'dirty-tag = setuptools_scm.version:get_local_dirty_tag',
-        ],
-    },
+    entry_points="""
+        [distutils.setup_keywords]
+        use_scm_version = setuptools_scm.integration:version_keyword
+
+        [setuptools.file_finders]
+        setuptools_scm = setuptools_scm.integration:find_files
+
+        [setuptools_scm.parse_scm]
+        .hg = setuptools_scm.hg:parse
+        .git = setuptools_scm.git:parse
+        .hg_archival.txt = setuptools_scm.hg:parse_archival
+        PKG-INFO = setuptools_scm.hacks:parse_pkginfo
+
+        [setuptools_scm.files_command]
+        .hg = setuptools_scm.hg:FILES_COMMAND
+        .git = setuptools_scm.git:FILES_COMMAND
+
+        [setuptools_scm.version_scheme]
+        guess-next-dev = setuptools_scm.version:guess_next_dev_version
+        post-release = setuptools_scm.version:postrelease_version
+
+        [setuptools_scm.local_scheme]
+        node-and-date = setuptools_scm.version:get_local_node_and_date
+        dirty-tag = setuptools_scm.version:get_local_dirty_tag
+    """,
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',

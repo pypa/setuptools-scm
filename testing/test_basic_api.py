@@ -3,12 +3,11 @@ import py
 import pytest
 
 import setuptools_scm
-from setuptools_scm import (
-    do,
-    format_version,
-)
+from setuptools_scm import format_version
+from setuptools_scm import integration
 
-from setuptools_scm.utils import data_from_mime
+
+from setuptools_scm.utils import data_from_mime, do
 from setuptools_scm.hg import archival_to_version
 
 
@@ -184,7 +183,7 @@ def test_find_files_stop_at_root_hg(wd):
     wd('hg add .')
     wd('hg commit -m test -u test')
     wd.cwd.ensure('project/setup.cfg')
-    assert setuptools_scm.find_files(str(wd.cwd/'project')) == []
+    assert integration  .find_files(str(wd.cwd/'project')) == []
 
 
 def test_find_files_stop_at_root_git(wd):
@@ -193,4 +192,4 @@ def test_find_files_stop_at_root_git(wd):
     wd('git add .')
     wd('git commit -m test -u test')
     wd.cwd.ensure('project/setup.cfg')
-    assert setuptools_scm.find_files(str(wd.cwd/'project')) == []
+    assert integration.find_files(str(wd.cwd/'project')) == []

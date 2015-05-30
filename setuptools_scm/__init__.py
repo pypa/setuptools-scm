@@ -3,11 +3,10 @@
 :license: MIT
 """
 import os
-from pkg_resources import iter_entry_points
 
-
-from .utils import do, trace
-from .version import format_version, _warn_if_setuptools_outdated
+from .utils import trace
+from .version import format_version
+from .discover import find_matching_entrypoint
 
 
 def version_from_scm(root):
@@ -33,57 +32,3 @@ def get_version(root='.',
             version_scheme=version_scheme,
             local_scheme=local_scheme)
         return version
-
-
-def _ovalue(obj, name, default):
-    if isinstance(obj, dict):
-        return obj.get(name, default)
-    else:
-        return default
-
-
-def setuptools_version_keyword(dist, keyword, value):
-    _warn_if_setuptools_outdated()
-    if not value:
-        return
-    if value is True:
-        value = {}
-    if getattr(value, '__call__', None):
-        value = value()
-    try:
-        dist.metadata.version = get_version(**value)
-    except Exception as e:
-        trace('error', e)
-
-
-def find_matching_entrypoint(path, entrypoint):
-    trace('looking for ep', entrypoint, path)
-    for ep in iter_entry_points(entrypoint):
-        if os.path.exists(os.path.join(path, ep.name)):
-            if os.path.isabs(ep.name):
-                trace('ignoring bad ep', ep)
-            trace('found ep', ep)
-            return ep
-
-
-def find_files(path='.'):
-    if not path:
-        path = '.'
-    abs = os.path.abspath(path)
-    ep = find_matching_entrypoint(abs, 'setuptools_scm.files_command')
-    if ep:
-        command = ep.load()
-        try:
-            if isinstance(command, str):
-                return do(ep.load(), path).splitlines()
-            else:
-                return command(path)
-        except Exception as e:
-            import traceback
-            print("File Finder Failed for %s" % ep)
-            traceback.print_exc()
-            return []
-
-    else:
-        return []
-
