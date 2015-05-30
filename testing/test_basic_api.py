@@ -5,6 +5,7 @@ import pytest
 import setuptools_scm
 from setuptools_scm import format_version
 from setuptools_scm import integration
+from setuptools_scm import dump_version
 
 
 from setuptools_scm.utils import data_from_mime, do
@@ -193,3 +194,15 @@ def test_find_files_stop_at_root_git(wd):
     wd('git commit -m test -u test')
     wd.cwd.ensure('project/setup.cfg')
     assert integration.find_files(str(wd.cwd/'project')) == []
+
+
+def test_dump_version(tmpdir):
+    sp = tmpdir.strpath
+
+    dump_version(sp, '1.0', 'first.txt')
+    assert tmpdir.join('first.txt').read() == '1.0'
+    dump_version(sp, '1.0', 'first.py')
+    content = tmpdir.join('first.py').read()
+    assert repr('1.0') in content
+    import ast
+    ast.parse(content)

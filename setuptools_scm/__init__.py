@@ -24,14 +24,12 @@ def dump_version(root, version, write_to):
     if not write_to:
         return
     target = os.path.join(root, write_to)
-    if target.endswith('.txt.'):
+    if target.endswith('.txt'):
         dump = version
     elif target.endswith('.py'):
         dump = PYTHON_TEMPLATE.format(version=version)
-
-    with open(target) as fp:
-        if fp.read() == dump:
-            return
+    else:
+        raise ValueError('bad file format: ' + os.path.splitext(target))
     with open(target, 'w') as fp:
         fp.write(dump)
 

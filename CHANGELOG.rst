@@ -1,3 +1,8 @@
+v1.5.1
+======
+
+* fix file access bug i missed in 1.5
+
 v1.5.0
 =======
 
