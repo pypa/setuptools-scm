@@ -6,6 +6,8 @@ import sys
 import shlex
 import subprocess
 import os
+import io
+
 
 DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
 
@@ -60,7 +62,7 @@ def do(cmd, cwd='.'):
 
 
 def data_from_mime(path):
-    with open(path) as fp:
+    with io.open(path, encoding='utf-8') as fp:
         content = fp.read()
     trace('content', repr(content))
     # the complex conditions come from reading pseudo-mime-messages

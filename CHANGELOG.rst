@@ -1,3 +1,8 @@
+v1.5.3
+======
+
+* #28: Fix decoding error when PKG-INFO contains non-ASCII.
+
 v1.5.2
 ======
 
