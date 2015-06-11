@@ -1,3 +1,8 @@
+.. warning::
+
+    this was moved to https://github.com/pypa/setuptools_scm
+
+
 setuptools_scm
 ===============
 
