@@ -1,3 +1,8 @@
+v1.5.4
+======
+
+* Fix bug on Python 2 when version is loaded from existing metadata.
+
 v1.5.3
 ======
 
