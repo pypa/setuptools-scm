@@ -3,6 +3,7 @@
 :license: MIT
 """
 import os
+import sys
 
 from .utils import trace
 from .version import format_version
@@ -14,6 +15,9 @@ PYTHON_TEMPLATE = """\
 # don't change, don't track in version control
 version = {version!r}
 """
+
+PY3 = sys.version_info > (3,)
+string_types = (str,) if PY3 else (str, unicode)
 
 def version_from_scm(root):
     ep = find_matching_entrypoint(root, 'setuptools_scm.parse_scm')
@@ -43,7 +47,7 @@ def get_version(root='.',
     version = version_from_scm(root)
 
     if version:
-        if isinstance(version, str):
+        if isinstance(version, string_types):
             return version
         version = format_version(
             version,
