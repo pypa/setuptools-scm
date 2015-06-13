@@ -1,7 +1,7 @@
 """
 utils
 """
-from __future__ import print_function, unicode_literals
+from __future__ import print_function
 import sys
 import shlex
 import subprocess
