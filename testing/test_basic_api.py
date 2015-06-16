@@ -173,7 +173,7 @@ def test_root_parameter_creation(monkeypatch):
 
 def test_root_parameter_pass_by(monkeypatch):
     def assert_root_tmp(root):
-        assert root == '/tmp'
+        assert root == os.path.abspath('/tmp')
     monkeypatch.setattr(setuptools_scm, 'version_from_scm', assert_root_tmp)
     setuptools_scm.get_version(root='/tmp')
 
