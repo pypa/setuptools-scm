@@ -17,12 +17,14 @@ version = {version!r}
 """
 
 PY3 = sys.version_info > (3,)
-string_types = (str,) if PY3 else (str, unicode)
+string_types = (str,) if PY3 else (str, unicode)  # noqa
+
 
 def version_from_scm(root):
     ep = find_matching_entrypoint(root, 'setuptools_scm.parse_scm')
     if ep:
         return ep.load()(root)
+
 
 def dump_version(root, version, write_to):
     if not write_to:
@@ -36,6 +38,7 @@ def dump_version(root, version, write_to):
         raise ValueError('bad file format: ' + os.path.splitext(target))
     with open(target, 'w') as fp:
         fp.write(dump)
+
 
 def get_version(root='.',
                 version_scheme='guess-next-dev',
