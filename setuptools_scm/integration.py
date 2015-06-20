@@ -5,6 +5,7 @@ from .utils import trace, do
 from .discover import find_matching_entrypoint
 from . import get_version
 
+
 def version_keyword(dist, keyword, value):
     _warn_if_setuptools_outdated()
     if not value:
@@ -31,7 +32,7 @@ def find_files(path='.'):
                 return do(ep.load(), path).splitlines()
             else:
                 return command(path)
-        except Exception as e:
+        except Exception:
             import traceback
             print("File Finder Failed for %s" % ep)
             traceback.print_exc()
