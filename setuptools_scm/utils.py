@@ -1,12 +1,13 @@
 """
 utils
 """
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 import sys
 import shlex
 import subprocess
 import os
 import io
+import platform
 
 
 DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
@@ -25,6 +26,21 @@ def ensure_stripped_str(str_or_bytes):
         return str_or_bytes.decode('utf-8', 'surogate_escape').strip()
 
 
+def _always_strings(env_dict):
+    """
+    On Windows and Python 2, environment dictionaries must be strings
+    and not unicode.
+    """
+    is_windows = platform.system == 'Windows'
+    PY2 = sys.version_info < (3,)
+    if is_windows or PY2:
+        env_dict.update(
+            (key, str(value))
+            for (key, value) in env_dict.items()
+        )
+    return env_dict
+
+
 def do_ex(cmd, cwd='.'):
     trace('cmd', repr(cmd))
     p = subprocess.Popen(
@@ -32,7 +48,7 @@ def do_ex(cmd, cwd='.'):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=cwd,
-        env=dict(
+        env=_always_strings(dict(
             os.environ,
             # disable hgrc processing other than .hg/hgrc
             HGRCPATH='',
@@ -40,7 +56,7 @@ def do_ex(cmd, cwd='.'):
             LC_ALL='C',
             LANGUAGE='',
             HGPLAIN='1',
-        )
+        ))
     )
 
     out, err = p.communicate()
