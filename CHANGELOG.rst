@@ -1,3 +1,8 @@
+v1.5.5
+======
+
+* Fix bug on Python 2 on Windows when environment has unicode fields.
+
 v1.5.4
 ======
 
