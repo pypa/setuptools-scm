@@ -1,7 +1,7 @@
 import os
 
 from .version import _warn_if_setuptools_outdated
-from .utils import trace, do
+from .utils import do
 from .discover import find_matching_entrypoint
 from . import get_version
 
