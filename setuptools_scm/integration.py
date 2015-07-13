@@ -14,10 +14,7 @@ def version_keyword(dist, keyword, value):
         value = {}
     if getattr(value, '__call__', None):
         value = value()
-    try:
-        dist.metadata.version = get_version(**value)
-    except Exception as e:
-        trace('error', e)
+    dist.metadata.version = get_version(**value)
 
 
 def find_files(path='.'):

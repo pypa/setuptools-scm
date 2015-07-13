@@ -24,6 +24,7 @@ def version_from_scm(root):
     ep = find_matching_entrypoint(root, 'setuptools_scm.parse_scm')
     if ep:
         return ep.load()(root)
+    raise LookupError('no scm found for %r' % root)
 
 
 def dump_version(root, version, write_to):
