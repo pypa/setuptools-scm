@@ -50,14 +50,14 @@ def test_format_version(version, monkeypatch, scheme, expected):
         version,
         version_scheme=vs,
         local_scheme=ls) == expected
-        
-        
+
+
 @pytest.fixture
 def tmpfoo(request):
     fn = tempfile.NamedTemporaryFile(suffix=".foo", delete=False).name
     request.addfinalizer(lambda: os.remove(fn))
     return fn
-    
+
 
 def test_dump_version_doesnt_bail_on_value_error(tmpfoo):
     root, write_to = os.path.split(tmpfoo)
