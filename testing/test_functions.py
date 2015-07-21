@@ -1,5 +1,8 @@
+import os.path
 import pytest
 import pkg_resources
+import tempfile
+from setuptools_scm import dump_version
 from setuptools_scm.version import guess_next_version, meta, format_version
 
 
@@ -47,3 +50,18 @@ def test_format_version(version, monkeypatch, scheme, expected):
         version,
         version_scheme=vs,
         local_scheme=ls) == expected
+        
+        
+@pytest.fixture
+def tmpfoo(request):
+    fn = tempfile.NamedTemporaryFile(suffix=".foo", delete=False).name
+    request.addfinalizer(lambda: os.remove(fn))
+    return fn
+    
+
+def test_dump_version_doesnt_bail_on_value_error(tmpfoo):
+    root, write_to = os.path.split(tmpfoo)
+    version = VERSIONS['exact']
+    with pytest.raises(ValueError) as exc_info:
+        dump_version(root, version, write_to)
+    assert str(exc_info.value).startswith("bad file format:")
