@@ -118,6 +118,10 @@ The Currently supported configuration keys are:
     containing the current version.
     its ideal or creating a version.py file within the package
 
+    .. warning::
+
+      only *.py and *.txt are supported as extensions
+
 
 To use setuptools_scm in other Python code you can use the
 ``get_version`` function:

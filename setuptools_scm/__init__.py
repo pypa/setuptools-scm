@@ -36,7 +36,9 @@ def dump_version(root, version, write_to):
     elif target.endswith('.py'):
         dump = PYTHON_TEMPLATE.format(version=version)
     else:
-        raise ValueError("bad file format: '%s' (of %s) " % (
+        raise ValueError((
+            "bad file format: '%s' (of %s) \n"
+            "only *.txt and *.py are supported") % (
             os.path.splitext(target)[1],
             target
         ))
