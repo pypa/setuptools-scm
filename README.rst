@@ -120,7 +120,7 @@ The Currently supported configuration keys are:
 
     .. warning::
 
-      only *.py and *.txt are supported as extensions
+      only :code:`*.py` and :code:`*.txt` are supported as extensions
 
 
 To use setuptools_scm in other Python code you can use the
