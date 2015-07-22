@@ -1,5 +1,6 @@
 import pytest
 import pkg_resources
+from setuptools_scm import dump_version
 from setuptools_scm.version import guess_next_version, meta, format_version
 
 
@@ -47,3 +48,11 @@ def test_format_version(version, monkeypatch, scheme, expected):
         version,
         version_scheme=vs,
         local_scheme=ls) == expected
+
+
+def test_dump_version_doesnt_bail_on_value_error(tmpdir):
+    write_to = "VERSION"
+    version = VERSIONS['exact']
+    with pytest.raises(ValueError) as exc_info:
+        dump_version(tmpdir.strpath, version, write_to)
+    assert str(exc_info.value).startswith("bad file format:")

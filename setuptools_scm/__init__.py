@@ -30,13 +30,16 @@ def version_from_scm(root):
 def dump_version(root, version, write_to):
     if not write_to:
         return
-    target = os.path.join(root, write_to)
+    target = os.path.normpath(os.path.join(root, write_to))
     if target.endswith('.txt'):
         dump = version
     elif target.endswith('.py'):
         dump = PYTHON_TEMPLATE.format(version=version)
     else:
-        raise ValueError('bad file format: ' + os.path.splitext(target))
+        raise ValueError("bad file format: '%s' (of %s) " % (
+            os.path.splitext(target)[1],
+            target
+        ))
     with open(target, 'w') as fp:
         fp.write(dump)
 
