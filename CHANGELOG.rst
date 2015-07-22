@@ -1,3 +1,15 @@
+v1.6.0
+======
+
+* bail out early if the scm is missing
+
+  this brings issues with git tarballs and
+  older devpi-client releases to light,
+  before we would let the setup stay at version 0.0,
+  now there is a ValueError
+
+* propperly raise errors on write_to missuse (thanks Te-jé Rodgers)
+
 v1.5.5
 ======
 
