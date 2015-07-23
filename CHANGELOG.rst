@@ -1,3 +1,9 @@
+v1.6.1
+======
+
+* correct the url to github
+  thanks David Szotten
+
 v1.6.0
 ======
 
