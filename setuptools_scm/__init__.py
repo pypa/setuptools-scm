@@ -25,7 +25,7 @@ def version_from_scm(root):
     if ep:
         return ep.load()(root)
     raise LookupError(
-        "setuptools-scm was unable to detect %r's version.\n\n"
+        "setuptools-scm was unable to detect version for %r.\n\n"
         "Make sure you're not using GitHub's tarballs (or similar ones), as "
         "those don't contain the necessary metadata. Use PyPI's tarballs "
         "instead." % root)
