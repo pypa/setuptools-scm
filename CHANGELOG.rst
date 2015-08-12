@@ -1,8 +1,11 @@
-v1.6.1
+v1.7.0
 ======
 
 * correct the url to github
   thanks David Szotten
+* enhance scm not found errors with a note on git tarballs
+  thanks Markus
+* add support for :code:`write_to_template`
 
 v1.6.0
 ======
