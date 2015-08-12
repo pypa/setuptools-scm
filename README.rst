@@ -120,8 +120,12 @@ The Currently supported configuration keys are:
 
     .. warning::
 
-      only :code:`*.py` and :code:`*.txt` are supported as extensions
-
+      only :code:`*.py` and :code:`*.txt` have builtin templates,
+      for other extensions it is necessary
+      to provide a :code:`write_to_template`
+:write_to_template:
+    a newstyle format string thats given the current version as
+    the :code:`version` keyword argument for formatting
 
 To use setuptools_scm in other Python code you can use the
 ``get_version`` function:
