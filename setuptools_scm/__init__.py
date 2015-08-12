@@ -24,7 +24,11 @@ def version_from_scm(root):
     ep = find_matching_entrypoint(root, 'setuptools_scm.parse_scm')
     if ep:
         return ep.load()(root)
-    raise LookupError('no scm found for %r' % root)
+    raise LookupError(
+        "setuptools-scm was unable to detect %r's version.\n\n"
+        "Make sure you're not using GitHub's tarballs (or similar ones), as "
+        "those don't contain the necessary metadata. Use PyPI's tarballs "
+        "instead." % root)
 
 
 def dump_version(root, version, write_to):
