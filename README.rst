@@ -1,14 +1,11 @@
-.. warning::
-
-    this was moved to https://github.com/pypa/setuptools_scm
-
-
 setuptools_scm
 ===============
 
 :code:`setuptools_scm` handles managing your python package versions
-in scm metadata.
-It also handles file finders for the suppertes scm's
+in scm metadata instead of declaring them as the version argument
+or in a scm managed file.
+
+It also handles file finders for the supperted scm's.
 
 
 Setup.py usage
