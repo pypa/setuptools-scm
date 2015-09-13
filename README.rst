@@ -210,3 +210,13 @@ The callable must return the configuration.
                 return dirty_tag(version)
 
         return {'local_scheme': clean_scheme}
+
+
+Code of Conduct
+---------------
+
+Everyone interacting in the setuptools_scm project's codebases, issue trackers,
+chat rooms, and mailing lists is expected to follow the
+`PyPA Code of Conduct`_.
+
+.. _PyPA Code of Conduct: https://www.pypa.io/en/latest/code-of-conduct/
