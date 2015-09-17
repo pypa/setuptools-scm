@@ -6,7 +6,10 @@ python:
 - '3.3'
 - '3.4'
 - '3.5'
-cache: pip
+- nightly
+cache:
+- $HOME/.pip/cache
+- $Home/.cache/pip
 
 install: pip install tox
 script:
