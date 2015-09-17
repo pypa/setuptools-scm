@@ -83,6 +83,7 @@ arguments = dict(
         .hg = setuptools_scm.hg:parse
         .git = setuptools_scm.git:parse
         .hg_archival.txt = setuptools_scm.hg:parse_archival
+        PKG-INFO = setuptools_scm.hacks:parse_pkginfo
 
         [setuptools_scm.files_command]
         .hg = setuptools_scm.hg:FILES_COMMAND
