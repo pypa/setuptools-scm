@@ -7,6 +7,8 @@ or in a scm managed file.
 
 It also handles file finders for the supperted scm's.
 
+.. image:: https://travis-ci.org/pypa/setuptools_scm.svg?branch=master
+    :target: https://travis-ci.org/pypa/setuptools_scm
 
 Setup.py usage
 --------------
