@@ -5,6 +5,8 @@ from .utils import trace
 
 from pkg_resources import iter_entry_points
 
+from distutils import log
+
 try:
     from pkg_resources import parse_version, SetuptoolsVersion
 except ImportError as e:
@@ -13,8 +15,8 @@ except ImportError as e:
 
 def _warn_if_setuptools_outdated():
     if parse_version is None:
-        print("your setuptools is too old (<12)")
-        print("setuptools_scm functionality is degraded")
+        log.warn("your setuptools is too old (<12)")
+        log.warn("setuptools_scm functionality is degraded")
 
 
 def callable_or_entrypoint(group, callable_or_name):
