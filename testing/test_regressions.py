@@ -1,4 +1,6 @@
 from setuptools_scm.utils import do_ex, do
+
+
 def test_pkginfo_noscmroot(tmpdir, monkeypatch):
     """if we are indeed a sdist, the root does not apply"""
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
@@ -10,9 +12,9 @@ def test_pkginfo_noscmroot(tmpdir, monkeypatch):
         'from setuptools import setup;'
         'setup(use_scm_version={"root": ".."})')
 
-    _, stderr, exit = do_ex('python setup.py --version', p)
+    _, stderr, ret = do_ex('python setup.py --version', p)
     assert 'setuptools-scm was unable to detect version for' in stderr
-    assert exit == 1
+    assert ret == 1
 
     p.join("PKG-INFO").write('Version: 1.0')
     res = do('python setup.py --version', p)
