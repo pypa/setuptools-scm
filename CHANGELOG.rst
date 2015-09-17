@@ -1,3 +1,12 @@
+
+
+v1.8.0
+======
+
+* fix issue with setuptools wrong version warnings being printed to standard
+  out. User is informed now by distutils-warnings.
+
+
 v1.7.0
 ======
 
