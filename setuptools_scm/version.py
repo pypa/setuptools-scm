@@ -73,6 +73,9 @@ class ScmVersion(object):
             tag=self.tag, distance=self.distance,
             node=self.node, dirty=self.dirty, extra=self.extra)
 
+    def format_choice(self, clean_format, dirty_format):
+        return self.format_with(dirty_format if self.dirty else clean_format)
+
 
 def meta(tag, distance=None, dirty=False, node=None, **kw):
     if parse_version is not None and not isinstance(tag, SetuptoolsVersion):
@@ -96,29 +99,20 @@ def guess_next_version(tag_version, distance):
 
 def guess_next_dev_version(version):
     if version.exact:
-        return version.format_with('{tag}')
+        return version.format_with("{tag}")
     else:
         return guess_next_version(version.tag, version.distance)
 
 
 def get_local_node_and_date(version):
     if version.exact:
-        if version.dirty:
-            return version.format_with("+d{time:%Y%m%d}")
-        else:
-            return ''
+        return version.format_choice("", "+d{time:%Y%m%d}")
     else:
-        if version.dirty:
-            return version.format_with("+n{node}.d{time:%Y%m%d}")
-        else:
-            return version.format_with("+n{node}")
+        return version.format_choice("+n{node}", "+n{node}.d{time:%Y%m%d}")
 
 
 def get_local_dirty_tag(version):
-    if version.dirty:
-        return '+dirty'
-    else:
-        return ''
+    return version.format_choice('', '+dirty')
 
 
 def postrelease_version(version):

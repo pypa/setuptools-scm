@@ -47,7 +47,7 @@ def do_ex(cmd, cwd='.'):
         shlex.split(cmd),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        cwd=cwd,
+        cwd=str(cwd),
         env=_always_strings(dict(
             os.environ,
             # disable hgrc processing other than .hg/hgrc
