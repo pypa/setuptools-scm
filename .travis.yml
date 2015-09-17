@@ -10,5 +10,4 @@ cache: pip
 
 install: pip install tox
 script:
-- tox -e py-test
-- tox -e flake8
+- tox -e py-test,flake8
