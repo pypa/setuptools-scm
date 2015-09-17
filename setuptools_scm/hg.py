@@ -44,7 +44,6 @@ def parse(root):
 
 
 def archival_to_version(data):
-    """stolen logic from mercurials setup.py"""
     trace('data', data)
     if 'tag' in data:
         return meta(data['tag'])
