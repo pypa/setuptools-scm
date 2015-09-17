@@ -33,7 +33,7 @@ class Wd(object):
         self.cwd = cwd
 
     def __call__(self, cmd):
-        do(cmd, str(self.cwd))
+        return do(cmd, self.cwd)
 
     def write(self, name, value):
         filename = self.cwd.join(name)

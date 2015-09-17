@@ -7,7 +7,7 @@ python:
 - '3.3'
 - '3.4'
 - '3.5'
-cache:  
+cache:
   files:
   - $HOME/.pip/cache
   - $Home/.cache/pip

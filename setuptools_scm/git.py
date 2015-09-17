@@ -1,10 +1,16 @@
-from .utils import do, do_ex
+from .utils import do, do_ex, trace
 from .version import meta
+from os.path import abspath, realpath
+
 
 FILES_COMMAND = 'git ls-files'
 
 
 def parse(root):
+    real_root, _, ret = do_ex('git rev-parse --show-toplevel', root)
+    trace('real root', real_root)
+    if abspath(realpath(real_root)) != abspath(realpath(root)):
+        return
     rev_node, _, ret = do_ex('git rev-parse --verify --quiet HEAD', root)
     if ret:
         return meta('0.0')

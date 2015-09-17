@@ -12,6 +12,8 @@ def version_keyword(dist, keyword, value):
         return
     if value is True:
         value = {}
+    if os.path.exists('PKG-INFO'):
+        value.pop('root', None)
     if getattr(value, '__call__', None):
         value = value()
     dist.metadata.version = get_version(**value)
