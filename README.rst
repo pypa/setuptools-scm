@@ -5,7 +5,7 @@ setuptools_scm
 in scm metadata instead of declaring them as the version argument
 or in a scm managed file.
 
-It also handles file finders for the supperted scm's.
+It also handles file finders for the supported scm's.
 
 .. image:: https://travis-ci.org/pypa/setuptools_scm.svg?branch=master
     :target: https://travis-ci.org/pypa/setuptools_scm
@@ -197,7 +197,7 @@ Importing in setup.py
 To support usage in :code:`setup.py` passing a callable into use_scm_version
 is supported.
 
-Within that callable, setuptools_scm is availiable for import.
+Within that callable, setuptools_scm is available for import.
 The callable must return the configuration.
 
 
