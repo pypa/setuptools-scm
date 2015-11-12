@@ -171,10 +171,14 @@ def test_root_parameter_creation(monkeypatch):
     setuptools_scm.get_version()
 
 
-def test_root_parameter_pass_by(monkeypatch):
+@pytest.fixture
+def assert_root_tmp(monkeypatch):
     def assert_root_tmp(root):
         assert root == os.path.abspath('/tmp')
     monkeypatch.setattr(setuptools_scm, 'version_from_scm', assert_root_tmp)
+
+
+def test_root_parameter_pass_by(assert_root_tmp):
     setuptools_scm.get_version(root='/tmp')
 
 
