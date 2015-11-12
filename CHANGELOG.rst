@@ -1,4 +1,8 @@
+v1.9.0
+======
 
+* Add :code:`relative_to` parameter to :code:`get_version` function;
+  fixes #44 per #45.
 
 v1.8.0
 ======

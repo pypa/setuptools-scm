@@ -60,7 +60,17 @@ def get_version(root='.',
                 version_scheme='guess-next-dev',
                 local_scheme='node-and-date',
                 write_to=None,
-                write_to_template=None):
+                write_to_template=None,
+                relative_to=None,
+                ):
+    """
+    If supplied, relative_to should be a file from which root may
+    be resolved. Typically called by a script or module that is not
+    in the root of the repository to direct setuptools_scm to the
+    root of the repository by passing ``__file__``.
+    """
+    if relative_to:
+        root = os.path.join(os.path.dirname(relative_to), root)
     root = os.path.abspath(root)
     trace('root', repr(root))
 

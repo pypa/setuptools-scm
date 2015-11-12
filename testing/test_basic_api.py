@@ -182,6 +182,11 @@ def test_root_parameter_pass_by(assert_root_tmp):
     setuptools_scm.get_version(root='/tmp')
 
 
+def test_root_relative_to(assert_root_tmp):
+    __file__ = '/tmp/module/file.py'
+    setuptools_scm.get_version(root='..', relative_to=__file__)
+
+
 def test_find_files_stop_at_root_hg(wd):
     wd('hg init')
     wd.write('test.txt', 'test')
