@@ -164,25 +164,27 @@ def test_version_from_pkginfo(tmpdir):
     assert get_version(tmpdir) == '0.1'
 
 
+def assert_root(monkeypatch, expected_root):
+    """
+    Patch version_from_scm to simply assert that root is expected root
+    """
+    def assertion(root):
+        assert root == expected_root
+    monkeypatch.setattr(setuptools_scm, 'version_from_scm', assertion)
+
+
 def test_root_parameter_creation(monkeypatch):
-    def assert_cwd(root):
-        assert root == os.getcwd()
-    monkeypatch.setattr(setuptools_scm, 'version_from_scm', assert_cwd)
+    assert_root(monkeypatch, os.getcwd())
     setuptools_scm.get_version()
 
 
-@pytest.fixture
-def assert_root_tmp(monkeypatch):
-    def assert_root_tmp(root):
-        assert root == os.path.abspath('/tmp')
-    monkeypatch.setattr(setuptools_scm, 'version_from_scm', assert_root_tmp)
-
-
-def test_root_parameter_pass_by(assert_root_tmp):
+def test_root_parameter_pass_by(monkeypatch):
+    assert_root(monkeypatch, '/tmp')
     setuptools_scm.get_version(root='/tmp')
 
 
-def test_root_relative_to(assert_root_tmp):
+def test_root_relative_to(monkeypatch):
+    assert_root(monkeypatch, '/tmp')
     __file__ = '/tmp/module/file.py'
     setuptools_scm.get_version(root='..', relative_to=__file__)
 
