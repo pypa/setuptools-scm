@@ -184,9 +184,9 @@ def test_root_parameter_pass_by(monkeypatch):
 
 
 def test_root_relative_to(monkeypatch):
-    assert_root(monkeypatch, '/tmp')
+    assert_root(monkeypatch, '/tmp/alt')
     __file__ = '/tmp/module/file.py'
-    setuptools_scm.get_version(root='..', relative_to=__file__)
+    setuptools_scm.get_version(root='../alt', relative_to=__file__)
 
 
 def test_find_files_stop_at_root_hg(wd):
