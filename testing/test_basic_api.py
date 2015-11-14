@@ -165,7 +165,7 @@ def test_version_from_pkginfo(tmpdir):
 
 
 def test_root_parameter_creation(monkeypatch):
-    def assert_cwd(root, cache_file=None):
+    def assert_cwd(root):
         assert root == os.getcwd()
     monkeypatch.setattr(setuptools_scm, 'version_from_scm', assert_cwd)
     setuptools_scm.get_version()
