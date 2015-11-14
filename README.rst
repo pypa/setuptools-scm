@@ -126,6 +126,12 @@ The Currently supported configuration keys are:
     a newstyle format string thats given the current version as
     the :code:`version` keyword argument for formatting
 
+:relative_to:
+    a file from which root may be resolved. typically called by a
+    script or module that is not
+    in the root of the repository to direct setuptools_scm to the
+    root of the repository by supplying ``__file__``.
+
 To use setuptools_scm in other Python code you can use the
 ``get_version`` function:
 
