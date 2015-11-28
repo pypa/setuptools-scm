@@ -29,9 +29,9 @@ def version_from_scm(root):
         return ep.load()(root)
     raise LookupError(
         "setuptools-scm was unable to detect version for %r.\n\n"
-        "Make sure you're not using GitHub's tarballs (or similar ones), as "
-        "those don't contain the necessary metadata. Use PyPI's tarballs "
-        "instead.\n\nFor example, if you're using pip, instead of "
+        "Make sure you're not using a Git archive of an untagged commit "
+        "or without a .git_archival.txt file. Use PyPI's tarballs instead."
+        "\n\nFor example, if you're using pip, instead of "
         "https://github.com/user/proj/archive/master.zip "
         "use git+https://github.com/user/proj.git#egg=proj" % root)
 

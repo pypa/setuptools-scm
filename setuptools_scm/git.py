@@ -1,6 +1,7 @@
-from .utils import do, do_ex, trace
-from .version import meta
-from os.path import abspath, realpath
+from .utils import data_from_mime, do, do_ex, trace
+from .version import meta, tags_to_versions
+from os.path import abspath, join, realpath
+import re
 
 
 FILES_COMMAND = 'git ls-files'
@@ -34,3 +35,19 @@ def parse(root):
         return meta(tag, distance=number, node=node, dirty=dirty)
     else:
         return meta(tag, dirty=dirty, node=node)
+
+
+tag_re = re.compile(r'(?<=\btag: )([^,]+)\b')
+
+
+def archival_to_version(data):
+    trace('data', data)
+    versions = tags_to_versions(tag_re.findall(data.get('ref-names', '')))
+    if versions:
+        return meta(versions[0])
+
+
+def parse_archival(root):
+    archival = join(root, '.git_archival.txt')
+    data = data_from_mime(archival)
+    return archival_to_version(data)
