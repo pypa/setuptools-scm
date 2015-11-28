@@ -4,7 +4,6 @@ import pytest
 
 import setuptools_scm
 from setuptools_scm import dump_version
-from setuptools_scm import integration
 
 from setuptools_scm.utils import data_from_mime, do
 
@@ -25,30 +24,6 @@ def test_data_from_mime(tmpdir):
         'name': 'test',
         'revision': '1',
     }
-
-
-def test_version_from_git(wd):
-    wd('git init')
-    wd('git config user.email test@example.com')
-    wd('git config user.name "a test"')
-    assert wd.version == '0.0'
-    wd.write('test.txt', 'test')
-    wd('git add test.txt')
-    wd('git commit -m commit')
-
-    assert wd.version.startswith('0.1.dev1+')
-    assert not wd.version.endswith('1-')
-
-    wd('git tag v0.1')
-    assert wd.version == '0.1'
-
-    wd.write('test.txt', 'test2')
-    assert wd.version.startswith('0.2.dev0+')
-    wd('git add test.txt')
-    wd('git commit -m commit')
-    assert wd.version.startswith('0.2.dev1+')
-    wd('git tag version-0.2')
-    assert wd.version.startswith('0.2')
 
 
 def test_version_from_pkginfo(wd):
@@ -79,15 +54,6 @@ def test_root_relative_to(monkeypatch):
     assert_root(monkeypatch, '/tmp/alt')
     __file__ = '/tmp/module/file.py'
     setuptools_scm.get_version(root='../alt', relative_to=__file__)
-
-
-def test_find_files_stop_at_root_git(wd):
-    wd('git init')
-    wd.write('test.txt', 'test')
-    wd('git add .')
-    wd('git commit -m test -u test')
-    wd.cwd.ensure('project/setup.cfg')
-    assert integration.find_files(str(wd.cwd/'project')) == []
 
 
 def test_dump_version(tmpdir):
