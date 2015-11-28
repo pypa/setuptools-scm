@@ -10,8 +10,8 @@ It also handles file finders for the supported scm's.
 .. image:: https://travis-ci.org/pypa/setuptools_scm.svg?branch=master
     :target: https://travis-ci.org/pypa/setuptools_scm
 
-Setup.py usage
---------------
+Usage
+-----
 
 To use setuptools_scm just modify your project's setup.py file like this:
 
@@ -30,6 +30,21 @@ To use setuptools_scm just modify your project's setup.py file like this:
            setup_requires=['setuptools_scm'],
            ...,
        )
+
+Git archives
+~~~~~~~~~~~~
+
+Supporting git archives requires a couple more things.
+
+Create a :code:`.git_archival.txt` file with the following content::
+
+    ref-names: $Format:%D$
+
+Then add this line to the :code:`.gitattributes` file::
+
+    .git_archival.txt  export-subst
+
+Finally, don't forget to commit both files.
 
 
 Programmatic usage
@@ -86,12 +101,9 @@ Builtin mechanisms for obtaining version numbers
 --------------------------------------------------
 
 1. the scm itself (git/hg)
-2. :code:`.hg_archival` files (mercurial archives)
+2. :code:`.hg_archival.txt` files (mercurial archives)
 3. PKG-INFO
-
-.. note::
-
-    git archives are not supported due to git shortcomings
+4. :code:`.git_archival.txt` files (git archives)
 
 
 Configuration Parameters
