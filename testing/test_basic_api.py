@@ -52,10 +52,9 @@ def wd(tmpdir):
     return Wd(tmpdir)
 
 
-def test_data_from_mime(wd):
-    tmpfile = wd.write(
-        'test.archival',
-        'name: test\nrevision: 1')
+def test_data_from_mime(tmpdir):
+    tmpfile = tmpdir.join('test.archival')
+    tmpfile.write('name: test\nrevision: 1')
 
     res = data_from_mime(str(tmpfile))
     assert res == {
