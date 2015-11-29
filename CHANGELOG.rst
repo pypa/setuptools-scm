@@ -1,3 +1,9 @@
+
+
+* fix isssue #63 by adding the --match parameter to the git describe call
+  and prepare the possibility of passing more options to scm backends
+
+
 v1.9.0
 ======
 

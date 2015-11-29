@@ -36,3 +36,9 @@ def test_find_files_stop_at_root_git(wd):
     wd.commit_testfile()
     wd.cwd.ensure('project/setup.cfg')
     assert integration.find_files(str(wd.cwd/'project')) == []
+
+
+def test_alphanumeric_tags_match(wd):
+    wd.commit_testfile()
+    wd('git tag newstyle-development-started')
+    assert wd.version.startswith('0.1.dev1+')
