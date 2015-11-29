@@ -17,7 +17,7 @@ def parse(root, match_tags=r'*.*'):
     rev_node = rev_node[:7]
     out, err, ret = do_ex(
         'git describe --dirty --tags --long --match %r' % match_tags,
-     root)
+        root)
     if '-' not in out and '.' not in out:
         revs = do('git rev-list HEAD', root)
         count = revs.count('\n')
