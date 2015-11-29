@@ -46,7 +46,7 @@ In oder to use setuptools_scm for sphinx config
 Notable Plugins
 ----------------
 
-`setuptools_scm_git_archive<https://pypi.python.org/pypi/setuptools_scm_git_archive>`_
+`setuptools_scm_git_archive <https://pypi.python.org/pypi/setuptools_scm_git_archive>`_
 provides partial support for obtaining versions from git archvies
 that belong to tagged versions. The only reason for not including
 it in setuptools-scm itself is git/github not supporting
