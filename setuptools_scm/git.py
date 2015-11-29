@@ -6,7 +6,7 @@ from os.path import abspath, realpath
 FILES_COMMAND = 'git ls-files'
 
 
-def parse(root, match_tags=r'\d+'):
+def parse(root, match_tags=r'*.*'):
     real_root, _, ret = do_ex('git rev-parse --show-toplevel', root)
     trace('real root', real_root)
     if abspath(realpath(real_root)) != abspath(realpath(root)):
