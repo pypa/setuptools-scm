@@ -9,6 +9,9 @@ from .utils import trace
 from .version import format_version
 from .discover import find_matching_entrypoint
 
+PRETEND_KEY = 'SETUPTOOLS_SCM_PRETEND_VERSION'
+
+
 TEMPLATES = {
     '.py': """\
 # coding: utf-8
@@ -24,6 +27,9 @@ string_types = (str,) if PY3 else (str, unicode)  # noqa
 
 
 def version_from_scm(root):
+    pretended = os.environ.get(PRETEND_KEY)
+    if pretended:
+        return pretended
     ep = find_matching_entrypoint(root, 'setuptools_scm.parse_scm')
     if ep:
         return ep.load()(root)

@@ -155,6 +155,15 @@ It optionally accepts the keys of the ``use_scm_version`` parameter as
 keyword arguments.
 
 
+Environment Variables
+---------------------
+
+:SETUPTOOLS_SCM_PRETEND_VERSION:
+  when defined and not empty,
+  its used as the primary source for the version number
+  in which case it will be a unparsed string
+
+
 Extending setuptools_scm
 ------------------------
 

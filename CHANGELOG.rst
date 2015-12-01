@@ -1,4 +1,6 @@
 
+* add support for overriding the version number via the 
+  environment variable SETUPTOOLS_SCM_PRETEND_VERSION
 
 * fix isssue #63 by adding the --match parameter to the git describe call
   and prepare the possibility of passing more options to scm backends

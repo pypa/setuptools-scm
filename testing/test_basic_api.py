@@ -50,6 +50,12 @@ def test_root_parameter_pass_by(monkeypatch):
     setuptools_scm.get_version(root='/tmp')
 
 
+def test_pretended(monkeypatch):
+    pretense = '2345'
+    monkeypatch.setenv(setuptools_scm.PRETEND_KEY, pretense)
+    assert setuptools_scm.get_version() == pretense
+
+
 def test_root_relative_to(monkeypatch):
     assert_root(monkeypatch, '/tmp/alt')
     __file__ = '/tmp/module/file.py'
