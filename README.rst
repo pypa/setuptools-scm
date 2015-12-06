@@ -143,6 +143,12 @@ The Currently supported configuration keys are:
     in the root of the repository to direct setuptools_scm to the
     root of the repository by supplying ``__file__``.
 
+:parse:
+  a function that will be used instead of the discovered scm for parsing the version,
+  use with caution, this is a expert function and you should be closely familiar
+  with the setuptools_scm internals to use it
+
+
 To use setuptools_scm in other Python code you can use the
 ``get_version`` function:
 

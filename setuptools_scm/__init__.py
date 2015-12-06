@@ -68,6 +68,7 @@ def get_version(root='.',
                 write_to=None,
                 write_to_template=None,
                 relative_to=None,
+                parse=None,
                 ):
     """
     If supplied, relative_to should be a file from which root may
@@ -80,7 +81,7 @@ def get_version(root='.',
     root = os.path.abspath(root)
     trace('root', repr(root))
 
-    version = version_from_scm(root)
+    version = (parse or version_from_scm)(root)
 
     if version:
         if isinstance(version, string_types):

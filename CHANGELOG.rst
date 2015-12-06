@@ -5,6 +5,10 @@
 * fix isssue #63 by adding the --match parameter to the git describe call
   and prepare the possibility of passing more options to scm backends
 
+* fix issue #70 and #71 by introducing the parse keyword
+  to specify custom scm parsing, its an expert feature,
+  use with caution
+
 
 v1.9.0
 ======

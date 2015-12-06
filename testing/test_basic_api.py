@@ -72,3 +72,9 @@ def test_dump_version(tmpdir):
     assert repr('1.0') in content
     import ast
     ast.parse(content)
+
+
+def test_parse():
+    def parse(root):
+        return 'tricked you'
+    assert setuptools_scm.get_version(parse=parse) == 'tricked you'
