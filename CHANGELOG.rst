@@ -1,3 +1,5 @@
+v1.10.0
+=======
 
 * add support for overriding the version number via the 
   environment variable SETUPTOOLS_SCM_PRETEND_VERSION
