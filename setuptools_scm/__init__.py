@@ -29,12 +29,11 @@ string_types = (str,) if PY3 else (str, unicode)  # noqa
 def version_from_scm(root):
     return _version_from_entrypoint(root, 'setuptools_scm.parse_scm')
 
+
 def _version_from_entrypoint(root, entrypoint):
-   
     ep = find_matching_entrypoint(root, entrypoint)
     if ep:
         return ep.load()(root)
-    
 
 
 def dump_version(root, version, write_to, template=None):
@@ -100,7 +99,7 @@ def get_version(root='.',
     root = os.path.abspath(root)
     trace('root', repr(root))
 
-    version = _do_parse(root, parse)    
+    version = _do_parse(root, parse)
 
     if version:
         if isinstance(version, string_types):
