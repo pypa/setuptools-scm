@@ -9,6 +9,9 @@
   to specify custom scm parsing, its an expert feature,
   use with caution
 
+  this change also introduces the setuptools_scm.parse_scm_fallback
+  entrypoint which can be used to register custom archive fallbacks
+
 
 v1.9.0
 ======

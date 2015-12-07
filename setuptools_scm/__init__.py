@@ -27,19 +27,14 @@ string_types = (str,) if PY3 else (str, unicode)  # noqa
 
 
 def version_from_scm(root):
-    pretended = os.environ.get(PRETEND_KEY)
-    if pretended:
-        return pretended
-    ep = find_matching_entrypoint(root, 'setuptools_scm.parse_scm')
+    return _version_from_entrypoint(root, 'setuptools_scm.parse_scm')
+
+def _version_from_entrypoint(root, entrypoint):
+   
+    ep = find_matching_entrypoint(root, entrypoint)
     if ep:
         return ep.load()(root)
-    raise LookupError(
-        "setuptools-scm was unable to detect version for %r.\n\n"
-        "Make sure you're not using GitHub's tarballs (or similar ones), as "
-        "those don't contain the necessary metadata. Use PyPI's tarballs "
-        "instead.\n\nFor example, if you're using pip, instead of "
-        "https://github.com/user/proj/archive/master.zip "
-        "use git+https://github.com/user/proj.git#egg=proj" % root)
+    
 
 
 def dump_version(root, version, write_to, template=None):
@@ -62,6 +57,30 @@ def dump_version(root, version, write_to, template=None):
         fp.write(dump)
 
 
+def _do_parse(root, parse):
+    pretended = os.environ.get(PRETEND_KEY)
+    if pretended:
+        return pretended
+
+    if parse:
+        version = parse(root) or _version_from_entrypoint(
+            root, 'setuptools_scm.parse_scm_fallback')
+    else:
+        # include fallbacks after dropping them from the main entrypoint
+        version = version_from_scm(root)
+
+    if version:
+        return version
+
+    raise LookupError(
+        "setuptools-scm was unable to detect version for %r.\n\n"
+        "Make sure you're not using GitHub's tarballs (or similar ones), as "
+        "those don't contain the necessary metadata. Use PyPI's tarballs "
+        "instead.\n\nFor example, if you're using pip, instead of "
+        "https://github.com/user/proj/archive/master.zip "
+        "use git+https://github.com/user/proj.git#egg=proj" % root)
+
+
 def get_version(root='.',
                 version_scheme='guess-next-dev',
                 local_scheme='node-and-date',
@@ -81,7 +100,7 @@ def get_version(root='.',
     root = os.path.abspath(root)
     trace('root', repr(root))
 
-    version = (parse or version_from_scm)(root)
+    version = _do_parse(root, parse)    
 
     if version:
         if isinstance(version, string_types):
