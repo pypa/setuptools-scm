@@ -4,10 +4,13 @@ from os.path import abspath, realpath
 
 
 FILES_COMMAND = 'git ls-files'
+DEFAULT_DESCRIBE = 'git describe --dirty --tags --long --match *.*'
 
 
-def parse(root, match_tags=r'*.*'):
+def parse(root, describe_command=DEFAULT_DESCRIBE):
     real_root, _, ret = do_ex('git rev-parse --show-toplevel', root)
+    if ret:
+        return
     trace('real root', real_root)
     if abspath(realpath(real_root)) != abspath(realpath(root)):
         return
@@ -15,9 +18,7 @@ def parse(root, match_tags=r'*.*'):
     if ret:
         return meta('0.0')
     rev_node = rev_node[:7]
-    out, err, ret = do_ex(
-        'git describe --dirty --tags --long --match %r' % match_tags,
-        root)
+    out, err, ret = do_ex(describe_command, root)
     if '-' not in out and '.' not in out:
         revs = do('git rev-list HEAD', root)
         count = revs.count('\n')
