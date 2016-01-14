@@ -78,7 +78,7 @@ class ScmVersion(object):
 
 
 def meta(tag, distance=None, dirty=False, node=None, **kw):
-    if parse_version is not None and not isinstance(tag, SetuptoolsVersion):
+    if SetuptoolsVersion is None or not isinstance(tag, SetuptoolsVersion):
         tag = tag_to_version(tag)
     trace('version', tag)
 
