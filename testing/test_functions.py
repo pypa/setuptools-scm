@@ -131,3 +131,13 @@ def test_get_windows_long_path_name(tmpdir):
     with pytest.raises(OSError) as excinfo:
         get_windows_long_path_name("unexistent_file_name")
     assert 'The system cannot find the file specified' in str(excinfo)
+
+
+@pytest.mark.parametrize('tag,expected', [
+    ('1.0.0', '1.0.0'),
+    ('1.0.dev0', '1.0.dev0'),
+    ('v1.0', '1.0'),
+    ('foo-v1.0', '1.0'),
+])
+def test_meta_parse_tag(tag, expected):
+    assert meta(tag).format_with('{tag}') == expected
