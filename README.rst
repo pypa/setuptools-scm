@@ -35,12 +35,13 @@ To use setuptools_scm just modify your project's setup.py file like this:
 Programmatic usage
 ------------------
 
-In oder to use setuptools_scm for sphinx config
+In order to use setuptools_scm for sphinx config, assuming the sphinx conf
+is one directory deeper than the project's root, use::
 
 .. code:: python
 
     from setuptools_scm import get_version
-    version = get_version()
+    version = get_version(root='..', relative_to=__file__)
 
 
 Notable Plugins
