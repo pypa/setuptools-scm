@@ -1,3 +1,71 @@
+v1.11.0
+=======
+
+* always run tag_to_version so in order to handle prefixes on old setuptools
+  (thanks to Brian May)
+* drop support for python 3.2
+* extend the error message on missing scm metadata
+  (thanks Markus Unterwaditzer)
+* fix bug when using callable version_scheme
+  (thanks Esben Haabendal)
+
+v1.10.1
+=======
+
+* fix issue #73 - in hg pre commit merge, consider parent1 instead of failing
+
+v1.10.0
+=======
+
+* add support for overriding the version number via the
+  environment variable SETUPTOOLS_SCM_PRETEND_VERSION
+
+* fix isssue #63 by adding the --match parameter to the git describe call
+  and prepare the possibility of passing more options to scm backends
+
+* fix issue #70 and #71 by introducing the parse keyword
+  to specify custom scm parsing, its an expert feature,
+  use with caution
+
+  this change also introduces the setuptools_scm.parse_scm_fallback
+  entrypoint which can be used to register custom archive fallbacks
+
+
+v1.9.0
+======
+
+* Add :code:`relative_to` parameter to :code:`get_version` function;
+  fixes #44 per #45.
+
+v1.8.0
+======
+
+* fix issue with setuptools wrong version warnings being printed to standard
+  out. User is informed now by distutils-warnings.
+* restructure root finding, we now reliably ignore outer scm
+  and prefer PKG-INFO over scm, fixes #43 and #45
+
+v1.7.0
+======
+
+* correct the url to github
+  thanks David Szotten
+* enhance scm not found errors with a note on git tarballs
+  thanks Markus
+* add support for :code:`write_to_template`
+
+v1.6.0
+======
+
+* bail out early if the scm is missing
+
+  this brings issues with git tarballs and
+  older devpi-client releases to light,
+  before we would let the setup stay at version 0.0,
+  now there is a ValueError
+
+* propperly raise errors on write_to missuse (thanks Te-jé Rodgers)
+
 v1.5.5
 ======
 
@@ -24,7 +92,7 @@ v1.5.1
 * fix file access bug i missed in 1.5
 
 v1.5.0
-=======
+======
 
 * moved setuptools integration related code to own file
 * support storing version strings into a module/text file
@@ -49,30 +117,30 @@ v1.2.0
 * enhance self-use
 
 v1.1.0
-=======
+======
 
 * enable self-use
 
 v1.0.0
-=======
+======
 
 * documentation enhancements
 
 v0.26
-======
+=====
 
 * rename to setuptools_scm
 * split into package, add lots of entry points for extension
 * pluggable version schemes
 
 v0.25
-======
+=====
 
 * fix pep440 support
   this reshuffles the complete code for version guessing
 
 v0.24
-======
+=====
 
 * dont drop dirty flag on node finding
 * fix distance for dirty flagged versions
@@ -99,19 +167,19 @@ v0.22
   use samefile since it does path normalisation
 
 v0.21
-======
+=====
 
 * fix the own version attribute (thanks stefan)
 
 v0.20
-======
+=====
 
 * fix issue 11: always take git describe long format
   to avoid the source of the ambiguity
 * fix issue 12: add a __version__ attribute via pkginfo
 
 v0.19
-=======
+=====
 
 * configurable next version guessing
 * fix distance guessing (thanks stefan)

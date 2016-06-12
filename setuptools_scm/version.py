@@ -5,6 +5,8 @@ from .utils import trace
 
 from pkg_resources import iter_entry_points
 
+from distutils import log
+
 try:
     from pkg_resources import parse_version, SetuptoolsVersion
 except ImportError as e:
@@ -13,15 +15,15 @@ except ImportError as e:
 
 def _warn_if_setuptools_outdated():
     if parse_version is None:
-        print("your setuptools is too old (<12)")
-        print("setuptools_scm functionality is degraded")
+        log.warn("your setuptools is too old (<12)")
+        log.warn("setuptools_scm functionality is degraded")
 
 
 def callable_or_entrypoint(group, callable_or_name):
     trace('ep', (group, callable_or_name))
     if isinstance(callable_or_name, str):
-        ep = next(iter_entry_points(group, callable_or_name))
-        return ep.load()
+        for ep in iter_entry_points(group, callable_or_name):
+            return ep.load()
     else:
         return callable_or_name
 
@@ -29,6 +31,7 @@ def callable_or_entrypoint(group, callable_or_name):
 def tag_to_version(tag):
     trace('tag', tag)
     # lstrip the v because of py2/py3 differences in setuptools
+    # also required for old versions of setuptools
     version = tag.rsplit('-', 1)[-1].lstrip('v')
     if parse_version is None:
         return version
@@ -71,9 +74,12 @@ class ScmVersion(object):
             tag=self.tag, distance=self.distance,
             node=self.node, dirty=self.dirty, extra=self.extra)
 
+    def format_choice(self, clean_format, dirty_format):
+        return self.format_with(dirty_format if self.dirty else clean_format)
+
 
 def meta(tag, distance=None, dirty=False, node=None, **kw):
-    if parse_version is not None and not isinstance(tag, SetuptoolsVersion):
+    if SetuptoolsVersion is None or not isinstance(tag, SetuptoolsVersion):
         tag = tag_to_version(tag)
     trace('version', tag)
 
@@ -94,29 +100,20 @@ def guess_next_version(tag_version, distance):
 
 def guess_next_dev_version(version):
     if version.exact:
-        return version.format_with('{tag}')
+        return version.format_with("{tag}")
     else:
         return guess_next_version(version.tag, version.distance)
 
 
 def get_local_node_and_date(version):
     if version.exact:
-        if version.dirty:
-            return version.format_with("+d{time:%Y%m%d}")
-        else:
-            return ''
+        return version.format_choice("", "+d{time:%Y%m%d}")
     else:
-        if version.dirty:
-            return version.format_with("+n{node}.d{time:%Y%m%d}")
-        else:
-            return version.format_with("+n{node}")
+        return version.format_choice("+n{node}", "+n{node}.d{time:%Y%m%d}")
 
 
 def get_local_dirty_tag(version):
-    if version.dirty:
-        return '+dirty'
-    else:
-        return ''
+    return version.format_choice('', '+dirty')
 
 
 def postrelease_version(version):

@@ -60,7 +60,7 @@ class sdist(sdist_orig):
 
 arguments = dict(
     name='setuptools_scm',
-    url='http://bitbucket.org/pypa/setuptools_scm/',
+    url='https://github.com/pypa/setuptools_scm/',
     zip_safe=True,
     # pass here since entrypints are not yet registred
     use_scm_version=scm_config,
@@ -82,6 +82,12 @@ arguments = dict(
         [setuptools_scm.parse_scm]
         .hg = setuptools_scm.hg:parse
         .git = setuptools_scm.git:parse
+
+        # those are left here for backward compatibility in the 1.x series
+        .hg_archival.txt = setuptools_scm.hg:parse_archival
+        PKG-INFO = setuptools_scm.hacks:parse_pkginfo
+
+        [setuptools_scm.parse_scm_fallback]
         .hg_archival.txt = setuptools_scm.hg:parse_archival
         PKG-INFO = setuptools_scm.hacks:parse_pkginfo
 
@@ -101,6 +107,10 @@ arguments = dict(
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.4',
         'Topic :: Software Development :: Libraries',
         'Topic :: Software Development :: Version Control',
         'Topic :: System :: Software Distribution',

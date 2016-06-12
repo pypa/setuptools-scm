@@ -1,15 +1,14 @@
-.. warning::
-
-    this was moved to https://github.com/pypa/setuptools_scm
-
-
 setuptools_scm
 ===============
 
 :code:`setuptools_scm` handles managing your python package versions
-in scm metadata.
-It also handles file finders for the suppertes scm's
+in scm metadata instead of declaring them as the version argument
+or in a scm managed file.
 
+It also handles file finders for the supported scm's.
+
+.. image:: https://travis-ci.org/pypa/setuptools_scm.svg?branch=master
+    :target: https://travis-ci.org/pypa/setuptools_scm
 
 Setup.py usage
 --------------
@@ -42,6 +41,17 @@ In oder to use setuptools_scm for sphinx config
 
     from setuptools_scm import get_version
     version = get_version()
+
+
+Notable Plugins
+----------------
+
+`setuptools_scm_git_archive <https://pypi.python.org/pypi/setuptools_scm_git_archive>`_
+provides partial support for obtaining versions from git archvies
+that belong to tagged versions. The only reason for not including
+it in setuptools-scm itself is git/github not supporting
+sufficient metadata for untagged/followup commits,
+which is preventing a consistent UX.
 
 
 Default versioning scheme
@@ -118,6 +128,26 @@ The Currently supported configuration keys are:
     containing the current version.
     its ideal or creating a version.py file within the package
 
+    .. warning::
+
+      only :code:`*.py` and :code:`*.txt` have builtin templates,
+      for other extensions it is necessary
+      to provide a :code:`write_to_template`
+:write_to_template:
+    a newstyle format string thats given the current version as
+    the :code:`version` keyword argument for formatting
+
+:relative_to:
+    a file from which root may be resolved. typically called by a
+    script or module that is not
+    in the root of the repository to direct setuptools_scm to the
+    root of the repository by supplying ``__file__``.
+
+:parse:
+  a function that will be used instead of the discovered scm for parsing the version,
+  use with caution, this is a expert function and you should be closely familiar
+  with the setuptools_scm internals to use it
+
 
 To use setuptools_scm in other Python code you can use the
 ``get_version`` function:
@@ -129,6 +159,15 @@ To use setuptools_scm in other Python code you can use the
 
 It optionally accepts the keys of the ``use_scm_version`` parameter as
 keyword arguments.
+
+
+Environment Variables
+---------------------
+
+:SETUPTOOLS_SCM_PRETEND_VERSION:
+  when defined and not empty,
+  its used as the primary source for the version number
+  in which case it will be a unparsed string
 
 
 Extending setuptools_scm
@@ -190,7 +229,7 @@ Importing in setup.py
 To support usage in :code:`setup.py` passing a callable into use_scm_version
 is supported.
 
-Within that callable, setuptools_scm is availiable for import.
+Within that callable, setuptools_scm is available for import.
 The callable must return the configuration.
 
 
@@ -205,3 +244,13 @@ The callable must return the configuration.
                 return dirty_tag(version)
 
         return {'local_scheme': clean_scheme}
+
+
+Code of Conduct
+---------------
+
+Everyone interacting in the setuptools_scm project's codebases, issue trackers,
+chat rooms, and mailing lists is expected to follow the
+`PyPA Code of Conduct`_.
+
+.. _PyPA Code of Conduct: https://www.pypa.io/en/latest/code-of-conduct/
