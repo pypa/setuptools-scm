@@ -1,6 +1,6 @@
 from .utils import do, do_ex, trace
 from .version import meta
-from os.path import abspath, realpath
+from os.path import abspath, normcase, realpath
 
 
 FILES_COMMAND = 'git ls-files'
@@ -12,7 +12,8 @@ def parse(root, describe_command=DEFAULT_DESCRIBE):
     if ret:
         return
     trace('real root', real_root)
-    if abspath(realpath(real_root)) != abspath(realpath(root)):
+    if (normcase(abspath(realpath(real_root))) !=
+            normcase(abspath(realpath(root)))):
         return
     rev_node, _, ret = do_ex('git rev-parse --verify --quiet HEAD', root)
     if ret:
