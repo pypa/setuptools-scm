@@ -50,8 +50,6 @@ def do_ex(cmd, cwd='.'):
         cwd=str(cwd),
         env=_always_strings(dict(
             os.environ,
-            # disable hgrc processing other than .hg/hgrc
-            HGRCPATH='',
             # try to disable i18n
             LC_ALL='C',
             LANGUAGE='',
