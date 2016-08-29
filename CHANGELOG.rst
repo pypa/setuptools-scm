@@ -1,9 +1,14 @@
+v1.12.0
+=======
+
+* fix issue #97 - add support for mercurial plugins
+
 v1.11.1
 ========
 
 * fix issue #88 - better docs for sphinx usage (thanks Jason)
 * fix issue #89 - use normpath to deal with windows
-  (thanks Te-jé Rodgers for reporting and fixing) 
+  (thanks Te-jé Rodgers for reporting and fixing)
 
 v1.11.0
 =======
