@@ -48,7 +48,7 @@ Notable Plugins
 ----------------
 
 `setuptools_scm_git_archive <https://pypi.python.org/pypi/setuptools_scm_git_archive>`_
-provides partial support for obtaining versions from git archvies
+provides partial support for obtaining versions from git archives
 that belong to tagged versions. The only reason for not including
 it in setuptools-scm itself is git/github not supporting
 sufficient metadata for untagged/followup commits,
