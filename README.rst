@@ -36,7 +36,7 @@ Programmatic usage
 ------------------
 
 In order to use setuptools_scm for sphinx config, assuming the sphinx conf
-is one directory deeper than the project's root, use::
+is one directory deeper than the project's root, use:
 
 .. code:: python
 
