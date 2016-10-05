@@ -104,15 +104,15 @@ def get_version(root='.',
     version = _do_parse(root, parse)
 
     if version:
+        dump_version(
+            root=root,
+            version=version,
+            write_to=write_to,
+            template=write_to_template)
         if isinstance(version, string_types):
             return version
         version = format_version(
             version,
             version_scheme=version_scheme,
             local_scheme=local_scheme)
-        dump_version(
-            root=root,
-            version=version,
-            write_to=write_to,
-            template=write_to_template)
         return version
