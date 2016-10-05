@@ -61,6 +61,8 @@ def dump_version(root, version, write_to, template=None):
 def _do_parse(root, parse):
     pretended = os.environ.get(PRETEND_KEY)
     if pretended:
+        # we use meta here since the pretended version
+        # must adhere to the pep to begin with
         return meta(pretended)
 
     if parse:
@@ -70,6 +72,8 @@ def _do_parse(root, parse):
                 "version parse result was a string\n"
                 "please return a parsed version",
                 category=DeprecationWarning)
+            # we use ScmVersion here in order to keep legacy code working
+            # for 2.0 we should use meta
             parse_result = ScmVersion(parse_result)
         version = parse_result or _version_from_entrypoint(
             root, 'setuptools_scm.parse_scm_fallback')
