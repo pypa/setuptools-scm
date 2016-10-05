@@ -1,3 +1,10 @@
+v2.0.0
+========
+
+* fix regression caused by the fix of #101
+  * assert types for version dumping
+  * strictly pass all versions trough parsed version metadata
+
 v1.12.0
 =======
 
