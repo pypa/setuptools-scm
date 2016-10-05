@@ -52,7 +52,7 @@ def test_format_version(version, monkeypatch, scheme, expected):
 
 def test_dump_version_doesnt_bail_on_value_error(tmpdir):
     write_to = "VERSION"
-    version = VERSIONS['exact']
+    version = str(VERSIONS['exact'].tag)
     with pytest.raises(ValueError) as exc_info:
         dump_version(tmpdir.strpath, version, write_to)
     assert str(exc_info.value).startswith("bad file format:")

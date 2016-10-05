@@ -1,3 +1,9 @@
+v1.13.0
+========
+
+* fix regression caused by the fix of #101
+  * assert types for version dumping
+
 v1.12.0
 =======
 

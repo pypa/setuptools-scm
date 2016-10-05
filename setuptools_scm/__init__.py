@@ -37,6 +37,7 @@ def _version_from_entrypoint(root, entrypoint):
 
 
 def dump_version(root, version, write_to, template=None):
+    assert isinstance(version, string_types)
     if not write_to:
         return
     target = os.path.normpath(os.path.join(root, write_to))
@@ -101,18 +102,20 @@ def get_version(root='.',
     root = os.path.abspath(root)
     trace('root', repr(root))
 
-    version = _do_parse(root, parse)
+    parsed_version = _do_parse(root, parse)
 
-    if version:
+    if parsed_version:
+        if isinstance(parsed_version, string_types):
+            version_string = parsed_version
+        else:
+            version_string = format_version(
+                parsed_version,
+                version_scheme=version_scheme,
+                local_scheme=local_scheme)
         dump_version(
             root=root,
-            version=version,
+            version=version_string,
             write_to=write_to,
             template=write_to_template)
-        if isinstance(version, string_types):
-            return version
-        version = format_version(
-            version,
-            version_scheme=version_scheme,
-            local_scheme=local_scheme)
-        return version
+
+        return version_string
