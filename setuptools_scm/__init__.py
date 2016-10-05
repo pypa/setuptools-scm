@@ -4,9 +4,10 @@
 """
 import os
 import sys
+import warnings
 
 from .utils import trace
-from .version import format_version
+from .version import format_version, meta, ScmVersion
 from .discover import find_matching_entrypoint
 
 PRETEND_KEY = 'SETUPTOOLS_SCM_PRETEND_VERSION'
@@ -60,10 +61,17 @@ def dump_version(root, version, write_to, template=None):
 def _do_parse(root, parse):
     pretended = os.environ.get(PRETEND_KEY)
     if pretended:
-        return pretended
+        return meta(pretended)
 
     if parse:
-        version = parse(root) or _version_from_entrypoint(
+        parse_result = parse(root)
+        if isinstance(parse_result, string_types):
+            warnings.warn(
+                "version parse result was a string\n"
+                "please return a parsed version",
+                category=DeprecationWarning)
+            parse_result = ScmVersion(parse_result)
+        version = parse_result or _version_from_entrypoint(
             root, 'setuptools_scm.parse_scm_fallback')
     else:
         # include fallbacks after dropping them from the main entrypoint
@@ -105,13 +113,10 @@ def get_version(root='.',
     parsed_version = _do_parse(root, parse)
 
     if parsed_version:
-        if isinstance(parsed_version, string_types):
-            version_string = parsed_version
-        else:
-            version_string = format_version(
-                parsed_version,
-                version_scheme=version_scheme,
-                local_scheme=local_scheme)
+        version_string = format_version(
+            parsed_version,
+            version_scheme=version_scheme,
+            local_scheme=local_scheme)
         dump_version(
             root=root,
             version=version_string,
