@@ -2,6 +2,8 @@ v1.12.0
 =======
 
 * fix issue #97 - add support for mercurial plugins
+* fix issue #101 - write version cache even for pretend version
+  (thanks anarcat for reporting and fixing)
 
 v1.11.1
 ========
