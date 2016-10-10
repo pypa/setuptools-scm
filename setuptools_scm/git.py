@@ -25,7 +25,13 @@ def parse(root, describe_command=DEFAULT_DESCRIBE):
         count = revs.count('\n')
         if ret:
             out = rev_node
-        return meta('0.0', distance=count + 1, node=out)
+        git_dirt = do('git describe --always --dirty')
+        return meta(
+            '0.0',
+            distance=count + 1,
+            node=out,
+            dirty=git_dirt.endswith('-dirty'),
+        )
     if ret:
         return
     dirty = out.endswith('-dirty')
