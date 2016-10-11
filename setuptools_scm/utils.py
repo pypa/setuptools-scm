@@ -43,8 +43,11 @@ def _always_strings(env_dict):
 
 def do_ex(cmd, cwd='.'):
     trace('cmd', repr(cmd))
+    if not isinstance(cmd, (list, tuple)):
+        cmd = shlex.split(cmd)
+
     p = subprocess.Popen(
-        shlex.split(cmd),
+        cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=str(cwd),
@@ -70,7 +73,6 @@ def do_ex(cmd, cwd='.'):
 def do(cmd, cwd='.'):
     out, err, ret = do_ex(cmd, cwd)
     if ret:
-        trace('ret', ret)
         print(err)
     return out
 
