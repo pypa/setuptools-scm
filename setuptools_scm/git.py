@@ -1,4 +1,4 @@
-from .utils import do, do_ex, trace
+from .utils import do_ex, trace
 from .version import meta
 from os.path import abspath, normcase, realpath
 
