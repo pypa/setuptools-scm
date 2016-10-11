@@ -1,7 +1,7 @@
 v1.13.1
 =======
 
-* fix issue #86
+* fix issue #86 - detect dirty git workdir without tags
 
 v1.13.0
 =======
