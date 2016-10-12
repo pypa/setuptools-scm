@@ -1,3 +1,8 @@
+v1.14.0
+=======
+
+* publish bdist_egg for python 2.6, 2.7 and 3.3-3.5
+
 v1.13.1
 =======
 
