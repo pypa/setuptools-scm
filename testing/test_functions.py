@@ -30,15 +30,15 @@ VERSIONS = {
 
 @pytest.mark.parametrize('version,scheme,expected', [
     ('exact', 'guess-next-dev node-and-date', '1.1'),
-    ('zerodistance', 'guess-next-dev node-and-date', '1.2.dev0+nNone'),
-    ('dirty', 'guess-next-dev node-and-date', '1.2.dev0+nNone.dtime'),
-    ('distance', 'guess-next-dev node-and-date', '1.2.dev3+nNone'),
-    ('distancedirty', 'guess-next-dev node-and-date', '1.2.dev3+nNone.dtime'),
+    ('zerodistance', 'guess-next-dev node-and-date', '1.2.dev0'),
+    ('dirty', 'guess-next-dev node-and-date', '1.2.dev0+dtime'),
+    ('distance', 'guess-next-dev node-and-date', '1.2.dev3'),
+    ('distancedirty', 'guess-next-dev node-and-date', '1.2.dev3+dtime'),
     ('exact', 'post-release node-and-date', '1.1'),
-    ('zerodistance', 'post-release node-and-date', '1.1.post0+nNone'),
-    ('dirty', 'post-release node-and-date', '1.1.post0+nNone.dtime'),
-    ('distance', 'post-release node-and-date', '1.1.post3+nNone'),
-    ('distancedirty', 'post-release node-and-date', '1.1.post3+nNone.dtime'),
+    ('zerodistance', 'post-release node-and-date', '1.1.post0'),
+    ('dirty', 'post-release node-and-date', '1.1.post0+dtime'),
+    ('distance', 'post-release node-and-date', '1.1.post3'),
+    ('distancedirty', 'post-release node-and-date', '1.1.post3+dtime'),
 ])
 def test_format_version(version, monkeypatch, scheme, expected):
     version = VERSIONS[version]

@@ -2,6 +2,7 @@ v1.14.0
 =======
 
 * publish bdist_egg for python 2.6, 2.7 and 3.3-3.5
+* fix issue #107 - dont use node if it is None
 
 v1.13.1
 =======
