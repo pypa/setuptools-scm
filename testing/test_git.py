@@ -33,6 +33,12 @@ def test_version_from_git(wd):
     assert wd.version.startswith('0.2')
 
 
+@pytest.mark.issue(108)
+def test_git_worktree(wd):
+    wd.write('test.txt', 'test2')
+    assert wd.version.startswith('0.1.dev0+d')
+
+
 @pytest.mark.issue(86)
 def test_git_dirty_notag(wd):
     wd.commit_testfile()
