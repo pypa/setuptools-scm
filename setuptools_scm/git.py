@@ -30,7 +30,7 @@ class GitWorkdir(object):
         return cls(real_wd)
 
     def is_dirty(self):
-        out, _, _ = self.do_ex("git status --porcelain")
+        out, _, _ = self.do_ex("git status --porcelain --untracked-files=no")
         return bool(out)
 
     def node(self):
@@ -50,7 +50,7 @@ def parse(root, describe_command=DEFAULT_DESCRIBE):
     dirty = wd.is_dirty()
 
     if rev_node is None:
-        return meta('0.0', dirty=dirty)
+        return meta('0.0', distance=0, dirty=dirty)
 
     out, err, ret = do_ex(describe_command, root)
     if ret:
