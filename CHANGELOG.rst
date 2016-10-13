@@ -1,3 +1,12 @@
+v1.14.1
+=======
+
+* fix #109: when detecting a dirty git workdir
+            don't consider untracked file
+            (this was a regression due to #86 in v1.13.1)
+* consider the distance 0 when the git node is unknown
+  (happens when you haven't commited anything)
+
 v1.14.0
 =======
 
