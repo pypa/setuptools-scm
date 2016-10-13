@@ -50,7 +50,7 @@ def parse(root, describe_command=DEFAULT_DESCRIBE):
     dirty = wd.is_dirty()
 
     if rev_node is None:
-        return meta('0.0', dirty=dirty)
+        return meta('0.0', distance=0, dirty=dirty)
 
     out, err, ret = do_ex(describe_command, root)
     if ret:
