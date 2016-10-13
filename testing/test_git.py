@@ -34,8 +34,12 @@ def test_version_from_git(wd):
 
 
 @pytest.mark.issue(108)
+@pytest.mark.issue(109)
 def test_git_worktree(wd):
     wd.write('test.txt', 'test2')
+    # untracked files dont change the state
+    assert wd.version == '0.1.dev0'
+    wd('git add test.txt')
     assert wd.version.startswith('0.1.dev0+d')
 
 
