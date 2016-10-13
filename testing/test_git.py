@@ -14,7 +14,7 @@ def wd(wd):
 
 
 def test_version_from_git(wd):
-    assert wd.version == '0.0'
+    assert wd.version == '0.1.dev0'
 
     wd.commit_testfile()
     assert wd.version.startswith('0.1.dev1+')
