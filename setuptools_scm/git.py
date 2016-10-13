@@ -30,7 +30,7 @@ class GitWorkdir(object):
         return cls(real_wd)
 
     def is_dirty(self):
-        out, _, _ = self.do_ex("git status --porcelain")
+        out, _, _ = self.do_ex("git status --porcelain --untracked-files=no")
         return bool(out)
 
     def node(self):
