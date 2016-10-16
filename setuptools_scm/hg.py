@@ -8,8 +8,8 @@ FILES_COMMAND = 'hg locate -I .'
 def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
     dirty = node.endswith('+')
     node = node.strip('+')
-    revset = ("(branch(.) and tag('{0}')::. and file('re:^(?!\.hgtags).*$')"
-              " - tag('{0}'))").format(str(tag))
+    revset = ("(branch(.) and tag({tag!r})::. and file('re:^(?!\.hgtags).*$')"
+              " - tag({tag!r}))").format(tag=tag)
     if tag != '0.0':
         commits = do(['hg', 'log', '-r', revset, '--template', '{node|short}'],
                      root)
