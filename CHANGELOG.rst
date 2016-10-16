@@ -1,3 +1,10 @@
+v1.15.0
+=======
+
+* more sophisticated ignoring of mercurial tag commits
+  when considering distance in commits
+  (thanks Petre Mierlutiu)
+
 v1.14.1
 =======
 
