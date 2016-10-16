@@ -8,13 +8,18 @@ FILES_COMMAND = 'hg locate -I .'
 def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
     dirty = node.endswith('+')
     node = node.strip('+')
-    st = do('hg st --no-status --change %s' % str(node), root)
-
-    trace('normalize', locals())
-    if int(dist) == 1 and st == '.hgtags' and not dirty:
-        return meta(tag)
+    revset = ("(branch(.) and tag({tag!r})::. and file('re:^(?!\.hgtags).*$')"
+              " - tag({tag!r}))").format(tag=tag)
+    if tag != '0.0':
+        commits = do(['hg', 'log', '-r', revset, '--template', '{node|short}'],
+                     root)
     else:
+        commits = True
+    trace('normalize', locals())
+    if commits or dirty:
         return meta(tag, distance=dist, node=node, dirty=dirty)
+    else:
+        return meta(tag)
 
 
 def parse(root):
@@ -36,7 +41,9 @@ def parse(root):
     out = do(cmd, root)
     try:
         # in merge state we assume parent 1 is fine
-        tag, dist = out.splitlines()[0].split()
+        tags, dist = out.splitlines()[0].split()
+        # pick latest tag from tag list
+        tag = tags.split(':')[-1]
         if tag == 'null':
             tag = '0.0'
             dist = int(dist) + 1

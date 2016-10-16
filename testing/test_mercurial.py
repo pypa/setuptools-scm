@@ -65,6 +65,12 @@ def test_version_from_hg_id(wd):
     wd.commit_testfile()
     assert wd.version.startswith('0.2.dev1+')
 
+    # several tags
+    wd('hg up')
+    wd('hg tag v0.2 -u test -d "0 0"')
+    wd('hg tag v0.3 -u test -d "0 0" -r v0.2')
+    assert wd.version == '0.3'
+
 
 def test_version_from_archival(wd):
     # entrypoints are unordered,
