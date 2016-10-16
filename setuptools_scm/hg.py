@@ -11,7 +11,7 @@ def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
     revset = ("(branch(.) and tag('{0}')::. and file('re:^(?!\.hgtags).*$')"
               " - tag('{0}'))").format(str(tag))
     if tag != '0.0':
-        commits = do(['hg', 'log', '-r', revset, '-T', '{node|short}'],
+        commits = do(['hg', 'log', '-r', revset, '--template', '{node|short}'],
                      root)
     else:
         commits = True
