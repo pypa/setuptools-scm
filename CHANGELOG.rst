@@ -4,6 +4,9 @@ v1.15.0
 * more sophisticated ignoring of mercurial tag commits
   when considering distance in commits
   (thanks Petre Mierlutiu)
+* fix issue #114: stop trying to be smart for the sdist
+  and ensure its always correctly usign itself
+* update trove classifiers
 
 v1.14.1
 =======
