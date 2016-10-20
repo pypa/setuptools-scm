@@ -1,7 +1,7 @@
 from .utils import do_ex, trace, has_command
 from .version import meta
-from os.path import abspath, normcase, realpath
-
+from os.path import abspath, normcase, realpath, isfile, join
+import warnings
 
 FILES_COMMAND = 'git ls-files'
 DEFAULT_DESCRIBE = 'git describe --tags --long --match *.*'
@@ -12,6 +12,7 @@ def _normalized(path):
 
 
 class GitWorkdir(object):
+    """experimental, may change at any time"""
     def __init__(self, path):
         self.path = path
 
@@ -33,6 +34,12 @@ class GitWorkdir(object):
         out, _, _ = self.do_ex("git status --porcelain --untracked-files=no")
         return bool(out)
 
+    def is_shallow(self):
+        return isfile(join(self.path, '.git/shallow'))
+
+    def fetch_shallow(self):
+        self.do_ex("git fetch --unshallow")
+
     def node(self):
         rev_node, _, ret = self.do_ex('git rev-parse --verify --quiet HEAD')
         if not ret:
@@ -43,11 +50,36 @@ class GitWorkdir(object):
         return revs.count('\n') + 1
 
 
-def parse(root, describe_command=DEFAULT_DESCRIBE):
+def warn_on_shallow(wd):
+    """experimental, may change at any time"""
+    if wd.is_shallow():
+        warnings.warn('"%s" is shallow and may cause errors' % (wd.path,))
+
+
+def fetch_on_shallow(wd):
+    """experimental, may change at any time"""
+    if wd.is_shallow():
+        warnings.warn('"%s" was shallow, git fetch was used to rectify')
+        wd.fetch_shallow()
+
+
+def fail_on_shallow(wd):
+    """experimental, may change at any time"""
+    if wd.is_shallow():
+        raise ValueError(
+            '%r is shallow, please correct with '
+            '"git fetch --unshallow"' % wd.path)
+
+
+def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
+    """
+    :param pre_parse: experimental pre_parse action, may change at any time
+    """
     if not has_command('git'):
         return
     wd = GitWorkdir(root)
-
+    if pre_parse:
+        pre_parse(wd)
     rev_node = wd.node()
     dirty = wd.is_dirty()
 

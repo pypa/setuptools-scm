@@ -1,4 +1,6 @@
 from setuptools_scm import integration
+from setuptools_scm.utils import do
+from setuptools_scm import git
 import pytest
 from datetime import date
 
@@ -52,6 +54,36 @@ def test_git_dirty_notag(wd):
     today = date.today()
     # we are dirty, check for the tag
     assert today.strftime('.d%Y%m%d') in wd.version
+
+
+@pytest.fixture
+def shallow_wd(wd, tmpdir):
+    wd.commit_testfile()
+    wd.commit_testfile()
+    wd.commit_testfile()
+    target = tmpdir.join('wd_shallow')
+    do(['git', 'clone', "file://%s" % wd.cwd, str(target,), '--depth=1'])
+    return target
+
+
+def test_git_parse_shallow_warns(shallow_wd, recwarn):
+    git.parse(str(shallow_wd))
+    msg = recwarn.pop()
+    assert 'is shallow and may cause errors' in str(msg.message)
+
+
+def test_git_parse_shallow_fail(shallow_wd):
+    with pytest.raises(ValueError) as einfo:
+        git.parse(str(shallow_wd), pre_parse=git.fail_on_shallow)
+
+    assert 'git fetch' in str(einfo.value)
+
+
+def test_git_shallow_autocorrect(shallow_wd, recwarn):
+    git.parse(str(shallow_wd), pre_parse=git.fetch_on_shallow)
+    msg = recwarn.pop()
+    assert 'git fetch was used to rectify' in str(msg.message)
+    git.parse(str(shallow_wd), pre_parse=git.fail_on_shallow)
 
 
 def test_find_files_stop_at_root_git(wd):
