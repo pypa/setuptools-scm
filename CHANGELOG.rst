@@ -7,6 +7,7 @@ v1.15.0
 * fix issue #114: stop trying to be smart for the sdist
   and ensure its always correctly usign itself
 * update trove classifiers
+* fix issue #84: document using the installed package metadata for sphinx
 
 v1.14.1
 =======

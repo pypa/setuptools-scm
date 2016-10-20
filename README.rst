@@ -35,14 +35,31 @@ To use setuptools_scm just modify your project's setup.py file like this:
 Programmatic usage
 ------------------
 
-In order to use setuptools_scm for sphinx config, assuming the sphinx conf
-is one directory deeper than the project's root, use:
+In order to use setuptools_scm from code
+that one directory deeper than the project's root, you can use:
 
 .. code:: python
 
     from setuptools_scm import get_version
     version = get_version(root='..', relative_to=__file__)
 
+
+Usage from sphinx
+-----------------
+
+It is discouraged to use setuptools_scm from sphinx itself,
+instead use ``pkg_resources`` after editable/real installation:
+
+.. code:: python
+
+    from pkg_resources import get_distribution
+    release = pkg_resources('myproject').version
+    # for the example take major/minor
+    version = '.'.join(release.split('.')[:2])
+
+The underlying reason is, that services like readthedocs sometimes change
+the workingdirectory for good reasons and using the installed metadata prevents
+using needless volatile data there.
 
 Notable Plugins
 ----------------
