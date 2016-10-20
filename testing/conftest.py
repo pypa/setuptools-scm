@@ -63,4 +63,4 @@ class Wd(object):
 
 @pytest.fixture
 def wd(tmpdir):
-    return Wd(tmpdir)
+    return Wd(tmpdir.ensure('wd', dir=True))

@@ -9,6 +9,9 @@ v1.15.0
 * update trove classifiers
 * fix issue #84: document using the installed package metadata for sphinx
 * fix issue #81: fail more gracious when git/hg are missing
+* address issue #93: provide an experimental api to customize behaviour on shallow git repos
+  a custom parse function may pick pre parse actions to do when using git
+
 
 v1.14.1
 =======
