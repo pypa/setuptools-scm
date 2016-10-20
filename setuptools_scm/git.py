@@ -1,4 +1,4 @@
-from .utils import do_ex, trace
+from .utils import do_ex, trace, has_command
 from .version import meta
 from os.path import abspath, normcase, realpath
 
@@ -44,6 +44,8 @@ class GitWorkdir(object):
 
 
 def parse(root, describe_command=DEFAULT_DESCRIBE):
+    if not has_command('git'):
+        return
     wd = GitWorkdir(root)
 
     rev_node = wd.node()
