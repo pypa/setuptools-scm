@@ -13,7 +13,6 @@ from __future__ import print_function
 import os
 import sys
 import setuptools
-from setuptools.command.sdist import sdist as sdist_orig
 
 
 PROBLEMATIC_COMMANDS = 'install', 'develop', 'easy_install', 'bdist_egg'
@@ -37,25 +36,6 @@ def scm_config():
 
 with open('README.rst') as fp:
     long_description = fp.read()
-
-
-class sdist(sdist_orig):
-    def make_release_tree(self, base_dir, files):
-        sdist_orig.make_release_tree(self, base_dir, files)
-        target = os.path.join(base_dir, 'setup.py')
-        with open(__file__) as fp:
-            template = fp.read()
-        ver = self.distribution.version
-        if not ver:
-            from setuptools_scm import get_version
-            ver = get_version(**scm_config())
-
-        finalized = template.replace(
-            'use_scm_version=scm_config,\n',
-            'version="%s",\n' % ver)
-        os.remove(target)
-        with open(target, 'w') as fp:
-            fp.write(finalized)
 
 
 arguments = dict(
@@ -120,7 +100,6 @@ arguments = dict(
         'Topic :: System :: Software Distribution',
         'Topic :: Utilities',
     ],
-    cmdclass={'sdist': sdist}
 )
 
 if __name__ == '__main__':
