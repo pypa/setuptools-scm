@@ -1,5 +1,5 @@
 import os
-from .utils import do, trace, data_from_mime
+from .utils import do, trace, data_from_mime, has_command
 from .version import meta, tags_to_versions
 
 FILES_COMMAND = 'hg locate -I .'
@@ -23,6 +23,8 @@ def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
 
 
 def parse(root):
+    if not has_command('hg'):
+        return
     l = do('hg id -i -t', root).split()
     node = l.pop(0)
     tags = tags_to_versions(l)

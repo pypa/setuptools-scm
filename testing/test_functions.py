@@ -2,7 +2,7 @@ import pytest
 import pkg_resources
 from setuptools_scm import dump_version, get_version, PRETEND_KEY
 from setuptools_scm.version import guess_next_version, meta, format_version
-
+from setuptools_scm.utils import has_command
 
 class MockTime(object):
     def __format__(self, *k):
@@ -62,3 +62,9 @@ def test_dump_version_works_with_pretend(tmpdir, monkeypatch):
     monkeypatch.setenv(PRETEND_KEY, '1.0')
     get_version(write_to=str(tmpdir.join('VERSION.txt')))
     assert tmpdir.join('VERSION.txt').read() == '1.0'
+
+
+def test_has_command(recwarn):
+    assert not has_command('yadayada_setuptools_aint_ne')
+    msg = recwarn.pop()
+    assert 'yadayada' in str(msg.message)

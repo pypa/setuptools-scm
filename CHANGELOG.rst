@@ -8,6 +8,7 @@ v1.15.0
   and ensure its always correctly usign itself
 * update trove classifiers
 * fix issue #84: document using the installed package metadata for sphinx
+* fix issue #81: fail more gracious when git/hg are missing
 
 v1.14.1
 =======
