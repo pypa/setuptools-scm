@@ -53,8 +53,8 @@ instead use ``pkg_resources`` after editable/real installation:
 .. code:: python
 
     from pkg_resources import get_distribution
-    release = pkg_resources('myproject').version
-    # for the example take major/minor
+    release = get_distribution('myproject').version
+    # for example take major/minor
     version = '.'.join(release.split('.')[:2])
 
 The underlying reason is, that services like readthedocs sometimes change
