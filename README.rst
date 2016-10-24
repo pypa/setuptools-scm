@@ -31,6 +31,8 @@ To use setuptools_scm just modify your project's setup.py file like this:
            ...,
        )
 
+3. If you will be distributing your package via {s,b}dist, consider using :code:`write_to` (see *Configuration Parameters* below) for visibility after the build process strips vcs data.
+
 
 Programmatic usage
 ------------------
