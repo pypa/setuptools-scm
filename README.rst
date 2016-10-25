@@ -31,7 +31,14 @@ To use setuptools_scm just modify your project's setup.py file like this:
            ...,
        )
 
-3. If you will be distributing your package via {s,b}dist, consider using :code:`write_to` (see *Configuration Parameters* below) for visibility after the build process strips vcs data.
+3. Access the version number in your package via :code:`pkg_resources`
+
+   E.g. (`PEP-0396 <https://www.python.org/dev/peps/pep-0396>`_):
+
+   .. code:: python
+
+      import pkg_resources
+      __version__ = pkg_resources.get_distribution(__name__).version
 
 
 Programmatic usage
