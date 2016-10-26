@@ -92,10 +92,11 @@ def guess_next_version(tag_version, distance):
     if '.dev' in version:
         prefix, tail = version.rsplit('.dev', 1)
         assert tail == '0', 'own dev numbers are unsupported'
-        return '%s.dev%s' % (prefix, distance)
     else:
         prefix, tail = re.match('(.*?)(\d+)$', version).groups()
-        return '%s%d.dev%s' % (prefix, int(tail) + 1, distance)
+        prefix = '%s%d' % (prefix, int(tail) + 1)
+    suffix = '.dev%s' % distance
+    return prefix + suffix
 
 
 def guess_next_dev_version(version):
