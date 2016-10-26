@@ -31,6 +31,19 @@ To use setuptools_scm just modify your project's setup.py file like this:
            ...,
        )
 
+3. Access the version number in your package via :code:`pkg_resources`
+
+   E.g. (`PEP-0396 <https://www.python.org/dev/peps/pep-0396>`_):
+
+   .. code:: python
+
+      from pkg_resources import get_distribution, DistributionNotFound
+      try:
+          __version__ = get_distribution(__name__).version
+      except DistributionNotFound:
+         # package is not installed
+         pass
+
 
 Programmatic usage
 ------------------
