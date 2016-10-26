@@ -88,10 +88,15 @@ def meta(tag, distance=None, dirty=False, node=None, **kw):
 
 
 def guess_next_version(tag_version, distance):
-    version = str(tag_version)
+    version = _strip_local(str(tag_version))
     bumped = _bump_dev(version) or _bump_regex(version)
     suffix = '.dev%s' % distance
     return bumped + suffix
+
+
+def _strip_local(version_string):
+    public, sep, local = version_string.partition('+')
+    return public
 
 
 def _bump_dev(version):
