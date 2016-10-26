@@ -89,14 +89,23 @@ def meta(tag, distance=None, dirty=False, node=None, **kw):
 
 def guess_next_version(tag_version, distance):
     version = str(tag_version)
-    if '.dev' in version:
-        prefix, tail = version.rsplit('.dev', 1)
-        assert tail == '0', 'own dev numbers are unsupported'
-    else:
-        prefix, tail = re.match('(.*?)(\d+)$', version).groups()
-        prefix = '%s%d' % (prefix, int(tail) + 1)
+    bumped = _bump_dev(version) or _bump_regex(version)
     suffix = '.dev%s' % distance
-    return prefix + suffix
+    return bumped + suffix
+
+
+def _bump_dev(version):
+    if '.dev' not in version:
+        return
+
+    prefix, tail = version.rsplit('.dev', 1)
+    assert tail == '0', 'own dev numbers are unsupported'
+    return prefix
+
+
+def _bump_regex(version):
+    prefix, tail = re.match('(.*?)(\d+)$', version).groups()
+    return '%s%d' % (prefix, int(tail) + 1)
 
 
 def guess_next_dev_version(version):
