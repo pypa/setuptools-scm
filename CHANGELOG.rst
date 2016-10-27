@@ -1,3 +1,9 @@
+v1.15.1
+=======
+
+* fix issue #126: the local part of any tags is discarded
+  when guessing new versions
+
 v1.15.0
 =======
 
