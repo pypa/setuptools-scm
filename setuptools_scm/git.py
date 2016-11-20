@@ -77,7 +77,10 @@ def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
     """
     if not has_command('git'):
         return
-    wd = GitWorkdir(root)
+
+    wd = GitWorkdir.from_potential_worktree(root)
+    if wd is None:
+        return
     if pre_parse:
         pre_parse(wd)
     rev_node = wd.node()

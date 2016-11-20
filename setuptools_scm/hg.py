@@ -26,6 +26,8 @@ def parse(root):
     if not has_command('hg'):
         return
     l = do('hg id -i -t', root).split()
+    if not l:
+        return
     node = l.pop(0)
     tags = tags_to_versions(l)
     # filter tip in degraded mode on old setuptools

@@ -1,5 +1,5 @@
 from setuptools_scm import format_version
-from setuptools_scm.hg import archival_to_version
+from setuptools_scm.hg import archival_to_version, parse
 from setuptools_scm import integration
 
 import pytest
@@ -11,6 +11,7 @@ def wd(wd):
     wd.add_command = 'hg add .'
     wd.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
     return wd
+
 
 archival_mapping = {
     '1.0': {'tag': '1.0'},
@@ -101,3 +102,9 @@ def test_version_in_merge(wd):
     wd.commit_testfile()
     wd('hg merge --tool :merge')
     assert wd.version is not None
+
+
+@pytest.mark.issue(128)
+def test_parse_no_worktree(tmpdir):
+    ret = parse(str(tmpdir))
+    assert ret is None
