@@ -1,3 +1,9 @@
+v1.15.2
+=======
+
+* fix issue #128: return None when a scm specific parse fails in a worktree to ease parse reuse
+
+
 v1.15.1
 =======
 
