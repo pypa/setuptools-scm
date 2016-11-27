@@ -18,7 +18,6 @@ To use setuptools_scm just modify your project's setup.py file like this:
 1. Add :code:`'setuptools_scm'` to the :code:`setup_requires` parameter
 2. Add the :code:`use_scm_version` parameter and set it to ``True``
 
-
    E.g.:
 
    .. code:: python
@@ -30,6 +29,20 @@ To use setuptools_scm just modify your project's setup.py file like this:
            setup_requires=['setuptools_scm'],
            ...,
        )
+
+   Arguments to ``get_version()`` (see below) may be passed as a
+   dictionary to ``use_scm_version``. For example:
+
+   .. code:: python
+
+       from setuptools import setup
+       setup(
+           ...,
+           use_scm_version = {"root": "..", "relative_to": __file__},
+           setup_requires=['setuptools_scm'],
+           ...,
+       )
+
 
 3. Access the version number in your package via :code:`pkg_resources`
 
@@ -48,13 +61,15 @@ To use setuptools_scm just modify your project's setup.py file like this:
 Programmatic usage
 ------------------
 
-In order to use setuptools_scm from code
-that one directory deeper than the project's root, you can use:
+In order to use ``setuptools_scm`` from code that one directory deeper
+than the project's root, you can use:
 
 .. code:: python
 
     from setuptools_scm import get_version
     version = get_version(root='..', relative_to=__file__)
+
+See `setup.py Usage`_ above for how to use this within setup.py.
 
 
 Usage from sphinx
