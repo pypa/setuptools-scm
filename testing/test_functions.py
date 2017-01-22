@@ -2,12 +2,40 @@ import pytest
 import pkg_resources
 from setuptools_scm import dump_version, get_version, PRETEND_KEY
 from setuptools_scm.version import guess_next_version, meta, format_version
+from setuptools_scm.version import tag_to_version_string
 from setuptools_scm.utils import has_command
 
 
 class MockTime(object):
     def __format__(self, *k):
         return 'time'
+
+
+@pytest.mark.parametrize('tag, expected', [
+    ('1.2.3', '1.2.3'),
+    ('v1.2.3', '1.2.3'),
+    ('spam-1.2.3', '1.2.3'),
+    ('spam-v1.2.3', '1.2.3'),
+    ('spam-and-eggs-v1.2.3', '1.2.3'),
+    ('spam-and-eggs-1.2.3', '1.2.3'),
+    ('1.2.3-beta', '1.2.3-beta'),
+    ('v1.2.3-beta', '1.2.3-beta'),
+    ('spam-1.2.3-beta', '1.2.3-beta'),
+    ('spam-v1.2.3-beta', '1.2.3-beta'),
+    ('spam-1.2.3-beta.17', '1.2.3-beta.17'),
+    ('spam-v1.2.3-beta.17', '1.2.3-beta.17'),
+    ('spam-v1.2.3-volatile', '1.2.3-volatile'),
+    ('spam-and-eggs-v1.2.3-volatile', '1.2.3-volatile'),
+    ('spam-and-eggs-v1.2.3-volatile.42', '1.2.3-volatile.42'),
+    (
+        'spam-and-eggs-v1.2.3-very-edgy-case-but-'
+        + 'still-semver.-42.1337.666.yes-this-seems-to-be-allowed',
+        '1.2.3-very-edgy-case-but-'
+        + 'still-semver.-42.1337.666.yes-this-seems-to-be-allowed'
+    ),
+    ])
+def test_tag_to_version_string(tag, expected):
+    assert tag_to_version_string(tag) == expected
 
 
 @pytest.mark.parametrize('tag, expected', [
