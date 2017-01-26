@@ -11,7 +11,7 @@ v1.15.0
 * fix issue #81: fail more gracious when git/hg are missing
 * address issue #93: provide an experimental api to customize behaviour on shallow git repos
   a custom parse function may pick pre parse actions to do when using git
-
+* bring back correctly getting our version in the own sdist, finalizes #114
 
 v1.14.1
 =======
