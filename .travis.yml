@@ -9,6 +9,7 @@ python:
 - '3.6-dev'
 env:
 - TOXENV=py-test
+- SELFINSTALL=1
 
 matrix:
   include:
@@ -22,7 +23,7 @@ cache:
   - $Home/.cache/pip
 install: pip install tox
 script:
-- tox -e $TOXENV
+- python testing/runtests_travis.py
 
 
 
