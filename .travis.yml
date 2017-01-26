@@ -9,7 +9,6 @@ python:
 - '3.6-dev'
 env:
 - TOXENV=py-test
-- SELFINSTALL=1
 
 matrix:
   include:
@@ -17,6 +16,10 @@ matrix:
       env: TOXENV=flake8
     - python: '3.5'
       env: TOXENV=flake8
+    - python: '2.7'
+      env: SELFINSTALL=1
+    - python: '3.5'
+      env: SELFINSTALL=1
 cache:
   files:
   - $HOME/.pip/cache

@@ -3,10 +3,10 @@ from subprocess import call
 
 import os
 
-if os.environ['TOXENV']:
+if os.environ.get('TOXENV'):
     import tox
     tox.cmdline()
-elif os.environ['SELFINSTALL']:
+elif os.environ.get('SELFINSTALL'):
     call('python setup.py sdist', shell=True)
     call('easy_install dist/*', shell=True)
     import pkg_ressources
