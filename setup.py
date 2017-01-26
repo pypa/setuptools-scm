@@ -24,6 +24,19 @@ if not os.path.isdir('setuptools_scm.egg-info'):
         sys.exit('please run `python setup.py egg_info` first')
 
 
+def _find_hackish_version():
+    here = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, here)
+    from setuptools_scm.hacks import parse_pkginfo
+    from setuptools_scm import get_version
+    try:
+        return get_version(
+            root=here, parse=parse_pkginfo,
+            **scm_config())
+    except IOError:
+        pass
+
+
 def scm_config():
     from setuptools_scm.version import (
         guess_next_dev_version,
@@ -37,13 +50,15 @@ def scm_config():
 with open('README.rst') as fp:
     long_description = fp.read()
 
+found_version = _find_hackish_version()
 
 arguments = dict(
     name='setuptools_scm',
     url='https://github.com/pypa/setuptools_scm/',
     zip_safe=True,
+    version=found_version,
     # pass here since entrypints are not yet registred
-    use_scm_version=scm_config,
+    use_scm_version=found_version is None and scm_config,
     author='Ronny Pfannschmidt',
     author_email='opensource@ronnypfannschmidt.de',
     description=('the blessed package to manage your versions by scm tags'),
