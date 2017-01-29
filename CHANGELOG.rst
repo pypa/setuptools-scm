@@ -1,3 +1,9 @@
+v1.15.3
+=======
+
+* bring back correctly getting our version in the own sdist, finalizes #114
+
+
 v1.15.2
 =======
 
