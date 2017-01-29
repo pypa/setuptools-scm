@@ -1,8 +1,20 @@
-v1.15.1
+v1.15.3
 =======
 
 * bring back correctly getting our version in the own sdist, finalizes #114
 
+
+v1.15.2
+=======
+
+* fix issue #128: return None when a scm specific parse fails in a worktree to ease parse reuse
+
+
+v1.15.1
+=======
+
+* fix issue #126: the local part of any tags is discarded
+  when guessing new versions
 
 v1.15.0
 =======
@@ -17,6 +29,7 @@ v1.15.0
 * fix issue #81: fail more gracious when git/hg are missing
 * address issue #93: provide an experimental api to customize behaviour on shallow git repos
   a custom parse function may pick pre parse actions to do when using git
+
 
 v1.14.1
 =======

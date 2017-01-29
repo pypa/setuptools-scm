@@ -18,7 +18,6 @@ To use setuptools_scm just modify your project's setup.py file like this:
 1. Add :code:`'setuptools_scm'` to the :code:`setup_requires` parameter
 2. Add the :code:`use_scm_version` parameter and set it to ``True``
 
-
    E.g.:
 
    .. code:: python
@@ -31,17 +30,46 @@ To use setuptools_scm just modify your project's setup.py file like this:
            ...,
        )
 
+   Arguments to ``get_version()`` (see below) may be passed as a
+   dictionary to ``use_scm_version``. For example:
+
+   .. code:: python
+
+       from setuptools import setup
+       setup(
+           ...,
+           use_scm_version = {"root": "..", "relative_to": __file__},
+           setup_requires=['setuptools_scm'],
+           ...,
+       )
+
+
+3. Access the version number in your package via :code:`pkg_resources`
+
+   E.g. (`PEP-0396 <https://www.python.org/dev/peps/pep-0396>`_):
+
+   .. code:: python
+
+      from pkg_resources import get_distribution, DistributionNotFound
+      try:
+          __version__ = get_distribution(__name__).version
+      except DistributionNotFound:
+         # package is not installed
+         pass
+
 
 Programmatic usage
 ------------------
 
-In order to use setuptools_scm from code
-that one directory deeper than the project's root, you can use:
+In order to use ``setuptools_scm`` from code that one directory deeper
+than the project's root, you can use:
 
 .. code:: python
 
     from setuptools_scm import get_version
     version = get_version(root='..', relative_to=__file__)
+
+See `setup.py Usage`_ above for how to use this within setup.py.
 
 
 Usage from sphinx
@@ -53,8 +81,8 @@ instead use ``pkg_resources`` after editable/real installation:
 .. code:: python
 
     from pkg_resources import get_distribution
-    release = pkg_resources('myproject').version
-    # for the example take major/minor
+    release = get_distribution('myproject').version
+    # for example take major/minor
     version = '.'.join(release.split('.')[:2])
 
 The underlying reason is, that services like readthedocs sometimes change

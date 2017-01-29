@@ -47,6 +47,7 @@ def scm_config():
         local_scheme=get_local_node_and_date,
     )
 
+
 with open('README.rst') as fp:
     long_description = fp.read()
 

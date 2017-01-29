@@ -92,6 +92,12 @@ def test_find_files_stop_at_root_git(wd):
     assert integration.find_files(str(wd.cwd/'project')) == []
 
 
+@pytest.mark.issue(128)
+def test_parse_no_worktree(tmpdir):
+    ret = git.parse(str(tmpdir))
+    assert ret is None
+
+
 def test_alphanumeric_tags_match(wd):
     wd.commit_testfile()
     wd('git tag newstyle-development-started')
