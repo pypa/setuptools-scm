@@ -16,13 +16,17 @@ matrix:
       env: TOXENV=flake8
     - python: '3.5'
       env: TOXENV=flake8
+    - python: '2.7'
+      env: SELFINSTALL=1
+    - python: '3.5'
+      env: SELFINSTALL=1
 cache:
   files:
   - $HOME/.pip/cache
   - $Home/.cache/pip
 install: pip install tox
 script:
-- tox -e $TOXENV
+- python testing/runtests_travis.py
 
 
 
