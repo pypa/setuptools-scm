@@ -9,7 +9,6 @@ python:
 - '3.6-dev'
 env:
 - TOXENV=py-test
-- SELFINSTALL=1
 
 matrix:
   include:
