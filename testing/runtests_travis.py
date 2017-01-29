@@ -11,4 +11,4 @@ elif os.environ.get('SELFINSTALL'):
     call('easy_install dist/*', shell=True)
     import pkg_resources
     dist = pkg_resources.get_distribution('setuptools_scm')
-    assert dist.version != '0.0'
+    assert set(dist.version) != set(".0"), dist.version
