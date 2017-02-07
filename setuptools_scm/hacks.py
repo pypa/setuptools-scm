@@ -11,3 +11,14 @@ def parse_pkginfo(root):
     version = data.get('Version')
     if version != 'UNKNOWN':
         return meta(version)
+
+
+def parse_pip_egg_info(root):
+    pipdir = os.path.join(root, 'pip-egg-info')
+    if not os.path.isdir(pipdir):
+        return
+    items = os.listdir(pipdir)
+    trace('pip-egg-info', pipdir, items)
+    if not items:
+        return
+    return parse_pkginfo(os.path.join(pipdir, items[0]))

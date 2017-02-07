@@ -79,7 +79,8 @@ def _do_parse(root, parse):
             root, 'setuptools_scm.parse_scm_fallback')
     else:
         # include fallbacks after dropping them from the main entrypoint
-        version = version_from_scm(root)
+        version = version_from_scm(root) or _version_from_entrypoint(
+            root, 'setuptools_scm.parse_scm_fallback')
 
     if version:
         return version

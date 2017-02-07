@@ -14,7 +14,9 @@ def version_keyword(dist, keyword, value):
         value = {}
     if getattr(value, '__call__', None):
         value = value()
-    if os.path.exists('PKG-INFO'):
+    # this piece of code is a hack to counter the mistake in root finding
+    ep = find_matching_entrypoint('.', 'setuptools_scm.parse_scm_fallback')
+    if ep is not None:
         value.pop('root', None)
     dist.metadata.version = get_version(**value)
 

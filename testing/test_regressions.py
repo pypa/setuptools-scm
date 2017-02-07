@@ -1,8 +1,10 @@
 import sys
 
-import pytest
+from setuptools_scm import get_version
 from setuptools_scm.git import parse
 from setuptools_scm.utils import do_ex, do
+
+import pytest
 
 
 def test_pkginfo_noscmroot(tmpdir, monkeypatch):
@@ -27,6 +29,23 @@ def test_pkginfo_noscmroot(tmpdir, monkeypatch):
     do('git init', p.dirpath())
     res = do('python setup.py --version', p)
     assert res == '1.0'
+
+
+def test_pip_egg_info(tmpdir, monkeypatch):
+    """if we are indeed a sdist, the root does not apply"""
+
+    # we should get the version from pkg-info if git is broken
+    p = tmpdir.ensure('sub/package', dir=1)
+    tmpdir.mkdir('.git')
+    p.join('setup.py').write(
+        'from setuptools import setup;'
+        'setup(use_scm_version={"root": ".."})')
+
+    with pytest.raises(LookupError):
+        get_version(root=p.strpath)
+
+    p.ensure('pip-egg-info/random.egg-info/PKG-INFO').write('Version: 1.0')
+    assert get_version(root=p.strpath) == '1.0'
 
 
 def test_use_scm_version_callable(tmpdir, monkeypatch):
