@@ -61,6 +61,14 @@ class Wd(object):
         return version
 
 
+@pytest.yield_fixture(autouse=True)
+def debug_mode():
+    from setuptools_scm import utils
+    utils.DEBUG = True
+    yield
+    utils.DEBUG = False
+
+
 @pytest.fixture
 def wd(tmpdir):
     return Wd(tmpdir.ensure('wd', dir=True))
