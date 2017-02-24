@@ -108,6 +108,11 @@ def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
       dirty = False
 
     tag, number, node = out.rsplit('-', 2)
+
+    # Omit the leading 'g' which is not part of the revision to be consistent with
+    # other code paths.
+    node = [1:]
+
     number = int(number)
     if number:
         return meta(tag, distance=number, node=node, dirty=dirty)
