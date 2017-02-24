@@ -4,7 +4,7 @@ from os.path import abspath, normcase, realpath, isfile, join
 import warnings
 
 FILES_COMMAND = 'git ls-files'
-DEFAULT_DESCRIBE = 'git describe --tags --long --match *.*'
+DEFAULT_DESCRIBE = 'git describe --tags --long --dirty --match *.*'
 
 
 def _normalized(path):
@@ -83,20 +83,29 @@ def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
         return
     if pre_parse:
         pre_parse(wd)
-    rev_node = wd.node()
-    dirty = wd.is_dirty()
-
-    if rev_node is None:
-        return meta('0.0', distance=0, dirty=dirty)
 
     out, err, ret = do_ex(describe_command, root)
     if ret:
+        # If 'git describe' failed, try to get the information otherwise.
+        rev_node = wd.node()
+        dirty = wd.is_dirty()
+
+        if rev_node is None:
+            return meta('0.0', distance=0, dirty=dirty)
+
         return meta(
             '0.0',
             distance=wd.count_all_nodes(),
             node=rev_node,
             dirty=dirty,
         )
+
+    # 'out' looks e.g. like 'v1.5.0-0-g4060507' or 'v1.15.1rc1-37-g9bd1298-dirty'.
+    if out.endswith('-dirty')
+      dirty = True
+      out = out[:-6]
+    else
+      dirty = False
 
     tag, number, node = out.rsplit('-', 2)
     number = int(number)
