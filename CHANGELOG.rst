@@ -15,6 +15,9 @@ v1.15.1
 
 * fix issue #126: the local part of any tags is discarded
   when guessing new versions
+* minor performance optimization by doing fewer git calls
+  in the usual cases
+
 
 v1.15.0
 =======
