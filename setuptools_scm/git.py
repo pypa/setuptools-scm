@@ -96,7 +96,7 @@ def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
         return meta(
             '0.0',
             distance=wd.count_all_nodes(),
-            node=rev_node,
+            node='g' + rev_node,
             dirty=dirty,
         )
 
