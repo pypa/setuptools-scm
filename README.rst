@@ -123,7 +123,7 @@ and uses roughly the following logic to render the version:
 The next version is calculated by adding ``1`` to the last numeric component
 of the tag.
 
-For git projects, the version is version is relies on `git describe <https://git-scm.com/docs/git-describe>`_,
+For git projects, the version relies on `git describe <https://git-scm.com/docs/git-describe>`_,
 so you will see an additional ``g`` prepended to the ``{revision hash}``.
 
 Semantic Versioning (SemVer)
