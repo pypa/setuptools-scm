@@ -18,16 +18,16 @@ def test_pkginfo_noscmroot(tmpdir, monkeypatch):
         'from setuptools import setup;'
         'setup(use_scm_version={"root": ".."})')
 
-    _, stderr, ret = do_ex(sys.executable + ' setup.py --version', p)
+    _, stderr, ret = do_ex((sys.executable, 'setup.py', '--version'), p)
     assert 'setuptools-scm was unable to detect version for' in stderr
     assert ret == 1
 
     p.join("PKG-INFO").write('Version: 1.0')
-    res = do(sys.executable + ' setup.py --version', p)
+    res = do((sys.executable, 'setup.py', '--version'), p)
     assert res == '1.0'
 
     do('git init', p.dirpath())
-    res = do(sys.executable + ' setup.py --version', p)
+    res = do((sys.executable, 'setup.py', '--version'), p)
     assert res == '1.0'
 
 
@@ -64,7 +64,7 @@ setup(use_scm_version=vcfg)
 ''')
     p.join("PKG-INFO").write('Version: 1.0')
 
-    res = do(sys.executable + ' setup.py --version', p)
+    res = do((sys.executable, 'setup.py', '--version'), p)
     assert res == '1.0'
 
 
