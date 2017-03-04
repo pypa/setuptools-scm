@@ -15,7 +15,7 @@ def wd(wd):
 
 archival_mapping = {
     '1.0': {'tag': '1.0'},
-    '1.1.dev3+n000000000000': {
+    '1.1.dev3+h000000000000': {
         'latesttag': '1.0',
         'latesttagdistance': '3',
         'node': '0'*20,
@@ -91,7 +91,7 @@ def test_version_from_archival(wd):
         'latesttagdistance: 3\n'
     )
 
-    assert wd.version == '0.2.dev3+n000000000000'
+    assert wd.version == '0.2.dev3+h000000000000'
 
 
 @pytest.mark.issue('#72')

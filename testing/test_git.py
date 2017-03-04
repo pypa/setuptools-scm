@@ -19,17 +19,17 @@ def test_version_from_git(wd):
     assert wd.version == '0.1.dev0'
 
     wd.commit_testfile()
-    assert wd.version.startswith('0.1.dev1+')
+    assert wd.version.startswith('0.1.dev1+g')
     assert not wd.version.endswith('1-')
 
     wd('git tag v0.1')
     assert wd.version == '0.1'
 
     wd.write('test.txt', 'test2')
-    assert wd.version.startswith('0.2.dev0+')
+    assert wd.version.startswith('0.2.dev0+g')
 
     wd.commit_testfile()
-    assert wd.version.startswith('0.2.dev1+')
+    assert wd.version.startswith('0.2.dev1+g')
 
     wd('git tag version-0.2')
     assert wd.version.startswith('0.2')
@@ -101,4 +101,4 @@ def test_parse_no_worktree(tmpdir):
 def test_alphanumeric_tags_match(wd):
     wd.commit_testfile()
     wd('git tag newstyle-development-started')
-    assert wd.version.startswith('0.1.dev1+')
+    assert wd.version.startswith('0.1.dev1+g')
