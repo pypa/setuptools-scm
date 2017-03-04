@@ -125,7 +125,7 @@ def get_local_node_and_date(version):
     if version.exact or version.node is None:
         return version.format_choice("", "+d{time:%Y%m%d}")
     else:
-        return version.format_choice("+n{node}", "+n{node}.d{time:%Y%m%d}")
+        return version.format_choice("+{node}", "+{node}.d{time:%Y%m%d}")
 
 
 def get_local_dirty_tag(version):

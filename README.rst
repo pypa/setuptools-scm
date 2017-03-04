@@ -114,11 +114,11 @@ and uses roughly the following logic to render the version:
 :code:`no distance and clean`:
     :code:`{tag}`
 :code:`distance and clean`:
-    :code:`{next_version}.dev{distance}+n{revision hash}`
+    :code:`{next_version}.dev{distance}+{scm letter}{revision hash}`
 :code:`no distance and not clean`:
     :code:`{tag}+dYYYMMMDD`
 :code:`distance and not clean`:
-    :code:`{next_version}.dev{distance}+n{revision hash}.dYYYMMMDD`
+    :code:`{next_version}.dev{distance}+{scm letter}{revision hash}.dYYYMMMDD`
 
 The next version is calculated by adding ``1`` to the last numeric component
 of the tag.

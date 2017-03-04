@@ -7,7 +7,7 @@ FILES_COMMAND = 'hg locate -I .'
 
 def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
     dirty = node.endswith('+')
-    node = node.strip('+')
+    node = 'h' + node.strip('+')
     revset = ("(branch(.) and tag({tag!r})::. and file('re:^(?!\.hgtags).*$')"
               " - tag({tag!r}))").format(tag=tag)
     if tag != '0.0':
@@ -58,14 +58,17 @@ def parse(root):
 
 def archival_to_version(data):
     trace('data', data)
+    node = data.get('node', '')[:12]
+    if node:
+        node = 'h' + node
     if 'tag' in data:
         return meta(data['tag'])
     elif 'latesttag' in data:
         return meta(data['latesttag'],
                     distance=data['latesttagdistance'],
-                    node=data['node'][:12])
+                    node=node)
     else:
-        return meta('0.0', node=data.get('node', '')[:12])
+        return meta('0.0', node=node)
 
 
 def parse_archival(root):
