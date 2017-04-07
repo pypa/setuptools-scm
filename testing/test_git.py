@@ -34,6 +34,10 @@ def test_version_from_git(wd):
     wd('git tag version-0.2')
     assert wd.version.startswith('0.2')
 
+    wd.commit_testfile()
+    wd('git tag version-0.2.post210+gbe48adfpost3+g0cc25f2')
+    assert wd.version.startswith('0.2')
+
 
 @pytest.mark.issue(108)
 @pytest.mark.issue(109)
