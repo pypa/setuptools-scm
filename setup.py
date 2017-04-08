@@ -15,51 +15,47 @@ import sys
 import setuptools
 
 
-PROBLEMATIC_COMMANDS = 'install', 'develop', 'easy_install', 'bdist_egg'
-
-if not os.path.isdir('setuptools_scm.egg-info'):
-    print(__doc__)
-
-    if any(c in sys.argv for c in PROBLEMATIC_COMMANDS):
-        sys.exit('please run `python setup.py egg_info` first')
-
-
-def _find_hackish_version():
+def scm_config():
     here = os.path.dirname(os.path.abspath(__file__))
+    egg_info = os.path.join(here, 'setuptools_scm.egg-info')
+    has_entrypoints = os.path.isdir(egg_info)
+
     sys.path.insert(0, here)
     from setuptools_scm.hacks import parse_pkginfo
-    from setuptools_scm import get_version
-    try:
-        return get_version(
-            root=here, parse=parse_pkginfo,
-            **scm_config())
-    except IOError:
-        pass
-
-
-def scm_config():
+    from setuptools_scm.git import parse as parse_git
     from setuptools_scm.version import (
+
         guess_next_dev_version,
         get_local_node_and_date,
     )
-    return dict(
+
+    def parse(root):
+        try:
+            return parse_pkginfo(root)
+        except IOError:
+            return parse_git(root)
+
+    config = dict(
         version_scheme=guess_next_dev_version,
         local_scheme=get_local_node_and_date,
     )
+
+    if has_entrypoints:
+        return dict(use_scm_version=config)
+    else:
+        from setuptools_scm import get_version
+        return dict(version=get_version(
+            root=here, parse=parse, **config))
 
 
 with open('README.rst') as fp:
     long_description = fp.read()
 
-found_version = _find_hackish_version()
 
 arguments = dict(
     name='setuptools_scm',
     url='https://github.com/pypa/setuptools_scm/',
     zip_safe=True,
-    version=found_version,
-    # pass here since entrypints are not yet registred
-    use_scm_version=found_version is None and scm_config,
     author='Ronny Pfannschmidt',
     author_email='opensource@ronnypfannschmidt.de',
     description=('the blessed package to manage your versions by scm tags'),
@@ -116,4 +112,5 @@ arguments = dict(
 )
 
 if __name__ == '__main__':
+    arguments.update(scm_config())
     setuptools.setup(**arguments)
