@@ -1,4 +1,5 @@
 import sys
+import subprocess
 
 from setuptools_scm import get_version
 from setuptools_scm.git import parse
@@ -46,6 +47,15 @@ def test_pip_egg_info(tmpdir, monkeypatch):
 
     p.ensure('pip-egg-info/random.egg-info/PKG-INFO').write('Version: 1.0')
     assert get_version(root=p.strpath) == '1.0'
+
+
+@pytest.mark.issue(164)
+def test_pip_download(tmpdir, monkeypatch):
+    monkeypatch.chdir(tmpdir)
+    subprocess.check_call([
+        sys.executable, '-m',
+        'pip', 'download', 'lz4==0.9.0',
+    ])
 
 
 def test_use_scm_version_callable(tmpdir, monkeypatch):
