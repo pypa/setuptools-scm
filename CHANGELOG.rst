@@ -2,6 +2,7 @@ v1.15.4
 =======
 
 * fix issue #164: iterate all found entry points to avoid erros when pip remakes egg-info
+* enhance self-use to enable pip install from github again
 
 v1.15.3
 =======
