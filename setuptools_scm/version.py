@@ -100,7 +100,7 @@ def meta(tag, distance=None, dirty=False, node=None, preformatted=False, **kw):
     tag = _parse_tag(tag, preformatted)
     trace('version', tag)
     assert tag is not None, 'cant parse version %s' % tag
-    return ScmVersion(tag, distance, node, dirty, **kw)
+    return ScmVersion(tag, distance, node, dirty, preformatted, **kw)
 
 
 def guess_next_version(tag_version, distance):
