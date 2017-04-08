@@ -65,6 +65,7 @@ class ScmVersion(object):
         self.time = datetime.datetime.now()
         self.extra = kw
         self.dirty = dirty
+        self.preformated = preformated
 
     @property
     def exact(self):
