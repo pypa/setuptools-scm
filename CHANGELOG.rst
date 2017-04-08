@@ -1,3 +1,9 @@
+v1.15.5
+=======
+
+* fix #167 by correctly respecting preformatted version metadata
+  from PKG-INFO/EGG-INFO
+
 v1.15.4
 =======
 

@@ -52,13 +52,17 @@ class Wd(object):
         self(self.add_command)
         self.commit(reason=reason)
 
+    def get_version(self, **kw):
+        __tracebackhide__ = True
+        from setuptools_scm import get_version
+        version = get_version(root=str(self.cwd), **kw)
+        print(version)
+        return version
+
     @property
     def version(self):
         __tracebackhide__ = True
-        from setuptools_scm import get_version
-        version = get_version(root=str(self.cwd))
-        print(version)
-        return version
+        return self.get_version()
 
 
 @pytest.yield_fixture(autouse=True)

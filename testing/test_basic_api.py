@@ -30,6 +30,9 @@ def test_version_from_pkginfo(wd):
     wd.write('PKG-INFO', 'Version: 0.1')
     assert wd.version == '0.1'
 
+    # replicate issue 167
+    assert wd.get_version(version_scheme="1.{0.distance}.0".format) == '0.1'
+
 
 def assert_root(monkeypatch, expected_root):
     """

@@ -10,7 +10,7 @@ def parse_pkginfo(root):
     data = data_from_mime(pkginfo)
     version = data.get('Version')
     if version != 'UNKNOWN':
-        return meta(version)
+        return meta(version, preformatted=True)
 
 
 def parse_pip_egg_info(root):
