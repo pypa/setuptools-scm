@@ -15,7 +15,9 @@ def version_keyword(dist, keyword, value):
     if getattr(value, '__call__', None):
         value = value()
     # this piece of code is a hack to counter the mistake in root finding
-    if any(iter_matching_entrypoints('.', 'setuptools_scm.parse_scm_fallback')):
+    matching_fallbacks = iter_matching_entrypoints(
+        '.', 'setuptools_scm.parse_scm_fallback')
+    if any(matching_fallbacks):
         value.pop('root', None)
     dist.metadata.version = get_version(**value)
 
