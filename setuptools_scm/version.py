@@ -55,6 +55,7 @@ def tags_to_versions(tags):
 class ScmVersion(object):
     def __init__(self, tag_version,
                  distance=None, node=None, dirty=False,
+                 preformated=False,
                  **kw):
         self.tag = tag_version
         if dirty and distance is None:
@@ -84,11 +85,17 @@ class ScmVersion(object):
         return self.format_with(dirty_format if self.dirty else clean_format)
 
 
-def meta(tag, distance=None, dirty=False, node=None, **kw):
+def _parse_tag(tag, preformated):
+    if preformated:
+        return tag
     if SetuptoolsVersion is None or not isinstance(tag, SetuptoolsVersion):
         tag = tag_to_version(tag)
-    trace('version', tag)
+    return tag
 
+
+def meta(tag, distance=None, dirty=False, node=None, preformated=False, **kw):
+    tag = _parse_tag(tag, preformated)
+    trace('version', tag)
     assert tag is not None, 'cant parse version %s' % tag
     return ScmVersion(tag, distance, node, dirty, **kw)
 
@@ -147,6 +154,8 @@ def postrelease_version(version):
 def format_version(version, **config):
     trace('scm version', version)
     trace('config', config)
+    if version.preformated:
+        return version.tag
     version_scheme = callable_or_entrypoint(
         'setuptools_scm.version_scheme', config['version_scheme'])
     local_scheme = callable_or_entrypoint(
