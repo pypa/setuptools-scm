@@ -57,7 +57,8 @@ class ScmVersion(object):
                  distance=None, node=None, dirty=False,
                  preformatted=False,
                  **kw):
-        assert not kw, kw
+        if kw:
+            trace("unknown args", kw)
         self.tag = tag_version
         if dirty and distance is None:
             distance = 0
