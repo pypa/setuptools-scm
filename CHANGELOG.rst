@@ -1,3 +1,8 @@
+v1.15.4
+=======
+
+* fix issue #164: iterate all found entry points to avoid erros when pip remakes egg-info
+
 v1.15.3
 =======
 
