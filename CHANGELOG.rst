@@ -1,3 +1,9 @@
+
+v1.15.6
+=======
+
+* fix #171 by unpinning the py version to allow a fixed one to get installed
+
 v1.15.5
 =======
 
