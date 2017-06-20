@@ -7,6 +7,7 @@ import sys
 import shlex
 import subprocess
 import os
+from os.path import abspath, normcase, realpath
 import io
 import platform
 
@@ -107,6 +108,12 @@ def has_command(name):
     if not res:
         warnings.warn("%r was not found" % name)
     return res
+
+
+def _normalized(path):
+    if IS_WINDOWS:
+        path = get_windows_long_path_name(path)
+    return normcase(abspath(realpath(path)))
 
 
 if IS_WINDOWS:
