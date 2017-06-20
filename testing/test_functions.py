@@ -124,3 +124,10 @@ def test_get_windows_long_path_name(tmpdir):
     assert long_name_a.endswith("long_name_a.txt")
     assert long_name_b.endswith("long_name_b.txt")
     assert long_name_c.endswith("long_name_c")
+
+    # check ctypes.WinError() with no arg shows the last error message, e.g.
+    # when input path doesn't exist. Note, WinError is not itself a subclass
+    # of BaseException; it's a function returning an instance of OSError
+    with pytest.raises(OSError) as excinfo:
+        get_windows_long_path_name("unexistent_file_name")
+    assert 'The system cannot find the file specified' in str(excinfo)
