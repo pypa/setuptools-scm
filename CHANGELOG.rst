@@ -1,3 +1,7 @@
+v1.15.7
+======
+
+* fix #174 by normalizing windows path using windows apis
 
 v1.15.6
 =======
