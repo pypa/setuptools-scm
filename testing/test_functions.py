@@ -1,8 +1,13 @@
 import pytest
+import py
+import sys
 import pkg_resources
 from setuptools_scm import dump_version, get_version, PRETEND_KEY
 from setuptools_scm.version import guess_next_version, meta, format_version
 from setuptools_scm.utils import has_command
+import subprocess
+
+PY3 = sys.version_info > (2,)
 
 
 class MockTime(object):
@@ -70,3 +75,59 @@ def test_has_command(recwarn):
     assert not has_command('yadayada_setuptools_aint_ne')
     msg = recwarn.pop()
     assert 'yadayada' in str(msg.message)
+
+
+def _get_windows_short_path(path):
+    """ Call a temporary batch file that expands the first argument so that
+    it contains short names only.
+    Return a py._path.local.LocalPath instance.
+
+    For info on Windows batch parameters:
+    https://www.microsoft.com/resources/documentation/windows/xp/all/proddocs/en-us/percent.mspx?mfr=true
+    """
+    tmpdir = py.path.local.mkdtemp()
+    try:
+        batch_file = tmpdir.join("shortpathname.bat")
+        batch_file.write("@echo %~s1")
+        out = subprocess.check_output([str(batch_file), str(path)])
+        if PY3:
+            out = out.decode(sys.getfilesystemencoding())
+    finally:
+        tmpdir.remove()
+    return py.path.local(out.strip())
+
+
+@pytest.mark.skipif(sys.platform != 'win32',
+                    reason="this test is only valid on windows")
+def test_get_windows_long_path_name(tmpdir):
+    from setuptools_scm.utils import get_windows_long_path_name
+
+    # 8.3 names are limited to max 8 characters, plus optionally a period
+    # and three further characters; so here we use longer names
+    file_a = tmpdir.ensure("long_name_a.txt")
+    file_b = tmpdir.ensure("long_name_b.txt")
+    dir_c = tmpdir.ensure("long_name_c", dir=True)
+    short_file_a = _get_windows_short_path(file_a)
+    short_file_b = _get_windows_short_path(file_b)
+    short_dir_c = _get_windows_short_path(dir_c)
+
+    # shortened names contain the first six characters (case insensitive),
+    # followed by a tilde character and an incremental number that
+    # distinguishes files with the same first six letters and extension
+    assert short_file_a.basename == "LONG_N~1.TXT"
+    assert short_file_b.basename == "LONG_N~2.TXT"
+    assert short_dir_c.basename == "LONG_N~1"
+
+    long_name_a = get_windows_long_path_name(str(short_file_a))
+    long_name_b = get_windows_long_path_name(str(short_file_b))
+    long_name_c = get_windows_long_path_name(str(short_dir_c))
+    assert long_name_a.endswith("long_name_a.txt")
+    assert long_name_b.endswith("long_name_b.txt")
+    assert long_name_c.endswith("long_name_c")
+
+    # check ctypes.WinError() with no arg shows the last error message, e.g.
+    # when input path doesn't exist. Note, WinError is not itself a subclass
+    # of BaseException; it's a function returning an instance of OSError
+    with pytest.raises(OSError) as excinfo:
+        get_windows_long_path_name("unexistent_file_name")
+    assert 'The system cannot find the file specified' in str(excinfo)
