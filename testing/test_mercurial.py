@@ -73,6 +73,13 @@ def test_version_from_hg_id(wd):
     assert wd.version == '0.3'
 
 
+@pytest.mark.issue(87)
+def test_version_from_hg_clean_tag(wd):
+    wd.commit_testfile()
+    wd('hg tag release/1.0.0')
+    assert wd.get_version(clean_tag=lambda t: t[8:]) == '1.0.0'
+
+
 def test_version_from_archival(wd):
     # entrypoints are unordered,
     # cleaning the wd ensure this test wont break randomly
