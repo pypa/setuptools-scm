@@ -104,6 +104,7 @@ def get_version(root='.',
                 write_to_template=None,
                 relative_to=None,
                 parse=None,
+                clean_tag=None,
                 ):
     """
     If supplied, relative_to should be a file from which root may
@@ -116,7 +117,16 @@ def get_version(root='.',
     root = os.path.abspath(root)
     trace('root', repr(root))
 
+    if clean_tag:
+        import setuptools_scm.version as version_mod
+        trace('setting clean_tag', repr(clean_tag))
+        version_mod.clean_tag = clean_tag
+
     parsed_version = _do_parse(root, parse)
+
+    if clean_tag:  # Restoring the monkey-patched clean_tag is needed for tests
+        trace('restoring clean_tag', repr(version_mod.clean_tag_default))
+        version_mod.clean_tag = version_mod.clean_tag_default
 
     if parsed_version:
         version_string = format_version(
