@@ -30,15 +30,25 @@ def callable_or_entrypoint(group, callable_or_name):
         return callable_or_name
 
 
-def tag_to_version(tag):
-    trace('tag', tag)
+def clean_tag(tag):
+    """Clean tag of any extraneous components."""
     if '+' in tag:
         warnings.warn("tag %r will be stripped of the local component" % tag)
         tag = tag.split('+')[0]
     # lstrip the v because of py2/py3 differences in setuptools
     # also required for old versions of setuptools
+    tag = tag.rsplit('-', 1)[-1].lstrip('v')
+    return tag
 
-    version = tag.rsplit('-', 1)[-1].lstrip('v')
+
+# Stash an alias in case it's overridden
+clean_tag_default = clean_tag
+
+
+def tag_to_version(tag):
+    trace('tag', tag)
+
+    version = clean_tag(tag)
     if parse_version is None:
         return version
     version = parse_version(version)

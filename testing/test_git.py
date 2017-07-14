@@ -39,6 +39,13 @@ def test_version_from_git(wd):
     assert wd.version.startswith('0.2')
 
 
+@pytest.mark.issue(87)
+def test_version_from_git_clean_tag(wd):
+    wd.commit_testfile()
+    wd('git tag release/1.0.0')
+    assert wd.get_version(clean_tag=lambda t: t[8:]) == '1.0.0'
+
+
 @pytest.mark.issue(108)
 @pytest.mark.issue(109)
 def test_git_worktree(wd):
