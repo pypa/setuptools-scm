@@ -39,6 +39,12 @@ def test_version_from_git(wd):
     assert wd.version.startswith('0.2')
 
 
+@pytest.mark.issue(179)
+def test_unicode_version_scheme(wd):
+    scheme = b'guess-next-dev'.decode('ascii')
+    assert wd.get_version(version_scheme=scheme)
+
+
 @pytest.mark.issue(108)
 @pytest.mark.issue(109)
 def test_git_worktree(wd):
