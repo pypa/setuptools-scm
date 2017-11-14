@@ -11,7 +11,7 @@ import sys
 from tarfile import TarFile
 import warnings
 
-FILES_COMMAND = sys.executable + ' -msetuptools_scm.git'
+FILES_COMMAND = sys.executable + ' -m setuptools_scm.git'
 DEFAULT_DESCRIBE = 'git describe --dirty --tags --long --match *.*'
 
 
