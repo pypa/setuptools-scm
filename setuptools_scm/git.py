@@ -120,8 +120,8 @@ def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
         return meta(tag, node=node, dirty=dirty)
 
 
-def _main():
-    """List the files that 'git archive' wants.
+def _list_files_in_archive():
+    """List the files that 'git archive' generates.
     """
     # TarFile wants a seekable stream.
     stream = BytesIO(subprocess.check_output(['git', 'archive', 'HEAD']))
@@ -130,4 +130,4 @@ def _main():
 
 
 if __name__ == "__main__":
-    _main()
+    _list_files_in_archive()
