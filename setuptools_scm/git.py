@@ -1,9 +1,6 @@
 from .utils import do_ex, trace, has_command, _normalized
 from .version import meta
-try:
-    from io import BytesIO
-except ImportError:
-    from cStringIO import StringIO as BytesIO
+import io
 
 from os.path import isfile, join
 import subprocess
@@ -124,7 +121,7 @@ def _list_files_in_archive():
     """List the files that 'git archive' generates.
     """
     # TarFile wants a seekable stream.
-    stream = BytesIO(subprocess.check_output(['git', 'archive', 'HEAD']))
+    stream = io.BytesIO(subprocess.check_output(['git', 'archive', 'HEAD']))
     for name in TarFile(fileobj=stream).getnames():
         print(name)
 
