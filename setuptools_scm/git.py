@@ -1,9 +1,17 @@
 from .utils import do_ex, trace, has_command, _normalized
 from .version import meta
+try:
+    from io import BytesIO
+except ImportError:
+    from cStringIO import StringIO as BytesIO
+
 from os.path import isfile, join
+import subprocess
+import sys
+from tarfile import TarFile
 import warnings
 
-FILES_COMMAND = 'git ls-files'
+FILES_COMMAND = sys.executable + ' -msetuptools_scm.git'
 DEFAULT_DESCRIBE = 'git describe --dirty --tags --long --match *.*'
 
 
@@ -110,3 +118,16 @@ def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
         return meta(tag, distance=number, node=node, dirty=dirty)
     else:
         return meta(tag, node=node, dirty=dirty)
+
+
+def _main():
+    """List the files that 'git archive' wants.
+    """
+    # TarFile wants a seekable stream.
+    stream = BytesIO(subprocess.check_output(['git', 'archive', 'HEAD']))
+    for name in TarFile(fileobj=stream).getnames():
+        print(name)
+
+
+if __name__ == "__main__":
+    _main()
