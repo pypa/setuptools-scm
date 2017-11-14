@@ -1,11 +1,10 @@
 from .utils import do_ex, trace, has_command, _normalized
 from .version import meta
-import io
 
 from os.path import isfile, join
 import subprocess
 import sys
-from tarfile import TarFile
+import tarfile
 import warnings
 
 FILES_COMMAND = sys.executable + ' -m setuptools_scm.git'
@@ -120,9 +119,10 @@ def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
 def _list_files_in_archive():
     """List the files that 'git archive' generates.
     """
-    # TarFile wants a seekable stream.
-    stream = io.BytesIO(subprocess.check_output(['git', 'archive', 'HEAD']))
-    for name in TarFile(fileobj=stream).getnames():
+    cmd = ['git', 'archive', 'HEAD']
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    tf = tarfile.open(fileobj=proc.stdout, mode='r|*')
+    for name in tf.getnames():
         print(name)
 
 
