@@ -1,6 +1,6 @@
-from .utils import do_ex, trace, has_command, _normalized
+from .utils import do_ex, trace, has_command
 from .version import meta
-from os.path import isfile, join
+from os.path import isfile, join, samefile
 import warnings
 
 FILES_COMMAND = 'git ls-files'
@@ -21,7 +21,7 @@ class GitWorkdir(object):
         if ret:
             return
         trace('real root', real_wd)
-        if _normalized(real_wd) != _normalized(wd):
+        if not samefile(real_wd, wd):
             return
 
         return cls(real_wd)
