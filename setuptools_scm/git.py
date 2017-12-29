@@ -1,7 +1,13 @@
 from .utils import do_ex, trace, has_command
 from .version import meta
-from os.path import isfile, join, samefile
+from os.path import isfile, join
 import warnings
+
+try:
+    from os.path import samefile
+except ImportError:
+    from .win_py31_compat import samefile
+
 
 FILES_COMMAND = 'git ls-files'
 DEFAULT_DESCRIBE = 'git describe --dirty --tags --long --match *.*'
