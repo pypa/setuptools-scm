@@ -90,6 +90,8 @@ arguments = dict(
 
         [setuptools_scm.local_scheme]
         node-and-date = setuptools_scm.version:get_local_node_and_date
+        node-and-timestamp = \
+        setuptools_scm.version:get_local_node_and_timestamp
         dirty-tag = setuptools_scm.version:get_local_dirty_tag
     """,
     classifiers=[
