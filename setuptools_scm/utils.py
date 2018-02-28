@@ -26,7 +26,7 @@ def ensure_stripped_str(str_or_bytes):
     if isinstance(str_or_bytes, str):
         return str_or_bytes.strip()
     else:
-        return str_or_bytes.decode('utf-8', 'surogate_escape').strip()
+        return str_or_bytes.decode('utf-8', 'surrogateescape').strip()
 
 
 def _always_strings(env_dict):
