@@ -144,6 +144,20 @@ def get_local_node_and_date(version):
         return version.format_choice("+{node}", "+{node}.d{time:%Y%m%d}")
 
 
+def get_local_node_and_timestamp(version, fmt='%Y%m%d%H%M%S'):
+    if version.exact or version.node is None:
+        return version.format_choice("",
+                                     "+d{time:"
+                                     + "{fmt}".format(fmt=fmt)
+                                     + "}")
+    else:
+        return version.format_choice("+{node}",
+                                     "+{node}"
+                                     + ".d{time:"
+                                     + "{fmt}".format(fmt=fmt)
+                                     + "}")
+
+
 def get_local_dirty_tag(version):
     return version.format_choice('', '+dirty')
 

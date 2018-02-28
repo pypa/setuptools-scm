@@ -1,4 +1,4 @@
-from .utils import do_ex, trace, has_command, _normalized
+from .utils import do_ex, trace, has_command
 from .version import meta
 
 from os.path import isfile, join
@@ -6,6 +6,13 @@ import subprocess
 import sys
 import tarfile
 import warnings
+
+
+try:
+    from os.path import samefile
+except ImportError:
+    from .win_py31_compat import samefile
+
 
 FILES_COMMAND = sys.executable + ' -m setuptools_scm.git'
 DEFAULT_DESCRIBE = 'git describe --dirty --tags --long --match *.*'
@@ -25,7 +32,7 @@ class GitWorkdir(object):
         if ret:
             return
         trace('real root', real_wd)
-        if _normalized(real_wd) != _normalized(wd):
+        if not samefile(real_wd, wd):
             return
 
         return cls(real_wd)

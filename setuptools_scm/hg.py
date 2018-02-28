@@ -25,11 +25,11 @@ def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
 def parse(root):
     if not has_command('hg'):
         return
-    l = do('hg id -i -t', root).split()
-    if not l:
+    identity_data = do('hg id -i -t', root).split()
+    if not identity_data:
         return
-    node = l.pop(0)
-    tags = tags_to_versions(l)
+    node = identity_data.pop(0)
+    tags = tags_to_versions(identity_data)
     # filter tip in degraded mode on old setuptools
     tags = [x for x in tags if x != 'tip']
     dirty = node[-1] == '+'

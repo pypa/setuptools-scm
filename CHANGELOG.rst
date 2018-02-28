@@ -1,7 +1,9 @@
 v1.15.7
 ======
 
-* fix #174 by normalizing windows path using windows apis
+* Fix #174 with #207: Re-use samefile backport as developed in
+  jaraco.windows, and only use the backport where samefile is
+  not available.
 
 v1.15.6
 =======
