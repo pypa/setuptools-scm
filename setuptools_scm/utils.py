@@ -61,7 +61,7 @@ def _popen_pipes(cmd, cwd):
 
 def do_ex(cmd, cwd='.'):
     trace('cmd', repr(cmd))
-    if not isinstance(cmd, (list, tuple)):
+    if os.name == "posix" and not isinstance(cmd, (list, tuple)):
         cmd = shlex.split(cmd)
 
     p = _popen_pipes(cmd, cwd)
