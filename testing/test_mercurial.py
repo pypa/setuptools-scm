@@ -134,6 +134,13 @@ def test_version_bump_before_merge_commit(wd):
     assert wd.version.startswith('1.1.dev1+')
 
 
+@pytest.mark.issue(219)
+@pytest.mark.usefixtures("pre_merge_commit_after_tag")
+def test_version_bump_from_merge_commit(wd):
+    wd.commit()
+    assert wd.version.startswith('1.1.dev3+')  # issue 219
+
+
 @pytest.mark.usefixtures("version_1_0")
 def test_version_bump_from_commit_including_hgtag_mods(wd):
     """ Test the case where a commit includes changes to .hgtags and other files
