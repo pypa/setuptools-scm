@@ -7,15 +7,22 @@ from .utils import trace
 from pkg_resources import iter_entry_points
 
 from distutils import log
+from pkg_resources import parse_version
 
-try:
-    from pkg_resources import parse_version, SetuptoolsVersion
-except ImportError as e:
-    parse_version = SetuptoolsVersion = None
+
+def _get_version_class():
+    modern_version = parse_version("1.0")
+    if isinstance(modern_version, tuple):
+        return None
+    else:
+        return type(modern_version)
+
+
+VERSION_CLASS = _get_version_class()
 
 
 def _warn_if_setuptools_outdated():
-    if parse_version is None:
+    if VERSION_CLASS is None:
         log.warn("your setuptools is too old (<12)")
         log.warn("setuptools_scm functionality is degraded")
 
@@ -44,7 +51,7 @@ def tag_to_version(tag):
         return version
     version = parse_version(version)
     trace('version', repr(version))
-    if isinstance(version, SetuptoolsVersion):
+    if isinstance(version, VERSION_CLASS):
         return version
 
 
@@ -92,7 +99,7 @@ class ScmVersion(object):
 def _parse_tag(tag, preformatted):
     if preformatted:
         return tag
-    if SetuptoolsVersion is None or not isinstance(tag, SetuptoolsVersion):
+    if VERSION_CLASS is None or not isinstance(tag, VERSION_CLASS):
         tag = tag_to_version(tag)
     return tag
 
