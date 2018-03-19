@@ -1,3 +1,10 @@
+v1.16.1
+=======
+
+* fix regression in support for old setuptools versions
+  (thanks Marco Clemencic)
+
+
 v1.16.0
 =======
 
