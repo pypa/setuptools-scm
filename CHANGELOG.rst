@@ -8,6 +8,8 @@ v1.16.0
 * avoid shlex.split on windows
 * fix #218 - better handling of mercurial edge-cases with tag commits
   being considered as the tagged commit
+* fix #223 - remove the dependency on the interal SetupttoolsVersion
+  as it was removed after long-standing deprecation
 
 v1.15.7
 ======
