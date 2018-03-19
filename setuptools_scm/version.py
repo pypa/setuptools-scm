@@ -47,7 +47,7 @@ def tag_to_version(tag):
     # also required for old versions of setuptools
 
     version = tag.rsplit('-', 1)[-1].lstrip('v')
-    if parse_version is None:
+    if VERSION_CLASS is None:
         return version
     version = parse_version(version)
     trace('version', repr(version))
