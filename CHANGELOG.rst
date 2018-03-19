@@ -1,3 +1,14 @@
+v1.16.0
+=======
+
+* drop support for eol python versions
+* #214 - fix missuse in surogate-escape api
+* add the node-and-timestamp local version sheme
+* respect git export ignores
+* avoid shlex.split on windows
+* fix #218 - better handling of mercurial edge-cases with tag commits
+  being considered as the tagged commit
+
 v1.15.7
 ======
 
