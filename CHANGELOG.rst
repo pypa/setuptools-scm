@@ -1,3 +1,9 @@
+v1.16.2
+========
+
+* fix regression in handling git export ignores
+  (thanks Mehdi ABAAKOUK)
+
 v1.16.1
 =======
 
