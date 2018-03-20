@@ -126,7 +126,7 @@ def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
 def _list_files_in_archive():
     """List the files that 'git archive' generates.
     """
-    cmd = ['git', 'ls-files']
+    cmd = ['git', 'ls-files', '--exclude-standard']
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     for name in codecs.getreader("utf-8")(proc.stdout, "ignore").readlines():
         print(name[:-1])
