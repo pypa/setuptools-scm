@@ -16,6 +16,8 @@ class MockTime(object):
 @pytest.mark.parametrize('tag, expected', [
     ('1.1', '1.2.dev0'),
     ('1.2.dev', '1.2.dev0'),
+    ('1.1.0', '1.2.0.dev0'),
+    ('1.2.0.dev', '1.2.0.dev0'),
     ('1.1a2', '1.1a3.dev0'),
     ('23.24.post2+deadbeef', '23.24.post3.dev0'),
     ])
