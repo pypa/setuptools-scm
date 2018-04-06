@@ -86,14 +86,15 @@ class ScmVersion(object):
             '<ScmVersion {tag} d={distance}'
             ' n={node} d={dirty} x={extra}>')
 
-    def format_with(self, fmt):
+    def format_with(self, fmt, **kw):
         return fmt.format(
             time=self.time,
             tag=self.tag, distance=self.distance,
-            node=self.node, dirty=self.dirty, extra=self.extra)
+            node=self.node, dirty=self.dirty, extra=self.extra, **kw)
 
-    def format_choice(self, clean_format, dirty_format):
-        return self.format_with(dirty_format if self.dirty else clean_format)
+    def format_choice(self, clean_format, dirty_format, **kw):
+        return self.format_with(
+            dirty_format if self.dirty else clean_format, **kw)
 
 
 def _parse_tag(tag, preformatted):
@@ -144,25 +145,24 @@ def guess_next_dev_version(version):
         return guess_next_version(version.tag, version.distance)
 
 
-def get_local_node_and_date(version):
+def _format_local_with_time(version, time_format):
+
     if version.exact or version.node is None:
-        return version.format_choice("", "+d{time:%Y%m%d}")
+        return version.format_choice(
+            "", "+d{time:{time_format}}",
+            time_format=time_format)
     else:
-        return version.format_choice("+{node}", "+{node}.d{time:%Y%m%d}")
+        return version.format_choice(
+            "+{node}", "+{node}.d{time:{time_format}}",
+            time_format=time_format)
+
+
+def get_local_node_and_date(version):
+    return _format_local_with_time(version, time_format="%Y%m%d")
 
 
 def get_local_node_and_timestamp(version, fmt='%Y%m%d%H%M%S'):
-    if version.exact or version.node is None:
-        return version.format_choice("",
-                                     "+d{time:"
-                                     + "{fmt}".format(fmt=fmt)
-                                     + "}")
-    else:
-        return version.format_choice("+{node}",
-                                     "+{node}"
-                                     + ".d{time:"
-                                     + "{fmt}".format(fmt=fmt)
-                                     + "}")
+    return _format_local_with_time(version, time_format=fmt)
 
 
 def get_local_dirty_tag(version):
