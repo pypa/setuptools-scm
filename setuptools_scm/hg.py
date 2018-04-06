@@ -46,20 +46,32 @@ def parse(root):
         trace('initial node', root)
         return meta('0.0', dirty=dirty)
 
-    # the newline is needed for merge stae, see issue 72
-    cmd = 'hg parents --template "{latesttag} {latesttagdistance}\n"'
-    out = do(cmd, root)
     try:
-        # in merge state we assume parent 1 is fine
-        tags, dist = out.splitlines()[0].split()
-        # pick latest tag from tag list
-        tag = tags.split(':')[-1]
+        tag = get_latest_normalizable_tag(root)
+        dist = get_graph_distance(root, tag)
         if tag == 'null':
             tag = '0.0'
             dist = int(dist) + 1
         return _hg_tagdist_normalize_tagcommit(root, tag, dist, node)
     except ValueError:
         pass  # unpacking failed, old hg
+
+
+def get_latest_normalizable_tag(root):
+    # Gets all tags containing a '.' (see #229) from oldest to newest
+    cmd = ['hg', 'log',
+           '-r', "ancestors(.) and tag('re:\.')", '--template', "{tags}\n"]
+    outlines = do(cmd, root).split()
+    if not outlines:
+        return 'null'
+    tag = outlines[-1].split()[-1]
+    return tag
+
+
+def get_graph_distance(root, rev1, rev2='.'):
+    cmd = ['hg', 'log', '-q', '-r', '%s::%s' % (rev1, rev2)]
+    out = do(cmd, root)
+    return len(out.strip().splitlines()) - 1
 
 
 def archival_to_version(data):

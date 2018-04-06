@@ -152,3 +152,13 @@ def test_version_bump_from_commit_including_hgtag_mods(wd):
     assert wd.version.startswith('1.1.dev1+')  # bump from dirty version
     wd.commit()  # commits both the testfile _and_ .hgtags
     assert wd.version.startswith('1.1.dev2+')
+
+
+@pytest.mark.issue(229)
+@pytest.mark.usefixtures("version_1_0")
+def test_latest_tag_detection(wd):
+    """ Tests that tags not containing a "." are ignored, the same as for git.
+    Note that will be superceded by the fix for pypa/setuptools_scm/issues/235
+    """
+    wd('hg tag some-random-tag')
+    assert wd.version == '1.0'
