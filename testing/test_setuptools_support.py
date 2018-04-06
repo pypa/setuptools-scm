@@ -38,14 +38,14 @@ def check(packagedir, **env):
 
 
 def test_old_setuptools_fails(get_setuptools_packagedir):
-    packagedir = get_setuptools_packagedir("0.7.2")
+    packagedir = get_setuptools_packagedir("0.9.8")
     with pytest.raises(subprocess.CalledProcessError):
         check(packagedir)
 
 
 def test_old_setuptools_allows_with_warnings(get_setuptools_packagedir):
 
-    packagedir = get_setuptools_packagedir("0.7.2")
+    packagedir = get_setuptools_packagedir("0.9.8")
     # filter using warning since in the early python startup
     check(
         packagedir,
