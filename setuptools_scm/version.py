@@ -6,7 +6,6 @@ from .utils import trace
 
 from pkg_resources import iter_entry_points
 
-from distutils import log
 from pkg_resources import parse_version
 
 
@@ -21,10 +20,17 @@ def _get_version_class():
 VERSION_CLASS = _get_version_class()
 
 
+class SetuptoolsOutdatedWarning(Warning):
+    pass
+
+
+# append so integrators can disable the warning
+warnings.simplefilter('error', SetuptoolsOutdatedWarning, append=1)
+
+
 def _warn_if_setuptools_outdated():
     if VERSION_CLASS is None:
-        log.warn("your setuptools is too old (<12)")
-        log.warn("setuptools_scm functionality is degraded")
+        warnings.warn("your setuptools is too old (<12)", SetuptoolsOutdatedWarning)
 
 
 def callable_or_entrypoint(group, callable_or_name):
