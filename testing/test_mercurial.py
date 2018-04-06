@@ -18,10 +18,10 @@ archival_mapping = {
     '1.1.dev3+h000000000000': {
         'latesttag': '1.0',
         'latesttagdistance': '3',
-        'node': '0'*20,
+        'node': '0' * 20,
     },
     '0.0': {
-        'node': '0'*20,
+        'node': '0' * 20,
     },
     '1.2.2': {'tag': 'release-1.2.2'},
     '1.2.2.dev0': {'tag': 'release-1.2.2.dev'},
@@ -41,7 +41,7 @@ def test_archival_to_version(expected, data):
 def test_find_files_stop_at_root_hg(wd):
     wd.commit_testfile()
     wd.cwd.ensure('project/setup.cfg')
-    assert integration.find_files(str(wd.cwd/'project')) == []
+    assert integration.find_files(str(wd.cwd / 'project')) == []
 
 
 # XXX: better tests for tag prefixes
@@ -114,7 +114,7 @@ def test_parse_no_worktree(tmpdir):
 def version_1_0(wd):
     wd('hg branch default')
     wd.commit_testfile()
-    wd('hg tag 1.0 -u test -d "0 0"')
+    wd('hg tag 1.0.0 -u test -d "0 0"')
     return wd
 
 
@@ -131,14 +131,14 @@ def pre_merge_commit_after_tag(wd, version_1_0):
 
 @pytest.mark.usefixtures("pre_merge_commit_after_tag")
 def test_version_bump_before_merge_commit(wd):
-    assert wd.version.startswith('1.1.dev1+')
+    assert wd.version.startswith('1.0.1.dev1+')
 
 
 @pytest.mark.issue(219)
 @pytest.mark.usefixtures("pre_merge_commit_after_tag")
 def test_version_bump_from_merge_commit(wd):
     wd.commit()
-    assert wd.version.startswith('1.1.dev3+')  # issue 219
+    assert wd.version.startswith('1.0.1.dev3+')  # issue 219
 
 
 @pytest.mark.usefixtures("version_1_0")
@@ -149,9 +149,9 @@ def test_version_bump_from_commit_including_hgtag_mods(wd):
         tagfile.write('0  0\n')
     wd.write('branchfile', 'branchtext')
     wd(wd.add_command)
-    assert wd.version.startswith('1.1.dev1+')  # bump from dirty version
+    assert wd.version.startswith('1.0.1.dev1+')  # bump from dirty version
     wd.commit()  # commits both the testfile _and_ .hgtags
-    assert wd.version.startswith('1.1.dev2+')
+    assert wd.version.startswith('1.0.1.dev2+')
 
 
 @pytest.mark.issue(229)
@@ -161,4 +161,13 @@ def test_latest_tag_detection(wd):
     Note that will be superceded by the fix for pypa/setuptools_scm/issues/235
     """
     wd('hg tag some-random-tag')
-    assert wd.version == '1.0'
+    assert wd.version == '1.0.0'
+
+
+@pytest.mark.usefixtures("version_1_0")
+def test_feature_branch_increments_major(wd):
+
+    wd.commit_testfile()
+    assert wd.get_version(version_scheme="python-simplified-semver").startswith("1.0.1")
+    wd("hg branch feature/fun")
+    assert wd.get_version(version_scheme="python-simplified-semver").startswith("1.1.0")

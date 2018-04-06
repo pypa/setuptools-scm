@@ -64,6 +64,7 @@ class ScmVersion(object):
     def __init__(self, tag_version,
                  distance=None, node=None, dirty=False,
                  preformatted=False,
+                 branch=None,
                  **kw):
         if kw:
             trace("unknown args", kw)
@@ -76,6 +77,7 @@ class ScmVersion(object):
         self.extra = kw
         self.dirty = dirty
         self.preformatted = preformatted
+        self.branch = branch
 
     @property
     def exact(self):
@@ -84,13 +86,14 @@ class ScmVersion(object):
     def __repr__(self):
         return self.format_with(
             '<ScmVersion {tag} d={distance}'
-            ' n={node} d={dirty} x={extra}>')
+            ' n={node} d={dirty} b={branch} x={extra}>')
 
     def format_with(self, fmt, **kw):
         return fmt.format(
             time=self.time,
             tag=self.tag, distance=self.distance,
-            node=self.node, dirty=self.dirty, extra=self.extra, **kw)
+            node=self.node, dirty=self.dirty, extra=self.extra,
+            branch=self.branch, **kw)
 
     def format_choice(self, clean_format, dirty_format, **kw):
         return self.format_with(
@@ -143,6 +146,31 @@ def guess_next_dev_version(version):
         return version.format_with("{tag}")
     else:
         return guess_next_version(version.tag, version.distance)
+
+
+def guess_next_simple_semver(version, distance, retain, increment=True):
+    parts = str(version).split('.', retain)
+    del parts[retain:]
+    while len(parts) < retain:
+        parts.append("0")
+    if increment:
+        parts[-1] = str(int(parts[-1]) + 1)
+    while len(parts) < 3:
+        parts.append("0")
+    del parts[3:]
+    if distance:
+        parts.append("dev" + str(distance))
+    return '.'.join(parts)
+
+
+def simplified_semver_version(version):
+    if version.exact:
+        return guess_next_simple_semver(version.tag, 0, 3, increment=False)
+    else:
+        if version.branch is not None and 'feature' in version.branch:
+            return guess_next_simple_semver(version.tag, version.distance, retain=2)
+        else:
+            return guess_next_simple_semver(version.tag, version.distance, retain=3)
 
 
 def _format_local_with_time(version, time_format):

@@ -39,6 +39,13 @@ class GitWorkdir(object):
         out, _, _ = self.do_ex("git status --porcelain --untracked-files=no")
         return bool(out)
 
+    def get_branch(self):
+        branch, err, ret = self.do_ex("git rev-parse --abbrev-ref HEAD")
+        if ret:
+            trace("branch err", branch, err, ret)
+            return
+        return branch
+
     def is_shallow(self):
         return isfile(join(self.path, '.git/shallow'))
 
@@ -89,7 +96,7 @@ def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
     if pre_parse:
         pre_parse(wd)
 
-    out, err, ret = do_ex(describe_command, root)
+    out, err, ret = wd.do_ex(describe_command)
     if ret:
         # If 'git describe' failed, try to get the information otherwise.
         rev_node = wd.node()
@@ -103,6 +110,7 @@ def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
             distance=wd.count_all_nodes(),
             node='g' + rev_node,
             dirty=dirty,
+            branch=wd.get_branch(),
         )
 
     # 'out' looks e.g. like 'v1.5.0-0-g4060507' or
@@ -115,10 +123,11 @@ def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
 
     tag, number, node = out.rsplit('-', 2)
     number = int(number)
+    branch = wd.get_branch()
     if number:
-        return meta(tag, distance=number, node=node, dirty=dirty)
+        return meta(tag, distance=number, node=node, dirty=dirty, branch=branch)
     else:
-        return meta(tag, node=node, dirty=dirty)
+        return meta(tag, node=node, dirty=dirty, branch=branch)
 
 
 def list_files_in_archive(path):

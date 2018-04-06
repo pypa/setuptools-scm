@@ -99,7 +99,7 @@ def test_git_shallow_autocorrect(shallow_wd, recwarn):
 def test_find_files_stop_at_root_git(wd):
     wd.commit_testfile()
     wd.cwd.ensure('project/setup.cfg')
-    assert integration.find_files(str(wd.cwd/'project')) == []
+    assert integration.find_files(str(wd.cwd / 'project')) == []
 
 
 @pytest.mark.issue(128)
@@ -133,3 +133,13 @@ def test_git_archive_subdirectory(wd):
     wd('git add foobar')
     wd.commit()
     assert integration.find_files(str(wd.cwd)) == ['foobar/test1.txt']
+
+
+def test_git_feature_branch_increments_major(wd):
+    wd.commit_testfile()
+    wd("git tag 1.0.0")
+    wd.commit_testfile()
+    assert wd.get_version(version_scheme="python-simplified-semver").startswith("1.0.1")
+    wd("git checkout -b feature/fun")
+    wd.commit_testfile()
+    assert wd.get_version(version_scheme="python-simplified-semver").startswith("1.1.0")
