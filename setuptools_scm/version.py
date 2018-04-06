@@ -1,13 +1,14 @@
 from __future__ import print_function
+
 import datetime
-import warnings
 import re
-from .utils import trace
+import warnings
+from distutils import log
 
 from pkg_resources import iter_entry_points
-
-from distutils import log
 from pkg_resources import parse_version
+
+from .utils import trace
 
 
 def _get_version_class():
@@ -134,8 +135,15 @@ def _bump_dev(version):
 
 
 def _bump_regex(version):
-    prefix, tail = re.match('(.*?)(\d+)$', version).groups()
-    return '%s%d' % (prefix, int(tail) + 1)
+    groups = re.match(
+        '(?:(?P<sv_prefix>.*?\.)(?P<sv_number>\d+)(?P<sv_suffix>\.\d+)|'
+        '(?P<prefix>.*?)(?P<number>\d+))$',
+        version
+    ).groupdict()
+    prefix = groups["sv_prefix"] or groups["prefix"]
+    number = groups["sv_number"] or groups["number"]
+    suffix = groups["sv_suffix"] or ""
+    return '%s%d%s' % (prefix, int(number) + 1, suffix)
 
 
 def guess_next_dev_version(version):
