@@ -5,6 +5,9 @@ import sys
 import os
 import subprocess
 import pytest
+pytestmark = pytest.mark.skipif(
+    "sys.version_info >= (3,6,0)",
+    reason="integration with old versions no longer needed on py3.6+")
 
 
 @pytest.fixture(scope='session')
