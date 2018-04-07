@@ -12,5 +12,6 @@ def main():
         for fname in find_files('.'):
             print(fname)
 
+
 if __name__ == '__main__':
     main()
