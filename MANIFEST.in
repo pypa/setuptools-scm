@@ -1,0 +1,8 @@
+exclude *.nix
+exclude appveyor.yml
+exclude .travis.yaml
+include *.py
+include testing/*.py
+include tox.ini
+include *.rst
+include LICENSE
