@@ -2,12 +2,19 @@ from __future__ import print_function
 import datetime
 import warnings
 import re
+from itertools import chain, repeat, islice
+
 from .utils import trace
 
 from pkg_resources import iter_entry_points
 
 from distutils import log
 from pkg_resources import parse_version
+
+
+def _pad(iterable, size, padding=None):
+    padded = chain(iterable, repeat(padding))
+    return list(islice(padded, size))
 
 
 def _get_version_class():
@@ -137,7 +144,7 @@ def _bump_dev(version):
 
 
 def _bump_regex(version):
-    prefix, tail = re.match('(.*?)(\d+)$', version).groups()
+    prefix, tail = re.match(r'(.*?)(\d+)$', version).groups()
     return '%s%d' % (prefix, int(tail) + 1)
 
 
@@ -149,18 +156,14 @@ def guess_next_dev_version(version):
 
 
 def guess_next_simple_semver(version, distance, retain, increment=True):
-    parts = str(version).split('.', retain)
-    del parts[retain:]
-    while len(parts) < retain:
-        parts.append("0")
+    parts = map(int, str(version).split('.'))
+    parts = _pad(parts, size=retain, padding=0)
     if increment:
-        parts[-1] = str(int(parts[-1]) + 1)
-    while len(parts) < 3:
-        parts.append("0")
-    del parts[3:]
+        parts[-1] += 1
+    parts = _pad(parts, 3, 0)
     if distance:
         parts.append("dev" + str(distance))
-    return '.'.join(parts)
+    return '.'.join(map(str, parts))
 
 
 def simplified_semver_version(version):
