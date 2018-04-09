@@ -1,3 +1,12 @@
+v2.0.0
+========
+
+* fix #237 - correct imports in code examples
+* improve mercurial commit detection (thanks Aaron)
+* breaking change: remove support for setuptools before parsed versions
+* reintroduce manifest as the travis deploy cant use the file finder
+* reconfigure flake8 for future compatibility with black
+
 v1.17.0
 ========
 
