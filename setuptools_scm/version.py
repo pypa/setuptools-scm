@@ -11,6 +11,10 @@ from pkg_resources import iter_entry_points
 from distutils import log
 from pkg_resources import parse_version
 
+SEMVER_MINOR = 2
+SEMVER_PATCH = 3
+SEMVER_LEN = 3
+
 
 def _pad(iterable, size, padding=None):
     padded = chain(iterable, repeat(padding))
@@ -106,6 +110,10 @@ class ScmVersion(object):
         return self.format_with(
             dirty_format if self.dirty else clean_format, **kw)
 
+    def format_next_version(self, guess_next, fmt="{guessed}.dev{distance}", **kw):
+        guessed = guess_next(self.tag, **kw)
+        return self.format_with(fmt, guessed=guessed)
+
 
 def _parse_tag(tag, preformatted):
     if preformatted:
@@ -122,11 +130,9 @@ def meta(tag, distance=None, dirty=False, node=None, preformatted=False, **kw):
     return ScmVersion(tag, distance, node, dirty, preformatted, **kw)
 
 
-def guess_next_version(tag_version, distance):
+def guess_next_version(tag_version):
     version = _strip_local(str(tag_version))
-    bumped = _bump_dev(version) or _bump_regex(version)
-    suffix = '.dev%s' % distance
-    return bumped + suffix
+    return _bump_dev(version) or _bump_regex(version)
 
 
 def _strip_local(version_string):
@@ -152,28 +158,29 @@ def guess_next_dev_version(version):
     if version.exact:
         return version.format_with("{tag}")
     else:
-        return guess_next_version(version.tag, version.distance)
+        return version.format_next_version(guess_next_version)
 
 
-def guess_next_simple_semver(version, distance, retain, increment=True):
+def guess_next_simple_semver(version, retain, increment=True):
     parts = map(int, str(version).split('.'))
-    parts = _pad(parts, size=retain, padding=0)
+    parts = _pad(parts, retain, 0)
     if increment:
         parts[-1] += 1
-    parts = _pad(parts, 3, 0)
-    if distance:
-        parts.append("dev" + str(distance))
+    parts = _pad(parts, SEMVER_LEN, 0)
     return '.'.join(map(str, parts))
 
 
 def simplified_semver_version(version):
     if version.exact:
-        return guess_next_simple_semver(version.tag, 0, 3, increment=False)
+        return guess_next_simple_semver(
+            version.tag, retain=SEMVER_LEN, increment=False)
     else:
         if version.branch is not None and 'feature' in version.branch:
-            return guess_next_simple_semver(version.tag, version.distance, retain=2)
+            return version.format_next_version(
+                guess_next_simple_semver, retain=SEMVER_MINOR)
         else:
-            return guess_next_simple_semver(version.tag, version.distance, retain=3)
+            return version.format_next_version(
+                guess_next_simple_semver, retain=SEMVER_PATCH)
 
 
 def _format_local_with_time(version, time_format):
