@@ -6,6 +6,7 @@ v2.0.0
 * breaking change: remove support for setuptools before parsed versions
 * reintroduce manifest as the travis deploy cant use the file finder
 * reconfigure flake8 for future compatibility with black
+* introduce support for branch name in version metadata and support a opt-in simplified semver version scheme
 
 v1.17.0
 ========
