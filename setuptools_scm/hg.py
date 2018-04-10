@@ -5,7 +5,7 @@ from .version import meta, tags_to_versions
 FILES_COMMAND = 'hg locate -I .'
 
 
-def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
+def _hg_tagdist_normalize_tagcommit(root, tag, dist, node, branch):
     dirty = node.endswith('+')
     node = 'h' + node.strip('+')
 
@@ -17,13 +17,14 @@ def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
               " and not tag({tag!r}))"  # ignore the tagged commit itself
               ).format(tag=tag)
     if tag != '0.0':
-        commits = do(['hg', 'log', '-r', revset, '--template', '{node|short}'],
+        commits = do(['hg', 'log', '-r', revset,
+                      '--template', '{node|short}'],
                      root)
     else:
         commits = True
     trace('normalize', locals())
     if commits or dirty:
-        return meta(tag, distance=dist, node=node, dirty=dirty)
+        return meta(tag, distance=dist, node=node, dirty=dirty, branch=branch)
     else:
         return meta(tag)
 
@@ -31,20 +32,21 @@ def _hg_tagdist_normalize_tagcommit(root, tag, dist, node):
 def parse(root):
     if not has_command('hg'):
         return
-    identity_data = do('hg id -i -t', root).split()
+    identity_data = do('hg id -i -b -t', root).split()
     if not identity_data:
         return
     node = identity_data.pop(0)
+    branch = identity_data.pop(0)
     tags = tags_to_versions(identity_data)
     # filter tip in degraded mode on old setuptools
     tags = [x for x in tags if x != 'tip']
     dirty = node[-1] == '+'
     if tags:
-        return meta(tags[0], dirty=dirty)
+        return meta(tags[0], dirty=dirty, branch=branch)
 
-    if node.strip('+') == '0'*12:
+    if node.strip('+') == '0' * 12:
         trace('initial node', root)
-        return meta('0.0', dirty=dirty)
+        return meta('0.0', dirty=dirty, branch=branch)
 
     try:
         tag = get_latest_normalizable_tag(root)
@@ -52,7 +54,7 @@ def parse(root):
         if tag == 'null':
             tag = '0.0'
             dist = int(dist) + 1
-        return _hg_tagdist_normalize_tagcommit(root, tag, dist, node)
+        return _hg_tagdist_normalize_tagcommit(root, tag, dist, node, branch)
     except ValueError:
         pass  # unpacking failed, old hg
 

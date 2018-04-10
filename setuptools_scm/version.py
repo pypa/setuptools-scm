@@ -2,11 +2,22 @@ from __future__ import print_function
 import datetime
 import warnings
 import re
+from itertools import chain, repeat, islice
+
 from .utils import trace
 
 from pkg_resources import iter_entry_points
 
 from pkg_resources import parse_version
+
+SEMVER_MINOR = 2
+SEMVER_PATCH = 3
+SEMVER_LEN = 3
+
+
+def _pad(iterable, size, padding=None):
+    padded = chain(iterable, repeat(padding))
+    return list(islice(padded, size))
 
 
 def _get_version_class():
@@ -70,6 +81,7 @@ class ScmVersion(object):
     def __init__(self, tag_version,
                  distance=None, node=None, dirty=False,
                  preformatted=False,
+                 branch=None,
                  **kw):
         if kw:
             trace("unknown args", kw)
@@ -82,6 +94,7 @@ class ScmVersion(object):
         self.extra = kw
         self.dirty = dirty
         self.preformatted = preformatted
+        self.branch = branch
 
     @property
     def exact(self):
@@ -90,17 +103,22 @@ class ScmVersion(object):
     def __repr__(self):
         return self.format_with(
             '<ScmVersion {tag} d={distance}'
-            ' n={node} d={dirty} x={extra}>')
+            ' n={node} d={dirty} b={branch} x={extra}>')
 
     def format_with(self, fmt, **kw):
         return fmt.format(
             time=self.time,
             tag=self.tag, distance=self.distance,
-            node=self.node, dirty=self.dirty, extra=self.extra, **kw)
+            node=self.node, dirty=self.dirty, extra=self.extra,
+            branch=self.branch, **kw)
 
     def format_choice(self, clean_format, dirty_format, **kw):
         return self.format_with(
             dirty_format if self.dirty else clean_format, **kw)
+
+    def format_next_version(self, guess_next, fmt="{guessed}.dev{distance}", **kw):
+        guessed = guess_next(self.tag, **kw)
+        return self.format_with(fmt, guessed=guessed)
 
 
 def _parse_tag(tag, preformatted):
@@ -118,11 +136,9 @@ def meta(tag, distance=None, dirty=False, node=None, preformatted=False, **kw):
     return ScmVersion(tag, distance, node, dirty, preformatted, **kw)
 
 
-def guess_next_version(tag_version, distance):
+def guess_next_version(tag_version):
     version = _strip_local(str(tag_version))
-    bumped = _bump_dev(version) or _bump_regex(version)
-    suffix = '.dev%s' % distance
-    return bumped + suffix
+    return _bump_dev(version) or _bump_regex(version)
 
 
 def _strip_local(version_string):
@@ -140,7 +156,7 @@ def _bump_dev(version):
 
 
 def _bump_regex(version):
-    prefix, tail = re.match('(.*?)(\d+)$', version).groups()
+    prefix, tail = re.match(r'(.*?)(\d+)$', version).groups()
     return '%s%d' % (prefix, int(tail) + 1)
 
 
@@ -148,7 +164,29 @@ def guess_next_dev_version(version):
     if version.exact:
         return version.format_with("{tag}")
     else:
-        return guess_next_version(version.tag, version.distance)
+        return version.format_next_version(guess_next_version)
+
+
+def guess_next_simple_semver(version, retain, increment=True):
+    parts = map(int, str(version).split('.'))
+    parts = _pad(parts, retain, 0)
+    if increment:
+        parts[-1] += 1
+    parts = _pad(parts, SEMVER_LEN, 0)
+    return '.'.join(map(str, parts))
+
+
+def simplified_semver_version(version):
+    if version.exact:
+        return guess_next_simple_semver(
+            version.tag, retain=SEMVER_LEN, increment=False)
+    else:
+        if version.branch is not None and 'feature' in version.branch:
+            return version.format_next_version(
+                guess_next_simple_semver, retain=SEMVER_MINOR)
+        else:
+            return version.format_next_version(
+                guess_next_simple_semver, retain=SEMVER_PATCH)
 
 
 def _format_local_with_time(version, time_format):

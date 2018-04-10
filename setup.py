@@ -87,6 +87,7 @@ arguments = dict(
         [setuptools_scm.version_scheme]
         guess-next-dev = setuptools_scm.version:guess_next_dev_version
         post-release = setuptools_scm.version:postrelease_version
+        python-simplified-semver = setuptools_scm.version:simplified_semver_version
 
         [setuptools_scm.local_scheme]
         node-and-date = setuptools_scm.version:get_local_node_and_date

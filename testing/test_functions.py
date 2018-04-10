@@ -14,14 +14,14 @@ class MockTime(object):
 
 
 @pytest.mark.parametrize('tag, expected', [
-    ('1.1', '1.2.dev0'),
-    ('1.2.dev', '1.2.dev0'),
-    ('1.1a2', '1.1a3.dev0'),
-    ('23.24.post2+deadbeef', '23.24.post3.dev0'),
-    ])
+    ('1.1', '1.2'),
+    ('1.2.dev', '1.2'),
+    ('1.1a2', '1.1a3'),
+    ('23.24.post2+deadbeef', '23.24.post3'),
+])
 def test_next_tag(tag, expected):
     version = pkg_resources.parse_version(tag)
-    assert guess_next_version(version, 0) == expected
+    assert guess_next_version(version) == expected
 
 
 VERSIONS = {
