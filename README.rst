@@ -80,6 +80,7 @@ instead use ``pkg_resources`` after editable/real installation:
 
 .. code:: python
 
+    # contents of docs/conf.py
     from pkg_resources import get_distribution
     release = get_distribution('myproject').version
     # for example take major/minor
@@ -284,12 +285,21 @@ The callable must return the configuration.
 
 .. code:: python
 
+    # content of setup.py
+    import setuptools
+    
     def myversion():
         from setuptools_scm.version import get_local_dirty_tag
         def clean_scheme(version):
             return get_local_dirty_tag(version) if version.dirty else '+clean'
 
         return {'local_scheme': clean_scheme}
+    
+    setup(
+        ...,
+        use_scm_version=myversion,
+        ...
+    )
 
 
 Code of Conduct
