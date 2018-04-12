@@ -80,6 +80,7 @@ instead use ``pkg_resources`` after editable/real installation:
 
 .. code:: python
 
+    # contents of docs/conf.py
     from pkg_resources import get_distribution
     release = get_distribution('myproject').version
     # for example take major/minor
