@@ -123,7 +123,8 @@ def test_git_archive_export_ignore(wd):
              '/test1.txt -export-ignore\n/test2.txt export-ignore')
     wd('git add test1.txt test2.txt')
     wd.commit()
-    assert integration.find_files(str(wd.cwd)) == ['test1.txt']
+    with wd.cwd.as_cwd():
+        assert integration.find_files('.') == ['./test1.txt']
 
 
 @pytest.mark.issue(228)
@@ -132,7 +133,8 @@ def test_git_archive_subdirectory(wd):
     wd.write('foobar/test1.txt', 'test')
     wd('git add foobar')
     wd.commit()
-    assert integration.find_files(str(wd.cwd)) == ['foobar/test1.txt']
+    with wd.cwd.as_cwd():
+        assert integration.find_files('.') == ['./foobar/test1.txt']
 
 
 def test_git_feature_branch_increments_major(wd):
