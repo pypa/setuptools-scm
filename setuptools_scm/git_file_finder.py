@@ -8,7 +8,7 @@ def _git_toplevel(path):
         out = subprocess.check_output([
             'git', 'rev-parse', '--show-toplevel',
         ], cwd=(path or '.'), universal_newlines=True)
-        return os.path.realpath(out.strip())
+        return os.path.normcase(os.path.realpath(out.strip()))
     except subprocess.CalledProcessError:
         # git returned error, we are not in a git repo
         return None
@@ -26,7 +26,7 @@ def _git_ls_files_and_dirs(toplevel):
     git_files = set()
     git_dirs = set([toplevel])
     for member in tf.getmembers():
-        name = member.name.replace('/', os.path.sep)
+        name = os.path.normcase(member.name).replace('/', os.path.sep)
         if member.type == tarfile.DIRTYPE:
             git_dirs.add(name)
         else:
@@ -44,19 +44,21 @@ def find_files(path=''):
     if not toplevel:
         return []
     git_files, git_dirs = _git_ls_files_and_dirs(toplevel)
-    realpath = os.path.realpath(path)
+    realpath = os.path.normcase(os.path.realpath(path))
     assert realpath.startswith(toplevel)
     assert realpath in git_dirs
     seen = set()
     res = []
     for dirpath, dirnames, filenames in os.walk(realpath, followlinks=True):
-        realdirpath = os.path.realpath(dirpath)  # resolve symlink
+        # dirpath with symlinks resolved
+        realdirpath = os.path.normcase(os.path.realpath(dirpath))
         if realdirpath not in git_dirs or realdirpath in seen:
             dirnames[:] = []
             continue
         for filename in filenames:
-            fullfilename = os.path.join(dirpath, filename)  # with symlink
-            if os.path.realpath(fullfilename) in git_files:
+            # dirpath + filename with symlinks preserved
+            fullfilename = os.path.join(dirpath, filename)
+            if os.path.normcase(os.path.realpath(fullfilename)) in git_files:
                 res.append(
                     os.path.join(path, os.path.relpath(fullfilename, path)))
         seen.add(realdirpath)
