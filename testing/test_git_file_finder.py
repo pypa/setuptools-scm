@@ -23,33 +23,40 @@ def inwd(wd):
         yield wd
 
 
+def _sep(paths):
+    return {
+        path.replace('/', os.path.sep)
+        for path in paths
+    }
+
+
 def test_basic(inwd):
-    assert set(find_files()) == {
+    assert set(find_files()) == _sep({
         'file1',
         'adir/filea',
         'bdir/fileb',
-    }
-    assert set(find_files('.')) == {
+    })
+    assert set(find_files('.')) == _sep({
         './file1',
         './adir/filea',
         './bdir/fileb',
-    }
-    assert set(find_files('adir')) == {
+    })
+    assert set(find_files('adir')) == _sep({
         'adir/filea',
-    }
+    })
 
 
 def test_case(inwd):
     (inwd.cwd / 'CamelFile').ensure(file=True)
     (inwd.cwd / 'file2').ensure(file=True)
     inwd.add_and_commit()
-    assert set(find_files()) == {
+    assert set(find_files()) == _sep({
         'CamelFile',
         'file2',
         'file1',
         'adir/filea',
         'bdir/fileb',
-    }
+    })
 
 
 @pytest.mark.skipif(sys.platform == 'win32',
@@ -57,10 +64,10 @@ def test_case(inwd):
 def test_symlink_dir(inwd):
     (inwd.cwd / 'adir' / 'bdirlink').mksymlinkto('../bdir')
     inwd.add_and_commit()
-    assert set(find_files('adir')) == {
+    assert set(find_files('adir')) == _sep({
         'adir/filea',
         'adir/bdirlink/fileb',
-    }
+    })
 
 
 @pytest.mark.skipif(sys.platform == 'win32',
@@ -68,10 +75,10 @@ def test_symlink_dir(inwd):
 def test_symlink_file(inwd):
     (inwd.cwd / 'adir' / 'file1link').mksymlinkto('../file1')
     inwd.add_and_commit()
-    assert set(find_files('adir')) == {
+    assert set(find_files('adir')) == _sep({
         'adir/filea',
         'adir/file1link',
-    }
+    })
 
 
 @pytest.mark.skipif(sys.platform == 'win32',
@@ -79,9 +86,9 @@ def test_symlink_file(inwd):
 def test_symlink_loop(inwd):
     (inwd.cwd / 'adir' / 'loop').mksymlinkto('../adir')
     inwd.add_and_commit()
-    assert set(find_files('adir')) == {
+    assert set(find_files('adir')) == _sep({
         'adir/filea',
-    }
+    })
 
 
 @pytest.mark.skipif(sys.platform == 'win32',
@@ -90,9 +97,9 @@ def test_symlink_dir_out_of_git(inwd):
     (inwd.cwd / 'adir' / 'outsidedirlink').\
         mksymlinkto(os.path.join(__file__, '..'))
     inwd.add_and_commit()
-    assert set(find_files('adir')) == {
+    assert set(find_files('adir')) == _sep({
         'adir/filea',
-    }
+    })
 
 
 @pytest.mark.skipif(sys.platform == 'win32',
@@ -100,9 +107,9 @@ def test_symlink_dir_out_of_git(inwd):
 def test_symlink_file_out_of_git(inwd):
     (inwd.cwd / 'adir' / 'outsidefilelink').mksymlinkto(__file__)
     inwd.add_and_commit()
-    assert set(find_files('adir')) == {
+    assert set(find_files('adir')) == _sep({
         'adir/filea',
-    }
+    })
 
 
 def test_empty_root(inwd):
@@ -110,9 +117,9 @@ def test_empty_root(inwd):
     subdir.ensure(dir=True)
     (subdir / 'filec').ensure(file=True)
     inwd.add_and_commit()
-    assert set(find_files('cdir')) == {
+    assert set(find_files('cdir')) == _sep({
         'cdir/subdir/filec',
-    }
+    })
 
 
 def test_empty_subdir(inwd):
@@ -120,7 +127,7 @@ def test_empty_subdir(inwd):
     subdir.ensure(dir=True)
     (subdir / 'xfile').ensure(file=True)
     inwd.add_and_commit()
-    assert set(find_files('adir')) == {
+    assert set(find_files('adir')) == _sep({
         'adir/filea',
         'adir/emptysubdir/subdir/xfile',
-    }
+    })

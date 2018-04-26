@@ -3,6 +3,7 @@ from setuptools_scm.utils import do
 from setuptools_scm import git
 import pytest
 from datetime import date
+from os.path import join as opj
 
 
 @pytest.fixture
@@ -124,7 +125,7 @@ def test_git_archive_export_ignore(wd):
     wd('git add test1.txt test2.txt')
     wd.commit()
     with wd.cwd.as_cwd():
-        assert integration.find_files('.') == ['./test1.txt']
+        assert integration.find_files('.') == [opj('.', 'test1.txt')]
 
 
 @pytest.mark.issue(228)
@@ -134,7 +135,7 @@ def test_git_archive_subdirectory(wd):
     wd('git add foobar')
     wd.commit()
     with wd.cwd.as_cwd():
-        assert integration.find_files('.') == ['./foobar/test1.txt']
+        assert integration.find_files('.') == [opj('.', 'foobar', 'test1.txt')]
 
 
 def test_git_feature_branch_increments_major(wd):
