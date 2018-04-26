@@ -39,6 +39,8 @@ def test_basic(inwd):
     }
 
 
+@pytest.mark.skipif(sys.platform == 'win32',
+                    reason="symlinks to dir not supported")
 def test_symlink_dir(inwd):
     (inwd.cwd / 'adir' / 'bdirlink').mksymlinkto('../bdir')
     inwd.add_and_commit()
@@ -59,6 +61,8 @@ def test_symlink_file(inwd):
     }
 
 
+@pytest.mark.skipif(sys.platform == 'win32',
+                    reason="symlinks to dir not supported")
 def test_symlink_loop(inwd):
     (inwd.cwd / 'adir' / 'loop').mksymlinkto('../adir')
     inwd.add_and_commit()
@@ -67,6 +71,8 @@ def test_symlink_loop(inwd):
     }
 
 
+@pytest.mark.skipif(sys.platform == 'win32',
+                    reason="symlinks to dir not supported")
 def test_symlink_dir_out_of_git(inwd):
     (inwd.cwd / 'adir' / 'outsidedirlink').\
         mksymlinkto(os.path.join(__file__, '..'))
