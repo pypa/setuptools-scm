@@ -39,6 +39,19 @@ def test_basic(inwd):
     }
 
 
+def test_case(inwd):
+    (inwd.cwd / 'CamelFile').ensure(file=True)
+    (inwd.cwd / 'file2').ensure(file=True)
+    inwd.add_and_commit()
+    assert set(find_files()) == {
+        'CamelFile',
+        'file2',
+        'file1',
+        'adir/filea',
+        'bdir/fileb',
+    }
+
+
 @pytest.mark.skipif(sys.platform == 'win32',
                     reason="symlinks to dir not supported")
 def test_symlink_dir(inwd):
