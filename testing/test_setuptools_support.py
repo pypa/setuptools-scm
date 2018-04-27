@@ -5,9 +5,14 @@ import sys
 import os
 import subprocess
 import pytest
-pytestmark = pytest.mark.skipif(
-    "sys.version_info >= (3,6,0)",
-    reason="integration with old versions no longer needed on py3.6+")
+pytestmark = [
+    pytest.mark.skipif(
+        "sys.version_info >= (3,6,0)",
+        reason="integration with old versions no longer needed on py3.6+"),
+    pytest.mark.xfail(
+        sys.platform == 'win32',
+        reason="path behaves unexpected on windows ci"),
+]
 
 
 @pytest.fixture(scope='session')
