@@ -42,6 +42,10 @@ class Wd(object):
         else:
             return given_reason
 
+    def add_and_commit(self, reason=None):
+        self(self.add_command)
+        self.commit(reason)
+
     def commit(self, reason=None):
         reason = self._reason(reason)
         self(self.commit_command, reason=reason)

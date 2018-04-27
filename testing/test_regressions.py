@@ -53,8 +53,8 @@ def test_pip_egg_info(tmpdir, monkeypatch):
 def test_pip_download(tmpdir, monkeypatch):
     monkeypatch.chdir(tmpdir)
     subprocess.check_call([
-        sys.executable, '-c',
-        'import pip;pip.main()', 'download', 'lz4==0.9.0',
+        sys.executable, '-m',
+        'pip', 'download', 'lz4==0.9.0',
     ])
 
 

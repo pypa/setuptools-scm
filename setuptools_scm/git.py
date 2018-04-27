@@ -2,8 +2,6 @@ from .utils import do_ex, trace, has_command
 from .version import meta
 
 from os.path import isfile, join
-import subprocess
-import tarfile
 import warnings
 
 
@@ -128,13 +126,3 @@ def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
         return meta(tag, distance=number, node=node, dirty=dirty, branch=branch)
     else:
         return meta(tag, node=node, dirty=dirty, branch=branch)
-
-
-def list_files_in_archive(path):
-    """List the files that 'git archive' generates.
-    """
-    cmd = ['git', 'archive', 'HEAD']
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, cwd=path)
-    tf = tarfile.open(fileobj=proc.stdout, mode='r|*')
-    return [member.name for member in tf.getmembers()
-            if member.type != tarfile.DIRTYPE]
