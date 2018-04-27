@@ -26,24 +26,26 @@ def get_setuptools_packagedir(request):
 
 
 SCRIPT = """
+from __future__ import print_function
+import sys
 import setuptools
-print(setuptools.__version__)
+print(setuptools.__version__, 'expected', sys.argv[1])
 import setuptools_scm.version
 from setuptools_scm.__main__ import main
 main()
 """
 
 
-def check(packagedir, **env):
+def check(packagedir, expected_version, **env):
     subprocess.check_call(
-        [sys.executable, '-c', SCRIPT],
+        [sys.executable, '-c', SCRIPT, expected_version],
         env=dict(os.environ, PYTHONPATH=".:" + str(packagedir), **env))
 
 
 def test_old_setuptools_fails(get_setuptools_packagedir):
     packagedir = get_setuptools_packagedir("0.9.8")
     with pytest.raises(subprocess.CalledProcessError):
-        check(packagedir)
+        check(packagedir, "0.9.8")
 
 
 def test_old_setuptools_allows_with_warnings(get_setuptools_packagedir):
@@ -51,10 +53,10 @@ def test_old_setuptools_allows_with_warnings(get_setuptools_packagedir):
     packagedir = get_setuptools_packagedir("0.9.8")
     # filter using warning since in the early python startup
     check(
-        packagedir,
+        packagedir, "0.9.8",
         PYTHONWARNINGS="once::Warning")
 
 
 def test_distlib_setuptools_works(get_setuptools_packagedir):
     packagedir = get_setuptools_packagedir("12.0.1")
-    check(packagedir)
+    check(packagedir, "12.0.1")
