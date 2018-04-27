@@ -160,7 +160,7 @@ def test_latest_tag_detection(wd):
     """ Tests that tags not containing a "." are ignored, the same as for git.
     Note that will be superceded by the fix for pypa/setuptools_scm/issues/235
     """
-    wd('hg tag some-random-tag')
+    wd('hg tag some-random-tag -u test -d "0 0"')
     assert wd.version == '1.0.0'
 
 
