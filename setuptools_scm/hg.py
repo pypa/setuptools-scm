@@ -2,8 +2,6 @@ import os
 from .utils import do, trace, data_from_mime, has_command
 from .version import meta, tags_to_versions
 
-FILES_COMMAND = 'hg locate -I .'
-
 
 def _hg_tagdist_normalize_tagcommit(root, tag, dist, node, branch):
     dirty = node.endswith('+')

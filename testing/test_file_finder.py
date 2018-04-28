@@ -3,16 +3,21 @@ import sys
 
 import pytest
 
-from setuptools_scm.git_file_finder import find_files
+from setuptools_scm.integration import find_files
 
 
-@pytest.fixture
-def inwd(wd):
-    wd('git init')
-    wd('git config user.email test@example.com')
-    wd('git config user.name "a test"')
-    wd.add_command = 'git add .'
-    wd.commit_command = 'git commit -m test-{reason}'
+@pytest.fixture(params=['git', 'hg'])
+def inwd(request, wd):
+    if request.param == 'git':
+        wd('git init')
+        wd('git config user.email test@example.com')
+        wd('git config user.name "a test"')
+        wd.add_command = 'git add .'
+        wd.commit_command = 'git commit -m test-{reason}'
+    elif request.param == 'hg':
+        wd('hg init')
+        wd.add_command = 'hg add .'
+        wd.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
     (wd.cwd / 'file1').ensure(file=True)
     adir = (wd.cwd / 'adir').ensure(dir=True)
     (adir / 'filea').ensure(file=True)

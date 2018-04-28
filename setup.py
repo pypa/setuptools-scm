@@ -81,8 +81,8 @@ arguments = dict(
         pip-egg-info = setuptools_scm.hacks:parse_pip_egg_info
 
         [setuptools_scm.files_command]
-        .hg = setuptools_scm.hg:FILES_COMMAND
-        .git = setuptools_scm.git_file_finder:find_files
+        .hg = setuptools_scm.file_finder_hg:hg_find_files
+        .git = setuptools_scm.file_finder_git:git_find_files
 
         [setuptools_scm.version_scheme]
         guess-next-dev = setuptools_scm.version:guess_next_dev_version
