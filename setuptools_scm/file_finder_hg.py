@@ -25,7 +25,7 @@ def _hg_ls_files_and_dirs(toplevel):
     out = subprocess.check_output([
         'hg', 'files',
     ], cwd=toplevel, universal_newlines=True)
-    for name in out.split():
+    for name in out.splitlines():
         name = os.path.normcase(name).replace('/', os.path.sep)
         fullname = os.path.join(toplevel, name)
         hg_files.add(fullname)
