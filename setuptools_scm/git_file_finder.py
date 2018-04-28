@@ -5,9 +5,10 @@ import tarfile
 
 def _git_toplevel(path):
     try:
-        out = subprocess.check_output([
-            'git', 'rev-parse', '--show-toplevel',
-        ], cwd=(path or '.'), universal_newlines=True)
+        with open(os.devnull, 'wb') as devnull:
+            out = subprocess.check_output([
+                'git', 'rev-parse', '--show-toplevel',
+            ], cwd=(path or '.'), universal_newlines=True, stderr=devnull)
         return os.path.normcase(os.path.realpath(out.strip()))
     except subprocess.CalledProcessError:
         # git returned error, we are not in a git repo
