@@ -138,6 +138,16 @@ def test_git_archive_subdirectory(wd):
         assert integration.find_files('.') == [opj('.', 'foobar', 'test1.txt')]
 
 
+@pytest.mark.issue(251)
+def test_git_archive_run_from_subdirectory(wd):
+    wd('mkdir foobar')
+    wd.write('foobar/test1.txt', 'test')
+    wd('git add foobar')
+    wd.commit()
+    with (wd.cwd / 'foobar').as_cwd():
+        assert integration.find_files('.') == [opj('.', 'test1.txt')]
+
+
 def test_git_feature_branch_increments_major(wd):
     wd.commit_testfile()
     wd("git tag 1.0.0")

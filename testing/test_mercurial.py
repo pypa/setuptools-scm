@@ -41,7 +41,12 @@ def test_archival_to_version(expected, data):
 def test_find_files_stop_at_root_hg(wd):
     wd.commit_testfile()
     wd.cwd.ensure('project/setup.cfg')
+    # setup.cfg has not been committed
     assert integration.find_files(str(wd.cwd / 'project')) == []
+    # issue 251
+    wd.add_and_commit()
+    with (wd.cwd / 'project').as_cwd():
+        assert integration.find_files() == ['setup.cfg']
 
 
 # XXX: better tests for tag prefixes
