@@ -47,7 +47,6 @@ def find_files(path=''):
     git_files, git_dirs = _git_ls_files_and_dirs(toplevel)
     realpath = os.path.normcase(os.path.realpath(path))
     assert realpath.startswith(toplevel)
-    assert realpath in git_dirs
     seen = set()
     res = []
     for dirpath, dirnames, filenames in os.walk(realpath, followlinks=True):
