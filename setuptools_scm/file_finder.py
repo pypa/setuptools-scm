@@ -8,6 +8,7 @@ def scm_find_files(path, scm_files, scm_dirs):
     - scm_files: set of scm controlled files and symlinks
       (including symlinks to directories)
     - scm_dirs: set of scm controlled directories
+      (including directories containing no scm controlled files)
 
     scm_files and scm_dirs must be absolute with symlinks resolved (realpath),
     with normalized case (normcase)
