@@ -5,7 +5,8 @@ def scm_find_files(path, scm_files, scm_dirs):
     """ setuptools compatible file finder that follows symlinks
 
     - path: the root directory from which to search
-    - scm_files: set of scm controlled files
+    - scm_files: set of scm controlled files and symlinks
+      (including symlinks to directories)
     - scm_dirs: set of scm controlled directories
 
     scm_files and scm_dirs must be absolute with symlinks resolved (realpath),
