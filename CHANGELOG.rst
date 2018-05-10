@@ -1,7 +1,7 @@
 v2.1.0
 ======
 
-* enhance docs for sphinx usaeg
+* enhance docs for sphinx usage
 * add symlink support to file finder for git #247
   (thanks Stéphane Bidoul)
 
