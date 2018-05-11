@@ -179,7 +179,7 @@ def test_empty_subdir(inwd):
 
 
 @pytest.mark.skipif(sys.platform == 'win32',
-                    reason="symlinks to files not supported on windows")
+                    reason="symlinks not supported on windows")
 def test_double_include_through_symlink(inwd):
     (inwd.cwd / 'data').ensure(dir=True)
     (inwd.cwd / 'data' / 'datafile').ensure(file=True)
@@ -197,7 +197,7 @@ def test_double_include_through_symlink(inwd):
 
 
 @pytest.mark.skipif(sys.platform == 'win32',
-                    reason="symlinks to files not supported on windows")
+                    reason="symlinks not supported on windows")
 def test_symlink_not_in_scm_while_target_is(inwd):
     (inwd.cwd / 'data').ensure(dir=True)
     (inwd.cwd / 'data' / 'datafile').ensure(file=True)
