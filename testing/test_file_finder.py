@@ -91,7 +91,7 @@ def test_symlink_file(inwd):
     inwd.add_and_commit()
     assert set(find_files('adir')) == _sep({
         'adir/filea',
-        'adir/file1link',
+        'adir/file1link',  # -> ../file1
     })
 
 
@@ -102,6 +102,7 @@ def test_symlink_loop(inwd):
     inwd.add_and_commit()
     assert set(find_files('adir')) == _sep({
         'adir/filea',
+        'adir/loop',  # -> ../adir
     })
 
 
@@ -144,4 +145,40 @@ def test_empty_subdir(inwd):
     assert set(find_files('adir')) == _sep({
         'adir/filea',
         'adir/emptysubdir/subdir/xfile',
+    })
+
+
+@pytest.mark.skipif(sys.platform == 'win32',
+                    reason="symlinks to files not supported on windows")
+def test_double_include_through_symlink(inwd):
+    (inwd.cwd / 'data').ensure(dir=True)
+    (inwd.cwd / 'data' / 'datafile').ensure(file=True)
+    (inwd.cwd / 'adir' / 'datalink').mksymlinkto('../data')
+    (inwd.cwd / 'adir' / 'filealink').mksymlinkto('filea')
+    inwd.add_and_commit()
+    assert set(find_files()) == _sep({
+        'file1',
+        'adir/datalink',  # -> ../data
+        'adir/filealink',  # -> filea
+        'adir/filea',
+        'bdir/fileb',
+        'data/datafile',
+    })
+
+
+@pytest.mark.skipif(sys.platform == 'win32',
+                    reason="symlinks to files not supported on windows")
+def test_symlink_not_in_scm_while_target_is(inwd):
+    (inwd.cwd / 'data').ensure(dir=True)
+    (inwd.cwd / 'data' / 'datafile').ensure(file=True)
+    inwd.add_and_commit()
+    (inwd.cwd / 'adir' / 'datalink').mksymlinkto('../data')
+    (inwd.cwd / 'adir' / 'filealink').mksymlinkto('filea')
+    assert set(find_files()) == _sep({
+        'file1',
+        'adir/filea',
+        # adir/datalink and adir/afilelink not included
+        # because the symlink themselves are not in scm
+        'bdir/fileb',
+        'data/datafile',
     })
