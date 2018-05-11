@@ -85,6 +85,15 @@ def test_symlink_dir(inwd):
 
 
 @pytest.mark.skipif(sys.platform == 'win32',
+                    reason="symlinks to dir not supported")
+def test_symlink_dir_source_not_in_scm(inwd):
+    (inwd.cwd / 'adir' / 'bdirlink').mksymlinkto('../bdir')
+    assert set(find_files('adir')) == _sep({
+        'adir/filea',
+    })
+
+
+@pytest.mark.skipif(sys.platform == 'win32',
                     reason="symlinks to files not supported on windows")
 def test_symlink_file(inwd):
     (inwd.cwd / 'adir' / 'file1link').mksymlinkto('../file1')
@@ -96,6 +105,15 @@ def test_symlink_file(inwd):
 
 
 @pytest.mark.skipif(sys.platform == 'win32',
+                    reason="symlinks to files not supported on windows")
+def test_symlink_file_source_not_in_scm(inwd):
+    (inwd.cwd / 'adir' / 'file1link').mksymlinkto('../file1')
+    assert set(find_files('adir')) == _sep({
+        'adir/filea',
+    })
+
+
+@pytest.mark.skipif(sys.platform == 'win32',
                     reason="symlinks to dir not supported")
 def test_symlink_loop(inwd):
     (inwd.cwd / 'adir' / 'loop').mksymlinkto('../adir')
@@ -103,6 +121,18 @@ def test_symlink_loop(inwd):
     assert set(find_files('adir')) == _sep({
         'adir/filea',
         'adir/loop',  # -> ../adir
+    })
+
+
+@pytest.mark.skipif(sys.platform == 'win32',
+                    reason="symlinks to dir not supported")
+def test_symlink_loop_outside_path(inwd):
+    (inwd.cwd / 'bdir' / 'loop').mksymlinkto('../bdir')
+    (inwd.cwd / 'adir' / 'bdirlink').mksymlinkto('../bdir')
+    inwd.add_and_commit()
+    assert set(find_files('adir')) == _sep({
+        'adir/filea',
+        'adir/bdirlink/fileb',
     })
 
 
@@ -149,7 +179,7 @@ def test_empty_subdir(inwd):
 
 
 @pytest.mark.skipif(sys.platform == 'win32',
-                    reason="symlinks to files not supported on windows")
+                    reason="symlinks not supported on windows")
 def test_double_include_through_symlink(inwd):
     (inwd.cwd / 'data').ensure(dir=True)
     (inwd.cwd / 'data' / 'datafile').ensure(file=True)
@@ -167,7 +197,7 @@ def test_double_include_through_symlink(inwd):
 
 
 @pytest.mark.skipif(sys.platform == 'win32',
-                    reason="symlinks to files not supported on windows")
+                    reason="symlinks not supported on windows")
 def test_symlink_not_in_scm_while_target_is(inwd):
     (inwd.cwd / 'data').ensure(dir=True)
     (inwd.cwd / 'data' / 'datafile').ensure(file=True)
