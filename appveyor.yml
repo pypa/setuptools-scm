@@ -1,16 +1,16 @@
 environment:
   matrix:
     - PYTHON: "C:\\Python27"
-      TOX_ENV: "py-test"
+      TOXENV: "py-test"
 
     - PYTHON: "C:\\Python27-x64"
-      TOX_ENV: "py-test"
+      TOXENV: "py-test"
 
     - PYTHON: "C:\\Python34"
-      TOX_ENV: "py-test"
+      TOXENV: "py-test"
 
     - PYTHON: "C:\\Python34-x64"
-      TOX_ENV: "py-test"
+      TOXENV: "py-test"
 
 init:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
@@ -32,7 +32,7 @@ build: false  # Not a C# project, build stuff at the test step instead.
 
 test_script:
   # Build the compiled extension and run the project tests
-  - python -m tox -e %TOX_ENV%"
+  - python -m tox
 
 after_test:
   # If tests are successful, create a whl package for the project.
