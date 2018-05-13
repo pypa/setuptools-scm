@@ -30,7 +30,7 @@ def _git_ls_files_and_dirs(toplevel):
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, cwd=toplevel)
     tf = tarfile.open(fileobj=proc.stdout, mode="r|*")
     git_files = set()
-    git_dirs = set([toplevel])
+    git_dirs = {toplevel}
     for member in tf.getmembers():
         name = os.path.normcase(member.name).replace("/", os.path.sep)
         if member.type == tarfile.DIRTYPE:

@@ -287,14 +287,14 @@ The callable must return the configuration.
 
     # content of setup.py
     import setuptools
-    
+
     def myversion():
         from setuptools_scm.version import get_local_dirty_tag
         def clean_scheme(version):
             return get_local_dirty_tag(version) if version.dirty else '+clean'
 
         return {'local_scheme': clean_scheme}
-    
+
     setup(
         ...,
         use_scm_version=myversion,

@@ -24,7 +24,7 @@ def _hg_toplevel(path):
 
 def _hg_ls_files_and_dirs(toplevel):
     hg_files = set()
-    hg_dirs = set([toplevel])
+    hg_dirs = {toplevel}
     out = subprocess.check_output(
         ["hg", "files"], cwd=toplevel, universal_newlines=True
     )
