@@ -1,4 +1,4 @@
-
+exclude: setuptools_scm/win_py31_compat.py
 repos:
 -   repo: https://github.com/ambv/black
     rev: 18.4a4
@@ -6,7 +6,6 @@ repos:
     - id: black
       args: [--safe, --quiet]
       python_version: python3.6
-      exclude: setuptools_scm/win_py31_compat.py
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v1.2.3
     hooks:
@@ -15,9 +14,7 @@ repos:
     -   id: check-yaml
     -   id: debug-statements
     -   id: flake8
-        exclude: setuptools_scm/win_py31_compat.py
 -   repo: https://github.com/asottile/pyupgrade
     rev: v1.2.0
     hooks:
     - id: pyupgrade
-      exclude: setuptools_scm/win_py31_compat.py
