@@ -36,7 +36,7 @@ class SetuptoolsOutdatedWarning(Warning):
 
 
 # append so integrators can disable the warning
-warnings.simplefilter('error', SetuptoolsOutdatedWarning, append=1)
+warnings.simplefilter("error", SetuptoolsOutdatedWarning, append=1)
 
 
 def _warn_if_setuptools_outdated():
@@ -45,7 +45,7 @@ def _warn_if_setuptools_outdated():
 
 
 def callable_or_entrypoint(group, callable_or_name):
-    trace('ep', (group, callable_or_name))
+    trace("ep", (group, callable_or_name))
 
     if callable(callable_or_name):
         return callable_or_name
@@ -56,18 +56,18 @@ def callable_or_entrypoint(group, callable_or_name):
 
 
 def tag_to_version(tag):
-    trace('tag', tag)
-    if '+' in tag:
+    trace("tag", tag)
+    if "+" in tag:
         warnings.warn("tag %r will be stripped of the local component" % tag)
-        tag = tag.split('+')[0]
+        tag = tag.split("+")[0]
     # lstrip the v because of py2/py3 differences in setuptools
     # also required for old versions of setuptools
 
-    version = tag.rsplit('-', 1)[-1].lstrip('v')
+    version = tag.rsplit("-", 1)[-1].lstrip("v")
     if VERSION_CLASS is None:
         return version
     version = parse_version(version)
-    trace('version', repr(version))
+    trace("version", repr(version))
     if isinstance(version, VERSION_CLASS):
         return version
 
@@ -78,11 +78,17 @@ def tags_to_versions(tags):
 
 
 class ScmVersion(object):
-    def __init__(self, tag_version,
-                 distance=None, node=None, dirty=False,
-                 preformatted=False,
-                 branch=None,
-                 **kw):
+
+    def __init__(
+        self,
+        tag_version,
+        distance=None,
+        node=None,
+        dirty=False,
+        preformatted=False,
+        branch=None,
+        **kw
+    ):
         if kw:
             trace("unknown args", kw)
         self.tag = tag_version
@@ -102,19 +108,23 @@ class ScmVersion(object):
 
     def __repr__(self):
         return self.format_with(
-            '<ScmVersion {tag} d={distance}'
-            ' n={node} d={dirty} b={branch} x={extra}>')
+            "<ScmVersion {tag} d={distance}" " n={node} d={dirty} b={branch} x={extra}>"
+        )
 
     def format_with(self, fmt, **kw):
         return fmt.format(
             time=self.time,
-            tag=self.tag, distance=self.distance,
-            node=self.node, dirty=self.dirty, extra=self.extra,
-            branch=self.branch, **kw)
+            tag=self.tag,
+            distance=self.distance,
+            node=self.node,
+            dirty=self.dirty,
+            extra=self.extra,
+            branch=self.branch,
+            **kw
+        )
 
     def format_choice(self, clean_format, dirty_format, **kw):
-        return self.format_with(
-            dirty_format if self.dirty else clean_format, **kw)
+        return self.format_with(dirty_format if self.dirty else clean_format, **kw)
 
     def format_next_version(self, guess_next, fmt="{guessed}.dev{distance}", **kw):
         guessed = guess_next(self.tag, **kw)
@@ -131,8 +141,8 @@ def _parse_tag(tag, preformatted):
 
 def meta(tag, distance=None, dirty=False, node=None, preformatted=False, **kw):
     tag = _parse_tag(tag, preformatted)
-    trace('version', tag)
-    assert tag is not None, 'cant parse version %s' % tag
+    trace("version", tag)
+    assert tag is not None, "cant parse version %s" % tag
     return ScmVersion(tag, distance, node, dirty, preformatted, **kw)
 
 
@@ -142,22 +152,22 @@ def guess_next_version(tag_version):
 
 
 def _strip_local(version_string):
-    public, sep, local = version_string.partition('+')
+    public, sep, local = version_string.partition("+")
     return public
 
 
 def _bump_dev(version):
-    if '.dev' not in version:
+    if ".dev" not in version:
         return
 
-    prefix, tail = version.rsplit('.dev', 1)
-    assert tail == '0', 'own dev numbers are unsupported'
+    prefix, tail = version.rsplit(".dev", 1)
+    assert tail == "0", "own dev numbers are unsupported"
     return prefix
 
 
 def _bump_regex(version):
-    prefix, tail = re.match(r'(.*?)(\d+)$', version).groups()
-    return '%s%d' % (prefix, int(tail) + 1)
+    prefix, tail = re.match(r"(.*?)(\d+)$", version).groups()
+    return "%s%d" % (prefix, int(tail) + 1)
 
 
 def guess_next_dev_version(version):
@@ -168,69 +178,72 @@ def guess_next_dev_version(version):
 
 
 def guess_next_simple_semver(version, retain, increment=True):
-    parts = map(int, str(version).split('.'))
+    parts = map(int, str(version).split("."))
     parts = _pad(parts, retain, 0)
     if increment:
         parts[-1] += 1
     parts = _pad(parts, SEMVER_LEN, 0)
-    return '.'.join(map(str, parts))
+    return ".".join(map(str, parts))
 
 
 def simplified_semver_version(version):
     if version.exact:
-        return guess_next_simple_semver(
-            version.tag, retain=SEMVER_LEN, increment=False)
+        return guess_next_simple_semver(version.tag, retain=SEMVER_LEN, increment=False)
     else:
-        if version.branch is not None and 'feature' in version.branch:
+        if version.branch is not None and "feature" in version.branch:
             return version.format_next_version(
-                guess_next_simple_semver, retain=SEMVER_MINOR)
+                guess_next_simple_semver, retain=SEMVER_MINOR
+            )
         else:
             return version.format_next_version(
-                guess_next_simple_semver, retain=SEMVER_PATCH)
+                guess_next_simple_semver, retain=SEMVER_PATCH
+            )
 
 
 def _format_local_with_time(version, time_format):
 
     if version.exact or version.node is None:
         return version.format_choice(
-            "", "+d{time:{time_format}}",
-            time_format=time_format)
+            "", "+d{time:{time_format}}", time_format=time_format
+        )
     else:
         return version.format_choice(
-            "+{node}", "+{node}.d{time:{time_format}}",
-            time_format=time_format)
+            "+{node}", "+{node}.d{time:{time_format}}", time_format=time_format
+        )
 
 
 def get_local_node_and_date(version):
     return _format_local_with_time(version, time_format="%Y%m%d")
 
 
-def get_local_node_and_timestamp(version, fmt='%Y%m%d%H%M%S'):
+def get_local_node_and_timestamp(version, fmt="%Y%m%d%H%M%S"):
     return _format_local_with_time(version, time_format=fmt)
 
 
 def get_local_dirty_tag(version):
-    return version.format_choice('', '+dirty')
+    return version.format_choice("", "+dirty")
 
 
 def postrelease_version(version):
     if version.exact:
-        return version.format_with('{tag}')
+        return version.format_with("{tag}")
     else:
-        return version.format_with('{tag}.post{distance}')
+        return version.format_with("{tag}.post{distance}")
 
 
 def format_version(version, **config):
-    trace('scm version', version)
-    trace('config', config)
+    trace("scm version", version)
+    trace("config", config)
     if version.preformatted:
         return version.tag
     version_scheme = callable_or_entrypoint(
-        'setuptools_scm.version_scheme', config['version_scheme'])
+        "setuptools_scm.version_scheme", config["version_scheme"]
+    )
     local_scheme = callable_or_entrypoint(
-        'setuptools_scm.local_scheme', config['local_scheme'])
+        "setuptools_scm.local_scheme", config["local_scheme"]
+    )
     main_version = version_scheme(version)
-    trace('version', main_version)
+    trace("version", main_version)
     local_version = local_scheme(version)
-    trace('local_version', local_version)
+    trace("local_version", local_version)
     return version_scheme(version) + local_scheme(version)

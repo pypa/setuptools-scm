@@ -11,11 +11,12 @@ except ImportError:
     from .win_py31_compat import samefile
 
 
-DEFAULT_DESCRIBE = 'git describe --dirty --tags --long --match *.*'
+DEFAULT_DESCRIBE = "git describe --dirty --tags --long --match *.*"
 
 
 class GitWorkdir(object):
     """experimental, may change at any time"""
+
     def __init__(self, path):
         self.path = path
 
@@ -24,10 +25,10 @@ class GitWorkdir(object):
 
     @classmethod
     def from_potential_worktree(cls, wd):
-        real_wd, _, ret = do_ex('git rev-parse --show-toplevel', wd)
+        real_wd, _, ret = do_ex("git rev-parse --show-toplevel", wd)
         if ret:
             return
-        trace('real root', real_wd)
+        trace("real root", real_wd)
         if not samefile(real_wd, wd):
             return
 
@@ -45,19 +46,19 @@ class GitWorkdir(object):
         return branch
 
     def is_shallow(self):
-        return isfile(join(self.path, '.git/shallow'))
+        return isfile(join(self.path, ".git/shallow"))
 
     def fetch_shallow(self):
         self.do_ex("git fetch --unshallow")
 
     def node(self):
-        rev_node, _, ret = self.do_ex('git rev-parse --verify --quiet HEAD')
+        rev_node, _, ret = self.do_ex("git rev-parse --verify --quiet HEAD")
         if not ret:
             return rev_node[:7]
 
     def count_all_nodes(self):
-        revs, _, _ = self.do_ex('git rev-list HEAD')
-        return revs.count('\n') + 1
+        revs, _, _ = self.do_ex("git rev-list HEAD")
+        return revs.count("\n") + 1
 
 
 def warn_on_shallow(wd):
@@ -77,15 +78,15 @@ def fail_on_shallow(wd):
     """experimental, may change at any time"""
     if wd.is_shallow():
         raise ValueError(
-            '%r is shallow, please correct with '
-            '"git fetch --unshallow"' % wd.path)
+            "%r is shallow, please correct with " '"git fetch --unshallow"' % wd.path
+        )
 
 
 def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
     """
     :param pre_parse: experimental pre_parse action, may change at any time
     """
-    if not has_command('git'):
+    if not has_command("git"):
         return
 
     wd = GitWorkdir.from_potential_worktree(root)
@@ -101,25 +102,25 @@ def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
         dirty = wd.is_dirty()
 
         if rev_node is None:
-            return meta('0.0', distance=0, dirty=dirty)
+            return meta("0.0", distance=0, dirty=dirty)
 
         return meta(
-            '0.0',
+            "0.0",
             distance=wd.count_all_nodes(),
-            node='g' + rev_node,
+            node="g" + rev_node,
             dirty=dirty,
             branch=wd.get_branch(),
         )
 
     # 'out' looks e.g. like 'v1.5.0-0-g4060507' or
     # 'v1.15.1rc1-37-g9bd1298-dirty'.
-    if out.endswith('-dirty'):
+    if out.endswith("-dirty"):
         dirty = True
         out = out[:-6]
     else:
         dirty = False
 
-    tag, number, node = out.rsplit('-', 2)
+    tag, number, node = out.rsplit("-", 2)
     number = int(number)
     branch = wd.get_branch()
     if number:

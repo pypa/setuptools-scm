@@ -12,22 +12,23 @@ def version_keyword(dist, keyword, value):
         return
     if value is True:
         value = {}
-    if getattr(value, '__call__', None):
+    if getattr(value, "__call__", None):
         value = value()
     # this piece of code is a hack to counter the mistake in root finding
     matching_fallbacks = iter_matching_entrypoints(
-        '.', 'setuptools_scm.parse_scm_fallback')
+        ".", "setuptools_scm.parse_scm_fallback"
+    )
     if any(matching_fallbacks):
-        value.pop('root', None)
+        value.pop("root", None)
     dist.metadata.version = get_version(**value)
 
 
-def find_files(path=''):
-    for ep in iter_entry_points('setuptools_scm.files_command'):
+def find_files(path=""):
+    for ep in iter_entry_points("setuptools_scm.files_command"):
         command = ep.load()
         if isinstance(command, str):
             # this technique is deprecated
-            res = do(ep.load(), path or '.').splitlines()
+            res = do(ep.load(), path or ".").splitlines()
         else:
             res = command(path)
         if res:

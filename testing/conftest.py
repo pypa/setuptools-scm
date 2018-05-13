@@ -2,16 +2,17 @@ import os
 import itertools
 import pytest
 
-os.environ['SETUPTOOLS_SCM_DEBUG'] = '1'
-VERSION_PKGS = ['setuptools', 'setuptools_scm']
+os.environ["SETUPTOOLS_SCM_DEBUG"] = "1"
+VERSION_PKGS = ["setuptools", "setuptools_scm"]
 
 
 def pytest_report_header():
     import pkg_resources
+
     res = []
     for pkg in VERSION_PKGS:
         version = pkg_resources.get_distribution(pkg).version
-        res.append('%s version %s' % (pkg, version))
+        res.append("%s version %s" % (pkg, version))
     return res
 
 
@@ -27,6 +28,7 @@ class Wd(object):
         if kw:
             cmd = cmd.format(**kw)
         from setuptools_scm.utils import do
+
         return do(cmd, self.cwd)
 
     def write(self, name, value, **kw):
@@ -38,7 +40,7 @@ class Wd(object):
 
     def _reason(self, given_reason):
         if given_reason is None:
-            return 'number-{c}'.format(c=next(self.__counter))
+            return "number-{c}".format(c=next(self.__counter))
         else:
             return given_reason
 
@@ -52,13 +54,14 @@ class Wd(object):
 
     def commit_testfile(self, reason=None):
         reason = self._reason(reason)
-        self.write('test.txt', 'test {reason}', reason=reason)
+        self.write("test.txt", "test {reason}", reason=reason)
         self(self.add_command)
         self.commit(reason=reason)
 
     def get_version(self, **kw):
         __tracebackhide__ = True
         from setuptools_scm import get_version
+
         version = get_version(root=str(self.cwd), **kw)
         print(version)
         return version
@@ -72,6 +75,7 @@ class Wd(object):
 @pytest.yield_fixture(autouse=True)
 def debug_mode():
     from setuptools_scm import utils
+
     utils.DEBUG = True
     yield
     utils.DEBUG = False
@@ -79,4 +83,4 @@ def debug_mode():
 
 @pytest.fixture
 def wd(tmpdir):
-    return Wd(tmpdir.ensure('wd', dir=True))
+    return Wd(tmpdir.ensure("wd", dir=True))
