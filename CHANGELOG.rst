@@ -4,6 +4,8 @@ v2.1.0
 * enhance docs for sphinx usage
 * add symlink support to file finder for git #247
   (thanks Stéphane Bidoul)
+* enhance tests handling win32
+  (thanks Stéphane Bidoul)
 
 v2.0.0
 ========
