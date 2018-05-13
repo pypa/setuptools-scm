@@ -7,10 +7,13 @@ from .file_finder import scm_find_files
 
 def _git_toplevel(path):
     try:
-        with open(os.devnull, 'wb') as devnull:
-            out = subprocess.check_output([
-                'git', 'rev-parse', '--show-toplevel',
-            ], cwd=(path or '.'), universal_newlines=True, stderr=devnull)
+        with open(os.devnull, "wb") as devnull:
+            out = subprocess.check_output(
+                ["git", "rev-parse", "--show-toplevel"],
+                cwd=(path or "."),
+                universal_newlines=True,
+                stderr=devnull,
+            )
         return os.path.normcase(os.path.realpath(out.strip()))
     except subprocess.CalledProcessError:
         # git returned error, we are not in a git repo
@@ -23,13 +26,13 @@ def _git_toplevel(path):
 def _git_ls_files_and_dirs(toplevel):
     # use git archive instead of git ls-file to honor
     # export-ignore git attribute
-    cmd = ['git', 'archive', '--prefix', toplevel + os.path.sep, 'HEAD']
+    cmd = ["git", "archive", "--prefix", toplevel + os.path.sep, "HEAD"]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, cwd=toplevel)
-    tf = tarfile.open(fileobj=proc.stdout, mode='r|*')
+    tf = tarfile.open(fileobj=proc.stdout, mode="r|*")
     git_files = set()
-    git_dirs = set([toplevel])
+    git_dirs = {toplevel}
     for member in tf.getmembers():
-        name = os.path.normcase(member.name).replace('/', os.path.sep)
+        name = os.path.normcase(member.name).replace("/", os.path.sep)
         if member.type == tarfile.DIRTYPE:
             git_dirs.add(name)
         else:
@@ -37,7 +40,7 @@ def _git_ls_files_and_dirs(toplevel):
     return git_files, git_dirs
 
 
-def git_find_files(path=''):
+def git_find_files(path=""):
     toplevel = _git_toplevel(path)
     if not toplevel:
         return []

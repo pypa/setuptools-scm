@@ -7,11 +7,11 @@ from setuptools_scm.version import _warn_if_setuptools_outdated
 
 def main():
     _warn_if_setuptools_outdated()
-    print('Guessed Version', get_version())
-    if 'ls' in sys.argv:
-        for fname in find_files('.'):
+    print("Guessed Version", get_version())
+    if "ls" in sys.argv:
+        for fname in find_files("."):
             print(fname)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

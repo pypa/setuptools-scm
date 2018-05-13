@@ -5,28 +5,39 @@ import sys
 import os
 import subprocess
 import pytest
+
 pytestmark = [
     pytest.mark.skipif(
         "sys.version_info >= (3,6,0)",
-        reason="integration with old versions no longer needed on py3.6+"),
+        reason="integration with old versions no longer needed on py3.6+",
+    ),
     pytest.mark.xfail(
-        sys.platform == 'win32',
-        reason="path behaves unexpected on windows ci"),
+        sys.platform == "win32", reason="path behaves unexpected on windows ci"
+    ),
 ]
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def get_setuptools_packagedir(request):
-    targets = request.config.cache.makedir('setuptools_installs')
+    targets = request.config.cache.makedir("setuptools_installs")
 
     def makeinstall(version):
         target = targets.ensure(version, dir=1)
-        subprocess.check_call([
-            sys.executable, '-m', 'pip',
-            'install', '--no-binary', 'setuptools', 'setuptools==' + version,
-            '-t', str(target),
-        ])
+        subprocess.check_call(
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "--no-binary",
+                "setuptools",
+                "setuptools==" + version,
+                "-t",
+                str(target),
+            ]
+        )
         return target
+
     return makeinstall
 
 
@@ -43,8 +54,9 @@ main()
 
 def check(packagedir, expected_version, **env):
     subprocess.check_call(
-        [sys.executable, '-c', SCRIPT, expected_version],
-        env=dict(os.environ, PYTHONPATH=".:" + str(packagedir), **env))
+        [sys.executable, "-c", SCRIPT, expected_version],
+        env=dict(os.environ, PYTHONPATH=".:" + str(packagedir), **env),
+    )
 
 
 def test_old_setuptools_fails(get_setuptools_packagedir):
@@ -57,9 +69,7 @@ def test_old_setuptools_allows_with_warnings(get_setuptools_packagedir):
 
     packagedir = get_setuptools_packagedir("0.9.8")
     # filter using warning since in the early python startup
-    check(
-        packagedir, "0.9.8",
-        PYTHONWARNINGS="once::Warning")
+    check(packagedir, "0.9.8", PYTHONWARNINGS="once::Warning")
 
 
 def test_distlib_setuptools_works(get_setuptools_packagedir):
