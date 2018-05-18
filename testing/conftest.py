@@ -12,7 +12,8 @@ def pytest_report_header():
     res = []
     for pkg in VERSION_PKGS:
         version = pkg_resources.get_distribution(pkg).version
-        res.append("%s version %s" % (pkg, version))
+        path = __import__(pkg).__file__
+        res.append("{} version {} from {!r}".format(pkg, version, path))
     return res
 
 
