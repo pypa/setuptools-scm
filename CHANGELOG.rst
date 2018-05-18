@@ -1,3 +1,10 @@
+v2.1.1
+=======
+
+* introduce pre-commit and use black
+* print the origin module to help testing
+
+
 v2.1.0
 ======
 
