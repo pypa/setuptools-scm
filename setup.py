@@ -17,10 +17,11 @@ import setuptools
 
 def scm_config():
     here = os.path.dirname(os.path.abspath(__file__))
-    egg_info = os.path.join(here, "setuptools_scm.egg-info")
+    src = os.path.join(here, "src")
+    egg_info = os.path.join(src, "setuptools_scm.egg-info")
     has_entrypoints = os.path.isdir(egg_info)
 
-    sys.path.insert(0, here)
+    sys.path.insert(0, src)
     from setuptools_scm.hacks import parse_pkginfo
     from setuptools_scm.git import parse as parse_git
     from setuptools_scm.version import guess_next_dev_version, get_local_node_and_date
@@ -57,6 +58,7 @@ arguments = dict(
     long_description=long_description,
     license="MIT",
     packages=["setuptools_scm"],
+    package_dir={"": "src"},
     entry_points="""
         [distutils.setup_keywords]
         use_scm_version = setuptools_scm.integration:version_keyword
