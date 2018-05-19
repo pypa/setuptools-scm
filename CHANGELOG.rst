@@ -1,9 +1,9 @@
-v2.1.1
+v3.0.0
 =======
 
 * introduce pre-commit and use black
 * print the origin module to help testing
-
+* switch to src layout
 
 v2.1.0
 ======
