@@ -36,7 +36,7 @@ class SetuptoolsOutdatedWarning(Warning):
 
 
 # append so integrators can disable the warning
-warnings.simplefilter("error", SetuptoolsOutdatedWarning, append=1)
+warnings.simplefilter("error", SetuptoolsOutdatedWarning, append=True)
 
 
 def _warn_if_setuptools_outdated():
