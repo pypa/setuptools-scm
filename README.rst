@@ -218,7 +218,9 @@ Environment Variables
   when defined and not empty,
   its used as the primary source for the version number
   in which case it will be a unparsed string
-
+:SETUPTOOLS_SCM_DEBUG:
+  when defined and not empty,
+  a lot of debug information will be printed as part of setuptools_scm operating
 
 Extending setuptools_scm
 ------------------------
