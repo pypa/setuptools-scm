@@ -302,6 +302,19 @@ The callable must return the configuration.
     )
 
 
+Note on testing non-installed versions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+While the general advice is to test against a installed version,
+some environments require a test prior to install,
+
+.. code::
+
+  $ python setup.py egg_info
+  $ PYTHONPATH=$PWD:$PWD/src pytest
+
+
+
 Code of Conduct
 ---------------
 
