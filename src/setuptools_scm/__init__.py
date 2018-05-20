@@ -7,7 +7,7 @@ import sys
 import warnings
 
 from .utils import trace
-from .version import format_version, meta, ScmVersion
+from .version import format_version, meta
 from .discover import iter_matching_entrypoints
 
 PRETEND_KEY = "SETUPTOOLS_SCM_PRETEND_VERSION"
@@ -46,15 +46,14 @@ def dump_version(root, version, write_to, template=None):
     ext = os.path.splitext(target)[1]
     template = template or TEMPLATES.get(ext)
 
-    if template is not None:
-        dump = template.format(version=version)
-    else:
+    if template is None:
         raise ValueError(
-            ("bad file format: '%s' (of %s) \n" "only *.txt and *.py are supported")
-            % (os.path.splitext(target)[1], target)
+            "bad file format: '{}' (of {}) \nonly *.txt and *.py are supported".format(
+                os.path.splitext(target)[1], target
+            )
         )
     with open(target, "w") as fp:
-        fp.write(dump)
+        fp.write(template.format(version=version))
 
 
 def _do_parse(root, parse):
@@ -68,12 +67,12 @@ def _do_parse(root, parse):
         parse_result = parse(root)
         if isinstance(parse_result, string_types):
             warnings.warn(
-                "version parse result was a string\n" "please return a parsed version",
+                "version parse result was a string\nplease return a parsed version",
                 category=DeprecationWarning,
             )
             # we use ScmVersion here in order to keep legacy code working
             # for 2.0 we should use meta
-            parse_result = ScmVersion(parse_result)
+            parse_result = meta(parse_result)
         version = parse_result or _version_from_entrypoint(
             root, "setuptools_scm.parse_scm_fallback"
         )
