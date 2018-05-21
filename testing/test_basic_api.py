@@ -4,7 +4,6 @@ import pytest
 
 import setuptools_scm
 from setuptools_scm import dump_version
-
 from setuptools_scm.utils import data_from_mime, do
 
 
@@ -77,13 +76,10 @@ def test_dump_version(tmpdir):
     ast.parse(content)
 
 
-def test_parse_plain(recwarn):
+def test_parse_plain_fails(recwarn):
 
     def parse(root):
         return "tricked you"
 
-    assert setuptools_scm.get_version(parse=parse) == "tricked you"
-    assert (
-        str(recwarn.pop().message)
-        == "version parse result was a string\nplease return a parsed version"
-    )
+    with pytest.raises(TypeError):
+        setuptools_scm.get_version(parse=parse)
