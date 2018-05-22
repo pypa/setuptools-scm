@@ -13,6 +13,7 @@ from pkg_resources import parse_version as pkg_parse_version
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3
 SEMVER_LEN = 3
+TAG_PREFIX = re.compile(r"^\w+-(.*)")
 
 
 def _pad(iterable, size, padding=None):
@@ -56,14 +57,21 @@ def callable_or_entrypoint(group, callable_or_name):
 
 
 def tag_to_version(tag):
+    """
+    take a tag that might be prefixed with a keyword and return only the version part
+    """
     trace("tag", tag)
     if "+" in tag:
         warnings.warn("tag %r will be stripped of the local component" % tag)
         tag = tag.split("+")[0]
     # lstrip the v because of py2/py3 differences in setuptools
     # also required for old versions of setuptools
-
-    version = tag.rsplit("-", 1)[-1].lstrip("v")
+    prefix_match = TAG_PREFIX.match(tag)
+    if prefix_match is not None:
+        version = prefix_match.group(1)
+    else:
+        version = tag
+    trace("version pre parse", version)
     if VERSION_CLASS is None:
         return version
     version = pkg_parse_version(version)

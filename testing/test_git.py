@@ -16,6 +16,15 @@ def wd(wd):
     return wd
 
 
+@pytest.mark.parametrize(
+    "given, tag, number, node, dirty",
+    [("3.3.1-rc26-0-g9df187b", "3.3.1-rc26", 0, "g9df187b", False)],
+)
+def test_parse_describe_output(given, tag, number, node, dirty):
+    parsed = git._git_parse_describe(given)
+    assert parsed == (tag, number, node, dirty)
+
+
 def test_version_from_git(wd):
     assert wd.version == "0.1.dev0"
 
