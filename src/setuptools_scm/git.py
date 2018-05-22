@@ -111,19 +111,26 @@ def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
             dirty=dirty,
             branch=wd.get_branch(),
         )
+    else:
+        tag, number, node, dirty = _git_parse_describe(out)
 
-    # 'out' looks e.g. like 'v1.5.0-0-g4060507' or
+        branch = wd.get_branch()
+        if number:
+            return meta(tag, distance=number, node=node, dirty=dirty, branch=branch)
+        else:
+            return meta(tag, node=node, dirty=dirty, branch=branch)
+
+
+def _git_parse_describe(describe_output):
+    # 'describe_output' looks e.g. like 'v1.5.0-0-g4060507' or
     # 'v1.15.1rc1-37-g9bd1298-dirty'.
-    if out.endswith("-dirty"):
+
+    if describe_output.endswith("-dirty"):
         dirty = True
-        out = out[:-6]
+        describe_output = describe_output[:-6]
     else:
         dirty = False
 
-    tag, number, node = out.rsplit("-", 2)
+    tag, number, node = describe_output.rsplit("-", 2)
     number = int(number)
-    branch = wd.get_branch()
-    if number:
-        return meta(tag, distance=number, node=node, dirty=dirty, branch=branch)
-    else:
-        return meta(tag, node=node, dirty=dirty, branch=branch)
+    return tag, number, node, dirty
