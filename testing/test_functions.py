@@ -2,7 +2,12 @@ import pytest
 import sys
 import pkg_resources
 from setuptools_scm import dump_version, get_version, PRETEND_KEY
-from setuptools_scm.version import guess_next_version, meta, format_version
+from setuptools_scm.version import (
+    guess_next_version,
+    meta,
+    format_version,
+    tag_to_version,
+)
 from setuptools_scm.utils import has_command
 
 PY3 = sys.version_info > (2,)
@@ -77,3 +82,16 @@ def test_has_command(recwarn):
     assert not has_command("yadayada_setuptools_aint_ne")
     msg = recwarn.pop()
     assert "yadayada" in str(msg.message)
+
+
+@pytest.mark.parametrize(
+    "tag, expected_version",
+    [
+        ("1.1", "1.1"),
+        ("release-1.1", "1.1"),
+        pytest.param("3.3.1-rc26", "3.3.1rc26", marks=pytest.mark.issue(266)),
+    ],
+)
+def test_tag_to_version(tag, expected_version):
+    version = str(tag_to_version(tag))
+    assert version == expected_version
