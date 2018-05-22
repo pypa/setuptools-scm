@@ -8,7 +8,7 @@ from .utils import trace
 
 from pkg_resources import iter_entry_points
 
-from pkg_resources import parse_version
+from pkg_resources import parse_version as pkg_parse_version
 
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3
@@ -21,7 +21,7 @@ def _pad(iterable, size, padding=None):
 
 
 def _get_version_class():
-    modern_version = parse_version("1.0")
+    modern_version = pkg_parse_version("1.0")
     if isinstance(modern_version, tuple):
         return None
     else:
@@ -36,7 +36,7 @@ class SetuptoolsOutdatedWarning(Warning):
 
 
 # append so integrators can disable the warning
-warnings.simplefilter("error", SetuptoolsOutdatedWarning, append=1)
+warnings.simplefilter("error", SetuptoolsOutdatedWarning, append=True)
 
 
 def _warn_if_setuptools_outdated():
@@ -66,7 +66,7 @@ def tag_to_version(tag):
     version = tag.rsplit("-", 1)[-1].lstrip("v")
     if VERSION_CLASS is None:
         return version
-    version = parse_version(version)
+    version = pkg_parse_version(version)
     trace("version", repr(version))
     if isinstance(version, VERSION_CLASS):
         return version
@@ -140,10 +140,10 @@ def _parse_tag(tag, preformatted):
 
 
 def meta(tag, distance=None, dirty=False, node=None, preformatted=False, **kw):
-    tag = _parse_tag(tag, preformatted)
-    trace("version", tag)
-    assert tag is not None, "cant parse version %s" % tag
-    return ScmVersion(tag, distance, node, dirty, preformatted, **kw)
+    parsed_version = _parse_tag(tag, preformatted)
+    trace("version", tag, "->", parsed_version)
+    assert parsed_version is not None, "cant parse version %s" % tag
+    return ScmVersion(parsed_version, distance, node, dirty, preformatted, **kw)
 
 
 def guess_next_version(tag_version):

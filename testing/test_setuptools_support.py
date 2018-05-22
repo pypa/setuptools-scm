@@ -54,9 +54,9 @@ main()
 
 def check(packagedir, expected_version, **env):
 
-    old_pythonpath = os.environ.get('PYTHONPATH')
+    old_pythonpath = os.environ.get("PYTHONPATH")
     if old_pythonpath:
-        pythonpath = '{}:{}'.format(old_pythonpath, packagedir)
+        pythonpath = "{}:{}".format(old_pythonpath, packagedir)
     else:
         pythonpath = str(packagedir)
     subprocess.check_call(

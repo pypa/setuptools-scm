@@ -3,7 +3,9 @@ v3.0.0
 
 * introduce pre-commit and use black
 * print the origin module to help testing
-* switch to src layout
+* switch to src layout (breaking change)
+* no longer alias tag and parsed_version in order to support understanding a version parse failure
+* require parse results to be ScmVersion or None (breaking change)
 
 v2.1.0
 ======
