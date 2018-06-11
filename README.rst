@@ -272,8 +272,8 @@ Version number construction
 
     :node-and-date: adds the node on dev versions and the date on dirty
                     workdir (default)
-    :node-and-timestamp: like :code: `node-and-date` but with a timestamp of
-                         the form :code: `{:%Y%m%d%H%M%S}` instead
+    :node-and-timestamp: like :code:`node-and-date` but with a timestamp of
+                         the form :code:`{:%Y%m%d%H%M%S}` instead
     :dirty-tag: adds :code:`+dirty` if the current workdir has changes
 
 
