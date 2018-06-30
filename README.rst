@@ -176,8 +176,9 @@ The currently supported configuration keys are:
 
 :write_to:
     A path to a file that gets replaced with a file containing the current
-    version.
-    It is ideal for creating a version.py file within the package.
+    version.  It is ideal for creating a version.py file within the package,
+    typically used to avoid using `pkg_resources.get_distribution` (which adds
+    some overhead).
 
     .. warning::
 
