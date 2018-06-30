@@ -202,6 +202,13 @@ The currently supported configuration keys are:
   Use with caution, this is a function for advanced use, and you should be
   familiar with the setuptools_scm internals to use it.
 
+:tag_regex:
+  A python regex string to extract the version part from any SCM tag.
+  The regex needs to contain three named groups prefix, version and suffix,
+  where `version` captures the actual version information.
+
+  defaults to the value of ``setuptools_scm.config.DEFAULT_TAG_REGEX <src/setuptools_scm/config.py>``
+
 
 To use setuptools_scm in other Python code you can use the
 ``get_version`` function:
