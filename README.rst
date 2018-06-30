@@ -207,7 +207,8 @@ The currently supported configuration keys are:
   The regex needs to contain three named groups prefix, version and suffix,
   where `version` captures the actual version information.
 
-  defaults to the value of ``setuptools_scm.config.DEFAULT_TAG_REGEX <src/setuptools_scm/config.py>``
+  defaults to the value of ``setuptools_scm.config.DEFAULT_TAG_REGEX``
+  (see `config.py <src/setuptools_scm/config.py>`_).
 
 
 To use setuptools_scm in other Python code you can use the
