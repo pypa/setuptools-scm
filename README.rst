@@ -156,7 +156,7 @@ Builtin mechanisms for obtaining version numbers
 
 
 Configuration Parameters
-------------------------------
+------------------------
 
 In order to configure the way ``use_scm_version`` works you can provide
 a mapping with options instead of a boolean value.
@@ -221,6 +221,19 @@ To use setuptools_scm in other Python code you can use the
 It optionally accepts the keys of the ``use_scm_version`` parameter as
 keyword arguments.
 
+Example configuration in `setup.py` format:
+
+.. code:: python
+
+    from setuptools import setup
+
+
+    setup(
+        use_scm_version={
+            'write_to': 'version.txt',
+            'tag_regex': r'^(?P<prefix>v)?(?P<version>[^\+]+)(?P<suffix>.*)?$',
+        }
+    )
 
 Environment Variables
 ---------------------
