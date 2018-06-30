@@ -33,7 +33,7 @@ def _parse_version_tag(tag):
     else:
         result = None
 
-    trace("'%s' parsed to %s" % (tag, result))
+    trace("tag '%s' parsed to %s" % (tag, result))
     return result
 
 
