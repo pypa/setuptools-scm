@@ -4,7 +4,8 @@ import warnings
 import re
 from itertools import chain, repeat, islice
 
-from .utils import trace
+from .config import Configuration
+from .utils import trace, string_types
 
 from pkg_resources import iter_entry_points
 
@@ -13,12 +14,27 @@ from pkg_resources import parse_version as pkg_parse_version
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3
 SEMVER_LEN = 3
-TAG_PREFIX = re.compile(r"^\w+-(.*)")
 
 
 def _pad(iterable, size, padding=None):
     padded = chain(iterable, repeat(padding))
     return list(islice(padded, size))
+
+
+def _parse_version_tag(tag):
+    regex = Configuration().tag_regex
+    if isinstance(tag, string_types):
+        match = regex.match(tag)
+    else:
+        match = regex.match('%s' % tag)
+
+    if match:
+        result = match.groupdict()
+    else:
+        result = None
+
+    trace("'%s' parsed to %s" % (tag, result))
+    return result
 
 
 def _get_version_class():
@@ -61,23 +77,19 @@ def tag_to_version(tag):
     take a tag that might be prefixed with a keyword and return only the version part
     """
     trace("tag", tag)
-    if "+" in tag:
-        warnings.warn("tag %r will be stripped of the local component" % tag)
-        tag = tag.split("+")[0]
-    # lstrip the v because of py2/py3 differences in setuptools
-    # also required for old versions of setuptools
-    prefix_match = TAG_PREFIX.match(tag)
-    if prefix_match is not None:
-        version = prefix_match.group(1)
-    else:
-        version = tag
+
+    tagdict = _parse_version_tag(tag)
+    if tagdict is None or len(tagdict['version']) < 1:
+        return None
+
+    version = tagdict['version']
     trace("version pre parse", version)
-    if VERSION_CLASS is None:
-        return version
-    version = pkg_parse_version(version)
-    trace("version", repr(version))
-    if isinstance(version, VERSION_CLASS):
-        return version
+
+    if VERSION_CLASS is not None:
+        version = pkg_parse_version(version)
+        trace("version", repr(version))
+    
+    return version
 
 
 def tags_to_versions(tags):

@@ -1,0 +1,43 @@
+{
+    "python.pythonPath": "python3",
+    
+    // Whether to enable or disable unit testing using pytest.
+    "python.unitTest.pyTestEnabled": false,
+  
+    // Whether to lint Python files using flake8
+    "python.linting.flake8Enabled": true,
+  
+    // Arguments passed in. Each argument is a separate item in the array.
+    "python.linting.flake8Args": [
+      "--max-line-length=120",
+      "--ignore=W293"
+    ],
+  
+    // Whether to lint Python files using pydocstyle
+    "python.linting.pydocstyleEnabled": true,
+  
+    // Arguments passed in. Each argument is a separate item in the array.
+    "python.linting.pydocstyleArgs": [
+      "--ignore=D210"
+    ],
+  
+    // Arguments passed in. Each argument is a separate item in the array.
+    "python.formatting.autopep8Args": [
+      "--max-line-length=120"
+    ],
+  
+    "python.venvFolders": [
+      ".venv",
+    ],
+    
+    // Configure glob patterns for excluding files and folders. For example, the files explorer decides which files and folders to show or hide based on this setting.
+    "files.exclude": {
+      "**/.git": true,
+      "**/__pycache__": true,
+      "**/*.pyc": true,
+      "**/*.egg-info": true,
+      ".eggs": true,
+      ".pytest_cache": true,
+      ".tox": true
+    },
+  }

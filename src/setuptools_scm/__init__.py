@@ -5,12 +5,12 @@
 import os
 import sys
 
-from .utils import trace
+from .config import Configuration
+from .utils import trace, string_types
 from .version import format_version, meta
 from .discover import iter_matching_entrypoints
 
 PRETEND_KEY = "SETUPTOOLS_SCM_PRETEND_VERSION"
-
 
 TEMPLATES = {
     ".py": """\
@@ -21,9 +21,6 @@ version = {version!r}
 """,
     ".txt": "{version}",
 }
-
-PY3 = sys.version_info > (3,)
-string_types = (str,) if PY3 else (str, unicode)  # noqa
 
 
 def version_from_scm(root):
@@ -99,6 +96,7 @@ def get_version(
     write_to=None,
     write_to_template=None,
     relative_to=None,
+    tag_regex=None,
     parse=None,
 ):
     """
@@ -107,11 +105,22 @@ def get_version(
     in the root of the repository to direct setuptools_scm to the
     root of the repository by supplying ``__file__``.
     """
+
     if relative_to:
         root = os.path.join(os.path.dirname(relative_to), root)
     root = os.path.abspath(root)
     trace("root", repr(root))
-
+    
+    config = Configuration()
+    config.root = root
+    config.version_scheme = version_scheme
+    config.local_scheme =  local_scheme
+    config.write_to =  write_to
+    config.write_to_template =  write_to_template
+    config.relative_to = relative_to
+    config.tag_regex = tag_regex
+    config.parse = parse
+    
     parsed_version = _do_parse(root, parse)
 
     if parsed_version:

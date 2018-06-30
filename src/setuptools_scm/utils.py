@@ -14,6 +14,8 @@ import platform
 DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
 IS_WINDOWS = platform.system() == "Windows"
 PY2 = sys.version_info < (3,)
+PY3 = sys.version_info > (3,)
+string_types = (str,) if PY3 else (str, unicode)  # noqa
 
 
 def trace(*k):
@@ -103,3 +105,18 @@ def has_command(name):
     if not res:
         warnings.warn("%r was not found" % name)
     return res
+
+
+def singleton(cls):
+    """ Class decorator to limit to a single global instance. """
+    instances = {}
+
+    def _get_instance(*args, **kwargs):
+        instance = instances.get(cls, None)
+        if instance is None:
+            instance = cls(*args, **kwargs)
+            instances[cls] = instance
+
+        return instance
+
+    return _get_instance
