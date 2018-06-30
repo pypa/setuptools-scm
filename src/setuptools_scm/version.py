@@ -80,10 +80,14 @@ def tag_to_version(tag):
 
     tagdict = _parse_version_tag(tag)
     if tagdict is None or len(tagdict['version']) < 1:
+        warnings.warn("tag %r no version found" % (tag,))
         return None
 
     version = tagdict['version']
     trace("version pre parse", version)
+
+    if tagdict.get('suffix', ''):
+        warnings.warn("tag %r will be stripped of its suffix '%s'" % (tag, tagdict['suffix']))
 
     if VERSION_CLASS is not None:
         version = pkg_parse_version(version)
