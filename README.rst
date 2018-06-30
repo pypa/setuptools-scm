@@ -159,44 +159,47 @@ Configuration Parameters
 ------------------------------
 
 In order to configure the way ``use_scm_version`` works you can provide
-a mapping with options instead of simple boolean value.
+a mapping with options instead of a boolean value.
 
-The Currently supported configuration keys are:
+The currently supported configuration keys are:
 
 :root:
-    cwd relative path to use for finding the scm root, defaults to :code:`.`
+    Relative path to cwd, used for finding the scm root, defaults to :code:`.`
 
 :version_scheme:
-    configures how the local version number is constructed.
-    either an entrypoint name or a callable
+    Configures how the local version number is constructed.
+    Either an entrypoint name or a callable.
 
 :local_scheme:
-    configures how the local component of the version is constructed
-    either an entrypoint name or a callable
+    Configures how the local component of the version is constructed.
+    Either an entrypoint name or a callable.
+
 :write_to:
-    declares a text file or python file which is replaced with a file
-    containing the current version.
-    its ideal or creating a version.py file within the package
+    A path to a file that gets replaced with a file containing the current
+    version.
+    It is ideal for creating a version.py file within the package.
 
     .. warning::
 
-      only :code:`*.py` and :code:`*.txt` have builtin templates,
-      for other extensions it is necessary
-      to provide a :code:`write_to_template`
+      Only files with :code:`.py` and :code:`.txt` extensions have builtin
+      templates, for other file types it is necessary to provide
+      :code:`write_to_template`.
+
 :write_to_template:
-    a newstyle format string thats given the current version as
-    the :code:`version` keyword argument for formatting
+    A newstyle format string that is given the current version as
+    the :code:`version` keyword argument for formatting.
 
 :relative_to:
-    a file from which root may be resolved. typically called by a
-    script or module that is not
-    in the root of the repository to direct setuptools_scm to the
-    root of the repository by supplying ``__file__``.
+    A file from which the root can be resolved.
+    Typically called by a script or module that is not in the root of the
+    repository to point setuptools_scm at the root of the repository by
+    supplying ``__file__``.
 
 :parse:
-  a function that will be used instead of the discovered scm for parsing the version,
-  use with caution, this is a expert function and you should be closely familiar
-  with the setuptools_scm internals to use it
+  A function that will be used instead of the discovered SCM for parsing the
+  version.
+  Use with caution, this is a function for advanced use, and you should be
+  familiar with the setuptools_scm internals to use it.
 
 
 To use setuptools_scm in other Python code you can use the
