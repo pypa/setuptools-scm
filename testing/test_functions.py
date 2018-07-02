@@ -72,10 +72,13 @@ def test_dump_version_doesnt_bail_on_value_error(tmpdir):
     assert str(exc_info.value).startswith("bad file format:")
 
 
-def test_dump_version_works_with_pretend(tmpdir, monkeypatch):
-    monkeypatch.setenv(PRETEND_KEY, "1.0")
+@pytest.mark.parametrize(
+    "version", ["1.0", "1.2.3.dev1+ge871260", "1.2.3.dev15+ge871260.d20180625"]
+)
+def test_dump_version_works_with_pretend(version, tmpdir, monkeypatch):
+    monkeypatch.setenv(PRETEND_KEY, version)
     get_version(write_to=str(tmpdir.join("VERSION.txt")))
-    assert tmpdir.join("VERSION.txt").read() == "1.0"
+    assert tmpdir.join("VERSION.txt").read() == version
 
 
 def test_has_command(recwarn):
