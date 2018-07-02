@@ -60,7 +60,7 @@ def _do_parse(root, parse):
     if pretended:
         # we use meta here since the pretended version
         # must adhere to the pep to begin with
-        return meta(pretended)
+        return meta(tag=pretended, preformatted=True)
 
     if parse:
         parse_result = parse(root)
