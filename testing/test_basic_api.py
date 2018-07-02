@@ -51,10 +51,12 @@ def test_root_parameter_pass_by(monkeypatch, tmpdir):
     setuptools_scm.get_version(root=tmpdir.strpath)
 
 
-def test_pretended(monkeypatch):
-    pretense = "2345"
-    monkeypatch.setenv(setuptools_scm.PRETEND_KEY, pretense)
-    assert setuptools_scm.get_version() == pretense
+@pytest.mark.parametrize(
+    "version", ["1.0", "1.2.3.dev1+ge871260", "1.2.3.dev15+ge871260.d20180625", "2345"]
+)
+def test_pretended(version, monkeypatch):
+    monkeypatch.setenv(setuptools_scm.PRETEND_KEY, version)
+    assert setuptools_scm.get_version() == version
 
 
 def test_root_relative_to(monkeypatch, tmpdir):
