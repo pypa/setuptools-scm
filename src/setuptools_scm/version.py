@@ -21,17 +21,22 @@ def _pad(iterable, size, padding=None):
     return list(islice(padded, size))
 
 
-def _parse_version_tag(tag):
-    regex = Configuration().tag_regex
-    if isinstance(tag, string_types):
-        match = regex.match(tag)
-    else:
-        match = regex.match('%s' % tag)
+def _parse_version_tag(tag, config):
+    tagstring = tag if not isinstance(tag, string_types) else '%s' % tag
+    match = config.tag_regex.match(tagstring)
 
+    result = None
     if match:
-        result = match.groupdict()
-    else:
-        result = None
+        if len(match.groups()) == 1:
+            key = 1
+        else:
+            key = 'version'
+        
+        result = {
+            'version': match.group(key),
+            'prefix': match.group(0)[:match.start(key)],
+            'suffix': match.group(0)[match.end(key):],
+        }
 
     trace("tag '%s' parsed to %s" % (tag, result))
     return result
@@ -72,14 +77,18 @@ def callable_or_entrypoint(group, callable_or_name):
         return ep.load()
 
 
-def tag_to_version(tag):
+def tag_to_version(tag, config=None):
     """
     take a tag that might be prefixed with a keyword and return only the version part
+    :param config: optional configuration object
     """
     trace("tag", tag)
 
-    tagdict = _parse_version_tag(tag)
-    if tagdict is None or len(tagdict['version']) < 1:
+    if not config:
+        config = Configuration()
+
+    tagdict = _parse_version_tag(tag, config)
+    if not isinstance(tagdict, dict) or not tagdict.get('version', None):
         warnings.warn("tag %r no version found" % (tag,))
         return None
 
@@ -96,9 +105,18 @@ def tag_to_version(tag):
     return version
 
 
-def tags_to_versions(tags):
-    versions = map(tag_to_version, tags)
-    return [v for v in versions if v is not None]
+def tags_to_versions(tags, config=None):
+    """
+    take tags that might be prefixed with a keyword and return only the version part
+    :param tags: an iterable of tags
+    :param config: optional configuration object
+    """
+    result = []
+    for tag in tags:
+        version = tag_to_version(tag, config)
+        if version is not None:
+            result.append(version)
+    return result
 
 
 class ScmVersion(object):
@@ -155,24 +173,21 @@ class ScmVersion(object):
         return self.format_with(fmt, guessed=guessed)
 
 
-def _parse_tag(tag, preformatted):
+def _parse_tag(tag, preformatted, config):
     if preformatted:
         return tag
     if VERSION_CLASS is None or not isinstance(tag, VERSION_CLASS):
-        tag = tag_to_version(tag)
+        tag = tag_to_version(tag, config)
     return tag
 
 
-def meta(tag, distance=None, dirty=False, node=None, preformatted=False, **kw):
-    if tag is not None:
-        parsed_version = _parse_tag(tag, preformatted)
-        trace("version", tag, "->", parsed_version)
-
-    if tag is not None:
-        return ScmVersion(parsed_version, distance, node, dirty, preformatted, **kw)
-    else:
-        warnings.warn("cant parse version %s" % tag)
-        return None
+def meta(tag, config=None, distance=None, dirty=False, node=None, preformatted=False, **kw):
+    if not config:
+        warnings.warn("meta invoked without explicit configuration, will use defaults where required.")
+    parsed_version = _parse_tag(tag, preformatted, config)
+    trace("version", tag, "->", parsed_version)
+    assert parsed_version is not None, "cant parse version %s" % tag
+    return ScmVersion(parsed_version, distance, node, dirty, preformatted, **kw)
 
 
 def guess_next_version(tag_version):

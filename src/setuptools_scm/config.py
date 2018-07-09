@@ -1,32 +1,87 @@
 """ configuration """
 from __future__ import print_function, unicode_literals
+import os
 import re
 import warnings
 
-from .utils import singleton
+from .utils import trace
 
-DEFAULT_TAG_REGEX = r'^(?P<prefix>\w+-)?(?P<version>v?\d+(?:\.\d+){0,2}[^\+]+)(?P<suffix>\+.*)?$'
-TAG_REGEX_EXPECTED_GROUPS = set(['prefix', 'version', 'suffix'])
+DEFAULT_TAG_REGEX = r'^(?:\w+-)?(?P<version>v?\d+(?:\.\d+){0,2}[^\+]+)(?:\+.*)?$'
+DEFAULT_VERSION_SCHEME = 'version_scheme'
 
 
-@singleton
+def _check_tag_regex(value):
+    if not value:
+        value = DEFAULT_TAG_REGEX
+    regex = re.compile(value)
+
+    group_names = regex.groupindex.keys()
+    if regex.groups == 0 or (regex.groups > 1 and 'version' not in group_names):
+        warnings.warn("Expected tag_regex to contain a single match group or a group named 'version' " +
+                      "to identify the version part of any tag.")
+
+    return regex
+
+
+def _check_absolute_root(root, relative_to):
+    if relative_to:
+        if os.path.isabs(root) and not root.startswith(relative_to):
+            warnings.warn("absolute root path '%s' overrides relative_to '%s'" % (root, relative_to))
+        root = os.path.join(os.path.dirname(relative_to), root)
+    return os.path.abspath(root)
+
+
 class Configuration(object):
-    """ Global Configuration single-instance class """
+    """ Global configuration model """
 
-    root = ''
-    version_scheme = ''
-    local_scheme = ''
-    write_to = ''
+    _root = None
+    version_scheme = None
+    local_scheme = None
+    write_to = None
     write_to_template = None
-    relative_to = None
+    _relative_to = None
     parse = None
     _tag_regex = None
+    _absolute_root = None
 
-    def __init__(self):
-        self.root = '.'
-        self.version_scheme = "guess-next-dev"
+    def __init__(self,
+                 relative_to=None,
+                 root='.'):
+        # TODO:
+        self._relative_to = relative_to
+        self._root = '.'
+
+        self.root = root
+        self.version_scheme = DEFAULT_VERSION_SCHEME
         self.local_scheme = "node-and-date"
+        self.write_to = ''
+        self.write_to_template = None
+        self.parse = None
         self.tag_regex = DEFAULT_TAG_REGEX
+
+    @property
+    def absolute_root(self):
+        return self._absolute_root
+
+    @property
+    def relative_to(self):
+        return self._relative_to
+
+    @relative_to.setter
+    def relative_to(self, value):
+        self._absolute_root = _check_absolute_root(self._root, value)
+        self._relative_to = value
+        trace("root", repr(self._absolute_root))
+
+    @property
+    def root(self):
+        return self._root
+
+    @root.setter
+    def root(self, value):
+        self._absolute_root = _check_absolute_root(value, self._relative_to)
+        self._root = value
+        trace("root", repr(self._absolute_root))
 
     @property
     def tag_regex(self):
@@ -34,16 +89,4 @@ class Configuration(object):
 
     @tag_regex.setter
     def tag_regex(self, value):
-        if value is None:
-            value = DEFAULT_TAG_REGEX
-        regex = re.compile(value)
-
-        group_names = set(regex.groupindex.keys())
-        diff = TAG_REGEX_EXPECTED_GROUPS.difference(group_names)
-        if diff:
-            warnings.warn("expected match groups %s missing from regex '%s'" % (diff, regex.pattern))
-        diff = group_names.difference(TAG_REGEX_EXPECTED_GROUPS)
-        if diff:
-            warnings.warn("additional match groups %s found in regex '%s' (expected: %s)" % (diff, regex.pattern, TAG_REGEX_EXPECTED_GROUPS))
-
-        self._tag_regex = regex
+        self._tag_regex = _check_tag_regex(value)

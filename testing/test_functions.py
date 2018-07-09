@@ -34,11 +34,11 @@ def test_next_tag(tag, expected):
 
 
 VERSIONS = {
-    "exact": meta("1.1", None, False),
-    "zerodistance": meta("1.1", 0, False),
-    "dirty": meta("1.1", None, True),
-    "distance": meta("1.1", 3, False),
-    "distancedirty": meta("1.1", 3, True),
+    "exact": meta("1.1", distance=None, dirty=False),
+    "zerodistance": meta("1.1", distance=0, dirty=False),
+    "dirty": meta("1.1", distance=None, dirty=True),
+    "distance": meta("1.1", distance=3, dirty=False),
+    "distancedirty": meta("1.1", distance=3, dirty=True),
 }
 
 

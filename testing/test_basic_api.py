@@ -35,8 +35,8 @@ def assert_root(monkeypatch, expected_root):
     Patch version_from_scm to simply assert that root is expected root
     """
 
-    def assertion(root, unused_parse):
-        assert root == expected_root
+    def assertion(config):
+        assert config.absolute_root == expected_root
 
     monkeypatch.setattr(setuptools_scm, "_do_parse", assertion)
 

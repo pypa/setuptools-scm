@@ -2,6 +2,7 @@
 utils
 """
 from __future__ import print_function, unicode_literals
+import inspect
 import warnings
 import sys
 import shlex
@@ -93,6 +94,17 @@ def data_from_mime(path):
     return data
 
 
+def function_has_arg(fn, argname):
+    assert inspect.isfunction(fn)
+
+    if PY2:
+        argspec = inspect.getargspec(fn).args
+    else:
+        argspec = inspect.getfullargspec(fn).args
+
+    return argname in argspec
+
+
 def has_command(name):
     try:
         p = _popen_pipes([name, "help"], ".")
@@ -105,18 +117,3 @@ def has_command(name):
     if not res:
         warnings.warn("%r was not found" % name)
     return res
-
-
-def singleton(cls):
-    """ Class decorator to limit to a single global instance. """
-    instances = {}
-
-    def _get_instance(*args, **kwargs):
-        instance = instances.get(cls, None)
-        if instance is None:
-            instance = cls(*args, **kwargs)
-            instances[cls] = instance
-
-        return instance
-
-    return _get_instance
