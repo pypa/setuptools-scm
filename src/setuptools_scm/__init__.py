@@ -28,14 +28,17 @@ def version_from_scm(root):
     return _version_from_entrypoint(root, "setuptools_scm.parse_scm")
 
 
+def _call_entrypoint_fn(config, fn):
+    if function_has_arg(fn, 'config'):
+        return fn(config.absolute_root, config=config)
+    else:
+        warnings.warn("parse functions are required to provide a named argument 'config' in the future.", PendingDeprecationWarning)
+        return fn(config.absolute_root)
+
+
 def _version_from_entrypoint(config, entrypoint):
     for ep in iter_matching_entrypoints(config.absolute_root, entrypoint):
-        ep_fn = ep.load()
-        if function_has_arg(ep_fn, 'config'):
-            version = ep_fn(config.absolute_root, config=config)
-        else:
-            warnings.warn("parse functions are required to provide a named argument 'config' in the future.", PendingDeprecationWarning)
-            version = ep_fn(config.absolute_root)
+        version = _call_entrypoint_fn(config, ep.load())
 
         if version:
             return version
@@ -67,7 +70,7 @@ def _do_parse(config):
         return meta(pretended)
 
     if config.parse:
-        parse_result = config.parse(config)
+        parse_result = _call_entrypoint_fn(config, config.parse)
         if isinstance(parse_result, string_types):
             raise TypeError(
                 "version parse result was a string\nplease return a parsed version"
