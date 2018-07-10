@@ -181,7 +181,7 @@ def _parse_tag(tag, preformatted, config):
     return tag
 
 
-def meta(tag, config=None, distance=None, dirty=False, node=None, preformatted=False, **kw):
+def meta(tag, distance=None, dirty=False, node=None, preformatted=False, config=None, **kw):
     if not config:
         warnings.warn("meta invoked without explicit configuration, will use defaults where required.")
     parsed_version = _parse_tag(tag, preformatted, config)
