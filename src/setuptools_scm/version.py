@@ -111,12 +111,7 @@ def tags_to_versions(tags, config=None):
     :param tags: an iterable of tags
     :param config: optional configuration object
     """
-    result = []
-    for tag in tags:
-        version = tag_to_version(tag, config)
-        if version is not None:
-            result.append(version)
-    return result
+    return filter(None, map(lambda tag: tag_to_version(tag, config=config), tags))
 
 
 class ScmVersion(object):
