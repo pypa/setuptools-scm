@@ -22,7 +22,7 @@ def _pad(iterable, size, padding=None):
 
 
 def _parse_version_tag(tag, config):
-    tagstring = tag if not isinstance(tag, string_types) else '%s' % tag
+    tagstring = tag if not isinstance(tag, string_types) else str(tag)
     match = config.tag_regex.match(tagstring)
 
     result = None
