@@ -2,6 +2,7 @@
 utils
 """
 from __future__ import print_function, unicode_literals
+import inspect
 import warnings
 import sys
 import shlex
@@ -14,6 +15,8 @@ import platform
 DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
 IS_WINDOWS = platform.system() == "Windows"
 PY2 = sys.version_info < (3,)
+PY3 = sys.version_info > (3,)
+string_types = (str,) if PY3 else (str, unicode)  # noqa
 
 
 def trace(*k):
@@ -89,6 +92,17 @@ def data_from_mime(path):
     data = dict(x.split(": ", 1) for x in content.splitlines() if ": " in x)
     trace("data", data)
     return data
+
+
+def function_has_arg(fn, argname):
+    assert inspect.isfunction(fn)
+
+    if PY2:
+        argspec = inspect.getargspec(fn).args
+    else:
+        argspec = inspect.getfullargspec(fn).args
+
+    return argname in argspec
 
 
 def has_command(name):

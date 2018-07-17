@@ -1,3 +1,4 @@
+from .config import Configuration
 from .utils import do_ex, trace, has_command
 from .version import meta
 
@@ -82,20 +83,23 @@ def fail_on_shallow(wd):
         )
 
 
-def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
+def parse(root, config=None, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
     """
     :param pre_parse: experimental pre_parse action, may change at any time
     """
+    if not config:
+        config = Configuration(root=root)
+
     if not has_command("git"):
         return
 
-    wd = GitWorkdir.from_potential_worktree(root)
+    wd = GitWorkdir.from_potential_worktree(config.absolute_root)
     if wd is None:
         return
     if pre_parse:
         pre_parse(wd)
 
-    out, err, ret = wd.do_ex(describe_command)
+    out, unused_err, ret = wd.do_ex(describe_command)
     if ret:
         # If 'git describe' failed, try to get the information otherwise.
         rev_node = wd.node()
@@ -116,9 +120,9 @@ def parse(root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
 
         branch = wd.get_branch()
         if number:
-            return meta(tag, distance=number, node=node, dirty=dirty, branch=branch)
+            return meta(tag, config=config, distance=number, node=node, dirty=dirty, branch=branch)
         else:
-            return meta(tag, node=node, dirty=dirty, branch=branch)
+            return meta(tag, config=config, node=node, dirty=dirty, branch=branch)
 
 
 def _git_parse_describe(describe_output):

@@ -3,14 +3,14 @@
 :license: MIT
 """
 import os
-import sys
+import warnings
 
-from .utils import trace
+from .config import Configuration
+from .utils import function_has_arg, string_types
 from .version import format_version, meta
 from .discover import iter_matching_entrypoints
 
 PRETEND_KEY = "SETUPTOOLS_SCM_PRETEND_VERSION"
-
 
 TEMPLATES = {
     ".py": """\
@@ -22,17 +22,24 @@ version = {version!r}
     ".txt": "{version}",
 }
 
-PY3 = sys.version_info > (3,)
-string_types = (str,) if PY3 else (str, unicode)  # noqa
-
 
 def version_from_scm(root):
+    # TODO: Is it API?
     return _version_from_entrypoint(root, "setuptools_scm.parse_scm")
 
 
-def _version_from_entrypoint(root, entrypoint):
-    for ep in iter_matching_entrypoints(root, entrypoint):
-        version = ep.load()(root)
+def _call_entrypoint_fn(config, fn):
+    if function_has_arg(fn, 'config'):
+        return fn(config.absolute_root, config=config)
+    else:
+        warnings.warn("parse functions are required to provide a named argument 'config' in the future.", PendingDeprecationWarning)
+        return fn(config.absolute_root)
+
+
+def _version_from_entrypoint(config, entrypoint):
+    for ep in iter_matching_entrypoints(config.absolute_root, entrypoint):
+        version = _call_entrypoint_fn(config, ep.load())
+
         if version:
             return version
 
@@ -55,27 +62,26 @@ def dump_version(root, version, write_to, template=None):
         fp.write(template.format(version=version))
 
 
-def _do_parse(root, parse):
+def _do_parse(config):
     pretended = os.environ.get(PRETEND_KEY)
     if pretended:
         # we use meta here since the pretended version
         # must adhere to the pep to begin with
         return meta(tag=pretended, preformatted=True)
 
-    if parse:
-        parse_result = parse(root)
+    if config.parse:
+        parse_result = _call_entrypoint_fn(config, config.parse)
         if isinstance(parse_result, string_types):
             raise TypeError(
                 "version parse result was a string\nplease return a parsed version"
             )
-        version = parse_result or _version_from_entrypoint(
-            root, "setuptools_scm.parse_scm_fallback"
-        )
+        version = parse_result or \
+            _version_from_entrypoint(config, "setuptools_scm.parse_scm_fallback")
+    
     else:
         # include fallbacks after dropping them from the main entrypoint
-        version = version_from_scm(root) or _version_from_entrypoint(
-            root, "setuptools_scm.parse_scm_fallback"
-        )
+        version = _version_from_entrypoint(config, "setuptools_scm.parse_scm") or \
+            _version_from_entrypoint(config, "setuptools_scm.parse_scm_fallback")
 
     if version:
         return version
@@ -88,7 +94,7 @@ def _do_parse(root, parse):
         "metadata and will not work.\n\n"
         "For example, if you're using pip, instead of "
         "https://github.com/user/proj/archive/master.zip "
-        "use git+https://github.com/user/proj.git#egg=proj" % root
+        "use git+https://github.com/user/proj.git#egg=proj" % config.absolute_root
     )
 
 
@@ -99,6 +105,7 @@ def get_version(
     write_to=None,
     write_to_template=None,
     relative_to=None,
+    tag_regex=None,
     parse=None,
 ):
     """
@@ -107,12 +114,18 @@ def get_version(
     in the root of the repository to direct setuptools_scm to the
     root of the repository by supplying ``__file__``.
     """
-    if relative_to:
-        root = os.path.join(os.path.dirname(relative_to), root)
-    root = os.path.abspath(root)
-    trace("root", repr(root))
+    
+    config = Configuration()
+    config.root = root
+    config.version_scheme = version_scheme
+    config.local_scheme = local_scheme
+    config.write_to = write_to
+    config.write_to_template = write_to_template
+    config.relative_to = relative_to
+    config.tag_regex = tag_regex
+    config.parse = parse
 
-    parsed_version = _do_parse(root, parse)
+    parsed_version = _do_parse(config)
 
     if parsed_version:
         version_string = format_version(

@@ -4,7 +4,8 @@ import warnings
 import re
 from itertools import chain, repeat, islice
 
-from .utils import trace
+from .config import Configuration
+from .utils import trace, string_types
 
 from pkg_resources import iter_entry_points
 
@@ -13,12 +14,32 @@ from pkg_resources import parse_version as pkg_parse_version
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3
 SEMVER_LEN = 3
-TAG_PREFIX = re.compile(r"^\w+-(.*)")
 
 
 def _pad(iterable, size, padding=None):
     padded = chain(iterable, repeat(padding))
     return list(islice(padded, size))
+
+
+def _parse_version_tag(tag, config):
+    tagstring = tag if not isinstance(tag, string_types) else str(tag)
+    match = config.tag_regex.match(tagstring)
+
+    result = None
+    if match:
+        if len(match.groups()) == 1:
+            key = 1
+        else:
+            key = 'version'
+        
+        result = {
+            'version': match.group(key),
+            'prefix': match.group(0)[:match.start(key)],
+            'suffix': match.group(0)[match.end(key):],
+        }
+
+    trace("tag '%s' parsed to %s" % (tag, result))
+    return result
 
 
 def _get_version_class():
@@ -56,33 +77,41 @@ def callable_or_entrypoint(group, callable_or_name):
         return ep.load()
 
 
-def tag_to_version(tag):
+def tag_to_version(tag, config=None):
     """
     take a tag that might be prefixed with a keyword and return only the version part
+    :param config: optional configuration object
     """
     trace("tag", tag)
-    if "+" in tag:
-        warnings.warn("tag %r will be stripped of the local component" % tag)
-        tag = tag.split("+")[0]
-    # lstrip the v because of py2/py3 differences in setuptools
-    # also required for old versions of setuptools
-    prefix_match = TAG_PREFIX.match(tag)
-    if prefix_match is not None:
-        version = prefix_match.group(1)
-    else:
-        version = tag
+
+    if not config:
+        config = Configuration()
+
+    tagdict = _parse_version_tag(tag, config)
+    if not isinstance(tagdict, dict) or not tagdict.get('version', None):
+        warnings.warn("tag %r no version found" % (tag,))
+        return None
+
+    version = tagdict['version']
     trace("version pre parse", version)
-    if VERSION_CLASS is None:
-        return version
-    version = pkg_parse_version(version)
-    trace("version", repr(version))
-    if isinstance(version, VERSION_CLASS):
-        return version
+
+    if tagdict.get('suffix', ''):
+        warnings.warn("tag %r will be stripped of its suffix '%s'" % (tag, tagdict['suffix']))
+
+    if VERSION_CLASS is not None:
+        version = pkg_parse_version(version)
+        trace("version", repr(version))
+    
+    return version
 
 
-def tags_to_versions(tags):
-    versions = map(tag_to_version, tags)
-    return [v for v in versions if v is not None]
+def tags_to_versions(tags, config=None):
+    """
+    take tags that might be prefixed with a keyword and return only the version part
+    :param tags: an iterable of tags
+    :param config: optional configuration object
+    """
+    return filter(None, map(lambda tag: tag_to_version(tag, config=config), tags))
 
 
 class ScmVersion(object):
@@ -139,16 +168,18 @@ class ScmVersion(object):
         return self.format_with(fmt, guessed=guessed)
 
 
-def _parse_tag(tag, preformatted):
+def _parse_tag(tag, preformatted, config):
     if preformatted:
         return tag
     if VERSION_CLASS is None or not isinstance(tag, VERSION_CLASS):
-        tag = tag_to_version(tag)
+        tag = tag_to_version(tag, config)
     return tag
 
 
-def meta(tag, distance=None, dirty=False, node=None, preformatted=False, **kw):
-    parsed_version = _parse_tag(tag, preformatted)
+def meta(tag, distance=None, dirty=False, node=None, preformatted=False, config=None, **kw):
+    if not config:
+        warnings.warn("meta invoked without explicit configuration, will use defaults where required.")
+    parsed_version = _parse_tag(tag, preformatted, config)
     trace("version", tag, "->", parsed_version)
     assert parsed_version is not None, "cant parse version %s" % tag
     return ScmVersion(parsed_version, distance, node, dirty, preformatted, **kw)

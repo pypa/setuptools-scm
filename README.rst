@@ -156,7 +156,7 @@ Builtin mechanisms for obtaining version numbers
 
 
 Configuration Parameters
-------------------------------
+------------------------
 
 In order to configure the way ``use_scm_version`` works you can provide
 a mapping with options instead of a boolean value.
@@ -202,6 +202,14 @@ The currently supported configuration keys are:
   Use with caution, this is a function for advanced use, and you should be
   familiar with the setuptools_scm internals to use it.
 
+:tag_regex:
+  A python regex string to extract the version part from any SCM tag.
+  The regex needs to contain three named groups prefix, version and suffix,
+  where `version` captures the actual version information.
+
+  defaults to the value of ``setuptools_scm.config.DEFAULT_TAG_REGEX``
+  (see `config.py <src/setuptools_scm/config.py>`_).
+
 
 To use setuptools_scm in other Python code you can use the
 ``get_version`` function:
@@ -214,6 +222,19 @@ To use setuptools_scm in other Python code you can use the
 It optionally accepts the keys of the ``use_scm_version`` parameter as
 keyword arguments.
 
+Example configuration in `setup.py` format:
+
+.. code:: python
+
+    from setuptools import setup
+
+
+    setup(
+        use_scm_version={
+            'write_to': 'version.txt',
+            'tag_regex': r'^(?P<prefix>v)?(?P<version>[^\+]+)(?P<suffix>.*)?$',
+        }
+    )
 
 Environment Variables
 ---------------------

@@ -1,4 +1,5 @@
 import os
+from .config import Configuration
 from .utils import do, trace, data_from_mime, has_command
 from .version import meta, tags_to_versions
 
@@ -28,10 +29,13 @@ def _hg_tagdist_normalize_tagcommit(root, tag, dist, node, branch):
         return meta(tag)
 
 
-def parse(root):
+def parse(root, config=None):
+    if not config:
+        config = Configuration(root=root)
+
     if not has_command("hg"):
         return
-    identity_data = do("hg id -i -b -t", root).split()
+    identity_data = do("hg id -i -b -t", config.absolute_root).split()
     if not identity_data:
         return
     node = identity_data.pop(0)
@@ -44,16 +48,16 @@ def parse(root):
         return meta(tags[0], dirty=dirty, branch=branch)
 
     if node.strip("+") == "0" * 12:
-        trace("initial node", root)
-        return meta("0.0", dirty=dirty, branch=branch)
+        trace("initial node", config.absolute_root)
+        return meta("0.0", config=config, dirty=dirty, branch=branch)
 
     try:
-        tag = get_latest_normalizable_tag(root)
-        dist = get_graph_distance(root, tag)
+        tag = get_latest_normalizable_tag(config.absolute_root)
+        dist = get_graph_distance(config.absolute_root, tag)
         if tag == "null":
             tag = "0.0"
             dist = int(dist) + 1
-        return _hg_tagdist_normalize_tagcommit(root, tag, dist, node, branch)
+        return _hg_tagdist_normalize_tagcommit(config.absolute_root, tag, dist, node, branch)
     except ValueError:
         pass  # unpacking failed, old hg
 
