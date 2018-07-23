@@ -83,7 +83,9 @@ def fail_on_shallow(wd):
         )
 
 
-def parse(root, config=None, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow):
+def parse(
+    root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow, config=None
+):
     """
     :param pre_parse: experimental pre_parse action, may change at any time
     """
@@ -120,7 +122,14 @@ def parse(root, config=None, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_o
 
         branch = wd.get_branch()
         if number:
-            return meta(tag, config=config, distance=number, node=node, dirty=dirty, branch=branch)
+            return meta(
+                tag,
+                config=config,
+                distance=number,
+                node=node,
+                dirty=dirty,
+                branch=branch,
+            )
         else:
             return meta(tag, config=config, node=node, dirty=dirty, branch=branch)
 

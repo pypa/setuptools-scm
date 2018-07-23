@@ -1,3 +1,8 @@
+v3.0.1
+=======
+
+* fix a regression in setuptools_scm.git.parse - reorder arguments so the positional invocation from before works as expected
+
 v3.0.0
 =======
 

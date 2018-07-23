@@ -28,6 +28,11 @@ def test_parse_describe_output(given, tag, number, node, dirty):
     assert parsed == (tag, number, node, dirty)
 
 
+@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/281")
+def test_parse_call_order(wd):
+    git.parse(str(wd.cwd), git.DEFAULT_DESCRIBE)
+
+
 def test_version_from_git(wd):
     assert wd.version == "0.1.dev0"
 
