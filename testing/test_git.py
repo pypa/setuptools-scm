@@ -18,7 +18,10 @@ def wd(wd):
 
 @pytest.mark.parametrize(
     "given, tag, number, node, dirty",
-    [("3.3.1-rc26-0-g9df187b", "3.3.1-rc26", 0, "g9df187b", False)],
+    [
+        ("3.3.1-rc26-0-g9df187b", "3.3.1-rc26", 0, "g9df187b", False),
+        ("17.33.0-rc-17-g38c3047c0", "17.33.0-rc", 17, "g38c3047c0", False),
+    ],
 )
 def test_parse_describe_output(given, tag, number, node, dirty):
     parsed = git._git_parse_describe(given)
@@ -47,6 +50,10 @@ def test_version_from_git(wd):
     wd.commit_testfile()
     wd("git tag version-0.2.post210+gbe48adfpost3+g0cc25f2")
     assert wd.version.startswith("0.2")
+
+    wd.commit_testfile()
+    wd("git tag 17.33.0-rc")
+    assert wd.version == "17.33.0rc0"
 
 
 @pytest.mark.issue(179)
