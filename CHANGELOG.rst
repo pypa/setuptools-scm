@@ -6,8 +6,10 @@ v3.0.0
 * switch to src layout (breaking change)
 * no longer alias tag and parsed_version in order to support understanding a version parse failure
 * require parse results to be ScmVersion or None (breaking change)
-* fix #266 by requirin the prefix word to be a word again
+* fix #266 by requiring the prefix word to be a word again
   (breaking change as the bug allowed arbitrary prefixes while the original feature only allowed words")
+* introduce a internal config object to allow the configruation fo tag parsing and prefixes
+  (thanks to @punkadiddle for introducing it and passing it trough)
 
 v2.1.0
 ======
