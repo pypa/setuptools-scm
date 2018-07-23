@@ -29,10 +29,14 @@ def version_from_scm(root):
 
 
 def _call_entrypoint_fn(config, fn):
-    if function_has_arg(fn, 'config'):
+    if function_has_arg(fn, "config"):
         return fn(config.absolute_root, config=config)
     else:
-        warnings.warn("parse functions are required to provide a named argument 'config' in the future.", PendingDeprecationWarning)
+        warnings.warn(
+            "parse functions are required to provide a named argument"
+            " 'config' in the future.",
+            PendingDeprecationWarning,
+        )
         return fn(config.absolute_root)
 
 
@@ -75,13 +79,16 @@ def _do_parse(config):
             raise TypeError(
                 "version parse result was a string\nplease return a parsed version"
             )
-        version = parse_result or \
-            _version_from_entrypoint(config, "setuptools_scm.parse_scm_fallback")
-    
+        version = parse_result or _version_from_entrypoint(
+            config, "setuptools_scm.parse_scm_fallback"
+        )
     else:
         # include fallbacks after dropping them from the main entrypoint
-        version = _version_from_entrypoint(config, "setuptools_scm.parse_scm") or \
-            _version_from_entrypoint(config, "setuptools_scm.parse_scm_fallback")
+        version = _version_from_entrypoint(
+            config, "setuptools_scm.parse_scm"
+        ) or _version_from_entrypoint(
+            config, "setuptools_scm.parse_scm_fallback"
+        )
 
     if version:
         return version
@@ -114,7 +121,7 @@ def get_version(
     in the root of the repository to direct setuptools_scm to the
     root of the repository by supplying ``__file__``.
     """
-    
+
     config = Configuration()
     config.root = root
     config.version_scheme = version_scheme

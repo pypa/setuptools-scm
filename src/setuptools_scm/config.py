@@ -6,8 +6,8 @@ import warnings
 
 from .utils import trace
 
-DEFAULT_TAG_REGEX = r'^(?:\w+-)?(?P<version>v?\d+(?:\.\d+){0,2}[^\+]+)(?:\+.*)?$'
-DEFAULT_VERSION_SCHEME = 'version_scheme'
+DEFAULT_TAG_REGEX = r"^(?:[\w-]+-)?(?P<version>v?\d+(?:\.\d+){0,2}[^\+]+)(?:\+.*)?$"
+DEFAULT_VERSION_SCHEME = "version_scheme"
 
 
 def _check_tag_regex(value):
@@ -16,9 +16,11 @@ def _check_tag_regex(value):
     regex = re.compile(value)
 
     group_names = regex.groupindex.keys()
-    if regex.groups == 0 or (regex.groups > 1 and 'version' not in group_names):
-        warnings.warn("Expected tag_regex to contain a single match group or a group named 'version' " +
-                      "to identify the version part of any tag.")
+    if regex.groups == 0 or (regex.groups > 1 and "version" not in group_names):
+        warnings.warn(
+            "Expected tag_regex to contain a single match group or a group named"
+            " 'version' to identify the version part of any tag."
+        )
 
     return regex
 
@@ -26,7 +28,10 @@ def _check_tag_regex(value):
 def _check_absolute_root(root, relative_to):
     if relative_to:
         if os.path.isabs(root) and not root.startswith(relative_to):
-            warnings.warn("absolute root path '%s' overrides relative_to '%s'" % (root, relative_to))
+            warnings.warn(
+                "absolute root path '%s' overrides relative_to '%s'"
+                % (root, relative_to)
+            )
         root = os.path.join(os.path.dirname(relative_to), root)
     return os.path.abspath(root)
 
@@ -44,17 +49,15 @@ class Configuration(object):
     _tag_regex = None
     _absolute_root = None
 
-    def __init__(self,
-                 relative_to=None,
-                 root='.'):
+    def __init__(self, relative_to=None, root="."):
         # TODO:
         self._relative_to = relative_to
-        self._root = '.'
+        self._root = "."
 
         self.root = root
         self.version_scheme = DEFAULT_VERSION_SCHEME
         self.local_scheme = "node-and-date"
-        self.write_to = ''
+        self.write_to = ""
         self.write_to_template = None
         self.parse = None
         self.tag_regex = DEFAULT_TAG_REGEX
