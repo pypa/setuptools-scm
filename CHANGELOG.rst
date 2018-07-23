@@ -1,7 +1,13 @@
+v3.0.2
+======
+
+* fix a regression from tag parsing - support for multi-dashed prefixes - #284
+
+
 v3.0.1
 =======
 
-* fix a regression in setuptools_scm.git.parse - reorder arguments so the positional invocation from before works as expected
+* fix a regression in setuptools_scm.git.parse - reorder arguments so the positional invocation from before works as expected #281
 
 v3.0.0
 =======
