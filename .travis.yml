@@ -27,9 +27,11 @@ jobs:
     - stage: linting
       python: '3.6'
       env: TOXENV=check_readme
-    - python: '2.7'
+    - stage: test
+      python: '2.7'
       env: SELFINSTALL=1
-    - python: '3.6'
+    - stage: test
+      python: '3.6'
       env: SELFINSTALL=1
 
     - stage: linting
