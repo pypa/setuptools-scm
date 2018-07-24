@@ -25,6 +25,7 @@ env:
 jobs:
   include:
     - stage: linting
+      name: check readme
       python: '3.6'
       env: TOXENV=check_readme
     - stage: test
@@ -39,6 +40,7 @@ jobs:
 
     - stage: linting
       python: '3.6'
+      name: validate pre-commit
       env:
       install:
       - pip install pre-commit
