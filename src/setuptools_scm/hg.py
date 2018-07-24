@@ -57,7 +57,9 @@ def parse(root, config=None):
         if tag == "null":
             tag = "0.0"
             dist = int(dist) + 1
-        return _hg_tagdist_normalize_tagcommit(config.absolute_root, tag, dist, node, branch)
+        return _hg_tagdist_normalize_tagcommit(
+            config.absolute_root, tag, dist, node, branch
+        )
     except ValueError:
         pass  # unpacking failed, old hg
 
