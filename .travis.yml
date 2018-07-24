@@ -53,7 +53,7 @@ jobs:
       name: "modern distributions"
       python: '3.6'
       install:
-      - pip install -u pip setuptools wheel
+      - pip install -U pip setuptools wheel
       script: skip
       deploy:
         <<: *pypi
