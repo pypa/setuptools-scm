@@ -1,3 +1,9 @@
+v3.0.3
+======
+
+* fix #286 - duo an oversight a helper functio nwas returning a generator instead of a list
+
+
 v3.0.2
 ======
 
