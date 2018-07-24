@@ -30,12 +30,12 @@ def _parse_version_tag(tag, config):
         if len(match.groups()) == 1:
             key = 1
         else:
-            key = 'version'
-        
+            key = "version"
+
         result = {
-            'version': match.group(key),
-            'prefix': match.group(0)[:match.start(key)],
-            'suffix': match.group(0)[match.end(key):],
+            "version": match.group(key),
+            "prefix": match.group(0)[:match.start(key)],
+            "suffix": match.group(0)[match.end(key):],
         }
 
     trace("tag '%s' parsed to %s" % (tag, result))
@@ -88,20 +88,21 @@ def tag_to_version(tag, config=None):
         config = Configuration()
 
     tagdict = _parse_version_tag(tag, config)
-    if not isinstance(tagdict, dict) or not tagdict.get('version', None):
+    if not isinstance(tagdict, dict) or not tagdict.get("version", None):
         warnings.warn("tag %r no version found" % (tag,))
         return None
 
-    version = tagdict['version']
+    version = tagdict["version"]
     trace("version pre parse", version)
 
-    if tagdict.get('suffix', ''):
-        warnings.warn("tag %r will be stripped of its suffix '%s'" % (tag, tagdict['suffix']))
+    if tagdict.get("suffix", ""):
+        warnings.warn(
+            "tag %r will be stripped of its suffix '%s'" % (tag, tagdict["suffix"])
+        )
 
     if VERSION_CLASS is not None:
         version = pkg_parse_version(version)
         trace("version", repr(version))
-    
     return version
 
 
@@ -111,7 +112,12 @@ def tags_to_versions(tags, config=None):
     :param tags: an iterable of tags
     :param config: optional configuration object
     """
-    return filter(None, map(lambda tag: tag_to_version(tag, config=config), tags))
+    result = []
+    for tag in tags:
+        tag = tag_to_version(tag, config=config)
+        if tag:
+            result.append(tag)
+    return result
 
 
 class ScmVersion(object):
@@ -176,9 +182,14 @@ def _parse_tag(tag, preformatted, config):
     return tag
 
 
-def meta(tag, distance=None, dirty=False, node=None, preformatted=False, config=None, **kw):
+def meta(
+    tag, distance=None, dirty=False, node=None, preformatted=False, config=None, **kw
+):
     if not config:
-        warnings.warn("meta invoked without explicit configuration, will use defaults where required.")
+        warnings.warn(
+            "meta invoked without explicit configuration,"
+            " will use defaults where required."
+        )
     parsed_version = _parse_tag(tag, preformatted, config)
     trace("version", tag, "->", parsed_version)
     assert parsed_version is not None, "cant parse version %s" % tag

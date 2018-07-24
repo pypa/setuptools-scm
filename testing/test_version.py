@@ -1,6 +1,6 @@
 import pytest
 from setuptools_scm.config import Configuration
-from setuptools_scm.version import meta, simplified_semver_version
+from setuptools_scm.version import meta, simplified_semver_version, tags_to_versions
 
 
 @pytest.mark.parametrize(
@@ -49,6 +49,13 @@ def test_next_semver(version, expected_next):
     ],
 )
 def test_tag_regex1(tag, expected):
-    Configuration().tag_regex = r'^(?P<prefix>v)?(?P<version>[^\+]+)(?P<suffix>.*)?$'
+    Configuration().tag_regex = r"^(?P<prefix>v)?(?P<version>[^\+]+)(?P<suffix>.*)?$"
     result = meta(tag)
     assert result.tag.public == expected
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/286")
+def test_tags_to_versions():
+    config = Configuration()
+    versions = tags_to_versions(["1", "2", "3"], config=config)
+    assert isinstance(versions, list)  # enable subscription
