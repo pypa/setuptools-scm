@@ -6,6 +6,7 @@ stages:
 - test
 - deploy
 
+
 credentials:
   - &pypi
     provider: pypi
@@ -18,7 +19,6 @@ python:
 - '3.4'
 - '3.5'
 - '3.6'
-- '3.7'
 env:
 - TOXENV=py-test
 
@@ -27,6 +27,9 @@ jobs:
     - stage: linting
       python: '3.6'
       env: TOXENV=check_readme
+    - stage: test
+      python: '3.7'
+      dist: xenial
     - stage: test
       python: '2.7'
       env: SELFINSTALL=1
