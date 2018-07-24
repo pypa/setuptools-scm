@@ -77,11 +77,11 @@ jobs:
       name: "python eggs 3.7"
       python: '3.7'
 
-
 cache:
-  files:
-  - $HOME/.pip/cache
-  - $Home/.cache/pip
+  directories:
+  - $HOME/.cache/pip
+  - $HOME/.cache/pre-commit
+
 install: pip install tox
 script:
 - python testing/runtests_travis.py
