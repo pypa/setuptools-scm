@@ -103,6 +103,7 @@ def tag_to_version(tag, config=None):
     if VERSION_CLASS is not None:
         version = pkg_parse_version(version)
         trace("version", repr(version))
+
     return version
 
 
