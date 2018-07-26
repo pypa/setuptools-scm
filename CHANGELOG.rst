@@ -1,4 +1,4 @@
-v3.0.3
+v3.0.3  (pulled from pypi due to a packaging issue)
 ======
 
 * fix #286 - duo an oversight a helper functio nwas returning a generator instead of a list
