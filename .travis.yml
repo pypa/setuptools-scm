@@ -11,9 +11,12 @@ credentials:
   - &pypi
     provider: pypi
     user: ronny
+    # use when testing, may require recreation of the user and its credentials
+    # server: https://test.pypi.org/legacy/ # Remove for deployment to official PyPi repo
     password:
       secure: QGJhDXmfFDKysMJJV/ONGaHHzG/aImhU3DdhEP63d657iQSn/Cb4EG/l9YmVnRzpJ94nSDXZB8YwptR7rid0bOtidb32lxN8n6UiWILCXWeAN2FE+tT9/0xIct4HUJZ8OttD1gft/Di722Gy+s9PzFwjwrV4efkxCzgjfYOjkMeq3aO6NoG3ur0iZXJh7ODwLp4sRFep2NpIEaXm2qMdnnXpck6bJ1q/NtvPx9CAZivd9HYa0evg5j1ENTz1mXXafhgF+0vRCBXA33xJuysO6CKtk+2mizL1QHfosOERiKl9+zPyZw+VvSchbCVwgxrMSiRcpGag+4SegyHrj1M/2YqfFzMF/yuFGcqXl2VkEqlnBQOVMNW3Kdcmnm+caNbddnv+M384WFz4nV8nWjcsD5l27+XlMWfuvskDIvZKtVCXmmbtqgwM4tqoYd6uxbnooRfwINTGx8sNzKP10xkaesB3ZBCEpecOKA1AXUAZ74RfYWWExv6eIuVGwyIJmOcD8M/17N8g58GxxO+88gx50EuhyNiRjYZDUipfVydfJwBwpD+p695NixUMITuksucQftjHsQp+laGWJlDIPvFwI85wDJUYAyrzn6L1W+smkm1bGomuliW2MJfxeSZAmSk4CE5VOpIWQTBmDLR3pxBhcaqzwdd4mAWvMi/fpM4yJJI=
-
+    on:
+      tags: yes
 python:
 - '2.7'
 - '3.4'
@@ -57,30 +60,42 @@ jobs:
       script: skip
       deploy:
         <<: *pypi
-        on:
-          tags: true
-      distributions: "sdist bdist_wheel"
+        distributions: "sdist bdist_wheel"
 
-    - &eggs
-      <<: *deploy
+    - <<: *deploy
       name: "python eggs 2.7"
       python: '2.7'
-      distributions: "bdist_egg"
-    - <<: *eggs
+      deploy:
+        <<: *pypi
+        distributions: "bdist_egg"
+    - <<: *deploy
       name: "python eggs 3.4"
       python: '3.4'
+      deploy:
+        <<: *pypi
+        distributions: "bdist_egg"
 
-    - <<: *eggs
+
+    - <<: *deploy
       name: "python eggs 3.5"
       python: '3.5'
+      deploy:
+        <<: *pypi
+        distributions: "bdist_egg"
 
-    - <<: *eggs
+    - <<: *deploy
       name: "python eggs 3.6"
       python: '3.6'
+      deploy:
+        <<: *pypi
+        distributions: "bdist_egg"
 
     # - <<: *eggs
     #   name: "python eggs 3.7"
     #   python: '3.7'
+    #  deploy:
+    #    <<: *pypi
+    #    distributions: "bdist_egg"
 
 cache:
   directories:
