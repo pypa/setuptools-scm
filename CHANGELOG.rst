@@ -1,3 +1,14 @@
+v3.0.5
+
+* fix #292 - match leading 'V' character as well
+
+  https://www.python.org/dev/peps/pep-0440/#preceding-v-character
+
+v3.0.4
+=======
+
+* rerelease of 3.0.3 after fixing the release process
+
 v3.0.3  (pulled from pypi due to a packaging issue)
 ======
 

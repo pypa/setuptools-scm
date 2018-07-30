@@ -6,7 +6,7 @@ import warnings
 
 from .utils import trace
 
-DEFAULT_TAG_REGEX = r"^(?:[\w-]+-)?(?P<version>v?\d+(?:\.\d+){0,2}[^\+]+)(?:\+.*)?$"
+DEFAULT_TAG_REGEX = r"^(?:[\w-]+-)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]+)(?:\+.*)?$"
 DEFAULT_VERSION_SCHEME = "version_scheme"
 
 
