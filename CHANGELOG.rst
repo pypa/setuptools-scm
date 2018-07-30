@@ -1,4 +1,5 @@
 v3.0.5
+======
 
 * fix #292 - match leading 'V' character as well
 
