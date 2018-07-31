@@ -16,4 +16,6 @@ elif os.environ.get("SELFINSTALL"):
     import pkg_resources
 
     dist = pkg_resources.get_distribution("setuptools_scm")
-    assert set(dist.version) == set(".0"), dist.version
+    import setuptools_scm
+
+    assert dist.version == setuptools_scm.get_version(), dist.version
