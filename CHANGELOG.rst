@@ -1,3 +1,7 @@
+v3.0.6
+======
+* fix #295 - correctly handle selfinstall from tarballs
+
 v3.0.5
 ======
 
