@@ -50,6 +50,7 @@ def _git_ls_files_and_dirs(toplevel):
     except Exception:
         if proc.wait() != 0:
             log.exception("listing git files failed - pretending there aren't any")
+        return (), ()
 
 
 def git_find_files(path=""):

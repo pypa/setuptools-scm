@@ -30,10 +30,11 @@ def test_parse_describe_output(given, tag, number, node, dirty):
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/298")
-def test_file_finder_no_history(wd):
-    with pytest.warns(Warning, match="can't list files without commits"):
-        file_list = git_find_files(str(wd.cwd))
-        assert file_list == []
+def test_file_finder_no_history(wd, caplog):
+    file_list = git_find_files(str(wd.cwd))
+    assert file_list == []
+
+    assert "listing git files failed - pretending there aren't any" in caplog.text
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/281")
