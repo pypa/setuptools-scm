@@ -1,7 +1,7 @@
 from setuptools_scm import format_version
 from setuptools_scm.hg import archival_to_version, parse
 from setuptools_scm import integration
-
+from setuptools_scm.config import Configuration
 import pytest
 
 
@@ -26,7 +26,8 @@ archival_mapping = {
 
 @pytest.mark.parametrize("expected,data", sorted(archival_mapping.items()))
 def test_archival_to_version(expected, data):
-    version = archival_to_version(data)
+    config = Configuration()
+    version = archival_to_version(data, config=config)
     assert (
         format_version(
             version, version_scheme="guess-next-dev", local_scheme="node-and-date"

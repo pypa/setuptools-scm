@@ -108,7 +108,7 @@ def parse(
         dirty = wd.is_dirty()
 
         if rev_node is None:
-            return meta("0.0", distance=0, dirty=dirty)
+            return meta("0.0", distance=0, dirty=dirty, config=config)
 
         return meta(
             "0.0",
@@ -116,6 +116,7 @@ def parse(
             node="g" + rev_node,
             dirty=dirty,
             branch=wd.get_branch(),
+            config=config,
         )
     else:
         tag, number, node, dirty = _git_parse_describe(out)

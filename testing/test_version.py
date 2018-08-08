@@ -49,13 +49,20 @@ def test_next_semver(version, expected_next):
     ],
 )
 def test_tag_regex1(tag, expected):
-    Configuration().tag_regex = r"^(?P<prefix>v)?(?P<version>[^\+]+)(?P<suffix>.*)?$"
-    result = meta(tag)
+    config = Configuration()
+    config.tag_regex = r"^(?P<prefix>v)?(?P<version>[^\+]+)(?P<suffix>.*)?$"
+    if "+" in tag:
+        # pytest bug wrt cardinality
+        with pytest.warns(UserWarning):
+            result = meta(tag, config=config)
+    else:
+        result = meta(tag, config=config)
+
     assert result.tag.public == expected
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/286")
 def test_tags_to_versions():
     config = Configuration()
-    versions = tags_to_versions(["1", "2", "3"], config=config)
+    versions = tags_to_versions(["1.0", "2.0", "3.0"], config=config)
     assert isinstance(versions, list)  # enable subscription
