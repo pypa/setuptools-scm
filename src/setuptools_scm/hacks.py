@@ -3,7 +3,7 @@ from .utils import data_from_mime, trace
 from .version import meta
 
 
-def parse_pkginfo(root):
+def parse_pkginfo(root, config):
 
     pkginfo = os.path.join(root, "PKG-INFO")
     trace("pkginfo", pkginfo)
@@ -13,7 +13,7 @@ def parse_pkginfo(root):
         return meta(version, preformatted=True)
 
 
-def parse_pip_egg_info(root):
+def parse_pip_egg_info(root, config):
     pipdir = os.path.join(root, "pip-egg-info")
     if not os.path.isdir(pipdir):
         return
