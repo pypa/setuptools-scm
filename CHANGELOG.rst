@@ -1,3 +1,8 @@
+v3.1.0
+=======
+
+* fix #297 - correct the invocation in version_from_scm and deprecate it as its exposed by accident
+
 v3.0.6
 ======
 * fix #295 - correctly handle selfinstall from tarballs

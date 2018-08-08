@@ -24,8 +24,14 @@ version = {version!r}
 
 
 def version_from_scm(root):
+    warnings.warn(
+        "version_from_scm is deprecated please use get_version",
+        category=DeprecationWarning,
+    )
+    config = Configuration()
+    config.root = root
     # TODO: Is it API?
-    return _version_from_entrypoint(root, "setuptools_scm.parse_scm")
+    return _version_from_entrypoint(config, "setuptools_scm.parse_scm")
 
 
 def _call_entrypoint_fn(config, fn):
