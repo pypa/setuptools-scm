@@ -161,7 +161,7 @@ class ScmVersion(object):
 
     def __repr__(self):
         return self.format_with(
-            "<ScmVersion {tag} d={distance}" " n={node} d={dirty} b={branch} x={extra}>"
+            "<ScmVersion {tag} d={distance} n={node} d={dirty} b={branch}>"
         )
 
     def format_with(self, fmt, **kw):
@@ -171,7 +171,6 @@ class ScmVersion(object):
             distance=self.distance,
             node=self.node,
             dirty=self.dirty,
-            extra=self.extra,
             branch=self.branch,
             **kw
         )
