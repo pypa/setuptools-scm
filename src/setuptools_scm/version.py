@@ -141,10 +141,19 @@ class ScmVersion(object):
         self.distance = distance
         self.node = node
         self.time = datetime.datetime.now()
-        self.extra = kw
+        self._extra = kw
         self.dirty = dirty
         self.preformatted = preformatted
         self.branch = branch
+
+    @property
+    def extra(self):
+        warnings.warn(
+            "ScmVersion.extra is deprecated and will be removed in future",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._extra
 
     @property
     def exact(self):

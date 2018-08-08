@@ -41,7 +41,8 @@ def _call_entrypoint_fn(config, fn):
         warnings.warn(
             "parse functions are required to provide a named argument"
             " 'config' in the future.",
-            PendingDeprecationWarning,
+            category=PendingDeprecationWarning,
+            stacklevel=2,
         )
         return fn(config.absolute_root)
 
