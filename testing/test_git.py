@@ -4,6 +4,7 @@ from setuptools_scm import git
 import pytest
 from datetime import date
 from os.path import join as opj
+from setuptools_scm.file_finder_git import git_find_files
 
 
 @pytest.fixture
@@ -26,6 +27,14 @@ def wd(wd):
 def test_parse_describe_output(given, tag, number, node, dirty):
     parsed = git._git_parse_describe(given)
     assert parsed == (tag, number, node, dirty)
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/298")
+def test_file_finder_no_history(wd, caplog):
+    file_list = git_find_files(str(wd.cwd))
+    assert file_list == []
+
+    assert "listing git files failed - pretending there aren't any" in caplog.text
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/281")
