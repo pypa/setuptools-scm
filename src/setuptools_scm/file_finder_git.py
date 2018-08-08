@@ -1,8 +1,11 @@
 import os
 import subprocess
 import tarfile
-
+import logging
 from .file_finder import scm_find_files
+from .utils import trace
+
+log = logging.getLogger(__name__)
 
 
 def _git_toplevel(path):
@@ -14,6 +17,7 @@ def _git_toplevel(path):
                 universal_newlines=True,
                 stderr=devnull,
             )
+        trace("find files toplevel", out)
         return os.path.normcase(os.path.realpath(out.strip()))
     except subprocess.CalledProcessError:
         # git returned error, we are not in a git repo
@@ -23,12 +27,8 @@ def _git_toplevel(path):
         return None
 
 
-def _git_ls_files_and_dirs(toplevel):
-    # use git archive instead of git ls-file to honor
-    # export-ignore git attribute
-    cmd = ["git", "archive", "--prefix", toplevel + os.path.sep, "HEAD"]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, cwd=toplevel)
-    tf = tarfile.open(fileobj=proc.stdout, mode="r|*")
+def _git_interpret_archive(fd, toplevel):
+    tf = tarfile.open(fileobj=fd, mode="r|*")
     git_files = set()
     git_dirs = {toplevel}
     for member in tf.getmembers():
@@ -38,6 +38,18 @@ def _git_ls_files_and_dirs(toplevel):
         else:
             git_files.add(name)
     return git_files, git_dirs
+
+
+def _git_ls_files_and_dirs(toplevel):
+    # use git archive instead of git ls-file to honor
+    # export-ignore git attribute
+    cmd = ["git", "archive", "--prefix", toplevel + os.path.sep, "HEAD"]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, cwd=toplevel)
+    try:
+        return _git_interpret_archive(proc.stdout, toplevel)
+    except Exception:
+        if proc.wait() != 0:
+            log.exception("listing git files failed - pretending there aren't any")
 
 
 def git_find_files(path=""):
