@@ -63,7 +63,10 @@ def test_version_from_git(wd):
 
     wd.commit_testfile()
     wd("git tag version-0.2.post210+gbe48adfpost3+g0cc25f2")
-    assert wd.version.startswith("0.2")
+    with pytest.warns(
+        UserWarning, match="tag '.*' will be stripped of its suffix '.*'"
+    ):
+        assert wd.version.startswith("0.2")
 
     wd.commit_testfile()
     wd("git tag 17.33.0-rc")
