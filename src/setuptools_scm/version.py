@@ -141,10 +141,19 @@ class ScmVersion(object):
         self.distance = distance
         self.node = node
         self.time = datetime.datetime.now()
-        self.extra = kw
+        self._extra = kw
         self.dirty = dirty
         self.preformatted = preformatted
         self.branch = branch
+
+    @property
+    def extra(self):
+        warnings.warn(
+            "ScmVersion.extra is deprecated and will be removed in future",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._extra
 
     @property
     def exact(self):
@@ -152,7 +161,7 @@ class ScmVersion(object):
 
     def __repr__(self):
         return self.format_with(
-            "<ScmVersion {tag} d={distance}" " n={node} d={dirty} b={branch} x={extra}>"
+            "<ScmVersion {tag} d={distance} n={node} d={dirty} b={branch}>"
         )
 
     def format_with(self, fmt, **kw):
@@ -162,7 +171,6 @@ class ScmVersion(object):
             distance=self.distance,
             node=self.node,
             dirty=self.dirty,
-            extra=self.extra,
             branch=self.branch,
             **kw
         )

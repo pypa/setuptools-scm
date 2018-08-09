@@ -4,7 +4,7 @@ from .utils import do, trace, data_from_mime, has_command
 from .version import meta, tags_to_versions
 
 
-def _hg_tagdist_normalize_tagcommit(root, tag, dist, node, branch):
+def _hg_tagdist_normalize_tagcommit(config, tag, dist, node, branch):
     dirty = node.endswith("+")
     node = "h" + node.strip("+")
 
@@ -19,14 +19,19 @@ def _hg_tagdist_normalize_tagcommit(root, tag, dist, node, branch):
         tag=tag
     )
     if tag != "0.0":
-        commits = do(["hg", "log", "-r", revset, "--template", "{node|short}"], root)
+        commits = do(
+            ["hg", "log", "-r", revset, "--template", "{node|short}"],
+            config.absolute_root,
+        )
     else:
         commits = True
     trace("normalize", locals())
     if commits or dirty:
-        return meta(tag, distance=dist, node=node, dirty=dirty, branch=branch)
+        return meta(
+            tag, distance=dist, node=node, dirty=dirty, branch=branch, config=config
+        )
     else:
-        return meta(tag)
+        return meta(tag, config=config)
 
 
 def parse(root, config=None):
@@ -40,12 +45,13 @@ def parse(root, config=None):
         return
     node = identity_data.pop(0)
     branch = identity_data.pop(0)
+    if "tip" in identity_data:
+        # tip is not a real tag
+        identity_data.remove("tip")
     tags = tags_to_versions(identity_data)
-    # filter tip in degraded mode on old setuptools
-    tags = [x for x in tags if x != "tip"]
     dirty = node[-1] == "+"
     if tags:
-        return meta(tags[0], dirty=dirty, branch=branch)
+        return meta(tags[0], dirty=dirty, branch=branch, config=config)
 
     if node.strip("+") == "0" * 12:
         trace("initial node", config.absolute_root)
@@ -57,9 +63,7 @@ def parse(root, config=None):
         if tag == "null":
             tag = "0.0"
             dist = int(dist) + 1
-        return _hg_tagdist_normalize_tagcommit(
-            config.absolute_root, tag, dist, node, branch
-        )
+        return _hg_tagdist_normalize_tagcommit(config, tag, dist, node, branch)
     except ValueError:
         pass  # unpacking failed, old hg
 
@@ -80,20 +84,25 @@ def get_graph_distance(root, rev1, rev2="."):
     return len(out.strip().splitlines()) - 1
 
 
-def archival_to_version(data):
+def archival_to_version(data, config=None):
     trace("data", data)
     node = data.get("node", "")[:12]
     if node:
         node = "h" + node
     if "tag" in data:
-        return meta(data["tag"])
+        return meta(data["tag"], config=config)
     elif "latesttag" in data:
-        return meta(data["latesttag"], distance=data["latesttagdistance"], node=node)
+        return meta(
+            data["latesttag"],
+            distance=data["latesttagdistance"],
+            node=node,
+            config=config,
+        )
     else:
-        return meta("0.0", node=node)
+        return meta("0.0", node=node, config=config)
 
 
-def parse_archival(root):
+def parse_archival(root, config=None):
     archival = os.path.join(root, ".hg_archival.txt")
     data = data_from_mime(archival)
-    return archival_to_version(data)
+    return archival_to_version(data, config=config)

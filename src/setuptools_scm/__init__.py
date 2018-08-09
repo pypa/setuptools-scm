@@ -41,7 +41,8 @@ def _call_entrypoint_fn(config, fn):
         warnings.warn(
             "parse functions are required to provide a named argument"
             " 'config' in the future.",
-            PendingDeprecationWarning,
+            category=PendingDeprecationWarning,
+            stacklevel=2,
         )
         return fn(config.absolute_root)
 
@@ -77,7 +78,7 @@ def _do_parse(config):
     if pretended:
         # we use meta here since the pretended version
         # must adhere to the pep to begin with
-        return meta(tag=pretended, preformatted=True)
+        return meta(tag=pretended, preformatted=True, config=config)
 
     if config.parse:
         parse_result = _call_entrypoint_fn(config, config.parse)
