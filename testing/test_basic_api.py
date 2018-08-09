@@ -77,7 +77,7 @@ def test_dump_version(tmpdir):
     assert tmpdir.join("first.txt").read() == "1.0"
     dump_version(sp, "1.0", "first.py")
     content = tmpdir.join("first.py").read()
-    assert repr("1.0") in content
+    assert '"1.0"' in content
     import ast
 
     ast.parse(content)
