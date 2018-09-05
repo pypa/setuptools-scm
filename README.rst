@@ -196,12 +196,6 @@ The currently supported configuration keys are:
     repository to point setuptools_scm at the root of the repository by
     supplying ``__file__``.
 
-:parse:
-  A function that will be used instead of the discovered SCM for parsing the
-  version.
-  Use with caution, this is a function for advanced use, and you should be
-  familiar with the setuptools_scm internals to use it.
-
 :tag_regex:
   A python regex string to extract the version part from any SCM tag.
   The regex needs to contain three named groups prefix, version and suffix,
@@ -209,6 +203,18 @@ The currently supported configuration keys are:
 
   defaults to the value of ``setuptools_scm.config.DEFAULT_TAG_REGEX``
   (see `config.py <src/setuptools_scm/config.py>`_).
+
+:fallback_version:
+  A version string that will be used if no other method for detecting the
+  version worked (e.g., when using a tarball with no metadata).  If this is
+  unset (the default), setuptools_scm will error if it fails to detect the
+  version.
+
+:parse:
+  A function that will be used instead of the discovered SCM for parsing the
+  version.
+  Use with caution, this is a function for advanced use, and you should be
+  familiar with the setuptools_scm internals to use it.
 
 
 To use setuptools_scm in other Python code you can use the

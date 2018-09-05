@@ -120,6 +120,7 @@ def get_version(
     write_to_template=None,
     relative_to=None,
     tag_regex=None,
+    fallback_version=None,
     parse=None,
 ):
     """
@@ -137,6 +138,7 @@ def get_version(
     config.write_to_template = write_to_template
     config.relative_to = relative_to
     config.tag_regex = tag_regex
+    config.fallback_version = fallback_version
     config.parse = parse
 
     parsed_version = _do_parse(config)
