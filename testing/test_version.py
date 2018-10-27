@@ -3,33 +3,36 @@ from setuptools_scm.config import Configuration
 from setuptools_scm.version import meta, simplified_semver_version, tags_to_versions
 
 
+c = Configuration()
+
+
 @pytest.mark.parametrize(
     "version, expected_next",
     [
-        pytest.param(meta("1.0.0"), "1.0.0", id="exact"),
-        pytest.param(meta("1.0"), "1.0.0", id="short_tag"),
+        pytest.param(meta("1.0.0", config=c), "1.0.0", id="exact"),
+        pytest.param(meta("1.0", config=c), "1.0.0", id="short_tag"),
         pytest.param(
-            meta("1.0.0", distance=2, branch="default"),
+            meta("1.0.0", distance=2, branch="default", config=c),
             "1.0.1.dev2",
             id="normal_branch",
         ),
         pytest.param(
-            meta("1.0", distance=2, branch="default"),
+            meta("1.0", distance=2, branch="default", config=c),
             "1.0.1.dev2",
             id="normal_branch_short_tag",
         ),
         pytest.param(
-            meta("1.0.0", distance=2, branch="feature"),
+            meta("1.0.0", distance=2, branch="feature", config=c),
             "1.1.0.dev2",
             id="feature_branch",
         ),
         pytest.param(
-            meta("1.0", distance=2, branch="feature"),
+            meta("1.0", distance=2, branch="feature", config=c),
             "1.1.0.dev2",
             id="feature_branch_short_tag",
         ),
         pytest.param(
-            meta("1.0.0", distance=2, branch="features/test"),
+            meta("1.0.0", distance=2, branch="features/test", config=c),
             "1.1.0.dev2",
             id="feature_in_branch",
         ),

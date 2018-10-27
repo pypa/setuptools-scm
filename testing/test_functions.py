@@ -8,6 +8,8 @@ from setuptools_scm.version import (
     format_version,
     tag_to_version,
 )
+
+from setuptools_scm.config import Configuration
 from setuptools_scm.utils import has_command
 
 PY3 = sys.version_info > (2,)
@@ -33,12 +35,14 @@ def test_next_tag(tag, expected):
     assert guess_next_version(version) == expected
 
 
+c = Configuration()
+
 VERSIONS = {
-    "exact": meta("1.1", distance=None, dirty=False),
-    "zerodistance": meta("1.1", distance=0, dirty=False),
-    "dirty": meta("1.1", distance=None, dirty=True),
-    "distance": meta("1.1", distance=3, dirty=False),
-    "distancedirty": meta("1.1", distance=3, dirty=True),
+    "exact": meta("1.1", distance=None, dirty=False, config=c),
+    "zerodistance": meta("1.1", distance=0, dirty=False, config=c),
+    "dirty": meta("1.1", distance=None, dirty=True, config=c),
+    "distance": meta("1.1", distance=3, dirty=False, config=c),
+    "distancedirty": meta("1.1", distance=3, dirty=True, config=c),
 }
 
 
