@@ -191,3 +191,18 @@ def test_git_feature_branch_increments_major(wd):
     wd("git checkout -b feature/fun")
     wd.commit_testfile()
     assert wd.get_version(version_scheme="python-simplified-semver").startswith("1.1.0")
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/303")
+def test_not_matching_tags(wd):
+    wd.commit_testfile()
+    wd("git tag apache-arrow-0.11.1")
+    wd.commit_testfile()
+    wd("git tag apache-arrow-js-0.9.9")
+    wd.commit_testfile()
+    assert wd.get_version(
+        tag_regex=r"^apache-arrow-([\.0-9]+)$",
+        git_describe_command="git describe --dirty --tags --long --exclude *js* ",
+    ).startswith(
+        "0.11.2"
+    )

@@ -4,6 +4,8 @@ v3.1.0
 * fix #297 - correct the invocation in version_from_scm and deprecate it as its exposed by accident
 * fix #298 - handle git file listing on empty repositories
 * fix #268 - deprecate ScmVersion.extra
+* fix #303 and #283 by adding the option `git_describe_command` to allow the user to control the
+way that `git describe` is called.
 
 v3.0.6
 ======
