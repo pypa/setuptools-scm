@@ -210,6 +210,13 @@ The currently supported configuration keys are:
   defaults to the value of ``setuptools_scm.config.DEFAULT_TAG_REGEX``
   (see `config.py <src/setuptools_scm/config.py>`_).
 
+:git_describe_command:
+  This command will be used instead the default `git describe` command.
+  Use with caution, this is a function for advanced use, and you should be
+  familiar with the setuptools_scm internals to use it.
+
+  The default value is set by ``setuptools_scm.git.DEFAULT_DESCRIBE``
+  (see `git.py <src/setuptools_scm/git.py>`_).
 
 To use setuptools_scm in other Python code you can use the
 ``get_version`` function:
