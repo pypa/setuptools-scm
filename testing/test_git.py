@@ -1,3 +1,4 @@
+import sys
 from setuptools_scm import integration
 from setuptools_scm.utils import do
 from setuptools_scm import git
@@ -98,6 +99,16 @@ def test_git_dirty_notag(wd):
     today = date.today()
     # we are dirty, check for the tag
     assert today.strftime(".d%Y%m%d") in wd.version
+
+
+@pytest.mark.issue(193)
+def test_git_worktree_support(wd, tmpdir):
+    wd.commit_testfile()
+    worktree = tmpdir.join("work_tree")
+    wd("git worktree add -b work-tree %s" % worktree)
+
+    res = do([sys.executable, "-m", "setuptools_scm"], cwd=worktree)
+    assert str(worktree) in res
 
 
 @pytest.fixture
