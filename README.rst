@@ -57,6 +57,49 @@ example:
        # package is not installed
        pass
 
+You can also confirm the version number locally via ``setup.py``:
+
+.. code-block:: shell
+
+    $ python setup.py --version
+
+.. note::
+
+   If you see unusual version numbers for packages but ``python setup.py
+   --version`` reports the expected version number, ensure ``[egg_info]`` is
+   not defined in ``setup.cfg``.
+
+
+``setup.cfg``
+-------------
+
+If using `setuptools 30.3.0
+<https://setuptools.readthedocs.io/en/latest/setuptools.html#configuring-setup-using-setup-cfg-files>`_
+or greater, you can store ``setup_requires`` configuration in ``setup.cfg``.
+However, ``use_scm_version`` must still be placed in ``setup.py``. For example:
+
+.. code:: python
+
+    # setup.py
+    from setuptools import setup
+    setup(
+        use_scm_version=True,
+    )
+
+.. code:: ini
+
+    # setup.cfg
+    [metadata]
+    ...
+
+    [options]
+    setup_requires =
+      setuptools_scm
+    ...
+
+If using this, you must neither the ``[metadata] version`` option nor the
+``[egg_info]`` section are not defined.
+
 
 Programmatic usage
 ------------------
