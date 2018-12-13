@@ -110,7 +110,7 @@ version of ``setuptools``:
 
     # pyproject.toml
     [build-system]
-    requires = ["setuptools>=30.3.0", "wheel"]
+    requires = ["setuptools>=30.3.0", "wheel", "setuptools_scm"]
 
 For more information, refer to the `setuptools issue #1002
 <https://github.com/pypa/setuptools/issues/1002>`_.
