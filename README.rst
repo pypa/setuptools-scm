@@ -97,8 +97,23 @@ However, ``use_scm_version`` must still be placed in ``setup.py``. For example:
       setuptools_scm
     ...
 
-If using this, you must neither the ``[metadata] version`` option nor the
-``[egg_info]`` section are not defined.
+.. important::
+
+    Ensure neither the ``[metadata] version`` option nor the ``[egg_info]``
+    section are not defined, as these will interfere with ``setuptools_scm``.
+
+You may also need to define a ``pyproject.toml`` file (`PEP-0518
+<https://www.python.org/dev/peps/pep-0518>`_) to ensure you have the required
+version of ``setuptools``:
+
+.. code:: ini
+
+    # pyproject.toml
+    [build-system]
+    requires = ["setuptools>=30.3.0", "wheel"]
+
+For more information, refer to the `setuptools issue #1002
+<https://github.com/pypa/setuptools/issues/1002>`_.
 
 
 Programmatic usage
