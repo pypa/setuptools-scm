@@ -107,7 +107,7 @@ def test_git_worktree_support(wd, tmpdir):
     worktree = tmpdir.join("work_tree")
     wd("git worktree add -b work-tree %s" % worktree)
 
-    res = do([sys.executable, "-m", "setuptools_scm"], cwd=worktree)
+    res = do([sys.executable, "-m", "setuptools_scm", "ls"], cwd=worktree)
     assert str(worktree) in res
 
 
