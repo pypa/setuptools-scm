@@ -99,8 +99,8 @@ However, ``use_scm_version`` must still be placed in ``setup.py``. For example:
 
 .. important::
 
-    Ensure neither the ``[metadata] version`` option nor the ``[egg_info]``
-    section are not defined, as these will interfere with ``setuptools_scm``.
+    Ensure neither the ``[metadata]`` ``version`` option nor the ``[egg_info]``
+    section are defined, as these will interfere with ``setuptools_scm``.
 
 You may also need to define a ``pyproject.toml`` file (`PEP-0518
 <https://www.python.org/dev/peps/pep-0518>`_) to ensure you have the required
