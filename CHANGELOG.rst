@@ -1,3 +1,8 @@
+next
+====
+
+* fix #198 by adding the ``fallback_version`` option, which sets the version to be used when everything else fails.
+
 v3.2.0
 ======
 
