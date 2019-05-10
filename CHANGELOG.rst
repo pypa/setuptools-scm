@@ -1,3 +1,9 @@
+v3.3.1
+======
+
+* fix #333 (regression from #198) - use a specific fallback root when calling fallbacks. Remove old
+  hack that resets the root when fallback entrypoints are present.
+
 v3.3.0
 ======
 
