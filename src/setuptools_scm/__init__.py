@@ -95,7 +95,9 @@ def _do_parse(config):
         version = parse_result or _version_from_entrypoints(config, fallback=True)
     else:
         # include fallbacks after dropping them from the main entrypoint
-        version = _version_from_entrypoints(config) or _version_from_entrypoints(config, fallback=True)
+        version = _version_from_entrypoints(config) or _version_from_entrypoints(
+            config, fallback=True
+        )
 
     if version:
         return version
