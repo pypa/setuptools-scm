@@ -61,6 +61,7 @@ class Configuration(object):
         self.write_to = ""
         self.write_to_template = None
         self.fallback_version = None
+        self.fallback_root = _check_absolute_root(".", None)
         self.parse = None
         self.tag_regex = DEFAULT_TAG_REGEX
         self.git_describe_command = None
