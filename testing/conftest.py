@@ -63,7 +63,7 @@ class Wd(object):
         __tracebackhide__ = True
         from setuptools_scm import get_version
 
-        version = get_version(root=str(self.cwd), **kw)
+        version = get_version(root=str(self.cwd), fallback_root=str(self.cwd), **kw)
         print(version)
         return version
 

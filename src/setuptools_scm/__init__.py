@@ -31,7 +31,7 @@ def version_from_scm(root):
     config = Configuration()
     config.root = root
     # TODO: Is it API?
-    return _version_from_entrypoint(config, "setuptools_scm.parse_scm")
+    return _version_from_entrypoints(config)
 
 
 def _call_entrypoint_fn(root, config, fn):
@@ -47,11 +47,12 @@ def _call_entrypoint_fn(root, config, fn):
         return fn(root)
 
 
-def _version_from_entrypoint(config, entrypoint, fallback=False):
+def _version_from_entrypoints(config, fallback=False):
     if fallback:
-        entrypoint += "_fallback"
+        entrypoint = "setuptools_scm.parse_scm_fallback"
         root = config.fallback_root
     else:
+        entrypoint = "setuptools_scm.parse_scm"
         root = config.absolute_root
     for ep in iter_matching_entrypoints(root, entrypoint):
         version = _call_entrypoint_fn(root, config, ep.load())
@@ -91,16 +92,10 @@ def _do_parse(config):
             raise TypeError(
                 "version parse result was a string\nplease return a parsed version"
             )
-        version = parse_result or _version_from_entrypoint(
-            config, "setuptools_scm.parse_scm", fallback=True
-        )
+        version = parse_result or _version_from_entrypoints(config, fallback=True)
     else:
         # include fallbacks after dropping them from the main entrypoint
-        version = _version_from_entrypoint(
-            config, "setuptools_scm.parse_scm"
-        ) or _version_from_entrypoint(
-            config, "setuptools_scm.parse_scm", fallback=True
-        )
+        version = _version_from_entrypoints(config) or _version_from_entrypoints(config, fallback=True)
 
     if version:
         return version
@@ -126,6 +121,7 @@ def get_version(
     relative_to=None,
     tag_regex=None,
     fallback_version=None,
+    fallback_root=".",
     parse=None,
     git_describe_command=None,
 ):
@@ -138,6 +134,7 @@ def get_version(
 
     config = Configuration()
     config.root = root
+    config.fallback_root = fallback_root
     config.version_scheme = version_scheme
     config.local_scheme = local_scheme
     config.write_to = write_to

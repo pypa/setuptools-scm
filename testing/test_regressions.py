@@ -43,10 +43,10 @@ def test_pip_egg_info(tmpdir, monkeypatch):
     )
 
     with pytest.raises(LookupError):
-        get_version(root=p.strpath)
+        get_version(root=p.strpath, fallback_root=p.strpath)
 
     p.ensure("pip-egg-info/random.egg-info/PKG-INFO").write("Version: 1.0")
-    assert get_version(root=p.strpath) == "1.0"
+    assert get_version(root=p.strpath, fallback_root=p.strpath) == "1.0"
 
 
 @pytest.mark.issue(164)

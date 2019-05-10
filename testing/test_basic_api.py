@@ -23,8 +23,9 @@ def test_data_from_mime(tmpdir):
     assert res == {"name": "test", "revision": "1"}
 
 
-def test_version_from_pkginfo(wd):
+def test_version_from_pkginfo(wd, monkeypatch):
     wd.write("PKG-INFO", "Version: 0.1")
+
     assert wd.version == "0.1"
 
     # replicate issue 167
