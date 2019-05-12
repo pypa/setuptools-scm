@@ -1,3 +1,8 @@
+v3.3.3
+======
+
+* add eggs  for python3.7 and 3.8 to the deploy
+
 v3.3.2
 ======
 
