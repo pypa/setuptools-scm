@@ -22,6 +22,9 @@ python:
 - '3.4'
 - '3.5'
 - '3.6'
+- '3.7'
+- '3.8-dev'
+dist: xenial  # needed for 3.7+
 env:
 - TOXENV=py-test
 
