@@ -1,3 +1,9 @@
+v3.3.2
+======
+
+
+* fix #335 - fix python3.8 support and add builds for up to python3.8
+
 v3.3.1
 ======
 
