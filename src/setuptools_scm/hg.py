@@ -1,4 +1,6 @@
 import os
+import re
+
 from .config import Configuration
 from .utils import do, trace, data_from_mime, has_command
 from .version import meta, tags_to_versions
@@ -58,7 +60,7 @@ def parse(root, config=None):
         return meta("0.0", config=config, dirty=dirty, branch=branch)
 
     try:
-        tag = get_latest_normalizable_tag(config.absolute_root)
+        tag = get_latest_normalizable_tag(config)
         dist = get_graph_distance(config.absolute_root, tag)
         if tag == "null":
             tag = "0.0"
@@ -68,15 +70,23 @@ def parse(root, config=None):
         pass  # unpacking failed, old hg
 
 
-def get_latest_normalizable_tag(root):
-    # Gets all tags containing a '.' (see #229) from oldest to newest
+def get_latest_normalizable_tag(config):
+    """Return the most recent tag that matches tag_regex
+
+    """
+    # Get all tags containing a period, then filter using tag_regex.
+    root = config.absolute_root
     cmd = [
         "hg", "log", "-r", "ancestors(.) and tag('re:\\.')", "--template", "{tags}\n"
     ]
     outlines = do(cmd, root).split()
     if not outlines:
         return "null"
-    tag = outlines[-1].split()[-1]
+    tag_regex = re.compile(config.tag_regex)
+    try:
+        tag = next(v for v in reversed(outlines) if tag_regex.match(v))
+    except StopIteration:
+        tag = "null"
     return tag
 
 
