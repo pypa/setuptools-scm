@@ -22,6 +22,9 @@ python:
 - '3.4'
 - '3.5'
 - '3.6'
+- '3.7'
+- '3.8-dev'
+dist: xenial  # needed for 3.7+
 env:
 - TOXENV=py-test
 
@@ -62,40 +65,28 @@ jobs:
         <<: *pypi
         distributions: "sdist bdist_wheel"
 
-    - <<: *deploy
+    - &bdist_egg
+      <<: *deploy
       name: "python eggs 2.7"
       python: '2.7'
       deploy:
         <<: *pypi
         distributions: "bdist_egg"
-    - <<: *deploy
+    - <<: *bdist_egg
       name: "python eggs 3.4"
       python: '3.4'
-      deploy:
-        <<: *pypi
-        distributions: "bdist_egg"
-
-
-    - <<: *deploy
+    - <<: *bdist_egg
       name: "python eggs 3.5"
       python: '3.5'
-      deploy:
-        <<: *pypi
-        distributions: "bdist_egg"
-
-    - <<: *deploy
+    - <<: *bdist_egg
       name: "python eggs 3.6"
       python: '3.6'
-      deploy:
-        <<: *pypi
-        distributions: "bdist_egg"
-
-    # - <<: *eggs
-    #   name: "python eggs 3.7"
-    #   python: '3.7'
-    #  deploy:
-    #    <<: *pypi
-    #    distributions: "bdist_egg"
+    - <<: *bdist_egg
+      name: "python eggs 3.7"
+      python: '3.7'
+    - <<: *bdist_egg
+      name: "python eggs 3.8"
+      python: '3.8-dev'
 
 cache:
   directories:

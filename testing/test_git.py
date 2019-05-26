@@ -1,4 +1,5 @@
 import sys
+
 from setuptools_scm import integration
 from setuptools_scm.utils import do
 from setuptools_scm import git
@@ -28,6 +29,19 @@ def wd(wd):
 def test_parse_describe_output(given, tag, number, node, dirty):
     parsed = git._git_parse_describe(given)
     assert parsed == (tag, number, node, dirty)
+
+
+def test_root_relative_to(tmpdir, wd, monkeypatch):
+    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
+    p = wd.cwd.ensure("sub/package", dir=1)
+    p.join("setup.py").write(
+        """from setuptools import setup
+setup(use_scm_version={"root": "../..",
+                       "relative_to": __file__})
+"""
+    )
+    res = do((sys.executable, "setup.py", "--version"), p)
+    assert res == "0.1.dev0"
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/298")

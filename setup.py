@@ -76,6 +76,7 @@ arguments = dict(
         .hg_archival.txt = setuptools_scm.hg:parse_archival
         PKG-INFO = setuptools_scm.hacks:parse_pkginfo
         pip-egg-info = setuptools_scm.hacks:parse_pip_egg_info
+        setup.py = setuptools_scm.hacks:fallback_version
 
         [setuptools_scm.files_command]
         .hg = setuptools_scm.file_finder_hg:hg_find_files
@@ -103,6 +104,7 @@ arguments = dict(
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Software Development :: Libraries",
         "Topic :: Software Development :: Version Control",
         "Topic :: System :: Software Distribution",

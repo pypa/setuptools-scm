@@ -1,4 +1,5 @@
 import os
+import sys
 import py
 import pytest
 
@@ -22,8 +23,9 @@ def test_data_from_mime(tmpdir):
     assert res == {"name": "test", "revision": "1"}
 
 
-def test_version_from_pkginfo(wd):
+def test_version_from_pkginfo(wd, monkeypatch):
     wd.write("PKG-INFO", "Version: 0.1")
+
     assert wd.version == "0.1"
 
     # replicate issue 167
@@ -54,6 +56,18 @@ def test_version_from_scm(wd):
 def test_root_parameter_pass_by(monkeypatch, tmpdir):
     assert_root(monkeypatch, tmpdir)
     setuptools_scm.get_version(root=tmpdir.strpath)
+
+
+def test_fallback(tmpdir, monkeypatch):
+    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
+    p = tmpdir.ensure("sub/package", dir=1)
+    p.join("setup.py").write(
+        """from setuptools import setup
+setup(use_scm_version={"fallback_version": "12.34"})
+"""
+    )
+    res = do((sys.executable, "setup.py", "--version"), p)
+    assert res == "12.34"
 
 
 @pytest.mark.parametrize(

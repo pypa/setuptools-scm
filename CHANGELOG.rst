@@ -1,3 +1,27 @@
+* fix #305 - ensure the git file finder closes filedescriptors even when errors happen
+
+v3.3.3
+======
+
+* add eggs  for python3.7 and 3.8 to the deploy
+
+v3.3.2
+======
+
+
+* fix #335 - fix python3.8 support and add builds for up to python3.8
+
+v3.3.1
+======
+
+* fix #333 (regression from #198) - use a specific fallback root when calling fallbacks. Remove old
+  hack that resets the root when fallback entrypoints are present.
+
+v3.3.0
+======
+
+* fix #198 by adding the ``fallback_version`` option, which sets the version to be used when everything else fails.
+
 v3.2.0
 ======
 
