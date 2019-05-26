@@ -1,3 +1,5 @@
+* fix #305 - ensure the git file finder closes filedescriptors even when errors happen
+
 v3.3.3
 ======
 
