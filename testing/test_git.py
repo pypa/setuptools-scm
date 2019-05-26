@@ -115,6 +115,16 @@ def test_git_dirty_notag(wd):
     assert today.strftime(".d%Y%m%d") in wd.version
 
 
+@pytest.mark.issue(193)
+def test_git_worktree_support(wd, tmpdir):
+    wd.commit_testfile()
+    worktree = tmpdir.join("work_tree")
+    wd("git worktree add -b work-tree %s" % worktree)
+
+    res = do([sys.executable, "-m", "setuptools_scm", "ls"], cwd=worktree)
+    assert str(worktree) in res
+
+
 @pytest.fixture
 def shallow_wd(wd, tmpdir):
     wd.commit_testfile()
