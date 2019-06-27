@@ -5,7 +5,7 @@ setuptools_scm
 in SCM metadata instead of declaring them as the version argument
 or in a SCM managed file.
 
-Additionally ``setuptools_scm`` provides setuptools with a  list of files that are managed by the scm
+Additionally ``setuptools_scm`` provides setuptools with a list of files that are managed by the SCM
 (aka automatically adding all of the scm managed files to the sdist).
 Unwanted files must be excluded by discarding them via ``MANIFEST.in``
 
