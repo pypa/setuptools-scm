@@ -7,7 +7,7 @@ or in a SCM managed file.
 
 Additionally ``setuptools_scm`` provides setuptools with a list of files that are managed by the SCM
 (ie. it automatically adds all of the SCM-managed files to the sdist).
-Unwanted files must be excluded by discarding them via ``MANIFEST.in``
+Unwanted files must be excluded by discarding them via ``MANIFEST.in``.
 
 .. image:: https://travis-ci.org/pypa/setuptools_scm.svg?branch=master
     :target: https://travis-ci.org/pypa/setuptools_scm
