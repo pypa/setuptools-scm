@@ -81,12 +81,8 @@ class Wd(object):
 
 
 @pytest.yield_fixture(autouse=True)
-def debug_mode():
-    from setuptools_scm import utils
-
-    utils.DEBUG = True
-    yield
-    utils.DEBUG = False
+def debug_mode(monkeypatch):
+    monkeypatch.setattr("setuptools_scm.utils.DEBUG", True)
 
 
 @pytest.fixture
