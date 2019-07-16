@@ -61,6 +61,7 @@ class PipVenv(object):
 
         self = cls(path)
         self.do("bin/pip install wheel -e {setuptools_scm}".format(setuptools_scm=ROOT))
+        self.do("bin/pip install -U pip")
         return self
 
     def do(self, cmd):
