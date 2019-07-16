@@ -89,19 +89,21 @@ def _popen_pipes(cmd, cwd):
 
 
 def do_ex(cmd, cwd="."):
-    trace("cmd", repr(cmd))
+    trace("cmd:", cmd)
     if os.name == "posix" and not isinstance(cmd, (list, tuple)):
         cmd = shlex.split(cmd)
 
     p = _popen_pipes(cmd, cwd)
     out, err = p.communicate()
+    out = ensure_stripped_str(out)
+    err = ensure_stripped_str(err)
     if out:
-        trace("out", repr(out))
+        trace("out:", "    ".join(out.splitlines(True)))
     if err:
-        trace("err", repr(err))
+        trace("err:", "    ".join(err.splitlines(True)))
     if p.returncode:
-        trace("ret", p.returncode)
-    return ensure_stripped_str(out), ensure_stripped_str(err), p.returncode
+        trace("ret:", p.returncode)
+    return out, err, p.returncode
 
 
 def do(cmd, cwd="."):

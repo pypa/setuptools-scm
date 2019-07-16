@@ -53,6 +53,6 @@ cache:
   - $HOME/.cache/pip
   - $HOME/.cache/pre-commit
 
-install: pip install tox
+install: pip install tox tox-venv
 script:
 - python testing/runtests_travis.py
