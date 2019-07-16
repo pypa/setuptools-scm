@@ -127,7 +127,7 @@ def test_package_builds_wheel(wanted_files, wd, pip_venv, tmp_path):  # NOQA
     wheel_dir = tmp_path.joinpath("wheels")
     wheel_dir.mkdir()
     pip_venv.do(
-        "pip wheel {wd.cwd} --no-build-isolation --wheel-dir {wheel_dir}".format(
+        "bin/pip wheel {wd.cwd} --no-build-isolation --wheel-dir {wheel_dir}".format(
             wd=wd, wheel_dir=wheel_dir
         )
     )
