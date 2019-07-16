@@ -49,7 +49,7 @@ PYPROJECT_FLIT = "pyproject.toml", ""
 
 
 @attr.s
-class PipVenv:
+class PipVenv(object):
     path = attr.ib()
 
     @classmethod
