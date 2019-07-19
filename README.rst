@@ -212,6 +212,21 @@ Builtin mechanisms for obtaining version numbers
     Git archives are not supported due to Git shortcomings
 
 
+File finders: automatic inclusion of tracked package data
+---------------------------------------------------------
+
+By using ``setuptools_scm``, the default behavior of `include_package_data
+<https://setuptools.readthedocs.io/en/latest/setuptools.html#including-data-files>`_
+is altered, such that all data files in packages that are tracked by your SCM
+are included by default. That is: when using ``setuptools_scm``, it is not
+needed to explicitly graft or include any package data in ``MANIFEST.in``. To
+exclude files ``MANIFEST.in`` may still be used.
+
+This mechanism is implemented using a `file_finders
+<https://setuptools.readthedocs.io/en/latest/setuptools.html#adding-support-for-revision-control-systems>`_
+entry point.
+
+
 Configuration parameters
 ------------------------
 
