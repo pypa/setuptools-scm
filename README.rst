@@ -10,6 +10,9 @@ It also handles file finders for the supported SCMs.
 .. image:: https://travis-ci.org/pypa/setuptools_scm.svg?branch=master
     :target: https://travis-ci.org/pypa/setuptools_scm
 
+.. image:: https://tidelift.com/badges/github/pypa/setuptools_scm
+   :target: https://tidelift.com/subscription/pkg/pypi-setuptools_scm?utm_source=pypi-setuptools_scm&utm_medium=readme
+
 ``setup.py`` usage
 ------------------
 
@@ -437,3 +440,10 @@ trackers, chat rooms, and mailing lists is expected to follow the
 `PyPA Code of Conduct`_.
 
 .. _PyPA Code of Conduct: https://www.pypa.io/en/latest/code-of-conduct/
+
+Security Contact
+================
+
+To report a security vulnerability, please use the
+`Tidelift security contact <https://tidelift.com/security>`_.
+Tidelift will coordinate the fix and disclosure.
