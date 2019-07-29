@@ -318,7 +318,8 @@ Example configuration in ``setup.py`` format:
 
     setup(
         use_scm_version={
-            'write_to': 'version.txt',
+            'write_to': 'version.py',
+            'write_to_template': '__version__ = "{version}"',
             'tag_regex': r'^(?P<prefix>v)?(?P<version>[^\+]+)(?P<suffix>.*)?$',
         }
     )
