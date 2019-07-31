@@ -215,19 +215,24 @@ Builtin mechanisms for obtaining version numbers
     Git archives are not supported due to Git shortcomings
 
 
-File finders: automatic inclusion of tracked package data
----------------------------------------------------------
+File finders hook makes most of MANIFEST.in unnecessary
+-------------------------------------------------------
 
-By using ``setuptools_scm``, the default behavior of `include_package_data
-<https://setuptools.readthedocs.io/en/latest/setuptools.html#including-data-files>`_
-is altered, such that all data files in packages that are tracked by your SCM
-are included by default. That is: when using ``setuptools_scm``, it is not
-needed to explicitly graft or include any package data in ``MANIFEST.in``. To
-exclude files ``MANIFEST.in`` may still be used.
-
-This mechanism is implemented using a `file_finders
+``setuptools_scm`` implements a `file_finders
 <https://setuptools.readthedocs.io/en/latest/setuptools.html#adding-support-for-revision-control-systems>`_
-entry point.
+entry point which returns all files tracked by by your SCM. This eliminates
+the need for a manually constructed ``MANIFEST.in`` in most cases where this
+would be required when not using ``setuptools_scm``, namely:
+
+* To ensure all relevant files are packaged when running the ``sdist`` command.
+
+* When using `include_package_data <https://setuptools.readthedocs.io/en/latest/setuptools.html#including-data-files>`_
+  to include package data as part of the ``build`` or ``bdist_wheel``.
+
+``MANIFEST.in`` may still be used: anything defined there overrides the hook.
+This is mostly useful to exclude files tracked in your SCM from packages,
+although in principle it can be used to explicitly include non-tracked files
+too.
 
 
 Configuration parameters
