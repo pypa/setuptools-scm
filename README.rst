@@ -220,7 +220,7 @@ File finders hook makes most of MANIFEST.in unnecessary
 
 ``setuptools_scm`` implements a `file_finders
 <https://setuptools.readthedocs.io/en/latest/setuptools.html#adding-support-for-revision-control-systems>`_
-entry point which returns all files tracked by by your SCM. This eliminates
+entry point which returns all files tracked by your SCM. This eliminates
 the need for a manually constructed ``MANIFEST.in`` in most cases where this
 would be required when not using ``setuptools_scm``, namely:
 
@@ -286,7 +286,7 @@ The currently supported configuration keys are:
 
 :fallback_version:
     A version string that will be used if no other method for detecting the
-    version worked (e.g., when using a tarball with no metadata).  If this is
+    version worked (e.g., when using a tarball with no metadata). If this is
     unset (the default), setuptools_scm will error if it fails to detect the
     version.
 
