@@ -359,7 +359,7 @@ Adding a new SCM
     entrypoint's name. E.g. for the built-in entrypoint for git the
     entrypoint is named ``.git`` and references ``setuptools_scm.git:parse``
 
-  The return value MUST be a ``setuptools.version.ScmVersion`` instance
+  The return value MUST be a ``setuptools_scm.version.ScmVersion`` instance
   created by the function ``setuptools_scm.version:meta``.
 
 ``setuptools_scm.files_command``
@@ -374,7 +374,7 @@ Version number construction
 
 ``setuptools_scm.version_scheme``
     Configures how the version number is constructed given a
-    ``setuptools.version.ScmVersion`` instance and should return a string
+    ``setuptools_scm.version.ScmVersion`` instance and should return a string
     representing the version.
 
     Available implementations:
@@ -384,7 +384,7 @@ Version number construction
 
 ``setuptools_scm.local_scheme``
     Configures how the local part of a version is rendered given a
-    ``setuptools.version.ScmVersion`` instance and should return a string
+    ``setuptools_scm.version.ScmVersion`` instance and should return a string
     representing the local version.
 
     Available implementations:
