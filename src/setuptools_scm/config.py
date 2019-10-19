@@ -105,3 +105,10 @@ class Configuration(object):
     @tag_regex.setter
     def tag_regex(self, value):
         self._tag_regex = _check_tag_regex(value)
+
+    @classmethod
+    def from_file(cls):
+        """
+        Read Configuration from pyproject.toml (or similar)
+        """
+        # stubbed

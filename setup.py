@@ -68,6 +68,9 @@ arguments = dict(
         [setuptools.file_finders]
         setuptools_scm = setuptools_scm.integration:find_files
 
+        [setuptools.finalize_distribution_options]
+        setuptools_scm = setuptools_scm.integration:infer_version
+
         [setuptools_scm.parse_scm]
         .hg = setuptools_scm.hg:parse
         .git = setuptools_scm.git:parse
