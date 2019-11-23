@@ -113,8 +113,8 @@ arguments = dict(
         "Topic :: System :: Software Distribution",
         "Topic :: Utilities",
     ],
-    install_requires=["toml"],
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
+    extras_require=dict(toml=["toml"]),
 )
 
 if __name__ == "__main__":
