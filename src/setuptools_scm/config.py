@@ -114,5 +114,5 @@ class Configuration(object):
         with open(name) as strm:
             defn = __import__('toml').load(strm)
         config = cls()
-        vars(config).update(defn.get('setuptools_scm', {}))
+        vars(config).update(defn.get("tool",{}).get('setuptools_scm', {}))
         return config
