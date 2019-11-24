@@ -49,7 +49,6 @@ class Configuration(object):
     parse = None
     _tag_regex = None
     _absolute_root = None
-    enabled = False
 
     def __init__(self, relative_to=None, root="."):
         # TODO:
@@ -107,15 +106,18 @@ class Configuration(object):
     def tag_regex(self, value):
         self._tag_regex = _check_tag_regex(value)
 
+    def _load(self, values):
+        vars(self).update(values)
+        return self
+
     @classmethod
     def from_file(cls, name="pyproject.toml"):
         """
-        Read Configuration from pyproject.toml (or similar)
+        Read Configuration from pyproject.toml (or similar).
+        Raises exceptions when file is not found or toml is
+        not installed or the file has invalid format or does
+        not contain the [tool.setuptools_scm] section.
         """
-        if not os.path.isfile(name):
-            return cls()
         with open(name) as strm:
             defn = __import__("toml").load(strm)
-        config = cls()
-        vars(config).update(defn.get("tool", {}).get("setuptools_scm", {}))
-        return config
+        return cls()._load(defn.get("tool", {})["setuptools_scm"])

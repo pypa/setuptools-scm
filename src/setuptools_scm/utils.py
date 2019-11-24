@@ -10,6 +10,7 @@ import subprocess
 import os
 import io
 import platform
+import traceback
 
 
 DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
@@ -23,6 +24,10 @@ def trace(*k):
     if DEBUG:
         print(*k)
         sys.stdout.flush()
+
+
+def trace_exception():
+    DEBUG and traceback.print_exc()
 
 
 def ensure_stripped_str(str_or_bytes):

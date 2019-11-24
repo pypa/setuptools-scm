@@ -80,9 +80,6 @@ def dump_version(root, version, write_to, template=None):
 
 
 def _do_parse(config):
-    if not config.enabled:
-        return
-
     pretended = os.environ.get(PRETEND_KEY)
     if pretended:
         # we use meta here since the pretended version
@@ -149,7 +146,6 @@ def get_version(
     config.fallback_version = fallback_version
     config.parse = parse
     config.git_describe_command = git_describe_command
-    config.enabled = True
     return _get_version(config)
 
 

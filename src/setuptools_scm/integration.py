@@ -2,7 +2,7 @@ from pkg_resources import iter_entry_points
 
 from .version import _warn_if_setuptools_outdated
 from .config import Configuration
-from .utils import do
+from .utils import do, trace_exception
 from . import get_version, _get_version
 
 
@@ -32,6 +32,8 @@ def find_files(path=""):
 
 
 def infer_version(dist):
-    version = _get_version(Configuration.from_file())
-    if version:
-        dist.metadata.version = version
+    try:
+        config = Configuration.from_file()
+    except Exception:
+        return trace_exception()
+    dist.metadata.version = _get_version(config)

@@ -24,6 +24,5 @@ def test_tag_regex(tag, expected_version):
 
 def test_config_from_pyproject(tmpdir):
     fn = tmpdir / "pyproject.toml"
-    fn.write_text("[tool.setuptools_scm]\nenabled = true\n", encoding="utf-8")
-    config = Configuration.from_file(str(fn))
-    assert config.enabled
+    fn.write_text("[tool.setuptools_scm]\n", encoding="utf-8")
+    assert Configuration.from_file(str(fn))

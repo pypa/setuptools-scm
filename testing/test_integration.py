@@ -8,7 +8,6 @@ def test_pyproject_support(tmpdir, monkeypatch):
     pkg = tmpdir.ensure("package", dir=42)
     pkg.join("pyproject.toml").write(
         """[tool.setuptools_scm]
-enabled = true
 fallback_version = "12.34"
 """
     )
