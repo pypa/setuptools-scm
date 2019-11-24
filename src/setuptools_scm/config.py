@@ -49,6 +49,7 @@ class Configuration(object):
     parse = None
     _tag_regex = None
     _absolute_root = None
+    enabled = False
 
     def __init__(self, relative_to=None, root="."):
         # TODO:
