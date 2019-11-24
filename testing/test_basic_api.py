@@ -98,7 +98,6 @@ def test_dump_version(tmpdir):
 
 
 def test_parse_plain_fails(recwarn):
-
     def parse(root):
         return "tricked you"
 

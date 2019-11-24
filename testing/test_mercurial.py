@@ -16,7 +16,9 @@ def wd(wd):
 archival_mapping = {
     "1.0": {"tag": "1.0"},
     "1.1.dev3+h000000000000": {
-        "latesttag": "1.0", "latesttagdistance": "3", "node": "0" * 20
+        "latesttag": "1.0",
+        "latesttagdistance": "3",
+        "node": "0" * 20,
     },
     "0.0": {"node": "0" * 20},
     "1.2.2": {"tag": "release-1.2.2"},

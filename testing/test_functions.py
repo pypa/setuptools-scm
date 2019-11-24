@@ -16,7 +16,6 @@ PY3 = sys.version_info > (2,)
 
 
 class MockTime(object):
-
     def __format__(self, *k):
         return "time"
 
