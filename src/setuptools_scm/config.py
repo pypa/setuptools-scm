@@ -112,6 +112,8 @@ class Configuration(object):
         """
         Read Configuration from pyproject.toml (or similar)
         """
+        if not os.path.isfile(name):
+            return cls()
         with open(name) as strm:
             defn = __import__("toml").load(strm)
         config = cls()
