@@ -107,12 +107,12 @@ class Configuration(object):
         self._tag_regex = _check_tag_regex(value)
 
     @classmethod
-    def from_file(cls, name='pyproject.toml'):
+    def from_file(cls, name="pyproject.toml"):
         """
         Read Configuration from pyproject.toml (or similar)
         """
         with open(name) as strm:
-            defn = __import__('toml').load(strm)
+            defn = __import__("toml").load(strm)
         config = cls()
-        vars(config).update(defn.get("tool",{}).get('setuptools_scm', {}))
+        vars(config).update(defn.get("tool", {}).get("setuptools_scm", {}))
         return config
