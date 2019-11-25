@@ -16,10 +16,9 @@ init:
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
 
   - ECHO "Updating Environment"
-  - python -m pip install -U setuptools
   - python -m pip install -U pip
   - python -m pip install -U wheel
-  - python -m pip install -U tox
+  - python -m pip install -U --upgrade-strategy=eager tox
 
 
 install:
