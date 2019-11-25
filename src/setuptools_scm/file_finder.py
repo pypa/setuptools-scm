@@ -31,10 +31,9 @@ def scm_find_files(path, scm_files, scm_dirs):
             # directory not in scm, don't walk it's content
             dirnames[:] = []
             continue
-        if (
-            os.path.islink(dirpath)
-            and not os.path.relpath(realdirpath, realpath).startswith(os.pardir)
-        ):
+        if os.path.islink(dirpath) and not os.path.relpath(
+            realdirpath, realpath
+        ).startswith(os.pardir):
             # a symlink to a directory not outside path:
             # we keep it in the result and don't walk its content
             res.append(os.path.join(path, os.path.relpath(dirpath, path)))

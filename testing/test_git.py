@@ -228,6 +228,4 @@ def test_not_matching_tags(wd):
     assert wd.get_version(
         tag_regex=r"^apache-arrow-([\.0-9]+)$",
         git_describe_command="git describe --dirty --tags --long --exclude *js* ",
-    ).startswith(
-        "0.11.2"
-    )
+    ).startswith("0.11.2")

@@ -34,11 +34,11 @@ def _parse_version_tag(tag, config):
 
         result = {
             "version": match.group(key),
-            "prefix": match.group(0)[:match.start(key)],
-            "suffix": match.group(0)[match.end(key):],
+            "prefix": match.group(0)[: match.start(key)],
+            "suffix": match.group(0)[match.end(key) :],
         }
 
-    trace("tag '%s' parsed to %s" % (tag, result))
+    trace("tag '{}' parsed to {}".format(tag, result))
     return result
 
 
@@ -89,7 +89,7 @@ def tag_to_version(tag, config=None):
 
     tagdict = _parse_version_tag(tag, config)
     if not isinstance(tagdict, dict) or not tagdict.get("version", None):
-        warnings.warn("tag %r no version found" % (tag,))
+        warnings.warn("tag {!r} no version found".format(tag))
         return None
 
     version = tagdict["version"]
@@ -97,7 +97,9 @@ def tag_to_version(tag, config=None):
 
     if tagdict.get("suffix", ""):
         warnings.warn(
-            "tag %r will be stripped of its suffix '%s'" % (tag, tagdict["suffix"])
+            "tag {!r} will be stripped of its suffix '{}'".format(
+                tag, tagdict["suffix"]
+            )
         )
 
     if VERSION_CLASS is not None:
@@ -122,7 +124,6 @@ def tags_to_versions(tags, config=None):
 
 
 class ScmVersion(object):
-
     def __init__(
         self,
         tag_version,

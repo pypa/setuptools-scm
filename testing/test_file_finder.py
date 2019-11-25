@@ -48,9 +48,8 @@ def test_case(inwd):
     (inwd.cwd / "CamelFile").ensure(file=True)
     (inwd.cwd / "file2").ensure(file=True)
     inwd.add_and_commit()
-    assert (
-        set(find_files())
-        == _sep({"CamelFile", "file2", "file1", "adir/filea", "bdir/fileb"})
+    assert set(find_files()) == _sep(
+        {"CamelFile", "file2", "file1", "adir/filea", "bdir/fileb"}
     )
 
 
@@ -73,9 +72,9 @@ def test_symlink_dir_source_not_in_scm(inwd):
 def test_symlink_file(inwd):
     (inwd.cwd / "adir" / "file1link").mksymlinkto("../file1")
     inwd.add_and_commit()
-    assert (
-        set(find_files("adir")) == _sep({"adir/filea", "adir/file1link"})  # -> ../file1
-    )
+    assert set(find_files("adir")) == _sep(
+        {"adir/filea", "adir/file1link"}
+    )  # -> ../file1
 
 
 @pytest.mark.skipif(
@@ -130,8 +129,8 @@ def test_empty_subdir(inwd):
     subdir.ensure(dir=True)
     (subdir / "xfile").ensure(file=True)
     inwd.add_and_commit()
-    assert (
-        set(find_files("adir")) == _sep({"adir/filea", "adir/emptysubdir/subdir/xfile"})
+    assert set(find_files("adir")) == _sep(
+        {"adir/filea", "adir/emptysubdir/subdir/xfile"}
     )
 
 
@@ -142,18 +141,15 @@ def test_double_include_through_symlink(inwd):
     (inwd.cwd / "adir" / "datalink").mksymlinkto("../data")
     (inwd.cwd / "adir" / "filealink").mksymlinkto("filea")
     inwd.add_and_commit()
-    assert (
-        set(find_files())
-        == _sep(
-            {
-                "file1",
-                "adir/datalink",  # -> ../data
-                "adir/filealink",  # -> filea
-                "adir/filea",
-                "bdir/fileb",
-                "data/datafile",
-            }
-        )
+    assert set(find_files()) == _sep(
+        {
+            "file1",
+            "adir/datalink",  # -> ../data
+            "adir/filealink",  # -> filea
+            "adir/filea",
+            "bdir/fileb",
+            "data/datafile",
+        }
     )
 
 
@@ -164,16 +160,13 @@ def test_symlink_not_in_scm_while_target_is(inwd):
     inwd.add_and_commit()
     (inwd.cwd / "adir" / "datalink").mksymlinkto("../data")
     (inwd.cwd / "adir" / "filealink").mksymlinkto("filea")
-    assert (
-        set(find_files())
-        == _sep(
-            {
-                "file1",
-                "adir/filea",
-                # adir/datalink and adir/afilelink not included
-                # because the symlink themselves are not in scm
-                "bdir/fileb",
-                "data/datafile",
-            }
-        )
+    assert set(find_files()) == _sep(
+        {
+            "file1",
+            "adir/filea",
+            # adir/datalink and adir/afilelink not included
+            # because the symlink themselves are not in scm
+            "bdir/fileb",
+            "data/datafile",
+        }
     )
