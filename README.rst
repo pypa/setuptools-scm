@@ -10,8 +10,8 @@ It also handles file finders for the supported SCMs.
 .. image:: https://travis-ci.org/pypa/setuptools_scm.svg?branch=master
     :target: https://travis-ci.org/pypa/setuptools_scm
 
-.. image:: https://tidelift.com/badges/github/pypa/setuptools_scm
-   :target: https://tidelift.com/subscription/pkg/pypi-setuptools_scm?utm_source=pypi-setuptools_scm&utm_medium=readme
+.. image:: https://tidelift.com/badges/package/pypi/setuptools-scm
+   :target: https://tidelift.com/subscription/pkg/pypi-setuptools-scm?utm_source=pypi-setuptools-scm&utm_medium=readme
 
 ``pyproject.toml`` usage
 ------------------------
