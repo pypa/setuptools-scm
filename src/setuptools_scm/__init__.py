@@ -146,18 +146,23 @@ def get_version(
     config.fallback_version = fallback_version
     config.parse = parse
     config.git_describe_command = git_describe_command
+    return _get_version(config)
 
+
+def _get_version(config):
     parsed_version = _do_parse(config)
 
     if parsed_version:
         version_string = format_version(
-            parsed_version, version_scheme=version_scheme, local_scheme=local_scheme
+            parsed_version,
+            version_scheme=config.version_scheme,
+            local_scheme=config.local_scheme,
         )
         dump_version(
-            root=root,
+            root=config.root,
             version=version_string,
-            write_to=write_to,
-            template=write_to_template,
+            write_to=config.write_to,
+            template=config.write_to_template,
         )
 
         return version_string

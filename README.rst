@@ -13,8 +13,62 @@ It also handles file finders for the supported SCMs.
 .. image:: https://tidelift.com/badges/github/pypa/setuptools_scm
    :target: https://tidelift.com/subscription/pkg/pypi-setuptools_scm?utm_source=pypi-setuptools_scm&utm_medium=readme
 
+``pyproject.toml`` usage
+------------------------
+
+The preferred way to configure ``setuptools_scm`` is to author
+settings in a ``tool.setuptools_scm`` section of ``pyproject.toml``.
+
+This feature requires Setuptools 42 or later, released in Nov, 2019.
+If your project needs to support build from sdist on older versions
+of Setuptools, you will need to also implement the ``setup.py usage``
+for those legacy environments.
+
+First, ensure that ``setuptools_scm`` is present during the project's
+built step by specifying it as one of the build requirements.
+
+.. code:: ini
+
+    # pyproject.toml
+    [build-system]
+    requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=3.4"]
+
+Note that the ``toml`` extra must be supplied.
+
+That will be sufficient to require ``setuptools_scm`` for projects
+that support PEP 518 (`pip <https://pypi.org/project/pip>`_ and
+`pep517 <https://pypi.org/project/pep517/>`_). Many tools,
+especially those that invoke ``setup.py`` for any reason, may
+continue to rely on ``setup_requires``. For maximum compatibility
+with those uses, consider also including a ``setup_requires`` directive
+(described below in ``setup.py usage`` and ``setup.cfg``).
+
+To enable version inference, add this section to your pyproject.toml:
+
+.. code:: ini
+
+    # pyproject.toml
+    [tools.setuptools_scm]
+
+Including this section is comparable to supplying
+``use_scm_version=True`` in ``setup.py``. Additionally,
+include arbitrary keyword arguments in that section
+to be supplied to ``get_version()``. For example::
+
+.. code:: ini
+
+    # pyproject.toml
+    [tools.setuptools_scm]
+    write_to = pkg/version.py
+
+
 ``setup.py`` usage
 ------------------
+
+The following settings are considered legacy behavior and
+superseded by the ``pyproject.toml`` usage, but for maximal
+compatibility, projects may also supply the configuration in
+this older form.
 
 To use ``setuptools_scm`` just modify your project's ``setup.py`` file
 like this:

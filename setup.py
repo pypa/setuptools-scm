@@ -68,6 +68,9 @@ arguments = dict(
         [setuptools.file_finders]
         setuptools_scm = setuptools_scm.integration:find_files
 
+        [setuptools.finalize_distribution_options]
+        setuptools_scm = setuptools_scm.integration:infer_version
+
         [setuptools_scm.parse_scm]
         .hg = setuptools_scm.hg:parse
         .git = setuptools_scm.git:parse
@@ -111,6 +114,7 @@ arguments = dict(
         "Topic :: Utilities",
     ],
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
+    extras_require=dict(toml=["toml"]),
 )
 
 if __name__ == "__main__":

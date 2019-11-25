@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from setuptools_scm.config import Configuration
 
 import pytest
@@ -18,3 +20,9 @@ def test_tag_regex(tag, expected_version):
     match = config.tag_regex.match(tag)
     version = match.group("version")
     assert version == expected_version
+
+
+def test_config_from_pyproject(tmpdir):
+    fn = tmpdir / "pyproject.toml"
+    fn.write_text("[tool.setuptools_scm]\n", encoding="utf-8")
+    assert Configuration.from_file(str(fn))

@@ -105,3 +105,19 @@ class Configuration(object):
     @tag_regex.setter
     def tag_regex(self, value):
         self._tag_regex = _check_tag_regex(value)
+
+    def _load(self, values):
+        vars(self).update(values)
+        return self
+
+    @classmethod
+    def from_file(cls, name="pyproject.toml"):
+        """
+        Read Configuration from pyproject.toml (or similar).
+        Raises exceptions when file is not found or toml is
+        not installed or the file has invalid format or does
+        not contain the [tool.setuptools_scm] section.
+        """
+        with open(name) as strm:
+            defn = __import__("toml").load(strm)
+        return cls()._load(defn.get("tool", {})["setuptools_scm"])

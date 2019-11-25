@@ -1,3 +1,9 @@
+v3.4.0
+======
+
+* fix #181 - add support for projects built under setuptools declarative config
+  by way of the setuptools.finalize_distribution_options hook in Setuptools 42.
+
 * fix #305 - ensure the git file finder closes filedescriptors even when errors happen
 
 v3.3.3
