@@ -20,6 +20,7 @@ init:
   - python -m pip install -U pip
   - python -m pip install -U wheel
   - python -m pip install -U tox
+  - python -m pip install -U virtualenv
 
 
 install:
