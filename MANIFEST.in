@@ -7,3 +7,4 @@ include testing/*.py
 include tox.ini
 include *.rst
 include LICENSE
+include *.toml
