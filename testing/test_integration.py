@@ -32,9 +32,7 @@ fallback_version = "12.34"
 def test_pyproject_support_with_git(tmpdir, monkeypatch, wd):
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
     pkg = tmpdir.join("wd")
-    pkg.join("pyproject.toml").write(
-        """[tool.setuptools_scm]"""
-    )
+    pkg.join("pyproject.toml").write("""[tool.setuptools_scm]""")
     pkg.join("setup.py").write("__import__('setuptools').setup()")
     res = do((sys.executable, "setup.py", "--version"), pkg)
     assert res == "0.1.dev0"
