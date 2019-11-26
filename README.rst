@@ -5,7 +5,9 @@ setuptools_scm
 in SCM metadata instead of declaring them as the version argument
 or in a SCM managed file.
 
-It also handles file finders for the supported SCMs.
+Additionally ``setuptools_scm`` provides setuptools with a list of files that are managed by the SCM
+(i.e. it automatically adds all of the SCM-managed files to the sdist).
+Unwanted files must be excluded by discarding them via ``MANIFEST.in``.
 
 .. image:: https://travis-ci.org/pypa/setuptools_scm.svg?branch=master
     :target: https://travis-ci.org/pypa/setuptools_scm
