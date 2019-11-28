@@ -16,6 +16,7 @@ def wd(wd):
 
 
 def test_pyproject_support(tmpdir, monkeypatch):
+    pytest.importorskip("toml")
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
     pkg = tmpdir.ensure("package", dir=42)
     pkg.join("pyproject.toml").write(
@@ -28,7 +29,6 @@ fallback_version = "12.34"
     assert res == "12.34"
 
 
-@pytest.mark.xfail(reason="#174")
 def test_pyproject_support_with_git(tmpdir, monkeypatch, wd):
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
     pkg = tmpdir.join("wd")
