@@ -55,7 +55,7 @@ To enable version inference, add this section to your pyproject.toml:
 Including this section is comparable to supplying
 ``use_scm_version=True`` in ``setup.py``. Additionally,
 include arbitrary keyword arguments in that section
-to be supplied to ``get_version()``. For example::
+to be supplied to ``get_version()``. For example:
 
 .. code:: ini
 
