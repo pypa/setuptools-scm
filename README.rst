@@ -29,7 +29,7 @@ for those legacy environments.
 First, ensure that ``setuptools_scm`` is present during the project's
 built step by specifying it as one of the build requirements.
 
-.. code:: ini
+.. code:: toml
 
     # pyproject.toml
     [build-system]
@@ -47,7 +47,7 @@ with those uses, consider also including a ``setup_requires`` directive
 
 To enable version inference, add this section to your pyproject.toml:
 
-.. code:: ini
+.. code:: toml
 
     # pyproject.toml
     [tools.setuptools_scm]
@@ -57,11 +57,11 @@ Including this section is comparable to supplying
 include arbitrary keyword arguments in that section
 to be supplied to ``get_version()``. For example:
 
-.. code:: ini
+.. code:: toml
 
     # pyproject.toml
     [tools.setuptools_scm]
-    write_to = pkg/version.py
+    write_to = "pkg/version.py"
 
 
 ``setup.py`` usage
