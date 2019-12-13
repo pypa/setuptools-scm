@@ -20,6 +20,27 @@ PY3 = sys.version_info > (3,)
 string_types = (str,) if PY3 else (str, unicode)  # noqa
 
 
+def no_git_env(env):
+    # adapted from pre-commit
+    # Too many bugs dealing with environment variables and GIT:
+    # https://github.com/pre-commit/pre-commit/issues/300
+    # In git 2.6.3 (maybe others), git exports GIT_WORK_TREE while running
+    # pre-commit hooks
+    # In git 1.9.1 (maybe others), git exports GIT_DIR and GIT_INDEX_FILE
+    # while running pre-commit hooks in submodules.
+    # GIT_DIR: Causes git clone to clone wrong thing
+    # GIT_INDEX_FILE: Causes 'error invalid object ...' during commit
+    for k, v in env.items():
+        if k.startswith("GIT_"):
+            trace(k, v)
+    return {
+        k: v
+        for k, v in env.items()
+        if not k.startswith("GIT_")
+        or k in ("GIT_EXEC_PATH", "GIT_SSH", "GIT_SSH_COMMAND")
+    }
+
+
 def trace(*k):
     if DEBUG:
         print(*k)
@@ -48,7 +69,6 @@ def _always_strings(env_dict):
 
 
 def _popen_pipes(cmd, cwd):
-
     return subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -56,7 +76,8 @@ def _popen_pipes(cmd, cwd):
         cwd=str(cwd),
         env=_always_strings(
             dict(
-                os.environ,
+                no_git_env(os.environ),
+                # os.environ,
                 # try to disable i18n
                 LC_ALL="C",
                 LANGUAGE="",
