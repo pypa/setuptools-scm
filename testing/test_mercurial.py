@@ -38,15 +38,17 @@ def test_archival_to_version(expected, data):
     )
 
 
-def test_find_files_stop_at_root_hg(wd):
+def test_find_files_stop_at_root_hg(wd, monkeypatch):
     wd.commit_testfile()
-    wd.cwd.ensure("project/setup.cfg")
+    project = wd.cwd / "project"
+    project.mkdir()
+    project.joinpath("setup.cfg").touch()
     # setup.cfg has not been committed
-    assert integration.find_files(str(wd.cwd / "project")) == []
+    assert integration.find_files(str(project)) == []
     # issue 251
     wd.add_and_commit()
-    with (wd.cwd / "project").as_cwd():
-        assert integration.find_files() == ["setup.cfg"]
+    monkeypatch.chdir(project)
+    assert integration.find_files() == ["setup.cfg"]
 
 
 # XXX: better tests for tag prefixes
@@ -81,7 +83,7 @@ def test_version_from_hg_id(wd):
 def test_version_from_archival(wd):
     # entrypoints are unordered,
     # cleaning the wd ensure this test wont break randomly
-    wd.cwd.join(".hg").remove()
+    wd.cwd.joinpath(".hg").rename(wd.cwd / ".nothg")
     wd.write(".hg_archival.txt", "node: 000000000000\n" "tag: 0.1\n")
     assert wd.version == "0.1"
 
@@ -144,8 +146,8 @@ def test_version_bump_from_merge_commit(wd):
 def test_version_bump_from_commit_including_hgtag_mods(wd):
     """ Test the case where a commit includes changes to .hgtags and other files
     """
-    with wd.cwd.join(".hgtags").open("a") as tagfile:
-        tagfile.write("0  0\n")
+    with wd.cwd.joinpath(".hgtags").open("ab") as tagfile:
+        tagfile.write(b"0  0\n")
     wd.write("branchfile", "branchtext")
     wd(wd.add_command)
     assert wd.version.startswith("1.0.1.dev1+")  # bump from dirty version

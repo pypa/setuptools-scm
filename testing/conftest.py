@@ -1,6 +1,7 @@
 import os
 import itertools
 import pytest
+import six
 
 os.environ["SETUPTOOLS_SCM_DEBUG"] = "1"
 VERSION_PKGS = ["setuptools", "setuptools_scm"]
@@ -21,6 +22,9 @@ class Wd(object):
     commit_command = None
     add_command = None
 
+    def __repr__(self):
+        return "<WD {cwd}>".format(cwd=self.cwd)
+
     def __init__(self, cwd):
         self.cwd = cwd
         self.__counter = itertools.count()
@@ -33,10 +37,13 @@ class Wd(object):
         return do(cmd, self.cwd)
 
     def write(self, name, value, **kw):
-        filename = self.cwd.join(name)
+        filename = self.cwd / name
         if kw:
             value = value.format(**kw)
-        filename.write(value)
+        if isinstance(value, six.text_type):
+            filename.write_text(value)
+        else:
+            filename.write_bytes(value)
         return filename
 
     def _reason(self, given_reason):
@@ -83,5 +90,7 @@ def debug_mode():
 
 
 @pytest.fixture
-def wd(tmpdir):
-    return Wd(tmpdir.ensure("wd", dir=True))
+def wd(tmp_path):
+    target_wd = tmp_path.resolve() / "wd"
+    target_wd.mkdir()
+    return Wd(target_wd)

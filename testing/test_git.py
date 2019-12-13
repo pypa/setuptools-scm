@@ -34,9 +34,10 @@ def test_parse_describe_output(given, tag, number, node, dirty):
 
 def test_root_relative_to(tmpdir, wd, monkeypatch):
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
-    p = wd.cwd.ensure("sub/package", dir=1)
-    p.join("setup.py").write(
-        """from setuptools import setup
+    p = wd.cwd.joinpath("sub/package")
+    p.mkdir(parents=True)
+    p.joinpath("setup.py").write_text(
+        u"""from setuptools import setup
 setup(use_scm_version={"root": "../..",
                        "relative_to": __file__})
 """
@@ -159,8 +160,10 @@ def test_git_shallow_autocorrect(shallow_wd, recwarn):
 
 def test_find_files_stop_at_root_git(wd):
     wd.commit_testfile()
-    wd.cwd.ensure("project/setup.cfg")
-    assert integration.find_files(str(wd.cwd / "project")) == []
+    project = wd.cwd / "project"
+    project.mkdir()
+    project.joinpath("setup.cfg").touch()
+    assert integration.find_files(str(project)) == []
 
 
 @pytest.mark.issue(128)
@@ -175,7 +178,7 @@ def test_alphanumeric_tags_match(wd):
     assert wd.version.startswith("0.1.dev1+g")
 
 
-def test_git_archive_export_ignore(wd):
+def test_git_archive_export_ignore(wd, monkeypatch):
     wd.write("test1.txt", "test")
     wd.write("test2.txt", "test")
     wd.write(
@@ -186,28 +189,28 @@ def test_git_archive_export_ignore(wd):
     )
     wd("git add test1.txt test2.txt")
     wd.commit()
-    with wd.cwd.as_cwd():
-        assert integration.find_files(".") == [opj(".", "test1.txt")]
+    monkeypatch.chdir(wd.cwd)
+    assert integration.find_files(".") == [opj(".", "test1.txt")]
 
 
 @pytest.mark.issue(228)
-def test_git_archive_subdirectory(wd):
+def test_git_archive_subdirectory(wd, monkeypatch):
     wd("mkdir foobar")
     wd.write("foobar/test1.txt", "test")
     wd("git add foobar")
     wd.commit()
-    with wd.cwd.as_cwd():
-        assert integration.find_files(".") == [opj(".", "foobar", "test1.txt")]
+    monkeypatch.chdir(wd.cwd)
+    assert integration.find_files(".") == [opj(".", "foobar", "test1.txt")]
 
 
 @pytest.mark.issue(251)
-def test_git_archive_run_from_subdirectory(wd):
+def test_git_archive_run_from_subdirectory(wd, monkeypatch):
     wd("mkdir foobar")
     wd.write("foobar/test1.txt", "test")
     wd("git add foobar")
     wd.commit()
-    with (wd.cwd / "foobar").as_cwd():
-        assert integration.find_files(".") == [opj(".", "test1.txt")]
+    monkeypatch.chdir(wd.cwd / "foobar")
+    assert integration.find_files(".") == [opj(".", "test1.txt")]
 
 
 def test_git_feature_branch_increments_major(wd):

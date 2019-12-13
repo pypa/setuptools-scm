@@ -19,11 +19,7 @@ credentials:
       tags: yes
 python:
 - '2.7'
-- '3.4'
-- '3.5'
-- '3.6'
 - '3.7'
-- '3.8-dev'
 dist: xenial  # needed for 3.7+
 env:
 - TOXENV=py-test
@@ -34,25 +30,12 @@ jobs:
       name: check readme
       python: '3.6'
       env: TOXENV=check_readme
-    # - stage: test
-    #   python: '3.7'
-    #   dist: xenial
     - stage: test
       python: '2.7'
       env: SELFINSTALL=1
     - stage: test
       python: '3.6'
       env: SELFINSTALL=1
-
-    - stage: linting
-      python: '3.6'
-      name: validate pre-commit
-      env:
-      install:
-      - pip install pre-commit
-      - pre-commit install-hooks
-      script:
-      - pre-commit run --all-files
 
     - &deploy
       stage: deploy
@@ -64,29 +47,6 @@ jobs:
       deploy:
         <<: *pypi
         distributions: "sdist bdist_wheel"
-
-    - &bdist_egg
-      <<: *deploy
-      name: "python eggs 2.7"
-      python: '2.7'
-      deploy:
-        <<: *pypi
-        distributions: "bdist_egg"
-    - <<: *bdist_egg
-      name: "python eggs 3.4"
-      python: '3.4'
-    - <<: *bdist_egg
-      name: "python eggs 3.5"
-      python: '3.5'
-    - <<: *bdist_egg
-      name: "python eggs 3.6"
-      python: '3.6'
-    - <<: *bdist_egg
-      name: "python eggs 3.7"
-      python: '3.7'
-    - <<: *bdist_egg
-      name: "python eggs 3.8"
-      python: '3.8-dev'
 
 cache:
   directories:
