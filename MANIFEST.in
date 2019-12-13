@@ -8,3 +8,4 @@ include tox.ini
 include *.rst
 include LICENSE
 include *.toml
+recursive-include testing *.bash
