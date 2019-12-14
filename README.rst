@@ -50,7 +50,7 @@ To enable version inference, add this section to your pyproject.toml:
 .. code:: ini
 
     # pyproject.toml
-    [tools.setuptools_scm]
+    [tool.setuptools_scm]
 
 Including this section is comparable to supplying
 ``use_scm_version=True`` in ``setup.py``. Additionally,
@@ -60,7 +60,7 @@ to be supplied to ``get_version()``. For example:
 .. code:: ini
 
     # pyproject.toml
-    [tools.setuptools_scm]
+    [tool.setuptools_scm]
     write_to = pkg/version.py
 
 
