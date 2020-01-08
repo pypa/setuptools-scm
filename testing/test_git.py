@@ -229,3 +229,14 @@ def test_not_matching_tags(wd):
         tag_regex=r"^apache-arrow-([\.0-9]+)$",
         git_describe_command="git describe --dirty --tags --long --exclude *js* ",
     ).startswith("0.11.2")
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/381")
+def test_gitdir(monkeypatch, wd):
+    """
+    """
+    wd.commit_testfile()
+    normal = wd.version
+    # git hooks set this and break subsequent setuptools_scm unless we clean
+    monkeypatch.setenv("GIT_DIR", __file__)
+    assert wd.version == normal

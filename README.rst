@@ -15,6 +15,7 @@ Unwanted files must be excluded by discarding them via ``MANIFEST.in``.
 .. image:: https://tidelift.com/badges/package/pypi/setuptools-scm
    :target: https://tidelift.com/subscription/pkg/pypi-setuptools-scm?utm_source=pypi-setuptools-scm&utm_medium=readme
 
+
 ``pyproject.toml`` usage
 ------------------------
 
@@ -50,7 +51,7 @@ To enable version inference, add this section to your pyproject.toml:
 .. code:: toml
 
     # pyproject.toml
-    [tools.setuptools_scm]
+    [tool.setuptools_scm]
 
 Including this section is comparable to supplying
 ``use_scm_version=True`` in ``setup.py``. Additionally,
@@ -60,7 +61,8 @@ to be supplied to ``get_version()``. For example:
 .. code:: toml
 
     # pyproject.toml
-    [tools.setuptools_scm]
+
+    [tool.setuptools_scm]
     write_to = "pkg/version.py"
 
 
@@ -103,20 +105,7 @@ Arguments to ``get_version()`` (see below) may be passed as a dictionary to
         ...,
     )
 
-Once configured, you can access the version number in your package via
-``pkg_resources`` (`PEP-0396 <https://www.python.org/dev/peps/pep-0396>`_). For
-example:
-
-.. code:: python
-
-   from pkg_resources import get_distribution, DistributionNotFound
-   try:
-       __version__ = get_distribution(__name__).version
-   except DistributionNotFound:
-       # package is not installed
-       pass
-
-You can also confirm the version number locally via ``setup.py``:
+You can confirm the version number locally via ``setup.py``:
 
 .. code-block:: shell
 
@@ -129,8 +118,8 @@ You can also confirm the version number locally via ``setup.py``:
    not defined in ``setup.cfg``.
 
 
-``setup.cfg``
--------------
+``setup.cfg`` usage
+-------------------
 
 If using `setuptools 30.3.0
 <https://setuptools.readthedocs.io/en/latest/setuptools.html#configuring-setup-using-setup-cfg-files>`_
@@ -187,6 +176,43 @@ than the project's root, you can use:
     version = get_version(root='..', relative_to=__file__)
 
 See `setup.py Usage`_ above for how to use this within ``setup.py``.
+
+
+Retrieving package version at runtime
+-------------------------------------
+
+If you have opted not to hardcode the version number inside the package,
+you can retrieve it at runtime from PEP-0566_ metadata using
+``importlib.metadata`` from the standard library
+or the `importlib_metadata`_ backport:
+
+.. code:: python
+
+    from importlib.metadata import version, PackageNotFoundError
+
+    try:
+        __version__ = version(__name__)
+    except PackageNotFoundError:
+        # package is not installed
+       pass
+
+Alternatively, you can use ``pkg_resources`` which is included in
+``setuptools``:
+
+.. code:: python
+
+   from pkg_resources import get_distribution, DistributionNotFound
+
+   try:
+       __version__ = get_distribution(__name__).version
+   except DistributionNotFound:
+        # package is not installed
+       pass
+
+This does place a runtime dependency on ``setuptools``.
+
+.. _PEP-0566: https://www.python.org/dev/peps/pep-0566/
+.. _importlib_metadata: https://pypi.org/project/importlib-metadata/
 
 
 Usage from Sphinx
