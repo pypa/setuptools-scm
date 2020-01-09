@@ -259,9 +259,9 @@ no distance and clean:
 distance and clean:
     ``{next_version}.dev{distance}+{scm letter}{revision hash}``
 no distance and not clean:
-    ``{tag}+dYYYMMMDD``
+    ``{tag}+dYYYYMMDD``
 distance and not clean:
-    ``{next_version}.dev{distance}+{scm letter}{revision hash}.dYYYMMMDD``
+    ``{next_version}.dev{distance}+{scm letter}{revision hash}.dYYYYMMDD``
 
 The next version is calculated by adding ``1`` to the last numeric component of
 the tag.
