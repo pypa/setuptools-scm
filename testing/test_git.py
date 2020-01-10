@@ -10,7 +10,8 @@ from setuptools_scm.file_finder_git import git_find_files
 
 
 @pytest.fixture
-def wd(wd):
+def wd(wd, monkeypatch):
+    monkeypatch.delenv("HOME", raising=False)
     wd("git init")
     wd("git config user.email test@example.com")
     wd('git config user.name "a test"')
