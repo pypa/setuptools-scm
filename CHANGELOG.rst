@@ -8,6 +8,8 @@ v3.4.0
 
 * fix #381 - clean out env vars from the git hook system to ensure correct function from within
 
+* modernize docs wrt importlib.metadata
+
 v3.3.3
 ======
 
