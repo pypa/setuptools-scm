@@ -1,7 +1,8 @@
 v3.4.1
 ======
 
-*
+* pull in #377 to fix #374: correctly set up the default version scheme for pyproject usage.
+  this bugfix got missed when ruushing the  release.
 
 v3.4.0
 ======
