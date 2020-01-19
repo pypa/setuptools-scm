@@ -66,7 +66,7 @@ class Configuration(object):
         self.fallback_version = fallback_version
         self.fallback_root = fallback_root
         self.parse = parse
-        self.tag_regex = DEFAULT_TAG_REGEX
+        self.tag_regex = tag_regex
         self.git_describe_command = git_describe_command
 
     @property
