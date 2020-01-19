@@ -12,7 +12,7 @@ except ImportError:
     from .win_py31_compat import samefile
 
 
-DEFAULT_DESCRIBE = "git describe --dirty --tags --long --match *.* --first-parent"
+DEFAULT_DESCRIBE = "git describe --dirty --tags --long --match *.*"
 
 
 class GitWorkdir(object):
