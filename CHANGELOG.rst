@@ -2,6 +2,7 @@ v3.4.2
 ======
 
 * fix #395: correctly transfer tag regex in the Configuration constructor
+* rollback --first-parent for git describe as it turns out to be a regression for some users
 
 v3.4.1
 ======
@@ -20,6 +21,10 @@ v3.4.0
 * fix #381 - clean out env vars from the git hook system to ensure correct function from within
 
 * modernize docs wrt importlib.metadata
+
+*edited*
+
+* use --first-parent for git describe
 
 v3.3.3
 ======
