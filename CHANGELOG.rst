@@ -1,3 +1,8 @@
+v3.4.2
+======
+
+* fix #395: correctly transfer tag regex in the Configuration constructor
+
 v3.4.1
 ======
 

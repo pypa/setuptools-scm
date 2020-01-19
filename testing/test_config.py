@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from setuptools_scm.config import Configuration
-
+import re
 import pytest
 
 
@@ -26,3 +26,9 @@ def test_config_from_pyproject(tmpdir):
     fn = tmpdir / "pyproject.toml"
     fn.write_text("[tool.setuptools_scm]\n", encoding="utf-8")
     assert Configuration.from_file(str(fn))
+
+
+def test_config_regex_init():
+    tag_regex = re.compile(r"v(\d+)")
+    conf = Configuration(tag_regex=tag_regex)
+    assert conf.tag_regex is tag_regex
