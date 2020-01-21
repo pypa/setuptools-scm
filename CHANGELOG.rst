@@ -1,3 +1,8 @@
+v3.4.3
+======
+
+* fix #399: ensure the git file finder closes file descriptor after reading archive
+
 v3.4.2
 ======
 

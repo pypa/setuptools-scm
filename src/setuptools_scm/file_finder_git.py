@@ -28,7 +28,7 @@ def _git_toplevel(path):
 
 
 def _git_interpret_archive(fd, toplevel):
-    with tarfile.open(fileobj=fd, mode="r|*") as tf:
+    with fd, tarfile.open(fileobj=fd, mode="r|*") as tf:
         git_files = set()
         git_dirs = {toplevel}
         for member in tf.getmembers():
@@ -49,7 +49,7 @@ def _git_ls_files_and_dirs(toplevel):
         try:
             return _git_interpret_archive(proc.stdout, toplevel)
         finally:
-            # ensure we avoid ressource warnings by cleaning up the pocess
+            # ensure we avoid resource warnings by cleaning up the pocess
             proc.wait()
     except Exception:
         if proc.wait() != 0:
