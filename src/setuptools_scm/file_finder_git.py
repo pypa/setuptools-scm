@@ -49,8 +49,8 @@ def _git_ls_files_and_dirs(toplevel):
         try:
             return _git_interpret_archive(proc.stdout, toplevel)
         finally:
-            # ensure we avoid ressource warnings by cleaning up the pocess
-            proc.wait()
+            # ensure we avoid resource warnings by cleaning up the process
+            proc.terminate()
     except Exception:
         if proc.wait() != 0:
             log.exception("listing git files failed - pretending there aren't any")
