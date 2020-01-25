@@ -1,3 +1,8 @@
+v3.4.4
+======
+
+* fix #403: also sort out resource warnings when dealing with git file finding
+
 v3.4.3
 ======
 
