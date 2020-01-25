@@ -46,6 +46,7 @@ setup(use_scm_version={"root": "../..",
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/298")
+@pytest.mark.issue(403)
 def test_file_finder_no_history(wd, caplog):
     file_list = git_find_files(str(wd.cwd))
     assert file_list == []
