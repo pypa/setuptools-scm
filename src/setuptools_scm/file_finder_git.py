@@ -50,6 +50,7 @@ def _git_ls_files_and_dirs(toplevel):
             return _git_interpret_archive(proc.stdout, toplevel)
         finally:
             # ensure we avoid resource warnings by cleaning up the process
+            proc.stdout.close()
             proc.terminate()
     except Exception:
         if proc.wait() != 0:
