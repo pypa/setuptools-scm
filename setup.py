@@ -95,6 +95,7 @@ arguments = dict(
         node-and-timestamp = \
         setuptools_scm.version:get_local_node_and_timestamp
         dirty-tag = setuptools_scm.version:get_local_dirty_tag
+        no-local-version = setuptools_scm.version:get_no_local_node
     """,
     classifiers=[
         "Development Status :: 4 - Beta",
