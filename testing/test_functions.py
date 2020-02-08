@@ -50,9 +50,12 @@ VERSIONS = {
     [
         ("exact", "guess-next-dev node-and-date", "1.1"),
         ("zerodistance", "guess-next-dev node-and-date", "1.2.dev0"),
+        ("zerodistance", "guess-next-dev no-local-version", "1.2.dev0"),
         ("dirty", "guess-next-dev node-and-date", "1.2.dev0+dtime"),
+        ("dirty", "guess-next-dev no-local-version", "1.2.dev0"),
         ("distance", "guess-next-dev node-and-date", "1.2.dev3"),
         ("distancedirty", "guess-next-dev node-and-date", "1.2.dev3+dtime"),
+        ("distancedirty", "guess-next-dev no-local-version", "1.2.dev3"),
         ("exact", "post-release node-and-date", "1.1"),
         ("zerodistance", "post-release node-and-date", "1.1.post0"),
         ("dirty", "post-release node-and-date", "1.1.post0+dtime"),

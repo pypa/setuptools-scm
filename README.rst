@@ -100,7 +100,11 @@ Arguments to ``get_version()`` (see below) may be passed as a dictionary to
     from setuptools import setup
     setup(
         ...,
-        use_scm_version = {"root": "..", "relative_to": __file__},
+        use_scm_version = {
+            "root": "..",
+            "relative_to": __file__,
+            "local_scheme": "node-and-timestamp"
+        },
         setup_requires=['setuptools_scm'],
         ...,
     )
@@ -463,6 +467,7 @@ Version number construction
 
     :guess-next-dev: automatically guesses the next development version (default)
     :post-release: generates post release versions (adds :code:`postN`)
+    :python-simplified-semver: basic semantic versioning similar to ``guess-next-dev``
 
 ``setuptools_scm.local_scheme``
     Configures how the local part of a version is rendered given a
@@ -476,6 +481,8 @@ Version number construction
     :node-and-timestamp: like ``node-and-date`` but with a timestamp of
                          the form ``{:%Y%m%d%H%M%S}`` instead
     :dirty-tag: adds ``+dirty`` if the current workdir has changes
+    :no-local-version: omits local version, useful e.g. because pypi does
+                       not support it
 
 
 Importing in ``setup.py``

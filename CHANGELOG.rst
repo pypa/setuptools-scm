@@ -1,3 +1,8 @@
+v3.5.0
+======
+
+* add ``no-local-version`` local scheme and improve documentation for schemes
+
 v3.4.4
 ======
 

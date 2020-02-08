@@ -284,6 +284,10 @@ def get_local_dirty_tag(version):
     return version.format_choice("", "+dirty")
 
 
+def get_no_local_node(_):
+    return ""
+
+
 def postrelease_version(version):
     if version.exact:
         return version.format_with("{tag}")
