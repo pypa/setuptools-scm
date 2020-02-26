@@ -22,7 +22,8 @@ python:
 - '3.5'
 - '3.6'
 - '3.7'
-- '3.8-dev'
+- '3.8'
+- '3.9-dev'
 dist: xenial  # needed for 3.7+
 env:
 - TOXENV=py-test
@@ -85,7 +86,10 @@ jobs:
       python: '3.7'
     - <<: *bdist_egg
       name: "python eggs 3.8"
-      python: '3.8-dev'
+      python: '3.8'
+    - <<: *bdist_egg
+      name: "python eggs 3.9"
+      python: '3.9-dev'
 
 cache:
   directories:
