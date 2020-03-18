@@ -123,12 +123,17 @@ def data_from_mime(path):
 
 class UTC(datetime.tzinfo):
     _ZERO = datetime.timedelta(0)
+
     def utcoffset(self, dt):
         return self._ZERO
+
     def tzname(self, dt):
         return "UTC"
+
     def dst(self, dt):
         return self._ZERO
+
+
 utc = UTC()
 
 
