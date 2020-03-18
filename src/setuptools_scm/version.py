@@ -5,7 +5,7 @@ import re
 from itertools import chain, repeat, islice
 
 from .config import Configuration
-from .utils import trace, string_types
+from .utils import trace, string_types, utc
 
 from pkg_resources import iter_entry_points
 
@@ -141,7 +141,7 @@ class ScmVersion(object):
             distance = 0
         self.distance = distance
         self.node = node
-        self.time = datetime.datetime.now()
+        self.time = datetime.datetime.now(utc)
         self._extra = kw
         self.dirty = dirty
         self.preformatted = preformatted
