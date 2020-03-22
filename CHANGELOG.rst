@@ -1,3 +1,9 @@
+next
+====
+
+* Add ``parentdir_project_version`` to support installs from GitHub release
+  tarballs.
+
 v3.5.1
 ======
 

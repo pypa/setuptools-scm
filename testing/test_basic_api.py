@@ -58,6 +58,18 @@ def test_root_parameter_pass_by(monkeypatch, tmpdir):
     setuptools_scm.get_version(root=tmpdir.strpath)
 
 
+def test_parentdir_prefix(tmpdir, monkeypatch):
+    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
+    p = tmpdir.ensure("projectname-v12.34", dir=True)
+    p.join("setup.py").write(
+        """from setuptools import setup
+setup(use_scm_version={"parentdir_prefix_version": "projectname-"})
+"""
+    )
+    res = do((sys.executable, "setup.py", "--version"), p)
+    assert res == "12.34"
+
+
 def test_fallback(tmpdir, monkeypatch):
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
     p = tmpdir.ensure("sub/package", dir=1)

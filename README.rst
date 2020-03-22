@@ -370,6 +370,18 @@ The currently supported configuration keys are:
     Defaults to the value of ``setuptools_scm.config.DEFAULT_TAG_REGEX``
     (see `config.py <src/setuptools_scm/config.py>`_).
 
+:parentdir_prefix_version:
+    If the normal methods for detecting the version (SCM version,
+    sdist metadata) fail, and the parent directory name starts with
+    ``parentdir_prefix_version``, then this prefix is stripped and the rest of
+    the parent directory name is matched with ``tag_regex`` to get a version
+    string.  If this parameter is unset (the default), then this fallback is
+    not used.
+
+    This is intended to cover GitHub's "release tarballs", which extract into
+    directories named ``projectname-tag/`` (in which case
+    ``parentdir_prefix_version`` can be set e.g. to ``projectname-``).
+
 :fallback_version:
     A version string that will be used if no other method for detecting the
     version worked (e.g., when using a tarball with no metadata). If this is
