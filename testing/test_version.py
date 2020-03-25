@@ -53,7 +53,6 @@ def test_next_semver(version, expected_next):
 )
 def test_tag_regex1(tag, expected):
     config = Configuration()
-    config.tag_regex = r"^(?P<prefix>v)?(?P<version>[^\+]+)(?P<suffix>.*)?$"
     if "+" in tag:
         # pytest bug wrt cardinality
         with pytest.warns(UserWarning):
