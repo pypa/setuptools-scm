@@ -233,6 +233,14 @@ def test_not_matching_tags(wd):
     ).startswith("0.11.2")
 
 
+@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/411")
+def test_non_dotted_version(wd):
+    wd.commit_testfile()
+    wd("git tag apache-arrow-1")
+    wd.commit_testfile()
+    assert wd.get_version().startswith("2")
+
+
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/381")
 def test_gitdir(monkeypatch, wd):
     """
