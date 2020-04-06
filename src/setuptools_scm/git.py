@@ -110,11 +110,16 @@ def parse(
         rev_node = wd.node()
         dirty = wd.is_dirty()
 
+        fallback_version = "0.0"
+
+        if config.fallback_version:
+            fallback_version = config.fallback_version
+
         if rev_node is None:
-            return meta("0.0", distance=0, dirty=dirty, config=config)
+            return meta(fallback_version, distance=0, dirty=dirty, config=config)
 
         return meta(
-            "0.0",
+            fallback_version,
             distance=wd.count_all_nodes(),
             node="g" + rev_node,
             dirty=dirty,
