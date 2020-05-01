@@ -115,7 +115,7 @@ arguments = dict(
         "Topic :: Utilities",
     ],
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
-    extras_require=dict(toml=["toml"]),
+    extras_require=dict(toml=["toml", "setuptools>=42"]),
 )
 
 if __name__ == "__main__":

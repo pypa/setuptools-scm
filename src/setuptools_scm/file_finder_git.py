@@ -62,5 +62,8 @@ def git_find_files(path=""):
     toplevel = _git_toplevel(path)
     if not toplevel:
         return []
+    fullpath = os.path.abspath(os.path.normpath(path))
+    if not fullpath.startswith(toplevel):
+        trace("toplevel mismatch", toplevel, fullpath)
     git_files, git_dirs = _git_ls_files_and_dirs(toplevel)
     return scm_find_files(path, git_files, git_dirs)
