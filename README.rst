@@ -473,6 +473,8 @@ Version number construction
     Configures how the local part of a version is rendered given a
     ``setuptools_scm.version.ScmVersion`` instance and should return a string
     representing the local version.
+    Dates and times are in Coordinated Universal Time (UTC), because as part
+    of the version, they should be location independent.
 
     Available implementations:
 
