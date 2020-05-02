@@ -127,6 +127,7 @@ def get_version(
     write_to_template=None,
     relative_to=None,
     tag_regex=DEFAULT_TAG_REGEX,
+    parentdir_prefix_version=None,
     fallback_version=None,
     fallback_root=".",
     parse=None,

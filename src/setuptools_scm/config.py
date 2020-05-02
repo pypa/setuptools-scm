@@ -49,6 +49,7 @@ class Configuration(object):
         write_to=None,
         write_to_template=None,
         tag_regex=DEFAULT_TAG_REGEX,
+        parentdir_prefix_version=None,
         fallback_version=None,
         fallback_root=".",
         parse=None,
@@ -63,6 +64,7 @@ class Configuration(object):
         self.local_scheme = local_scheme
         self.write_to = write_to
         self.write_to_template = write_to_template
+        self.parentdir_prefix_version = parentdir_prefix_version
         self.fallback_version = fallback_version
         self.fallback_root = fallback_root
         self.parse = parse
