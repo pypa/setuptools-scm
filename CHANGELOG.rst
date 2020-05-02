@@ -1,7 +1,10 @@
-v3.5.1
+v4.0.0
 ======
 
 * use  Coordinated Universal Time (UTC)
+* switch to github actions for ci
+* fix documentation for ``tag_regex`` and add support for single digit versions
+
 
 v3.5.0
 ======
