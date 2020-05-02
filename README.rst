@@ -540,6 +540,26 @@ some environments require a test prior to install,
   $ PYTHONPATH=$PWD:$PWD/src pytest
 
 
+Interaction with Enterprise Distributions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Some enterprise distributions like RHEL7 and others
+ship rather old setuptools versions due to various release management details.
+
+On such distributions one might observe errors like:
+
+:code:``setuptools_scm.version.SetuptoolsOutdatedWarning: your setuptools is too old (<12)``
+
+In those case its typically possible to build by using a sdist against ``setuptools_scm<2.0``.
+As those old setuptools versions lack sensible types for versions,
+modern setuptools_scm is unable to support them sensibly.
+
+In case the project you need to build can not be patched to either use old setuptools_scm,
+its still possible to install a more recent version of setuptools in order to handle the build
+and/or install the package by using wheels or eggs.
+
+
+
 
 Code of Conduct
 ---------------
