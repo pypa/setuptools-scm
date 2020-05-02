@@ -29,7 +29,8 @@ def fallback_version(root, config=None):
         _, parent_name = os.path.split(os.path.abspath(root))
         if parent_name.startswith(config.parentdir_prefix_version):
             version = tag_to_version(
-                parent_name[len(config.parentdir_prefix_version) :], config)
+                parent_name[len(config.parentdir_prefix_version) :], config
+            )
             if version is not None:
                 return meta(str(version), preformatted=True, config=config)
     if config.fallback_version is not None:

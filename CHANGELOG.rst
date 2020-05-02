@@ -3,14 +3,10 @@ v4.0.0
 
 * Add ``parentdir_project_version`` to support installs from GitHub release
   tarballs.
-
-v3.5.1
-======
-
 * use  Coordinated Universal Time (UTC)
 * switch to github actions for ci
 * fix documentation for ``tag_regex`` and add support for single digit versions
-
+* document handling of enterprise distros with unsupported setuptools versions #312
 
 v3.5.0
 ======
