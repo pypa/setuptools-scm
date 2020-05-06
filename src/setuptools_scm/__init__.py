@@ -115,7 +115,10 @@ def _do_parse(config):
         "metadata and will not work.\n\n"
         "For example, if you're using pip, instead of "
         "https://github.com/user/proj/archive/master.zip "
-        "use git+https://github.com/user/proj.git#egg=proj" % config.absolute_root
+        "use git+https://github.com/user/proj.git#egg=proj\n\n"
+        "As an ugly workaround, you can also specifiy the version number "
+        "with the environment variable SETUPTOOLS_SCM_PRETEND_VERSION."
+        % config.absolute_root
     )
 
 
