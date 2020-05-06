@@ -2,7 +2,15 @@ from setuptools_scm import format_version
 from setuptools_scm.hg import archival_to_version, parse
 from setuptools_scm import integration
 from setuptools_scm.config import Configuration
+from setuptools_scm.utils import has_command
 import pytest
+import warnings
+
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore")
+    if not has_command("hg"):
+        pytestmark = pytest.mark.skip(reason="hg executable not found")
 
 
 @pytest.fixture
