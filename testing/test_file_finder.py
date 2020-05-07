@@ -15,7 +15,10 @@ def inwd(request, wd, monkeypatch):
         wd.add_command = "git add ."
         wd.commit_command = "git commit -m test-{reason}"
     elif request.param == "hg":
-        wd("hg init")
+        try:
+            wd("hg init")
+        except FileNotFoundError:
+            pytest.skip("hg executable not found")
         wd.add_command = "hg add ."
         wd.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
     (wd.cwd / "file1").touch()
