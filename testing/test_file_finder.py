@@ -9,7 +9,10 @@ from setuptools_scm.integration import find_files
 @pytest.fixture(params=["git", "hg"])
 def inwd(request, wd, monkeypatch):
     if request.param == "git":
-        wd("git init")
+        try:
+            wd("git init")
+        except FileNotFoundError:
+            pytest.skip("git executable not found")
         wd("git config user.email test@example.com")
         wd('git config user.name "a test"')
         wd.add_command = "git add ."

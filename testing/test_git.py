@@ -1,12 +1,19 @@
 import sys
 
 from setuptools_scm import integration
-from setuptools_scm.utils import do
+from setuptools_scm.utils import do, has_command
 from setuptools_scm import git
 import pytest
 from datetime import datetime
 from os.path import join as opj
 from setuptools_scm.file_finder_git import git_find_files
+import warnings
+
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore")
+    if not has_command("git"):
+        pytestmark = pytest.mark.skip(reason="git executable not found")
 
 
 @pytest.fixture
