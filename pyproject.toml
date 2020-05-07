@@ -1,3 +1,5 @@
 [build-system]
-requires = ["setuptools>=34.4", "wheel", "jaraco.windows; python_version < '3'"]
+requires = ["setuptools>=34.4", "wheel", "setuptools_scm[toml]"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
