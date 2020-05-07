@@ -4,7 +4,7 @@ from setuptools_scm import integration
 from setuptools_scm.utils import do
 from setuptools_scm import git
 import pytest
-from datetime import date
+from datetime import datetime
 from os.path import join as opj
 from setuptools_scm.file_finder_git import git_find_files
 
@@ -113,7 +113,8 @@ def test_git_dirty_notag(wd):
     wd.write("test.txt", "test2")
     wd("git add test.txt")
     assert wd.version.startswith("0.1.dev1")
-    today = date.today()
+    # the date on the tag is in UTC
+    today = datetime.utcnow().date()
     # we are dirty, check for the tag
     assert today.strftime(".d%Y%m%d") in wd.version
 
