@@ -1,6 +1,11 @@
 import pytest
 from setuptools_scm.config import Configuration
-from setuptools_scm.version import meta, simplified_semver_version, tags_to_versions
+from setuptools_scm.version import (
+    meta,
+    simplified_semver_version,
+    release_branch_semver,
+    tags_to_versions,
+)
 
 
 c = Configuration()
@@ -40,6 +45,42 @@ c = Configuration()
 )
 def test_next_semver(version, expected_next):
     computed = simplified_semver_version(version)
+    assert computed == expected_next
+
+
+@pytest.mark.parametrize(
+    "version, expected_next",
+    [
+        pytest.param(meta("1.0.0", config=c), "1.0.0", id="exact"),
+        pytest.param(
+            meta("1.0.0", distance=2, branch="master", config=c),
+            "1.1.0.dev2",
+            id="development_branch",
+        ),
+        pytest.param(
+            meta("1.0.0rc1", distance=2, branch="master", config=c),
+            "1.1.0.dev2",
+            id="development_branch_release_candidate",
+        ),
+        pytest.param(
+            meta("1.0.0", distance=2, branch="maintenance/1.0.x", config=c),
+            "1.0.1.dev2",
+            id="release_branch_legacy_version",
+        ),
+        pytest.param(
+            meta("1.0.0", distance=2, branch="release-1.0", config=c),
+            "1.0.1.dev2",
+            id="release_branch_with_prefix",
+        ),
+        pytest.param(
+            meta("1.0.0", distance=2, branch="bugfix/3434", config=c),
+            "1.1.0.dev2",
+            id="false_positive_release_branch",
+        ),
+    ],
+)
+def test_next_release_branch_semver(version, expected_next):
+    computed = release_branch_semver(version)
     assert computed == expected_next
 
 
