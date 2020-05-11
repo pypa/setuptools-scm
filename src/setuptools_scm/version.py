@@ -2,7 +2,6 @@ from __future__ import print_function
 import datetime
 import warnings
 import re
-from itertools import chain, repeat, islice
 
 from .config import Configuration
 from .utils import trace, string_types, utc
@@ -14,11 +13,6 @@ from pkg_resources import parse_version as pkg_parse_version
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3
 SEMVER_LEN = 3
-
-
-def _pad(iterable, size, padding=None):
-    padded = chain(iterable, repeat(padding))
-    return list(islice(padded, size))
 
 
 def _parse_version_tag(tag, config):
@@ -249,12 +243,14 @@ def guess_next_dev_version(version):
 
 
 def guess_next_simple_semver(version, retain, increment=True):
-    parts = map(int, str(version).split("."))
-    parts = _pad(parts, retain, 0)
+    parts = [int(i) for i in str(version).split(".")[:retain]]
+    while len(parts) < retain:
+        parts.append(0)
     if increment:
         parts[-1] += 1
-    parts = _pad(parts, SEMVER_LEN, 0)
-    return ".".join(map(str, parts))
+    while len(parts) < SEMVER_LEN:
+        parts.append(0)
+    return ".".join(str(i) for i in parts)
 
 
 def simplified_semver_version(version):
