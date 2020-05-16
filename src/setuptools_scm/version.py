@@ -2,7 +2,6 @@ from __future__ import print_function
 import datetime
 import warnings
 import re
-from itertools import chain, repeat, islice
 
 from .config import Configuration
 from .utils import trace, string_types, utc
@@ -14,11 +13,6 @@ from pkg_resources import parse_version as pkg_parse_version
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3
 SEMVER_LEN = 3
-
-
-def _pad(iterable, size, padding=None):
-    padded = chain(iterable, repeat(padding))
-    return list(islice(padded, size))
 
 
 def _parse_version_tag(tag, config):
@@ -132,6 +126,7 @@ class ScmVersion(object):
         dirty=False,
         preformatted=False,
         branch=None,
+        config=None,
         **kw
     ):
         if kw:
@@ -146,6 +141,7 @@ class ScmVersion(object):
         self.dirty = dirty
         self.preformatted = preformatted
         self.branch = branch
+        self.config = config
 
     @property
     def extra(self):
@@ -193,7 +189,14 @@ def _parse_tag(tag, preformatted, config):
 
 
 def meta(
-    tag, distance=None, dirty=False, node=None, preformatted=False, config=None, **kw
+    tag,
+    distance=None,
+    dirty=False,
+    node=None,
+    preformatted=False,
+    branch=None,
+    config=None,
+    **kw
 ):
     if not config:
         warnings.warn(
@@ -203,7 +206,9 @@ def meta(
     parsed_version = _parse_tag(tag, preformatted, config)
     trace("version", tag, "->", parsed_version)
     assert parsed_version is not None, "cant parse version %s" % tag
-    return ScmVersion(parsed_version, distance, node, dirty, preformatted, **kw)
+    return ScmVersion(
+        parsed_version, distance, node, dirty, preformatted, branch, config, **kw
+    )
 
 
 def guess_next_version(tag_version):
@@ -238,12 +243,14 @@ def guess_next_dev_version(version):
 
 
 def guess_next_simple_semver(version, retain, increment=True):
-    parts = map(int, str(version).split("."))
-    parts = _pad(parts, retain, 0)
+    parts = [int(i) for i in str(version).split(".")[:retain]]
+    while len(parts) < retain:
+        parts.append(0)
     if increment:
         parts[-1] += 1
-    parts = _pad(parts, SEMVER_LEN, 0)
-    return ".".join(map(str, parts))
+    while len(parts) < SEMVER_LEN:
+        parts.append(0)
+    return ".".join(str(i) for i in parts)
 
 
 def simplified_semver_version(version):
@@ -258,6 +265,25 @@ def simplified_semver_version(version):
             return version.format_next_version(
                 guess_next_simple_semver, retain=SEMVER_PATCH
             )
+
+
+def release_branch_semver(version):
+    if version.exact:
+        return version.format_with("{tag}")
+    if version.branch is not None:
+        # Does the branch name (stripped of namespace) parse as a version?
+        branch_ver = _parse_version_tag(version.branch.split("/")[-1], version.config)
+        if branch_ver is not None:
+            # Does the branch version up to the minor part match the tag? If not it
+            # might be like, an issue number or something and not a version number, so
+            # we only want to use it if it matches.
+            tag_ver_up_to_minor = str(version.tag).split(".")[:SEMVER_MINOR]
+            branch_ver_up_to_minor = branch_ver["version"].split(".")[:SEMVER_MINOR]
+            if branch_ver_up_to_minor == tag_ver_up_to_minor:
+                # We're in a release/maintenance branch, next is a patch/rc/beta bump:
+                return version.format_next_version(guess_next_version)
+    # We're in a development branch, next is a minor bump:
+    return version.format_next_version(guess_next_simple_semver, retain=SEMVER_MINOR)
 
 
 def _format_local_with_time(version, time_format):

@@ -477,9 +477,20 @@ Version number construction
 
     Available implementations:
 
-    :guess-next-dev: automatically guesses the next development version (default)
-    :post-release: generates post release versions (adds :code:`postN`)
-    :python-simplified-semver: basic semantic versioning similar to ``guess-next-dev``
+    :guess-next-dev: Automatically guesses the next development version (default).
+        Guesses the upcoming release by incrementing the pre-release segment if present,
+        otherwise by incrementing the micro segment. Then appends :code:`.devN`.
+    :post-release: generates post release versions (adds :code:`.postN`)
+    :python-simplified-semver: Basic semantic versioning. Guesses the upcoming release
+        by incrementing the minor segment and setting the micro segment to zero if the
+        current branch contains the string ``'feature'``, otherwise by incrementing the
+        micro version. Then appends :code:`.devN`. Not compatible with pre-releases.
+    :release-branch-semver: Semantic versioning for projects with release branches. The
+        same as ``guess-next-dev`` (incrementing the pre-release or micro segment) if on
+        a release branch: a branch whose name (ignoring namespace) parses as a version
+        that matches the most recent tag up to the minor segment. Otherwise if on a
+        non-release branch, increments the minor segment and sets the micro segment to
+        zero, then appends :code:`.devN`.
 
 ``setuptools_scm.local_scheme``
     Configures how the local part of a version is rendered given a
