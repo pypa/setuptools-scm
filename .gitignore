@@ -20,6 +20,8 @@ __pycache__/
 # Distribution / packaging
 .env/
 env/
+.venv/
+venv/
 build/
 dist/
 .eggs/
