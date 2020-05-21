@@ -24,6 +24,9 @@ def scm_config():
 
     sys.path.insert(0, src)
     pkg_resources.working_set.add_entry(src)
+    # FIXME: remove debug
+    print(src)
+    print(pkg_resources.working_set)
     from setuptools_scm.hacks import parse_pkginfo
     from setuptools_scm.git import parse as parse_git
     from setuptools_scm.version import guess_next_dev_version, get_local_node_and_date
@@ -46,79 +49,5 @@ def scm_config():
         return dict(version=get_version(root=here, parse=parse, **config))
 
 
-with open("README.rst") as fp:
-    long_description = fp.read()
-
-
-arguments = dict(
-    name="setuptools_scm",
-    url="https://github.com/pypa/setuptools_scm/",
-    zip_safe=True,
-    author="Ronny Pfannschmidt",
-    author_email="opensource@ronnypfannschmidt.de",
-    description=("the blessed package to manage your versions by scm tags"),
-    long_description=long_description,
-    license="MIT",
-    packages=["setuptools_scm"],
-    package_dir={"": "src"},
-    entry_points="""
-        [distutils.setup_keywords]
-        use_scm_version = setuptools_scm.integration:version_keyword
-
-        [setuptools.file_finders]
-        setuptools_scm = setuptools_scm.integration:find_files
-
-        [setuptools.finalize_distribution_options]
-        setuptools_scm = setuptools_scm.integration:infer_version
-
-        [setuptools_scm.parse_scm]
-        .hg = setuptools_scm.hg:parse
-        .git = setuptools_scm.git:parse
-
-        [setuptools_scm.parse_scm_fallback]
-        .hg_archival.txt = setuptools_scm.hg:parse_archival
-        PKG-INFO = setuptools_scm.hacks:parse_pkginfo
-        pip-egg-info = setuptools_scm.hacks:parse_pip_egg_info
-        setup.py = setuptools_scm.hacks:fallback_version
-
-        [setuptools_scm.files_command]
-        .hg = setuptools_scm.file_finder_hg:hg_find_files
-        .git = setuptools_scm.file_finder_git:git_find_files
-
-        [setuptools_scm.version_scheme]
-        guess-next-dev = setuptools_scm.version:guess_next_dev_version
-        post-release = setuptools_scm.version:postrelease_version
-        python-simplified-semver = setuptools_scm.version:simplified_semver_version
-        release-branch-semver = setuptools_scm.version:release_branch_semver
-
-        [setuptools_scm.local_scheme]
-        node-and-date = setuptools_scm.version:get_local_node_and_date
-        node-and-timestamp = \
-        setuptools_scm.version:get_local_node_and_timestamp
-        dirty-tag = setuptools_scm.version:get_local_dirty_tag
-        no-local-version = setuptools_scm.version:get_no_local_node
-    """,
-    classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Topic :: Software Development :: Libraries",
-        "Topic :: Software Development :: Version Control",
-        "Topic :: System :: Software Distribution",
-        "Topic :: Utilities",
-    ],
-    python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
-    extras_require=dict(toml=["toml", "setuptools>=42"]),
-)
-
 if __name__ == "__main__":
-    arguments.update(scm_config())
-    setuptools.setup(**arguments)
+    setuptools.setup(**scm_config())
