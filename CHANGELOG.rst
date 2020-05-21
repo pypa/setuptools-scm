@@ -7,6 +7,13 @@ v4.0.0
 * switch to github actions for ci
 * fix documentation for ``tag_regex`` and add support for single digit versions
 * document handling of enterprise distros with unsupported setuptools versions #312
+* switch to declarative metadata
+* drop the internal copy of samefile and use a dependency on jaraco.windows on legacy systems
+* select git tags based on the presence of numbers instead of dots
+* enable getting a version form a parent folder prefix
+* add release-branch-semver version scheme
+* make global configuration available to version metadata
+* drop official support for python 3.4
 
 v3.5.0
 ======
