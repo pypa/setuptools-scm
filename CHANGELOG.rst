@@ -13,6 +13,7 @@ v4.0.0
 * enable getting a version form a parent folder prefix
 * add release-branch-semver version scheme
 * make global configuration available to version metadata
+* drop official support for python 3.4
 
 v3.5.0
 ======
