@@ -50,6 +50,6 @@ def scm_find_files(path, scm_files, scm_dirs):
             # dirpath + filename with symlinks preserved
             fullfilename = os.path.join(dirpath, filename)
             if os.path.normcase(os.path.realpath(fullfilename)) in scm_files:
-                res.append(os.path.join(path, os.path.relpath(fullfilename, path)))
+                res.append(os.path.join(path, os.path.relpath(fullfilename, realpath)))
         seen.add(realdirpath)
     return res
