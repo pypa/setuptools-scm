@@ -22,11 +22,22 @@ jobs:
           python_version: "2.7"
         - os: windows-latest
           python_version: "pypy2"
+        include:
+        - os: ubuntu-latest
+          python_version: '3.9-dev'
+
     name: ${{ matrix.os }} - Python ${{ matrix.python_version }}
     steps:
       - uses: actions/checkout@v1
       - name: Setup python
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v2
+        if: matrix.python_version != '3.9-dev'
+        with:
+          python-version: ${{ matrix.python_version }}
+          architecture: x64
+      - name: Set up Python ${{ matrix.python_version }} (deadsnakes)
+        uses: deadsnakes/action@v1.0.0
+        if: matrix.python_version == '3.9-dev'
         with:
           python-version: ${{ matrix.python_version }}
           architecture: x64
