@@ -267,7 +267,7 @@ def simplified_semver_version(version):
             )
 
 
-def release_branch_semver(version):
+def release_branch_semver_version(version):
     if version.exact:
         return version.format_with("{tag}")
     if version.branch is not None:

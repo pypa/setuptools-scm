@@ -3,7 +3,7 @@ from setuptools_scm.config import Configuration
 from setuptools_scm.version import (
     meta,
     simplified_semver_version,
-    release_branch_semver,
+    release_branch_semver_version,
     tags_to_versions,
 )
 
@@ -80,7 +80,7 @@ def test_next_semver(version, expected_next):
     ],
 )
 def test_next_release_branch_semver(version, expected_next):
-    computed = release_branch_semver(version)
+    computed = release_branch_semver_version(version)
     assert computed == expected_next
 
 
