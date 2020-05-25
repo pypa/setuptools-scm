@@ -267,7 +267,7 @@ def simplified_semver_version(version):
             )
 
 
-def release_branch_semver(version):
+def release_branch_semver_version(version):
     if version.exact:
         return version.format_with("{tag}")
     if version.branch is not None:
@@ -284,6 +284,16 @@ def release_branch_semver(version):
                 return version.format_next_version(guess_next_version)
     # We're in a development branch, next is a minor bump:
     return version.format_next_version(guess_next_simple_semver, retain=SEMVER_MINOR)
+
+
+def release_branch_semver(version):
+    warnings.warn(
+        "release_branch_semver is deprecated and will be removed in future. "
+        + "Use release_branch_semver_version instead",
+        category=DeprecationWarning,
+        stacklevel=2,
+    )
+    return release_branch_semver_version(version)
 
 
 def _format_local_with_time(version, time_format):
