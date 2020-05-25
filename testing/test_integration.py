@@ -9,7 +9,7 @@ from setuptools_scm.utils import do
 def wd(wd):
     try:
         wd("git init")
-    except FileNotFoundError:
+    except OSError:
         pytest.skip("git executable not found")
 
     wd("git config user.email test@example.com")

@@ -11,7 +11,7 @@ def inwd(request, wd, monkeypatch):
     if request.param == "git":
         try:
             wd("git init")
-        except FileNotFoundError:
+        except OSError:
             pytest.skip("git executable not found")
         wd("git config user.email test@example.com")
         wd('git config user.name "a test"')
@@ -20,7 +20,7 @@ def inwd(request, wd, monkeypatch):
     elif request.param == "hg":
         try:
             wd("hg init")
-        except FileNotFoundError:
+        except OSError:
             pytest.skip("hg executable not found")
         wd.add_command = "hg add ."
         wd.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
