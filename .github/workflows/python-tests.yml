@@ -19,8 +19,6 @@ jobs:
         os: [windows-latest, ubuntu-latest] #, macos-latest]
         exclude:
         - os: windows-latest
-          python_version: "2.7"
-        - os: windows-latest
           python_version: "pypy2"
         include:
         - os: ubuntu-latest
