@@ -29,7 +29,7 @@ def test_pkginfo_noscmroot(tmpdir, monkeypatch):
 
     try:
         do("git init", p.dirpath())
-    except FileNotFoundError:
+    except OSError:
         pass
     else:
         res = do((sys.executable, "setup.py", "--version"), p)
