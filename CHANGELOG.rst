@@ -1,3 +1,14 @@
+v4.1.0
+=======
+
+* include python 3.9 via the deadsnakes action
+* return release_branch_semver scheme (it got dropped in a bad rebase)
+* undo the devendoring of the samefile backport for python2.7 on windows
+* re-enable the building of universal wheels
+* fix handling of missing git/hg on python2.7 (python 3 exceptions where used)
+* correct the tox flake8 invocation
+* trigger builds on tags again
+
 v4.0.0
 ======
 
