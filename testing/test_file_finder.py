@@ -9,6 +9,8 @@ from setuptools_scm.integration import find_files
 @pytest.fixture(params=["git", "hg"])
 def inwd(request, wd, monkeypatch):
     if request.param == "git":
+        if sys.platform == "win32" and sys.version_info[0] < 3:
+            pytest.skip("Long/short path names supported on Windows Python 2.7")
         try:
             wd("git init")
         except OSError:
