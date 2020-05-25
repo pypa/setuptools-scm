@@ -286,6 +286,16 @@ def release_branch_semver_version(version):
     return version.format_next_version(guess_next_simple_semver, retain=SEMVER_MINOR)
 
 
+def release_branch_semver(version):
+    warnings.warn(
+        "release_branch_semver is deprecated and will be removed in future. "
+        + "Use release_branch_semver_version instead",
+        category=DeprecationWarning,
+        stacklevel=2,
+    )
+    return release_branch_semver_version(version)
+
+
 def _format_local_with_time(version, time_format):
 
     if version.exact or version.node is None:
