@@ -1,3 +1,9 @@
+v4.1.1
+=======
+
+* drop jaraco.windows from pyproject.toml, allows for wheel builds on python2
+
+
 v4.1.0
 =======
 
