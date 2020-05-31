@@ -1,3 +1,8 @@
+v4.1.2
+=======
+
+* disallow git tags without dots by default again - #449
+
 v4.1.1
 =======
 
