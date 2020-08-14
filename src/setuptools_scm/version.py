@@ -205,7 +205,7 @@ def meta(
         )
     parsed_version = _parse_tag(tag, preformatted, config)
     trace("version", tag, "->", parsed_version)
-    assert parsed_version is not None, "cant parse version %s" % tag
+    assert parsed_version is not None, "Can't parse version %s" % tag
     return ScmVersion(
         parsed_version, distance, node, dirty, preformatted, branch, config, **kw
     )
