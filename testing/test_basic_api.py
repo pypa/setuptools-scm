@@ -101,9 +101,13 @@ def test_dump_version(tmpdir):
 
     dump_version(sp, "1.0", "first.txt")
     assert tmpdir.join("first.txt").read() == "1.0"
-    dump_version(sp, "1.0", "first.py")
+
+    dump_version(sp, "1.0.dev42", "first.py")
     content = tmpdir.join("first.py").read()
-    assert repr("1.0") in content
+    lines = content.splitlines()
+    assert "version = '1.0.dev42'" in lines
+    assert "version_tuple = (1, 0, 'dev42')" in lines
+
     import ast
 
     ast.parse(content)
