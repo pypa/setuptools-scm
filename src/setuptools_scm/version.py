@@ -2,6 +2,8 @@ from __future__ import print_function
 import datetime
 import warnings
 import re
+import time
+import os
 
 from .config import Configuration
 from .utils import trace, string_types, utc
@@ -136,7 +138,9 @@ class ScmVersion(object):
             distance = 0
         self.distance = distance
         self.node = node
-        self.time = datetime.datetime.now(utc)
+        self.time = datetime.datetime.utcfromtimestamp(
+            int(os.environ.get("SOURCE_DATE_EPOCH", time.time()))
+        )
         self._extra = kw
         self.dirty = dirty
         self.preformatted = preformatted

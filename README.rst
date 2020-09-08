@@ -440,6 +440,12 @@ Environment variables
     a lot of debug information will be printed as part of ``setuptools_scm``
     operating
 
+:SOURCE_DATE_EPOCH:
+    when defined, used as the timestamp from which the
+    ``node-and-date`` and ``node-and-timestamp`` local parts are
+    derived, otherwise the current time is used
+    (https://reproducible-builds.org/docs/source-date-epoch/)
+
 Extending setuptools_scm
 ------------------------
 
