@@ -6,7 +6,7 @@ import time
 import os
 
 from .config import Configuration
-from .utils import trace, string_types, utc
+from .utils import trace, string_types
 
 from pkg_resources import iter_entry_points
 
