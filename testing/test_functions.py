@@ -15,11 +15,6 @@ from setuptools_scm.utils import has_command
 PY3 = sys.version_info > (2,)
 
 
-class MockTime(object):
-    def __format__(self, *k):
-        return "time"
-
-
 @pytest.mark.parametrize(
     "tag, expected",
     [
@@ -51,21 +46,20 @@ VERSIONS = {
         ("exact", "guess-next-dev node-and-date", "1.1"),
         ("zerodistance", "guess-next-dev node-and-date", "1.2.dev0"),
         ("zerodistance", "guess-next-dev no-local-version", "1.2.dev0"),
-        ("dirty", "guess-next-dev node-and-date", "1.2.dev0+dtime"),
+        ("dirty", "guess-next-dev node-and-date", "1.2.dev0+d20090213"),
         ("dirty", "guess-next-dev no-local-version", "1.2.dev0"),
         ("distance", "guess-next-dev node-and-date", "1.2.dev3"),
-        ("distancedirty", "guess-next-dev node-and-date", "1.2.dev3+dtime"),
+        ("distancedirty", "guess-next-dev node-and-date", "1.2.dev3+d20090213"),
         ("distancedirty", "guess-next-dev no-local-version", "1.2.dev3"),
         ("exact", "post-release node-and-date", "1.1"),
         ("zerodistance", "post-release node-and-date", "1.1.post0"),
-        ("dirty", "post-release node-and-date", "1.1.post0+dtime"),
+        ("dirty", "post-release node-and-date", "1.1.post0+d20090213"),
         ("distance", "post-release node-and-date", "1.1.post3"),
-        ("distancedirty", "post-release node-and-date", "1.1.post3+dtime"),
+        ("distancedirty", "post-release node-and-date", "1.1.post3+d20090213"),
     ],
 )
-def test_format_version(version, monkeypatch, scheme, expected):
+def test_format_version(version, scheme, expected):
     version = VERSIONS[version]
-    monkeypatch.setattr(version, "time", MockTime())
     vs, ls = scheme.split()
     assert format_version(version, version_scheme=vs, local_scheme=ls) == expected
 

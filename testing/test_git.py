@@ -121,15 +121,21 @@ def test_git_worktree(wd):
 
 
 @pytest.mark.issue(86)
-def test_git_dirty_notag(wd):
+@pytest.mark.parametrize("today", [False, True])
+def test_git_dirty_notag(today, wd, monkeypatch):
+    if today:
+        monkeypatch.delenv("SOURCE_DATE_EPOCH", raising=False)
     wd.commit_testfile()
     wd.write("test.txt", "test2")
     wd("git add test.txt")
     assert wd.version.startswith("0.1.dev1")
-    # the date on the tag is in UTC
-    today = datetime.utcnow().date()
+    if today:
+        # the date on the tag is in UTC
+        tag = datetime.utcnow().date().strftime(".d%Y%m%d")
+    else:
+        tag = ".d20090213"
     # we are dirty, check for the tag
-    assert today.strftime(".d%Y%m%d") in wd.version
+    assert tag in wd.version
 
 
 @pytest.mark.issue(193)
