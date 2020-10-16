@@ -11,7 +11,6 @@ import os
 import io
 import platform
 import traceback
-import datetime
 
 
 DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
@@ -119,22 +118,6 @@ def data_from_mime(path):
     data = dict(x.split(": ", 1) for x in content.splitlines() if ": " in x)
     trace("data", data)
     return data
-
-
-class UTC(datetime.tzinfo):
-    _ZERO = datetime.timedelta(0)
-
-    def utcoffset(self, dt):
-        return self._ZERO
-
-    def tzname(self, dt):
-        return "UTC"
-
-    def dst(self, dt):
-        return self._ZERO
-
-
-utc = UTC()
 
 
 def function_has_arg(fn, argname):

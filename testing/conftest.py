@@ -3,6 +3,8 @@ import itertools
 import pytest
 import six
 
+# 2009-02-13T23:31:30+00:00
+os.environ["SOURCE_DATE_EPOCH"] = "1234567890"
 os.environ["SETUPTOOLS_SCM_DEBUG"] = "1"
 VERSION_PKGS = ["setuptools", "setuptools_scm"]
 
