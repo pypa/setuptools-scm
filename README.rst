@@ -1,5 +1,5 @@
 setuptools_scm
-===============
+==============
 
 ``setuptools_scm`` handles managing your Python package versions
 in SCM metadata instead of declaring them as the version argument
@@ -9,8 +9,8 @@ Additionally ``setuptools_scm`` provides setuptools with a list of files that ar
 (i.e. it automatically adds all of the SCM-managed files to the sdist).
 Unwanted files must be excluded by discarding them via ``MANIFEST.in``.
 
-.. image:: https://travis-ci.org/pypa/setuptools_scm.svg?branch=master
-    :target: https://travis-ci.org/pypa/setuptools_scm
+.. image:: https://github.com/pypa/setuptools_scm/workflows/python%20tests+artifacts+release/badge.svg
+    :target: https://github.com/pypa/setuptools_scm/actions
 
 .. image:: https://tidelift.com/badges/package/pypi/setuptools-scm
    :target: https://tidelift.com/subscription/pkg/pypi-setuptools-scm?utm_source=pypi-setuptools-scm&utm_medium=readme
@@ -238,7 +238,7 @@ the working directory for good reasons and using the installed metadata
 prevents using needless volatile data there.
 
 Notable Plugins
-----------------
+---------------
 
 `setuptools_scm_git_archive <https://pypi.python.org/pypi/setuptools_scm_git_archive>`_
     Provides partial support for obtaining versions from git archives that
@@ -248,7 +248,7 @@ Notable Plugins
 
 
 Default versioning scheme
---------------------------
+-------------------------
 
 In the standard configuration ``setuptools_scm`` takes a look at three things:
 
@@ -290,7 +290,7 @@ accordingly.
 
 
 Builtin mechanisms for obtaining version numbers
---------------------------------------------------
+------------------------------------------------
 
 1. the SCM itself (git/hg)
 2. ``.hg_archival`` files (mercurial archives)
@@ -546,7 +546,7 @@ The callable must return the configuration.
 
 
 Note on testing non-installed versions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 While the general advice is to test against a installed version,
 some environments require a test prior to install,

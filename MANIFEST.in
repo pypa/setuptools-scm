@@ -1,5 +1,4 @@
 exclude *.nix
-exclude .travis.yaml
 exclude .pre-commit-config.yaml
 include *.py
 include testing/*.py
