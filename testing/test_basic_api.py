@@ -109,9 +109,10 @@ def test_dump_version(tmpdir):
     expected_version_tuple_line = 'version_tuple = (1, 0, "dev42")'
     assert expected_version_tuple_line in lines
 
-    version_tuple = ""  # If exec() fails, the test will fail, as str is not tuple
-    exec(lines[lines.index(expected_version_tuple_line)])
-    assert isinstance(version_tuple, tuple)
+    # Assert that the version_tuple is actually a tuple
+    exec_locals = {}
+    exec(lines[lines.index(expected_version_tuple_line)], {}, exec_locals)
+    assert isinstance(exec_locals["version_tuple"], tuple)
 
     import ast
 
