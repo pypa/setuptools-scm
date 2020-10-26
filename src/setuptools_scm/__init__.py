@@ -93,9 +93,11 @@ def dump_version(root, version, write_to, template=None):
         version_fields.append(v)
 
     # Replace ' with " for Black-compatible output Python file
-    version_tuple_str = str(tuple(version_fields)).replace("'", '"')
+    version_tuple_dquote = str(tuple(version_fields)).replace("'", '"')
     with open(target, "w") as fp:
-        fp.write(template.format(version=version, version_tuple=version_tuple_str))
+        # Note: in the template, the version_tuple doesn't have surrounding
+        # quotes, so it's actually written as a tuple, not a string
+        fp.write(template.format(version=version, version_tuple=version_tuple_dquote))
 
 
 def _do_parse(config):

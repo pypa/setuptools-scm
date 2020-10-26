@@ -106,7 +106,12 @@ def test_dump_version(tmpdir):
     content = tmpdir.join("first.py").read()
     lines = content.splitlines()
     assert 'version = "1.0.dev42"' in lines
-    assert 'version_tuple = (1, 0, "dev42")' in lines
+    expected_version_tuple_line = 'version_tuple = (1, 0, "dev42")'
+    assert expected_version_tuple_line in lines
+
+    version_tuple = ""  # If exec() fails, the test will fail, as str is not tuple
+    exec(lines[lines.index(expected_version_tuple_line)])
+    assert isinstance(version_tuple, tuple)
 
     import ast
 
