@@ -198,7 +198,7 @@ or the `importlib_metadata`_ backport:
         __version__ = version(__name__)
     except PackageNotFoundError:
         # package is not installed
-       pass
+        pass
 
 Alternatively, you can use ``pkg_resources`` which is included in
 ``setuptools``:
