@@ -268,6 +268,22 @@ def test_non_dotted_version(wd):
     assert wd.get_version().startswith("2")
 
 
+def test_non_dotted_version_with_updated_regex(wd):
+    wd.commit_testfile()
+    wd("git tag apache-arrow-1")
+    wd.commit_testfile()
+    assert wd.get_version(tag_regex=r"^apache-arrow-([\.0-9]+)$").startswith("2")
+
+
+def test_non_dotted_tag_no_version_match(wd):
+    wd.commit_testfile()
+    wd("git tag apache-arrow-0.11.1")
+    wd.commit_testfile()
+    wd("git tag apache-arrow")
+    wd.commit_testfile()
+    assert wd.get_version().startswith("0.11.2.dev2")
+
+
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/381")
 def test_gitdir(monkeypatch, wd):
     """
