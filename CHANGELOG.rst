@@ -1,3 +1,9 @@
+v4.2.0
+======
+
+* Add `no-guess-dev` which does no next version guessing, just adds `.post1.devN` in
+  case there are new commits after the tag
+
 v4.1.2
 =======
 
