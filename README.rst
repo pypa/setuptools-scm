@@ -497,6 +497,7 @@ Version number construction
         that matches the most recent tag up to the minor segment. Otherwise if on a
         non-release branch, increments the minor segment and sets the micro segment to
         zero, then appends :code:`.devN`.
+    :no-guess-dev: Does no next version guessing, just adds :code:`.post1.devN`
 
 ``setuptools_scm.local_scheme``
     Configures how the local part of a version is rendered given a

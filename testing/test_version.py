@@ -5,6 +5,7 @@ from setuptools_scm.version import (
     simplified_semver_version,
     release_branch_semver_version,
     tags_to_versions,
+    no_guess_dev_version,
 )
 
 
@@ -81,6 +82,31 @@ def test_next_semver(version, expected_next):
 )
 def test_next_release_branch_semver(version, expected_next):
     computed = release_branch_semver_version(version)
+    assert computed == expected_next
+
+
+@pytest.mark.parametrize(
+    "version, expected_next",
+    [
+        pytest.param(
+            meta("1.0.0", distance=2, branch="default", config=c),
+            "1.0.0.post1.dev2",
+            id="dev_distance",
+        ),
+        pytest.param(
+            meta("1.0", distance=2, branch="default", config=c),
+            "1.0.post1.dev2",
+            id="dev_distance_short_tag",
+        ),
+        pytest.param(
+            meta("1.0.0", distance=None, branch="default", config=c),
+            "1.0.0",
+            id="no_dev_distance",
+        ),
+    ],
+)
+def test_no_guess_version(version, expected_next):
+    computed = no_guess_dev_version(version)
     assert computed == expected_next
 
 

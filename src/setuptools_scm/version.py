@@ -300,6 +300,13 @@ def release_branch_semver(version):
     return release_branch_semver_version(version)
 
 
+def no_guess_dev_version(version):
+    if version.exact:
+        return version.format_with("{tag}")
+    else:
+        return version.format_with("{tag}.post1.dev{distance}")
+
+
 def _format_local_with_time(version, time_format):
 
     if version.exact or version.node is None:
