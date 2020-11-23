@@ -187,7 +187,7 @@ Retrieving package version at runtime
 
 If you have opted not to hardcode the version number inside the package,
 you can retrieve it at runtime from PEP-0566_ metadata using
-``importlib.metadata`` from the standard library
+``importlib.metadata`` from the standard library (added in Python 3.8)
 or the `importlib_metadata`_ backport:
 
 .. code:: python
@@ -195,7 +195,7 @@ or the `importlib_metadata`_ backport:
     from importlib.metadata import version, PackageNotFoundError
 
     try:
-        __version__ = version(__name__)
+        __version__ = version("package-name")
     except PackageNotFoundError:
         # package is not installed
        pass
@@ -208,7 +208,7 @@ Alternatively, you can use ``pkg_resources`` which is included in
    from pkg_resources import get_distribution, DistributionNotFound
 
    try:
-       __version__ = get_distribution(__name__).version
+       __version__ = get_distribution("package-name").version
    except DistributionNotFound:
         # package is not installed
        pass
