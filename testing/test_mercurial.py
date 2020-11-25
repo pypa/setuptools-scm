@@ -40,7 +40,11 @@ def test_archival_to_version(expected, data):
     version = archival_to_version(data, config=config)
     assert (
         format_version(
-            version, version_scheme="guess-next-dev", local_scheme="node-and-date"
+            version,
+            version_scheme="guess-next-dev",
+            custom_version_scheme=None,
+            local_scheme="node-and-date",
+            custom_local_scheme=None,
         )
         == expected
     )

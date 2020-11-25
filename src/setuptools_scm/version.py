@@ -307,6 +307,13 @@ def no_guess_dev_version(version):
         return version.format_with("{tag}.post1.dev{distance}")
 
 
+def postrelease_version(version):
+    if version.exact:
+        return version.format_with("{tag}")
+    else:
+        return version.format_with("{tag}.post{distance}")
+
+
 def _format_local_with_time(version, time_format):
 
     if version.exact or version.node is None:
@@ -335,11 +342,24 @@ def get_no_local_node(_):
     return ""
 
 
-def postrelease_version(version):
-    if version.exact:
-        return version.format_with("{tag}")
-    else:
-        return version.format_with("{tag}.post{distance}")
+def customize_scheme(base_scheme, version, custom_scheme):
+    if custom_scheme is not None:
+        if version.distance:
+            if "clean_dev" in custom_scheme and not version.dirty:
+                trace("custom clean dev", custom_scheme["clean_dev"])
+                return version.format_with(custom_scheme["clean_dev"])
+            if "dirty_dev" in custom_scheme and version.dirty:
+                trace("custom dirty dev", custom_scheme["dirty_dev"])
+                return version.format_with(custom_scheme["dirty_dev"])
+        else:
+            if "clean_tag" in custom_scheme and not version.dirty:
+                trace("custom clean tag", custom_scheme["clean_tag"])
+                return version.format_with(custom_scheme["clean_tag"])
+            if "dirty_tag" in custom_scheme and version.dirty:
+                trace("custom dirty tag", custom_scheme["dirty_tag"])
+                return version.format_with(custom_scheme["dirty_tag"])
+
+    return base_scheme(version)
 
 
 def format_version(version, **config):
@@ -353,8 +373,12 @@ def format_version(version, **config):
     local_scheme = callable_or_entrypoint(
         "setuptools_scm.local_scheme", config["local_scheme"]
     )
-    main_version = version_scheme(version)
+    main_version = customize_scheme(
+        version_scheme, version, config["custom_version_scheme"]
+    )
     trace("version", main_version)
-    local_version = local_scheme(version)
+    local_version = customize_scheme(
+        local_scheme, version, config["custom_local_scheme"]
+    )
     trace("local_version", local_version)
     return main_version + local_version

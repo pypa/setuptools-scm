@@ -61,7 +61,58 @@ VERSIONS = {
 def test_format_version(version, scheme, expected):
     version = VERSIONS[version]
     vs, ls = scheme.split()
-    assert format_version(version, version_scheme=vs, local_scheme=ls) == expected
+    assert (
+        format_version(
+            version,
+            version_scheme=vs,
+            custom_version_scheme=None,
+            local_scheme=ls,
+            custom_local_scheme=None,
+        )
+        == expected
+    )
+
+
+CUSTOM_SCHEMES = {
+    "full": {
+        "clean_dev": "<clean_dev>",
+        "dirty_dev": "<dirty_dev>",
+        "clean_tag": "<clean_tag>",
+        "dirty_tag": "<dirty_tag>",
+    },
+    "dirty": {"dirty_dev": "<dirty_dev>", "dirty_tag": "<dirty_tag>"},
+    "clean": {"clean_dev": "<clean_dev>", "clean_tag": "<clean_tag>"},
+}
+
+
+@pytest.mark.parametrize(
+    "version,scheme,expected",
+    [
+        ("exact", "full full", "<clean_tag><clean_tag>"),
+        ("zerodistance", "full full", "<clean_tag><clean_tag>"),
+        ("dirty", "full full", "<dirty_tag><dirty_tag>"),
+        ("distance", "full full", "<clean_dev><clean_dev>"),
+        ("distancedirty", "full full", "<dirty_dev><dirty_dev>"),
+        ("exact", "dirty full", "1.1<clean_tag>"),
+        ("zerodistance", "dirty full", "1.2.dev0<clean_tag>"),
+        ("dirty", "dirty clean", "<dirty_tag>+d20090213"),
+        ("distance", "dirty clean", "1.2.dev3<clean_dev>"),
+        ("distancedirty", "full clean", "<dirty_dev>+d20090213"),
+    ],
+)
+def test_custom_format_version(version, scheme, expected):
+    version = VERSIONS[version]
+    vs, ls = scheme.split()
+    assert (
+        format_version(
+            version,
+            version_scheme="guess-next-dev",
+            custom_version_scheme=CUSTOM_SCHEMES[vs],
+            local_scheme="node-and-date",
+            custom_local_scheme=CUSTOM_SCHEMES[ls],
+        )
+        == expected
+    )
 
 
 def test_dump_version_doesnt_bail_on_value_error(tmpdir):

@@ -134,7 +134,9 @@ def _do_parse(config):
 def get_version(
     root=".",
     version_scheme=DEFAULT_VERSION_SCHEME,
+    custom_version_scheme=None,
     local_scheme=DEFAULT_LOCAL_SCHEME,
+    custom_local_scheme=None,
     write_to=None,
     write_to_template=None,
     relative_to=None,
@@ -163,7 +165,9 @@ def _get_version(config):
         version_string = format_version(
             parsed_version,
             version_scheme=config.version_scheme,
+            custom_version_scheme=config.custom_version_scheme,
             local_scheme=config.local_scheme,
+            custom_local_scheme=config.custom_local_scheme,
         )
         dump_version(
             root=config.root,

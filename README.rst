@@ -336,9 +336,15 @@ The currently supported configuration keys are:
     Configures how the local version number is constructed; either an
     entrypoint name or a callable.
 
+:custom_version_scheme:
+    Overrides format strings for the local version number; a dictionary.
+
 :local_scheme:
     Configures how the local component of the version is constructed; either an
     entrypoint name or a callable.
+
+:custom_local_scheme:
+    Overrides format strings for the local component of the version; a dictionary.
 
 :write_to:
     A path to a file that gets replaced with a file containing the current
@@ -515,6 +521,19 @@ Version number construction
     :dirty-tag: adds ``+dirty`` if the current workdir has changes
     :no-local-version: omits local version, useful e.g. because pypi does
                        not support it
+
+``setuptools_scm.custom_version_scheme``, ``setuptools_scm.custom_local_scheme``
+    Provides a greater degree of control over how the version number is rendered.
+    A dictionary specifying format strings that override the behavior of
+    ``setuptools_scm.version_scheme`` and ``setuptools_scm.local_scheme``,
+    correspondingly, in various conditions.
+
+    Recognized keys:
+
+    :clean_tag: format for zero distance to a tag and clean workdir
+    :dirty_tag: format for zero distance to a tag and dirty workdir
+    :clean_dev: format for non-zero distance to a tag and clean workdir
+    :dirty_dev: format for non-zero distance to a tag and dirty workdir
 
 
 Importing in ``setup.py``

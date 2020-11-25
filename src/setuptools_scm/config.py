@@ -45,7 +45,9 @@ class Configuration(object):
         relative_to=None,
         root=".",
         version_scheme=DEFAULT_VERSION_SCHEME,
+        custom_version_scheme=None,
         local_scheme=DEFAULT_LOCAL_SCHEME,
+        custom_local_scheme=None,
         write_to=None,
         write_to_template=None,
         tag_regex=DEFAULT_TAG_REGEX,
@@ -61,7 +63,9 @@ class Configuration(object):
 
         self.root = root
         self.version_scheme = version_scheme
+        self.custom_version_scheme = custom_version_scheme
         self.local_scheme = local_scheme
+        self.custom_local_scheme = custom_local_scheme
         self.write_to = write_to
         self.write_to_template = write_to_template
         self.parentdir_prefix_version = parentdir_prefix_version
