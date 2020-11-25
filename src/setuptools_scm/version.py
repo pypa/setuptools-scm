@@ -357,4 +357,4 @@ def format_version(version, **config):
     trace("version", main_version)
     local_version = local_scheme(version)
     trace("local_version", local_version)
-    return version_scheme(version) + local_scheme(version)
+    return main_version + local_version
