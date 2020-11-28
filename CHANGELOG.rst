@@ -3,6 +3,11 @@ v4.2.0
 
 * Add `no-guess-dev` which does no next version guessing, just adds `.post1.devN` in
   case there are new commits after the tag
+* add python3.9
+* enhance documentation
+* consider SOURCE_DATE_EPOCH for versioning
+* add a version_tuple to write_to templates
+
 
 v4.1.2
 =======
