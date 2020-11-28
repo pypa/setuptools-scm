@@ -34,7 +34,7 @@ v4.1.0
 v4.0.0
 ======
 
-* Add ``parentdir_project_version`` to support installs from GitHub release
+* Add ``parentdir_prefix_version`` to support installs from GitHub release
   tarballs.
 * use  Coordinated Universal Time (UTC)
 * switch to github actions for ci
