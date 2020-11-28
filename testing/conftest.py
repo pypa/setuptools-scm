@@ -1,7 +1,6 @@
 import os
 import itertools
 import pytest
-import six
 
 # 2009-02-13T23:31:30+00:00
 os.environ["SOURCE_DATE_EPOCH"] = "1234567890"
@@ -42,10 +41,10 @@ class Wd(object):
         filename = self.cwd / name
         if kw:
             value = value.format(**kw)
-        if isinstance(value, six.text_type):
-            filename.write_text(value)
-        else:
+        if isinstance(value, bytes):
             filename.write_bytes(value)
+        else:
+            filename.write_text(value)
         return filename
 
     def _reason(self, given_reason):
