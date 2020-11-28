@@ -152,8 +152,7 @@ def test_version_bump_from_merge_commit(wd):
 
 @pytest.mark.usefixtures("version_1_0")
 def test_version_bump_from_commit_including_hgtag_mods(wd):
-    """ Test the case where a commit includes changes to .hgtags and other files
-    """
+    """Test the case where a commit includes changes to .hgtags and other files"""
     with wd.cwd.joinpath(".hgtags").open("ab") as tagfile:
         tagfile.write(b"0  0\n")
     wd.write("branchfile", "branchtext")
@@ -166,7 +165,7 @@ def test_version_bump_from_commit_including_hgtag_mods(wd):
 @pytest.mark.issue(229)
 @pytest.mark.usefixtures("version_1_0")
 def test_latest_tag_detection(wd):
-    """ Tests that tags not containing a "." are ignored, the same as for git.
+    """Tests that tags not containing a "." are ignored, the same as for git.
     Note that will be superceded by the fix for pypa/setuptools_scm/issues/235
     """
     wd('hg tag some-random-tag -u test -d "0 0"')
