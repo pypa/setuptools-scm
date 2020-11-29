@@ -3,6 +3,7 @@ import subprocess
 import tarfile
 import logging
 from .file_finder import scm_find_files
+from .file_finder import is_toplevel_acceptable
 from .utils import trace
 
 log = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ def _git_ls_files_and_dirs(toplevel):
 
 def git_find_files(path=""):
     toplevel = _git_toplevel(path)
-    if not toplevel:
+    if not is_toplevel_acceptable(toplevel):
         return []
     fullpath = os.path.abspath(os.path.normpath(path))
     if not fullpath.startswith(toplevel):

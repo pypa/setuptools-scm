@@ -446,6 +446,11 @@ Environment variables
     derived, otherwise the current time is used
     (https://reproducible-builds.org/docs/source-date-epoch/)
 
+
+:SETUPTOOLS_SCM_IGNORE_VCS_ROOTS:
+    when defined, a ``os.pathsep`` separated list
+    of directory names to ignore for root finding
+
 Extending setuptools_scm
 ------------------------
 
