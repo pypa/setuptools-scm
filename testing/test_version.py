@@ -49,6 +49,15 @@ def test_next_semver(version, expected_next):
     assert computed == expected_next
 
 
+def test_next_semver_bad_tag():
+
+    version = meta("1.0.0-foo", config=c)
+    with pytest.raises(
+        ValueError, match="1.0.0-foo can't be parsed as numeric version"
+    ):
+        simplified_semver_version(version)
+
+
 @pytest.mark.parametrize(
     "version, expected_next",
     [

@@ -247,7 +247,12 @@ def guess_next_dev_version(version):
 
 
 def guess_next_simple_semver(version, retain, increment=True):
-    parts = [int(i) for i in str(version).split(".")[:retain]]
+    try:
+        parts = [int(i) for i in str(version).split(".")[:retain]]
+    except ValueError:
+        raise ValueError(
+            "{version} can't be parsed as numeric version".format(version=version)
+        )
     while len(parts) < retain:
         parts.append(0)
     if increment:
