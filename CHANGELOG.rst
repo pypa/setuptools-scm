@@ -1,7 +1,7 @@
 v4.2.0
 ======
 
-
+* fix #471: better error for version bump failing on complex but accepted tag
 * fix #479: raise indicative error when tags carry non-parsable information
 * Add `no-guess-dev` which does no next version guessing, just adds `.post1.devN` in
   case there are new commits after the tag

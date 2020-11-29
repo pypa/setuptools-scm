@@ -6,6 +6,7 @@ from setuptools_scm.version import (
     release_branch_semver_version,
     tags_to_versions,
     no_guess_dev_version,
+    guess_next_version,
 )
 
 
@@ -128,19 +129,28 @@ def test_no_guess_version(version, expected_next):
     ],
 )
 def test_tag_regex1(tag, expected):
-    config = Configuration()
     if "+" in tag:
         # pytest bug wrt cardinality
         with pytest.warns(UserWarning):
-            result = meta(tag, config=config)
+            result = meta(tag, config=c)
     else:
-        result = meta(tag, config=config)
+        result = meta(tag, config=c)
 
     assert result.tag.public == expected
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/286")
 def test_tags_to_versions():
-    config = Configuration()
-    versions = tags_to_versions(["1.0", "2.0", "3.0"], config=config)
+    versions = tags_to_versions(["1.0", "2.0", "3.0"], config=c)
     assert isinstance(versions, list)  # enable subscription
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/471")
+def test_version_bump_bad():
+    with pytest.raises(
+        ValueError,
+        match=".*does not end with a number to bump, "
+        "please correct or use a custom version scheme",
+    ):
+
+        guess_next_version(tag_version="2.0.0-alpha.5-PMC")
