@@ -235,8 +235,15 @@ def _bump_dev(version):
 
 
 def _bump_regex(version):
-    prefix, tail = re.match(r"(.*?)(\d+)$", version).groups()
-    return "%s%d" % (prefix, int(tail) + 1)
+    match = re.match(r"(.*?)(\d+)$", version)
+    if match is None:
+        raise ValueError(
+            "{version} does not end with a number to bump, "
+            "please correct or use a custom version scheme".format(version=version)
+        )
+    else:
+        prefix, tail = match.groups()
+        return "%s%d" % (prefix, int(tail) + 1)
 
 
 def guess_next_dev_version(version):
