@@ -1,4 +1,5 @@
 import os
+from .utils import trace
 
 
 def scm_find_files(path, scm_files, scm_dirs):
@@ -53,3 +54,16 @@ def scm_find_files(path, scm_files, scm_dirs):
                 res.append(os.path.join(path, os.path.relpath(fullfilename, realpath)))
         seen.add(realdirpath)
     return res
+
+
+def is_toplevel_acceptable(toplevel):
+    ""
+    if toplevel is None:
+        return False
+
+    ignored = os.environ.get("SETUPTOOLS_SCM_IGNORE_VCS_ROOTS", "").split(os.pathsep)
+    ignored = [os.path.normcase(p) for p in ignored]
+
+    trace(toplevel, ignored)
+
+    return toplevel not in ignored

@@ -126,6 +126,12 @@ def test_symlink_file_out_of_git(inwd):
     assert set(find_files("adir")) == _sep({"adir/filea"})
 
 
+@pytest.mark.parametrize("path_add", ["{cwd}", "{cwd}" + os.pathsep + "broken"])
+def test_ignore_root(inwd, monkeypatch, path_add):
+    monkeypatch.setenv("SETUPTOOLS_SCM_IGNORE_VCS_ROOTS", path_add.format(cwd=inwd.cwd))
+    assert find_files() == []
+
+
 def test_empty_root(inwd):
     subdir = inwd.cwd / "cdir" / "subdir"
     subdir.mkdir(parents=True)

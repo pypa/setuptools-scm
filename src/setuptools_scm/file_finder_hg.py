@@ -2,6 +2,7 @@ import os
 import subprocess
 
 from .file_finder import scm_find_files
+from .file_finder import is_toplevel_acceptable
 
 
 def _hg_toplevel(path):
@@ -41,7 +42,7 @@ def _hg_ls_files_and_dirs(toplevel):
 
 def hg_find_files(path=""):
     toplevel = _hg_toplevel(path)
-    if not toplevel:
+    if not is_toplevel_acceptable(toplevel):
         return []
     hg_files, hg_dirs = _hg_ls_files_and_dirs(toplevel)
     return scm_find_files(path, hg_files, hg_dirs)
