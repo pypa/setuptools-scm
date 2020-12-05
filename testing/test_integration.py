@@ -3,6 +3,7 @@ import sys
 import pytest
 
 from setuptools_scm.utils import do
+from setuptools_scm import PRETEND_KEY, PRETEND_KEY_NAMED
 
 
 @pytest.fixture
@@ -40,3 +41,23 @@ def test_pyproject_support_with_git(tmpdir, monkeypatch, wd):
     pkg.join("setup.py").write("__import__('setuptools').setup()")
     res = do((sys.executable, "setup.py", "--version"), pkg)
     assert res == "0.1.dev0"
+
+
+def test_pretend_version(tmpdir, monkeypatch, wd):
+    monkeypatch.setenv(PRETEND_KEY, "1.0.0")
+
+    assert wd.get_version() == "1.0.0"
+    assert wd.get_version(dist_name="ignored") == "1.0.0"
+
+
+def test_pretend_version_named(tmpdir, monkeypatch, wd):
+    monkeypatch.setenv(PRETEND_KEY_NAMED.format(name="test".upper()), "1.0.0")
+    monkeypatch.setenv(PRETEND_KEY_NAMED.format(name="test2".upper()), "2.0.0")
+    assert wd.get_version(dist_name="test") == "1.0.0"
+    assert wd.get_version(dist_name="test2") == "2.0.0"
+
+
+def test_pretend_version_name_takes_precedence(tmpdir, monkeypatch, wd):
+    monkeypatch.setenv(PRETEND_KEY_NAMED.format(name="test".upper()), "1.0.0")
+    monkeypatch.setenv(PRETEND_KEY, "2.0.0")
+    assert wd.get_version(dist_name="test") == "1.0.0"

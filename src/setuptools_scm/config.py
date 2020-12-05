@@ -54,6 +54,7 @@ class Configuration(object):
         fallback_root=".",
         parse=None,
         git_describe_command=None,
+        dist_name=None,
     ):
         # TODO:
         self._relative_to = relative_to
@@ -70,6 +71,7 @@ class Configuration(object):
         self.parse = parse
         self.tag_regex = tag_regex
         self.git_describe_command = git_describe_command
+        self.dist_name = dist_name
 
     @property
     def fallback_root(self):

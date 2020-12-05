@@ -10,6 +10,7 @@ v4.2.0
 * enhance documentation
 * consider SOURCE_DATE_EPOCH for versioning
 * add a version_tuple to write_to templates
+* fix #321: add suppport for the ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DISTRIBUTION_NAME}`` env var to target the pretend key
 * fix #142: clearly list supported scm
 
 
