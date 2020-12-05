@@ -11,11 +11,12 @@ from .config import (
     DEFAULT_LOCAL_SCHEME,
     DEFAULT_TAG_REGEX,
 )
-from .utils import function_has_arg, string_types
+from .utils import function_has_arg, string_types, trace
 from .version import format_version, meta
 from .discover import iter_matching_entrypoints
 
 PRETEND_KEY = "SETUPTOOLS_SCM_PRETEND_VERSION"
+PRETEND_KEY_NAMED = PRETEND_KEY + "_FOR_{name}"
 
 TEMPLATES = {
     ".py": """\
@@ -97,7 +98,18 @@ def dump_version(root, version, write_to, template=None):
 
 
 def _do_parse(config):
-    pretended = os.environ.get(PRETEND_KEY)
+
+    trace("dist name:", config.dist_name)
+    if config.dist_name is not None:
+        pretended = os.environ.get(
+            PRETEND_KEY_NAMED.format(name=config.dist_name.upper())
+        )
+    else:
+        pretended = None
+
+    if pretended is None:
+        pretended = os.environ.get(PRETEND_KEY)
+
     if pretended:
         # we use meta here since the pretended version
         # must adhere to the pep to begin with
@@ -144,6 +156,7 @@ def get_version(
     fallback_root=".",
     parse=None,
     git_describe_command=None,
+    dist_name=None,
 ):
     """
     If supplied, relative_to should be a file from which root may
