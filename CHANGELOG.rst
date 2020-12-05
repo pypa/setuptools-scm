@@ -10,6 +10,7 @@ v4.2.0
 * enhance documentation
 * consider SOURCE_DATE_EPOCH for versioning
 * add a version_tuple to write_to templates
+* fix #142: clearly list supported scm
 
 
 v4.1.2
