@@ -230,7 +230,13 @@ def _bump_dev(version):
         return
 
     prefix, tail = version.rsplit(".dev", 1)
-    assert tail == "0", "own dev numbers are unsupported"
+    if tail != "0":
+        raise ValueError(
+            "choosing custom numbers for the `.devX` distance "
+            "is not supported.\n "
+            "The {version} can't be bumped\n"
+            "Please drop the tag or create a new supported one".format(version=version)
+        )
     return prefix
 
 

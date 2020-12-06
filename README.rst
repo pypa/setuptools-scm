@@ -277,6 +277,7 @@ distance and not clean:
 The next version is calculated by adding ``1`` to the last numeric component of
 the tag.
 
+
 For Git projects, the version relies on `git describe <https://git-scm.com/docs/git-describe>`_,
 so you will see an additional ``g`` prepended to the ``{revision hash}``.
 
@@ -507,6 +508,8 @@ Version number construction
     :guess-next-dev: Automatically guesses the next development version (default).
         Guesses the upcoming release by incrementing the pre-release segment if present,
         otherwise by incrementing the micro segment. Then appends :code:`.devN`.
+        In case the tag ends with ``.dev0`` the version is not bumped
+        and custom ``.devN`` versions will trigger a error.
     :post-release: generates post release versions (adds :code:`.postN`)
     :python-simplified-semver: Basic semantic versioning. Guesses the upcoming release
         by incrementing the minor segment and setting the micro segment to zero if the

@@ -120,6 +120,22 @@ def test_no_guess_version(version, expected_next):
     assert computed == expected_next
 
 
+def test_bump_dev_version_zero():
+    guess_next_version("1.0.dev0")
+
+
+def test_bump_dev_version_nonzero_raises():
+    with pytest.raises(ValueError) as excinfo:
+        guess_next_version("1.0.dev1")
+
+    assert str(excinfo.value) == (
+        "choosing custom numbers for the `.devX` distance "
+        "is not supported.\n "
+        "The 1.0.dev1 can't be bumped\n"
+        "Please drop the tag or create a new supported one"
+    )
+
+
 @pytest.mark.parametrize(
     "tag, expected",
     [

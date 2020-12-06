@@ -12,6 +12,7 @@ v4.2.0
 * add a version_tuple to write_to templates
 * fix #321: add suppport for the ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DISTRIBUTION_NAME}`` env var to target the pretend key
 * fix #142: clearly list supported scm
+* fix #213: better error message for non-zero dev numbers in tags
 
 
 v4.1.2
