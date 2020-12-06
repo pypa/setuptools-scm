@@ -1,5 +1,11 @@
-v4.2.0
+v5.0.0
 ======
+
+
+Breaking changes:
+* fix #339: strict errors on missing scms when  parsing a scm dir to avoid false version lookups
+
+Bugfixes:
 
 * fix #352: add support for generally ignoring specific vcs roots
 * fix #471: better error for version bump failing on complex but accepted tag

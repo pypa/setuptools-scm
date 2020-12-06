@@ -4,13 +4,11 @@ from setuptools_scm import integration
 from setuptools_scm.config import Configuration
 from setuptools_scm.utils import has_command
 import pytest
-import warnings
 
 
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore")
-    if not has_command("hg"):
-        pytestmark = pytest.mark.skip(reason="hg executable not found")
+pytestmark = pytest.mark.skipif(
+    not has_command("hg", warn=False), reason="hg executable not found"
+)
 
 
 @pytest.fixture
@@ -44,6 +42,12 @@ def test_archival_to_version(expected, data):
         )
         == expected
     )
+
+
+def test_hg_gone(wd, monkeypatch):
+    monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
+    with pytest.raises(EnvironmentError, match="'hg' was not found"):
+        parse(str(wd.cwd))
 
 
 def test_find_files_stop_at_root_hg(wd, monkeypatch):
