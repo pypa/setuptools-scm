@@ -1,6 +1,6 @@
 import os
 from .config import Configuration
-from .utils import do, trace, data_from_mime, has_command
+from .utils import do, trace, data_from_mime, require_command
 from .version import meta, tags_to_versions
 
 
@@ -36,8 +36,7 @@ def parse(root, config=None):
     if not config:
         config = Configuration(root=root)
 
-    if not has_command("hg"):
-        return
+    require_command("hg")
     identity_data = do("hg id -i -b -t", config.absolute_root).split()
     if not identity_data:
         return

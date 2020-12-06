@@ -7,7 +7,6 @@ import pytest
 from datetime import datetime
 from os.path import join as opj
 from setuptools_scm.file_finder_git import git_find_files
-import warnings
 
 
 skip_if_win_27 = pytest.mark.skipif(
@@ -16,10 +15,9 @@ skip_if_win_27 = pytest.mark.skipif(
 )
 
 
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore")
-    if not has_command("git"):
-        pytestmark = pytest.mark.skip(reason="git executable not found")
+pytestmark = pytest.mark.skipif(
+    not has_command("git", warn=False), reason="git executable not found"
+)
 
 
 @pytest.fixture
@@ -57,6 +55,12 @@ setup(use_scm_version={"root": "../..",
     )
     res = do((sys.executable, "setup.py", "--version"), p)
     assert res == "0.1.dev0"
+
+
+def test_git_gone(wd, monkeypatch):
+    monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
+    with pytest.raises(EnvironmentError, match="'git' was not found"):
+        git.parse(str(wd.cwd), git.DEFAULT_DESCRIBE)
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/298")

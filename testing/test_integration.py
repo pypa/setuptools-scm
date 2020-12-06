@@ -8,11 +8,7 @@ from setuptools_scm import PRETEND_KEY, PRETEND_KEY_NAMED
 
 @pytest.fixture
 def wd(wd):
-    try:
-        wd("git init")
-    except OSError:
-        pytest.skip("git executable not found")
-
+    wd("git init")
     wd("git config user.email test@example.com")
     wd('git config user.name "a test"')
     wd.add_command = "git add ."

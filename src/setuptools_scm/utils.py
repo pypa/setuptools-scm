@@ -132,7 +132,7 @@ def function_has_arg(fn, argname):
     return argname in argspec
 
 
-def has_command(name):
+def has_command(name, warn=True):
     try:
         p = _popen_pipes([name, "help"], ".")
     except OSError:
@@ -141,6 +141,11 @@ def has_command(name):
     else:
         p.communicate()
         res = not p.returncode
-    if not res:
-        warnings.warn("%r was not found" % name)
+    if not res and warn:
+        warnings.warn("%r was not found" % name, category=RuntimeWarning)
     return res
+
+
+def require_command(name):
+    if not has_command(name, warn=False):
+        raise EnvironmentError("%r was not found" % name)
