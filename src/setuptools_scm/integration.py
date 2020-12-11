@@ -1,8 +1,8 @@
 from pkg_resources import iter_entry_points
 
 from .version import _warn_if_setuptools_outdated
-from .utils import do
-from . import get_version
+from .utils import do, trace_exception, trace
+from . import _get_version, Configuration
 
 
 def version_keyword(dist, keyword, value):
@@ -13,8 +13,13 @@ def version_keyword(dist, keyword, value):
         value = {}
     if getattr(value, "__call__", None):
         value = value()
-
-    dist.metadata.version = get_version(**value)
+    assert (
+        "dist_name" not in value
+    ), "dist_name may not be specified in the setup keyword "
+    trace("dist name", dist, dist.name)
+    dist_name = dist.name if dist.name != 0 else None
+    config = Configuration(dist_name=dist_name, **value)
+    dist.metadata.version = _get_version(config)
 
 
 def find_files(path=""):
@@ -28,3 +33,21 @@ def find_files(path=""):
         if res:
             return res
     return []
+
+
+def _args_from_toml(name="pyproject.toml"):
+    # todo: more sensible config initialization
+    # move this helper back to config and unify it with the code from get_config
+
+    with open(name) as strm:
+        defn = __import__("toml").load(strm)
+    return defn.get("tool", {})["setuptools_scm"]
+
+
+def infer_version(dist):
+
+    try:
+        config = Configuration.from_file()
+    except Exception:
+        return trace_exception()
+    dist.metadata.version = _get_version(config)

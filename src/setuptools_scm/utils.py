@@ -10,6 +10,7 @@ import subprocess
 import os
 import io
 import platform
+import traceback
 
 
 DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
@@ -19,10 +20,35 @@ PY3 = sys.version_info > (3,)
 string_types = (str,) if PY3 else (str, unicode)  # noqa
 
 
+def no_git_env(env):
+    # adapted from pre-commit
+    # Too many bugs dealing with environment variables and GIT:
+    # https://github.com/pre-commit/pre-commit/issues/300
+    # In git 2.6.3 (maybe others), git exports GIT_WORK_TREE while running
+    # pre-commit hooks
+    # In git 1.9.1 (maybe others), git exports GIT_DIR and GIT_INDEX_FILE
+    # while running pre-commit hooks in submodules.
+    # GIT_DIR: Causes git clone to clone wrong thing
+    # GIT_INDEX_FILE: Causes 'error invalid object ...' during commit
+    for k, v in env.items():
+        if k.startswith("GIT_"):
+            trace(k, v)
+    return {
+        k: v
+        for k, v in env.items()
+        if not k.startswith("GIT_")
+        or k in ("GIT_EXEC_PATH", "GIT_SSH", "GIT_SSH_COMMAND")
+    }
+
+
 def trace(*k):
     if DEBUG:
         print(*k)
         sys.stdout.flush()
+
+
+def trace_exception():
+    DEBUG and traceback.print_exc()
 
 
 def ensure_stripped_str(str_or_bytes):
@@ -43,7 +69,6 @@ def _always_strings(env_dict):
 
 
 def _popen_pipes(cmd, cwd):
-
     return subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -51,7 +76,8 @@ def _popen_pipes(cmd, cwd):
         cwd=str(cwd),
         env=_always_strings(
             dict(
-                os.environ,
+                no_git_env(os.environ),
+                # os.environ,
                 # try to disable i18n
                 LC_ALL="C",
                 LANGUAGE="",
@@ -106,7 +132,7 @@ def function_has_arg(fn, argname):
     return argname in argspec
 
 
-def has_command(name):
+def has_command(name, warn=True):
     try:
         p = _popen_pipes([name, "help"], ".")
     except OSError:
@@ -115,6 +141,11 @@ def has_command(name):
     else:
         p.communicate()
         res = not p.returncode
-    if not res:
-        warnings.warn("%r was not found" % name)
+    if not res and warn:
+        warnings.warn("%r was not found" % name, category=RuntimeWarning)
     return res
+
+
+def require_command(name):
+    if not has_command(name, warn=False):
+        raise EnvironmentError("%r was not found" % name)

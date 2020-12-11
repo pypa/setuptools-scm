@@ -1,4 +1,5 @@
 import os
+from .utils import trace
 
 
 def scm_find_files(path, scm_files, scm_dirs):
@@ -31,10 +32,9 @@ def scm_find_files(path, scm_files, scm_dirs):
             # directory not in scm, don't walk it's content
             dirnames[:] = []
             continue
-        if (
-            os.path.islink(dirpath)
-            and not os.path.relpath(realdirpath, realpath).startswith(os.pardir)
-        ):
+        if os.path.islink(dirpath) and not os.path.relpath(
+            realdirpath, realpath
+        ).startswith(os.pardir):
             # a symlink to a directory not outside path:
             # we keep it in the result and don't walk its content
             res.append(os.path.join(path, os.path.relpath(dirpath, path)))
@@ -51,6 +51,19 @@ def scm_find_files(path, scm_files, scm_dirs):
             # dirpath + filename with symlinks preserved
             fullfilename = os.path.join(dirpath, filename)
             if os.path.normcase(os.path.realpath(fullfilename)) in scm_files:
-                res.append(os.path.join(path, os.path.relpath(fullfilename, path)))
+                res.append(os.path.join(path, os.path.relpath(fullfilename, realpath)))
         seen.add(realdirpath)
     return res
+
+
+def is_toplevel_acceptable(toplevel):
+    ""
+    if toplevel is None:
+        return False
+
+    ignored = os.environ.get("SETUPTOOLS_SCM_IGNORE_VCS_ROOTS", "").split(os.pathsep)
+    ignored = [os.path.normcase(p) for p in ignored]
+
+    trace(toplevel, ignored)
+
+    return toplevel not in ignored

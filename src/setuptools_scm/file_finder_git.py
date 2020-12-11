@@ -3,6 +3,7 @@ import subprocess
 import tarfile
 import logging
 from .file_finder import scm_find_files
+from .file_finder import is_toplevel_acceptable
 from .utils import trace
 
 log = logging.getLogger(__name__)
@@ -49,8 +50,9 @@ def _git_ls_files_and_dirs(toplevel):
         try:
             return _git_interpret_archive(proc.stdout, toplevel)
         finally:
-            # ensure we avoid ressource warnings by cleaning up the pocess
-            proc.wait()
+            # ensure we avoid resource warnings by cleaning up the process
+            proc.stdout.close()
+            proc.terminate()
     except Exception:
         if proc.wait() != 0:
             log.exception("listing git files failed - pretending there aren't any")
@@ -59,7 +61,10 @@ def _git_ls_files_and_dirs(toplevel):
 
 def git_find_files(path=""):
     toplevel = _git_toplevel(path)
-    if not toplevel:
+    if not is_toplevel_acceptable(toplevel):
         return []
+    fullpath = os.path.abspath(os.path.normpath(path))
+    if not fullpath.startswith(toplevel):
+        trace("toplevel mismatch", toplevel, fullpath)
     git_files, git_dirs = _git_ls_files_and_dirs(toplevel)
     return scm_find_files(path, git_files, git_dirs)

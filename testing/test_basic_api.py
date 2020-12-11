@@ -58,6 +58,18 @@ def test_root_parameter_pass_by(monkeypatch, tmpdir):
     setuptools_scm.get_version(root=tmpdir.strpath)
 
 
+def test_parentdir_prefix(tmpdir, monkeypatch):
+    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
+    p = tmpdir.ensure("projectname-v12.34", dir=True)
+    p.join("setup.py").write(
+        """from setuptools import setup
+setup(use_scm_version={"parentdir_prefix_version": "projectname-"})
+"""
+    )
+    res = do((sys.executable, "setup.py", "--version"), p)
+    assert res == "12.34"
+
+
 def test_fallback(tmpdir, monkeypatch):
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
     p = tmpdir.ensure("sub/package", dir=1)
@@ -89,16 +101,19 @@ def test_dump_version(tmpdir):
 
     dump_version(sp, "1.0", "first.txt")
     assert tmpdir.join("first.txt").read() == "1.0"
-    dump_version(sp, "1.0", "first.py")
+
+    dump_version(sp, "1.0.dev42", "first.py")
     content = tmpdir.join("first.py").read()
-    assert repr("1.0") in content
+    lines = content.splitlines()
+    assert "version = '1.0.dev42'" in lines
+    assert "version_tuple = (1, 0, 'dev42')" in lines
+
     import ast
 
     ast.parse(content)
 
 
 def test_parse_plain_fails(recwarn):
-
     def parse(root):
         return "tricked you"
 

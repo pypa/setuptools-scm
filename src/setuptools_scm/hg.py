@@ -1,6 +1,6 @@
 import os
 from .config import Configuration
-from .utils import do, trace, data_from_mime, has_command
+from .utils import do, trace, data_from_mime, require_command
 from .version import meta, tags_to_versions
 
 
@@ -15,9 +15,7 @@ def _hg_tagdist_normalize_tagcommit(config, tag, dist, node, branch):
         # ignore commits that only modify .hgtags and nothing else:
         " and (merge() or file('re:^(?!\\.hgtags).*$'))"
         " and not tag({tag!r}))"  # ignore the tagged commit itself
-    ).format(
-        tag=tag
-    )
+    ).format(tag=tag)
     if tag != "0.0":
         commits = do(
             ["hg", "log", "-r", revset, "--template", "{node|short}"],
@@ -38,8 +36,7 @@ def parse(root, config=None):
     if not config:
         config = Configuration(root=root)
 
-    if not has_command("hg"):
-        return
+    require_command("hg")
     identity_data = do("hg id -i -b -t", config.absolute_root).split()
     if not identity_data:
         return
@@ -71,7 +68,12 @@ def parse(root, config=None):
 def get_latest_normalizable_tag(root):
     # Gets all tags containing a '.' (see #229) from oldest to newest
     cmd = [
-        "hg", "log", "-r", "ancestors(.) and tag('re:\\.')", "--template", "{tags}\n"
+        "hg",
+        "log",
+        "-r",
+        "ancestors(.) and tag('re:\\.')",
+        "--template",
+        "{tags}\n",
     ]
     outlines = do(cmd, root).split()
     if not outlines:
@@ -81,7 +83,7 @@ def get_latest_normalizable_tag(root):
 
 
 def get_graph_distance(root, rev1, rev2="."):
-    cmd = ["hg", "log", "-q", "-r", "%s::%s" % (rev1, rev2)]
+    cmd = ["hg", "log", "-q", "-r", "{}::{}".format(rev1, rev2)]
     out = do(cmd, root)
     return len(out.strip().splitlines()) - 1
 

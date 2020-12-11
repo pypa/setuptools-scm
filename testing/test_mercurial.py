@@ -2,7 +2,13 @@ from setuptools_scm import format_version
 from setuptools_scm.hg import archival_to_version, parse
 from setuptools_scm import integration
 from setuptools_scm.config import Configuration
+from setuptools_scm.utils import has_command
 import pytest
+
+
+pytestmark = pytest.mark.skipif(
+    not has_command("hg", warn=False), reason="hg executable not found"
+)
 
 
 @pytest.fixture
@@ -16,7 +22,9 @@ def wd(wd):
 archival_mapping = {
     "1.0": {"tag": "1.0"},
     "1.1.dev3+h000000000000": {
-        "latesttag": "1.0", "latesttagdistance": "3", "node": "0" * 20
+        "latesttag": "1.0",
+        "latesttagdistance": "3",
+        "node": "0" * 20,
     },
     "0.0": {"node": "0" * 20},
     "1.2.2": {"tag": "release-1.2.2"},
@@ -36,15 +44,23 @@ def test_archival_to_version(expected, data):
     )
 
 
-def test_find_files_stop_at_root_hg(wd):
+def test_hg_gone(wd, monkeypatch):
+    monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
+    with pytest.raises(EnvironmentError, match="'hg' was not found"):
+        parse(str(wd.cwd))
+
+
+def test_find_files_stop_at_root_hg(wd, monkeypatch):
     wd.commit_testfile()
-    wd.cwd.ensure("project/setup.cfg")
+    project = wd.cwd / "project"
+    project.mkdir()
+    project.joinpath("setup.cfg").touch()
     # setup.cfg has not been committed
-    assert integration.find_files(str(wd.cwd / "project")) == []
+    assert integration.find_files(str(project)) == []
     # issue 251
     wd.add_and_commit()
-    with (wd.cwd / "project").as_cwd():
-        assert integration.find_files() == ["setup.cfg"]
+    monkeypatch.chdir(project)
+    assert integration.find_files() == ["setup.cfg"]
 
 
 # XXX: better tests for tag prefixes
@@ -79,7 +95,7 @@ def test_version_from_hg_id(wd):
 def test_version_from_archival(wd):
     # entrypoints are unordered,
     # cleaning the wd ensure this test wont break randomly
-    wd.cwd.join(".hg").remove()
+    wd.cwd.joinpath(".hg").rename(wd.cwd / ".nothg")
     wd.write(".hg_archival.txt", "node: 000000000000\n" "tag: 0.1\n")
     assert wd.version == "0.1"
 
@@ -140,10 +156,9 @@ def test_version_bump_from_merge_commit(wd):
 
 @pytest.mark.usefixtures("version_1_0")
 def test_version_bump_from_commit_including_hgtag_mods(wd):
-    """ Test the case where a commit includes changes to .hgtags and other files
-    """
-    with wd.cwd.join(".hgtags").open("a") as tagfile:
-        tagfile.write("0  0\n")
+    """Test the case where a commit includes changes to .hgtags and other files"""
+    with wd.cwd.joinpath(".hgtags").open("ab") as tagfile:
+        tagfile.write(b"0  0\n")
     wd.write("branchfile", "branchtext")
     wd(wd.add_command)
     assert wd.version.startswith("1.0.1.dev1+")  # bump from dirty version
@@ -154,7 +169,7 @@ def test_version_bump_from_commit_including_hgtag_mods(wd):
 @pytest.mark.issue(229)
 @pytest.mark.usefixtures("version_1_0")
 def test_latest_tag_detection(wd):
-    """ Tests that tags not containing a "." are ignored, the same as for git.
+    """Tests that tags not containing a "." are ignored, the same as for git.
     Note that will be superceded by the fix for pypa/setuptools_scm/issues/235
     """
     wd('hg tag some-random-tag -u test -d "0 0"')

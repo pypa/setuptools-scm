@@ -27,9 +27,13 @@ def test_pkginfo_noscmroot(tmpdir, monkeypatch):
     res = do((sys.executable, "setup.py", "--version"), p)
     assert res == "1.0"
 
-    do("git init", p.dirpath())
-    res = do((sys.executable, "setup.py", "--version"), p)
-    assert res == "0.1.dev0"
+    try:
+        do("git init", p.dirpath())
+    except OSError:
+        pass
+    else:
+        res = do((sys.executable, "setup.py", "--version"), p)
+        assert res == "0.1.dev0"
 
 
 def test_pip_egg_info(tmpdir, monkeypatch):

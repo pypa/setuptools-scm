@@ -1,5 +1,5 @@
 from .config import Configuration
-from .utils import do_ex, trace, has_command
+from .utils import do_ex, trace, require_command
 from .version import meta
 
 from os.path import isfile, join
@@ -12,7 +12,7 @@ except ImportError:
     from .win_py31_compat import samefile
 
 
-DEFAULT_DESCRIBE = "git describe --dirty --tags --long --match *.* --first-parent"
+DEFAULT_DESCRIBE = "git describe --dirty --tags --long --match *[0-9]*"
 
 
 class GitWorkdir(object):
@@ -65,7 +65,7 @@ class GitWorkdir(object):
 def warn_on_shallow(wd):
     """experimental, may change at any time"""
     if wd.is_shallow():
-        warnings.warn('"%s" is shallow and may cause errors' % (wd.path,))
+        warnings.warn('"{}" is shallow and may cause errors'.format(wd.path))
 
 
 def fetch_on_shallow(wd):
@@ -92,8 +92,7 @@ def parse(
     if not config:
         config = Configuration(root=root)
 
-    if not has_command("git"):
-        return
+    require_command("git")
 
     wd = GitWorkdir.from_potential_worktree(config.absolute_root)
     if wd is None:

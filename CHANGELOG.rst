@@ -1,4 +1,107 @@
+v5.0.0
+======
+
+
+Breaking changes:
+* fix #339: strict errors on missing scms when  parsing a scm dir to avoid false version lookups
+
+Bugfixes:
+
+* fix #352: add support for generally ignoring specific vcs roots
+* fix #471: better error for version bump failing on complex but accepted tag
+* fix #479: raise indicative error when tags carry non-parsable information
+* Add `no-guess-dev` which does no next version guessing, just adds `.post1.devN` in
+  case there are new commits after the tag
+* add python3.9
+* enhance documentation
+* consider SOURCE_DATE_EPOCH for versioning
+* add a version_tuple to write_to templates
+* fix #321: add suppport for the ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DISTRIBUTION_NAME}`` env var to target the pretend key
+* fix #142: clearly list supported scm
+* fix #213: better error message for non-zero dev numbers in tags
+
+
+v4.1.2
+=======
+
+* disallow git tags without dots by default again - #449
+
+v4.1.1
+=======
+
+* drop jaraco.windows from pyproject.toml, allows for wheel builds on python2
+
+
+v4.1.0
+=======
+
+* include python 3.9 via the deadsnakes action
+* return release_branch_semver scheme (it got dropped in a bad rebase)
+* undo the devendoring of the samefile backport for python2.7 on windows
+* re-enable the building of universal wheels
+* fix handling of missing git/hg on python2.7 (python 3 exceptions where used)
+* correct the tox flake8 invocation
+* trigger builds on tags again
+
+v4.0.0
+======
+
+* Add ``parentdir_prefix_version`` to support installs from GitHub release
+  tarballs.
+* use  Coordinated Universal Time (UTC)
+* switch to github actions for ci
+* fix documentation for ``tag_regex`` and add support for single digit versions
+* document handling of enterprise distros with unsupported setuptools versions #312
+* switch to declarative metadata
+* drop the internal copy of samefile and use a dependency on jaraco.windows on legacy systems
+* select git tags based on the presence of numbers instead of dots
+* enable getting a version form a parent folder prefix
+* add release-branch-semver version scheme
+* make global configuration available to version metadata
+* drop official support for python 3.4
+
+v3.5.0
+======
+
+* add ``no-local-version`` local scheme and improve documentation for schemes
+
+v3.4.4
+======
+
+* fix #403: also sort out resource warnings when dealing with git file finding
+
+v3.4.3
+======
+
+* fix #399: ensure the git file finder terminates subprocess after reading archive
+
+v3.4.2
+======
+
+* fix #395: correctly transfer tag regex in the Configuration constructor
+* rollback --first-parent for git describe as it turns out to be a regression for some users
+
+v3.4.1
+======
+
+* pull in #377 to fix #374: correctly set up the default version scheme for pyproject usage.
+  this bugfix got missed when ruushing the  release.
+
+v3.4.0
+======
+
+* fix #181 - add support for projects built under setuptools declarative config
+  by way of the setuptools.finalize_distribution_options hook in Setuptools 42.
+
 * fix #305 - ensure the git file finder closes filedescriptors even when errors happen
+
+* fix #381 - clean out env vars from the git hook system to ensure correct function from within
+
+* modernize docs wrt importlib.metadata
+
+*edited*
+
+* use --first-parent for git describe
 
 v3.3.3
 ======

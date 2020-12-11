@@ -1,16 +1,28 @@
 import sys
 
 from setuptools_scm import integration
-from setuptools_scm.utils import do
+from setuptools_scm.utils import do, has_command
 from setuptools_scm import git
 import pytest
-from datetime import date
+from datetime import datetime
 from os.path import join as opj
 from setuptools_scm.file_finder_git import git_find_files
 
 
+skip_if_win_27 = pytest.mark.skipif(
+    sys.platform == "win32" and sys.version_info[0] < 3,
+    reason="Not supported on Windows + Python 2.7",
+)
+
+
+pytestmark = pytest.mark.skipif(
+    not has_command("git", warn=False), reason="git executable not found"
+)
+
+
 @pytest.fixture
-def wd(wd):
+def wd(wd, monkeypatch):
+    monkeypatch.delenv("HOME", raising=False)
     wd("git init")
     wd("git config user.email test@example.com")
     wd('git config user.name "a test"')
@@ -33,9 +45,10 @@ def test_parse_describe_output(given, tag, number, node, dirty):
 
 def test_root_relative_to(tmpdir, wd, monkeypatch):
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
-    p = wd.cwd.ensure("sub/package", dir=1)
-    p.join("setup.py").write(
-        """from setuptools import setup
+    p = wd.cwd.joinpath("sub/package")
+    p.mkdir(parents=True)
+    p.joinpath("setup.py").write_text(
+        u"""from setuptools import setup
 setup(use_scm_version={"root": "../..",
                        "relative_to": __file__})
 """
@@ -44,7 +57,14 @@ setup(use_scm_version={"root": "../..",
     assert res == "0.1.dev0"
 
 
+def test_git_gone(wd, monkeypatch):
+    monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
+    with pytest.raises(EnvironmentError, match="'git' was not found"):
+        git.parse(str(wd.cwd), git.DEFAULT_DESCRIBE)
+
+
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/298")
+@pytest.mark.issue(403)
 def test_file_finder_no_history(wd, caplog):
     file_list = git_find_files(str(wd.cwd))
     assert file_list == []
@@ -105,14 +125,21 @@ def test_git_worktree(wd):
 
 
 @pytest.mark.issue(86)
-def test_git_dirty_notag(wd):
+@pytest.mark.parametrize("today", [False, True])
+def test_git_dirty_notag(today, wd, monkeypatch):
+    if today:
+        monkeypatch.delenv("SOURCE_DATE_EPOCH", raising=False)
     wd.commit_testfile()
     wd.write("test.txt", "test2")
     wd("git add test.txt")
     assert wd.version.startswith("0.1.dev1")
-    today = date.today()
+    if today:
+        # the date on the tag is in UTC
+        tag = datetime.utcnow().date().strftime(".d%Y%m%d")
+    else:
+        tag = ".d20090213"
     # we are dirty, check for the tag
-    assert today.strftime(".d%Y%m%d") in wd.version
+    assert tag in wd.version
 
 
 @pytest.mark.issue(193)
@@ -157,8 +184,10 @@ def test_git_shallow_autocorrect(shallow_wd, recwarn):
 
 def test_find_files_stop_at_root_git(wd):
     wd.commit_testfile()
-    wd.cwd.ensure("project/setup.cfg")
-    assert integration.find_files(str(wd.cwd / "project")) == []
+    project = wd.cwd / "project"
+    project.mkdir()
+    project.joinpath("setup.cfg").touch()
+    assert integration.find_files(str(project)) == []
 
 
 @pytest.mark.issue(128)
@@ -173,7 +202,8 @@ def test_alphanumeric_tags_match(wd):
     assert wd.version.startswith("0.1.dev1+g")
 
 
-def test_git_archive_export_ignore(wd):
+@skip_if_win_27
+def test_git_archive_export_ignore(wd, monkeypatch):
     wd.write("test1.txt", "test")
     wd.write("test2.txt", "test")
     wd.write(
@@ -184,28 +214,30 @@ def test_git_archive_export_ignore(wd):
     )
     wd("git add test1.txt test2.txt")
     wd.commit()
-    with wd.cwd.as_cwd():
-        assert integration.find_files(".") == [opj(".", "test1.txt")]
+    monkeypatch.chdir(wd.cwd)
+    assert integration.find_files(".") == [opj(".", "test1.txt")]
 
 
+@skip_if_win_27
 @pytest.mark.issue(228)
-def test_git_archive_subdirectory(wd):
+def test_git_archive_subdirectory(wd, monkeypatch):
     wd("mkdir foobar")
     wd.write("foobar/test1.txt", "test")
     wd("git add foobar")
     wd.commit()
-    with wd.cwd.as_cwd():
-        assert integration.find_files(".") == [opj(".", "foobar", "test1.txt")]
+    monkeypatch.chdir(wd.cwd)
+    assert integration.find_files(".") == [opj(".", "foobar", "test1.txt")]
 
 
+@skip_if_win_27
 @pytest.mark.issue(251)
-def test_git_archive_run_from_subdirectory(wd):
+def test_git_archive_run_from_subdirectory(wd, monkeypatch):
     wd("mkdir foobar")
     wd.write("foobar/test1.txt", "test")
     wd("git add foobar")
     wd.commit()
-    with (wd.cwd / "foobar").as_cwd():
-        assert integration.find_files(".") == [opj(".", "test1.txt")]
+    monkeypatch.chdir(wd.cwd / "foobar")
+    assert integration.find_files(".") == [opj(".", "test1.txt")]
 
 
 def test_git_feature_branch_increments_major(wd):
@@ -228,6 +260,39 @@ def test_not_matching_tags(wd):
     assert wd.get_version(
         tag_regex=r"^apache-arrow-([\.0-9]+)$",
         git_describe_command="git describe --dirty --tags --long --exclude *js* ",
-    ).startswith(
-        "0.11.2"
-    )
+    ).startswith("0.11.2")
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/411")
+@pytest.mark.xfail(reason="https://github.com/pypa/setuptools_scm/issues/449")
+def test_non_dotted_version(wd):
+    wd.commit_testfile()
+    wd("git tag apache-arrow-1")
+    wd.commit_testfile()
+    assert wd.get_version().startswith("2")
+
+
+def test_non_dotted_version_with_updated_regex(wd):
+    wd.commit_testfile()
+    wd("git tag apache-arrow-1")
+    wd.commit_testfile()
+    assert wd.get_version(tag_regex=r"^apache-arrow-([\.0-9]+)$").startswith("2")
+
+
+def test_non_dotted_tag_no_version_match(wd):
+    wd.commit_testfile()
+    wd("git tag apache-arrow-0.11.1")
+    wd.commit_testfile()
+    wd("git tag apache-arrow")
+    wd.commit_testfile()
+    assert wd.get_version().startswith("0.11.2.dev2")
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/381")
+def test_gitdir(monkeypatch, wd):
+    """"""
+    wd.commit_testfile()
+    normal = wd.version
+    # git hooks set this and break subsequent setuptools_scm unless we clean
+    monkeypatch.setenv("GIT_DIR", __file__)
+    assert wd.version == normal

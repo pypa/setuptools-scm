@@ -1,20 +1,85 @@
 setuptools_scm
-===============
+==============
 
 ``setuptools_scm`` handles managing your Python package versions
 in SCM metadata instead of declaring them as the version argument
 or in a SCM managed file.
 
-It also handles file finders for the supported SCMs.
+Additionally ``setuptools_scm`` provides setuptools with a list of files that are managed by the SCM
+(i.e. it automatically adds all of the SCM-managed files to the sdist).
+Unwanted files must be excluded by discarding them via ``MANIFEST.in``.
 
-.. image:: https://travis-ci.org/pypa/setuptools_scm.svg?branch=master
-    :target: https://travis-ci.org/pypa/setuptools_scm
+``setuptools_scm`` support the following scm out of the box:
 
-.. image:: https://tidelift.com/badges/github/pypa/setuptools_scm
-   :target: https://tidelift.com/subscription/pkg/pypi-setuptools_scm?utm_source=pypi-setuptools_scm&utm_medium=readme
+* git
+* mercurial
+
+
+
+.. image:: https://github.com/pypa/setuptools_scm/workflows/python%20tests+artifacts+release/badge.svg
+    :target: https://github.com/pypa/setuptools_scm/actions
+
+.. image:: https://tidelift.com/badges/package/pypi/setuptools-scm
+   :target: https://tidelift.com/subscription/pkg/pypi-setuptools-scm?utm_source=pypi-setuptools-scm&utm_medium=readme
+
+
+``pyproject.toml`` usage
+------------------------
+
+The preferred way to configure ``setuptools_scm`` is to author
+settings in a ``tool.setuptools_scm`` section of ``pyproject.toml``.
+
+This feature requires Setuptools 42 or later, released in Nov, 2019.
+If your project needs to support build from sdist on older versions
+of Setuptools, you will need to also implement the ``setup.py usage``
+for those legacy environments.
+
+First, ensure that ``setuptools_scm`` is present during the project's
+built step by specifying it as one of the build requirements.
+
+.. code:: toml
+
+    # pyproject.toml
+    [build-system]
+    requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=3.4"]
+
+Note that the ``toml`` extra must be supplied.
+
+That will be sufficient to require ``setuptools_scm`` for projects
+that support PEP 518 (`pip <https://pypi.org/project/pip>`_ and
+`pep517 <https://pypi.org/project/pep517/>`_). Many tools,
+especially those that invoke ``setup.py`` for any reason, may
+continue to rely on ``setup_requires``. For maximum compatibility
+with those uses, consider also including a ``setup_requires`` directive
+(described below in ``setup.py usage`` and ``setup.cfg``).
+
+To enable version inference, add this section to your pyproject.toml:
+
+.. code:: toml
+
+    # pyproject.toml
+    [tool.setuptools_scm]
+
+Including this section is comparable to supplying
+``use_scm_version=True`` in ``setup.py``. Additionally,
+include arbitrary keyword arguments in that section
+to be supplied to ``get_version()``. For example:
+
+.. code:: toml
+
+    # pyproject.toml
+
+    [tool.setuptools_scm]
+    write_to = "pkg/version.py"
+
 
 ``setup.py`` usage
 ------------------
+
+The following settings are considered legacy behavior and
+superseded by the ``pyproject.toml`` usage, but for maximal
+compatibility, projects may also supply the configuration in
+this older form.
 
 To use ``setuptools_scm`` just modify your project's ``setup.py`` file
 like this:
@@ -42,25 +107,16 @@ Arguments to ``get_version()`` (see below) may be passed as a dictionary to
     from setuptools import setup
     setup(
         ...,
-        use_scm_version = {"root": "..", "relative_to": __file__},
+        use_scm_version = {
+            "root": "..",
+            "relative_to": __file__,
+            "local_scheme": "node-and-timestamp"
+        },
         setup_requires=['setuptools_scm'],
         ...,
     )
 
-Once configured, you can access the version number in your package via
-``pkg_resources`` (`PEP-0396 <https://www.python.org/dev/peps/pep-0396>`_). For
-example:
-
-.. code:: python
-
-   from pkg_resources import get_distribution, DistributionNotFound
-   try:
-       __version__ = get_distribution(__name__).version
-   except DistributionNotFound:
-       # package is not installed
-       pass
-
-You can also confirm the version number locally via ``setup.py``:
+You can confirm the version number locally via ``setup.py``:
 
 .. code-block:: shell
 
@@ -73,8 +129,8 @@ You can also confirm the version number locally via ``setup.py``:
    not defined in ``setup.cfg``.
 
 
-``setup.cfg``
--------------
+``setup.cfg`` usage
+-------------------
 
 If using `setuptools 30.3.0
 <https://setuptools.readthedocs.io/en/latest/setuptools.html#configuring-setup-using-setup-cfg-files>`_
@@ -133,6 +189,43 @@ than the project's root, you can use:
 See `setup.py Usage`_ above for how to use this within ``setup.py``.
 
 
+Retrieving package version at runtime
+-------------------------------------
+
+If you have opted not to hardcode the version number inside the package,
+you can retrieve it at runtime from PEP-0566_ metadata using
+``importlib.metadata`` from the standard library (added in Python 3.8)
+or the `importlib_metadata`_ backport:
+
+.. code:: python
+
+    from importlib.metadata import version, PackageNotFoundError
+
+    try:
+        __version__ = version("package-name")
+    except PackageNotFoundError:
+        # package is not installed
+        pass
+
+Alternatively, you can use ``pkg_resources`` which is included in
+``setuptools``:
+
+.. code:: python
+
+   from pkg_resources import get_distribution, DistributionNotFound
+
+   try:
+       __version__ = get_distribution("package-name").version
+   except DistributionNotFound:
+        # package is not installed
+       pass
+
+This does place a runtime dependency on ``setuptools``.
+
+.. _PEP-0566: https://www.python.org/dev/peps/pep-0566/
+.. _importlib_metadata: https://pypi.org/project/importlib-metadata/
+
+
 Usage from Sphinx
 -----------------
 
@@ -152,7 +245,7 @@ the working directory for good reasons and using the installed metadata
 prevents using needless volatile data there.
 
 Notable Plugins
-----------------
+---------------
 
 `setuptools_scm_git_archive <https://pypi.python.org/pypi/setuptools_scm_git_archive>`_
     Provides partial support for obtaining versions from git archives that
@@ -162,7 +255,7 @@ Notable Plugins
 
 
 Default versioning scheme
---------------------------
+-------------------------
 
 In the standard configuration ``setuptools_scm`` takes a look at three things:
 
@@ -177,12 +270,13 @@ no distance and clean:
 distance and clean:
     ``{next_version}.dev{distance}+{scm letter}{revision hash}``
 no distance and not clean:
-    ``{tag}+dYYYMMMDD``
+    ``{tag}+dYYYYMMDD``
 distance and not clean:
-    ``{next_version}.dev{distance}+{scm letter}{revision hash}.dYYYMMMDD``
+    ``{next_version}.dev{distance}+{scm letter}{revision hash}.dYYYYMMDD``
 
 The next version is calculated by adding ``1`` to the last numeric component of
 the tag.
+
 
 For Git projects, the version relies on `git describe <https://git-scm.com/docs/git-describe>`_,
 so you will see an additional ``g`` prepended to the ``{revision hash}``.
@@ -204,7 +298,7 @@ accordingly.
 
 
 Builtin mechanisms for obtaining version numbers
---------------------------------------------------
+------------------------------------------------
 
 1. the SCM itself (git/hg)
 2. ``.hg_archival`` files (mercurial archives)
@@ -220,7 +314,7 @@ File finders hook makes most of MANIFEST.in unnecessary
 
 ``setuptools_scm`` implements a `file_finders
 <https://setuptools.readthedocs.io/en/latest/setuptools.html#adding-support-for-revision-control-systems>`_
-entry point which returns all files tracked by by your SCM. This eliminates
+entry point which returns all files tracked by your SCM. This eliminates
 the need for a manually constructed ``MANIFEST.in`` in most cases where this
 would be required when not using ``setuptools_scm``, namely:
 
@@ -277,16 +371,28 @@ The currently supported configuration keys are:
     supplying ``__file__``.
 
 :tag_regex:
-    A Python regex string to extract the version part from any SCM tag.
-    The regex needs to contain three named groups prefix, version and suffix,
-    where ``version`` captures the actual version information.
+   A Python regex string to extract the version part from any SCM tag.
+    The regex needs to contain either a single match group, or a group
+    named ``version``, that captures the actual version information.
 
     Defaults to the value of ``setuptools_scm.config.DEFAULT_TAG_REGEX``
     (see `config.py <src/setuptools_scm/config.py>`_).
 
+:parentdir_prefix_version:
+    If the normal methods for detecting the version (SCM version,
+    sdist metadata) fail, and the parent directory name starts with
+    ``parentdir_prefix_version``, then this prefix is stripped and the rest of
+    the parent directory name is matched with ``tag_regex`` to get a version
+    string.  If this parameter is unset (the default), then this fallback is
+    not used.
+
+    This is intended to cover GitHub's "release tarballs", which extract into
+    directories named ``projectname-tag/`` (in which case
+    ``parentdir_prefix_version`` can be set e.g. to ``projectname-``).
+
 :fallback_version:
     A version string that will be used if no other method for detecting the
-    version worked (e.g., when using a tarball with no metadata).  If this is
+    version worked (e.g., when using a tarball with no metadata). If this is
     unset (the default), setuptools_scm will error if it fails to detect the
     version.
 
@@ -337,10 +443,30 @@ Environment variables
     its used as the primary source for the version number
     in which case it will be a unparsed string
 
+
+:SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${UPPERCASED_DIST_NAME}:
+    when defined and not empty,
+    its used as the primary source for the version number
+    in which case it will be a unparsed string
+
+    it takes precedence over ``SETUPTOOLS_SCM_PRETEND_VERSION``
+
+
 :SETUPTOOLS_SCM_DEBUG:
     when defined and not empty,
     a lot of debug information will be printed as part of ``setuptools_scm``
     operating
+
+:SOURCE_DATE_EPOCH:
+    when defined, used as the timestamp from which the
+    ``node-and-date`` and ``node-and-timestamp`` local parts are
+    derived, otherwise the current time is used
+    (https://reproducible-builds.org/docs/source-date-epoch/)
+
+
+:SETUPTOOLS_SCM_IGNORE_VCS_ROOTS:
+    when defined, a ``os.pathsep`` separated list
+    of directory names to ignore for root finding
 
 Extending setuptools_scm
 ------------------------
@@ -359,7 +485,7 @@ Adding a new SCM
     entrypoint's name. E.g. for the built-in entrypoint for git the
     entrypoint is named ``.git`` and references ``setuptools_scm.git:parse``
 
-  The return value MUST be a ``setuptools.version.ScmVersion`` instance
+  The return value MUST be a ``setuptools_scm.version.ScmVersion`` instance
   created by the function ``setuptools_scm.version:meta``.
 
 ``setuptools_scm.files_command``
@@ -374,18 +500,35 @@ Version number construction
 
 ``setuptools_scm.version_scheme``
     Configures how the version number is constructed given a
-    ``setuptools.version.ScmVersion`` instance and should return a string
+    ``setuptools_scm.version.ScmVersion`` instance and should return a string
     representing the version.
 
     Available implementations:
 
-    :guess-next-dev: automatically guesses the next development version (default)
-    :post-release: generates post release versions (adds :code:`postN`)
+    :guess-next-dev: Automatically guesses the next development version (default).
+        Guesses the upcoming release by incrementing the pre-release segment if present,
+        otherwise by incrementing the micro segment. Then appends :code:`.devN`.
+        In case the tag ends with ``.dev0`` the version is not bumped
+        and custom ``.devN`` versions will trigger a error.
+    :post-release: generates post release versions (adds :code:`.postN`)
+    :python-simplified-semver: Basic semantic versioning. Guesses the upcoming release
+        by incrementing the minor segment and setting the micro segment to zero if the
+        current branch contains the string ``'feature'``, otherwise by incrementing the
+        micro version. Then appends :code:`.devN`. Not compatible with pre-releases.
+    :release-branch-semver: Semantic versioning for projects with release branches. The
+        same as ``guess-next-dev`` (incrementing the pre-release or micro segment) if on
+        a release branch: a branch whose name (ignoring namespace) parses as a version
+        that matches the most recent tag up to the minor segment. Otherwise if on a
+        non-release branch, increments the minor segment and sets the micro segment to
+        zero, then appends :code:`.devN`.
+    :no-guess-dev: Does no next version guessing, just adds :code:`.post1.devN`
 
 ``setuptools_scm.local_scheme``
     Configures how the local part of a version is rendered given a
-    ``setuptools.version.ScmVersion`` instance and should return a string
+    ``setuptools_scm.version.ScmVersion`` instance and should return a string
     representing the local version.
+    Dates and times are in Coordinated Universal Time (UTC), because as part
+    of the version, they should be location independent.
 
     Available implementations:
 
@@ -394,6 +537,8 @@ Version number construction
     :node-and-timestamp: like ``node-and-date`` but with a timestamp of
                          the form ``{:%Y%m%d%H%M%S}`` instead
     :dirty-tag: adds ``+dirty`` if the current workdir has changes
+    :no-local-version: omits local version, useful e.g. because pypi does
+                       not support it
 
 
 Importing in ``setup.py``
@@ -426,7 +571,7 @@ The callable must return the configuration.
 
 
 Note on testing non-installed versions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 While the general advice is to test against a installed version,
 some environments require a test prior to install,
@@ -437,15 +582,35 @@ some environments require a test prior to install,
   $ PYTHONPATH=$PWD:$PWD/src pytest
 
 
+Interaction with Enterprise Distributions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Some enterprise distributions like RHEL7 and others
+ship rather old setuptools versions due to various release management details.
+
+On such distributions one might observe errors like:
+
+:code:``setuptools_scm.version.SetuptoolsOutdatedWarning: your setuptools is too old (<12)``
+
+In those case its typically possible to build by using a sdist against ``setuptools_scm<2.0``.
+As those old setuptools versions lack sensible types for versions,
+modern setuptools_scm is unable to support them sensibly.
+
+In case the project you need to build can not be patched to either use old setuptools_scm,
+its still possible to install a more recent version of setuptools in order to handle the build
+and/or install the package by using wheels or eggs.
+
+
+
 
 Code of Conduct
 ---------------
 
 Everyone interacting in the ``setuptools_scm`` project's codebases, issue
 trackers, chat rooms, and mailing lists is expected to follow the
-`PyPA Code of Conduct`_.
+`PSF Code of Conduct`_.
 
-.. _PyPA Code of Conduct: https://www.pypa.io/en/latest/code-of-conduct/
+.. _PSF Code of Conduct: https://github.com/pypa/.github/blob/main/CODE_OF_CONDUCT.md
 
 Security Contact
 ================
