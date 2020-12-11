@@ -106,11 +106,16 @@ def parse(
     out, unused_err, ret = wd.do_ex(describe_command)
     if ret:
         # If 'git git_describe_command' failed, try to get the information otherwise.
+        branch, branch_err, branch_ret = wd.do_ex("git symbolic-ref --short HEAD")
+
+        if branch_ret:
+            branch = None
+
         rev_node = wd.node()
         dirty = wd.is_dirty()
 
         if rev_node is None:
-            return meta("0.0", distance=0, dirty=dirty, config=config)
+            return meta("0.0", distance=0, dirty=dirty, branch=branch, config=config)
 
         return meta(
             "0.0",

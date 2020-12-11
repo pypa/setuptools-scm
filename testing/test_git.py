@@ -80,6 +80,8 @@ def test_parse_call_order(wd):
 def test_version_from_git(wd):
     assert wd.version == "0.1.dev0"
 
+    assert git.parse(str(wd.cwd), git.DEFAULT_DESCRIBE).branch == "master"
+
     wd.commit_testfile()
     assert wd.version.startswith("0.1.dev1+g")
     assert not wd.version.endswith("1-")
