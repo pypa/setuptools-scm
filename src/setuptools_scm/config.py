@@ -27,13 +27,24 @@ def _check_tag_regex(value):
 
 
 def _check_absolute_root(root, relative_to):
+    trace("l", repr(locals()))
     if relative_to:
         if os.path.isabs(root) and not root.startswith(relative_to):
             warnings.warn(
                 "absolute root path '%s' overrides relative_to '%s'"
                 % (root, relative_to)
             )
-        root = os.path.join(os.path.dirname(relative_to), root)
+        if os.path.isdir(relative_to):
+            warnings.warn(
+                "relative_to is expected to be a file,"
+                " its the directory %r\n"
+                "assuming the parent directory was passed" % (relative_to,)
+            )
+            trace("dir", relative_to)
+            root = os.path.join(relative_to, root)
+        else:
+            trace("file", relative_to)
+            root = os.path.join(os.path.dirname(relative_to), root)
     return os.path.abspath(root)
 
 
@@ -94,6 +105,7 @@ class Configuration(object):
         self._absolute_root = _check_absolute_root(self._root, value)
         self._relative_to = value
         trace("root", repr(self._absolute_root))
+        trace("relative_to", repr(value))
 
     @property
     def root(self):
@@ -104,6 +116,7 @@ class Configuration(object):
         self._absolute_root = _check_absolute_root(value, self._relative_to)
         self._root = value
         trace("root", repr(self._absolute_root))
+        trace("relative_to", repr(self._relative_to))
 
     @property
     def tag_regex(self):
