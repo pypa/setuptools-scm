@@ -90,10 +90,14 @@ def test_pretended(version, monkeypatch):
     assert setuptools_scm.get_version() == version
 
 
-def test_root_relative_to(monkeypatch, tmpdir):
-    assert_root(monkeypatch, tmpdir.join("alt").strpath)
-    __file__ = tmpdir.join("module/file.py").strpath
-    setuptools_scm.get_version(root="../alt", relative_to=__file__)
+def test_root_relative_to(monkeypatch, tmp_path):
+    assert_root(monkeypatch, str(tmp_path / "alt"))
+    module = tmp_path / "module/file.py"
+    module.parent.mkdir()
+    module.touch()
+    setuptools_scm.get_version(root="../alt", relative_to=str(module))
+    with pytest.warns(UserWarning, match="relative_to is expected to be a file.*"):
+        setuptools_scm.get_version(root="../alt", relative_to=str(module.parent))
 
 
 def test_dump_version(tmpdir):
