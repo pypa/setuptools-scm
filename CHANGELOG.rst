@@ -3,9 +3,10 @@ v5.0.0
 
 
 Breaking changes:
+
 * fix #339: strict errors on missing scms when  parsing a scm dir to avoid false version lookups
 * fix #337: if relative_to is a directory instead of a file,
-            consider it as direct target instead  of the containing folder and print a warning
+  consider it as direct target instead  of the containing folder and print a warning
 
 Bugfixes:
 
