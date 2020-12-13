@@ -137,4 +137,4 @@ class Configuration(object):
         with open(name) as strm:
             defn = __import__("toml").load(strm)
         section = defn.get("tool", {})["setuptools_scm"]
-        return cls(**section, dist_name=dist_name)
+        return cls(dist_name=dist_name, **section)
