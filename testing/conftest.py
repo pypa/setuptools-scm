@@ -81,7 +81,7 @@ class Wd(object):
         return self.get_version()
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def debug_mode():
     from setuptools_scm import utils
 
