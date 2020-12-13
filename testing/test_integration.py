@@ -31,12 +31,14 @@ fallback_version = "12.34"
 
 
 def test_pyproject_support_with_git(tmpdir, monkeypatch, wd):
-    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
+    pytest.importorskip("toml")
     pkg = tmpdir.join("wd")
     pkg.join("pyproject.toml").write("""[tool.setuptools_scm]""")
-    pkg.join("setup.py").write("__import__('setuptools').setup()")
+    pkg.join("setup.py").write(
+        "__import__('setuptools').setup(name='setuptools_scm_example')"
+    )
     res = do((sys.executable, "setup.py", "--version"), pkg)
-    assert res == "0.1.dev0"
+    assert res.endswith("0.1.dev0")
 
 
 def test_pretend_version(tmpdir, monkeypatch, wd):
@@ -44,6 +46,15 @@ def test_pretend_version(tmpdir, monkeypatch, wd):
 
     assert wd.get_version() == "1.0.0"
     assert wd.get_version(dist_name="ignored") == "1.0.0"
+
+
+def test_pretend_version_named_pyproject_integration(tmpdir, monkeypatch, wd):
+    test_pyproject_support_with_git(tmpdir, monkeypatch, wd)
+    monkeypatch.setenv(
+        PRETEND_KEY_NAMED.format(name="setuptools_scm_example".upper()), "3.2.1"
+    )
+    res = do((sys.executable, "setup.py", "--version"), tmpdir / "wd")
+    assert res.endswith("3.2.1")
 
 
 def test_pretend_version_named(tmpdir, monkeypatch, wd):
