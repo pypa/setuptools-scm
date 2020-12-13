@@ -1,3 +1,8 @@
+v5.0.1
+======
+
+* fix #509: support ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DISTRIBUTION_NAME}`` for ``pyproject.toml``
+
 v5.0.0
 ======
 
