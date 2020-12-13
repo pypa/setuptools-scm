@@ -127,7 +127,7 @@ class Configuration(object):
         self._tag_regex = _check_tag_regex(value)
 
     @classmethod
-    def from_file(cls, name="pyproject.toml"):
+    def from_file(cls, name="pyproject.toml", dist_name=None):
         """
         Read Configuration from pyproject.toml (or similar).
         Raises exceptions when file is not found or toml is
@@ -137,4 +137,4 @@ class Configuration(object):
         with open(name) as strm:
             defn = __import__("toml").load(strm)
         section = defn.get("tool", {})["setuptools_scm"]
-        return cls(**section)
+        return cls(dist_name=dist_name, **section)
