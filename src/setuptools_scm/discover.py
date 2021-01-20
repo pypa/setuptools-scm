@@ -1,6 +1,5 @@
 import os
-from pkg_resources import iter_entry_points
-from .utils import trace
+from .utils import trace, iter_entry_points
 
 
 def iter_matching_entrypoints(path, entrypoint):

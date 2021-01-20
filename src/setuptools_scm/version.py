@@ -6,11 +6,14 @@ import time
 import os
 
 from .config import Configuration
-from .utils import trace, string_types
+from .utils import trace, string_types, iter_entry_points
 
-from pkg_resources import iter_entry_points
+try:
+    # Newer setuptools/pkg_resources releases just use that
+    from packaging.version import parse as pkg_parse_version
+except ImportError:
+    from pkg_resources import parse_version as pkg_parse_version
 
-from pkg_resources import parse_version as pkg_parse_version
 
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3
