@@ -156,9 +156,9 @@ try:
 except ImportError:
     from pkg_resources import iter_entry_points
 else:
+
     def iter_entry_points(group, name=None):
         eps = entry_points()[group]
         if name is None:
             return iter(eps)
         return (ep for ep in eps if ep.name == name)
-
