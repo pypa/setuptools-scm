@@ -1,3 +1,7 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = [
+    "setuptools>=42",  # needed by setup.py, otherwise only on python<3.8
+    "wheel",
+    "packaging; python_version >= '3.8'",
+]
 build-backend = "setuptools.build_meta"
