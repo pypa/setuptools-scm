@@ -220,7 +220,8 @@ Alternatively, you can use ``pkg_resources`` which is included in
         # package is not installed
        pass
 
-This does place a runtime dependency on ``setuptools``.
+However, this does place a runtime dependency on ``setuptools`` and can add up to
+a few 100ms overhead for the package import time.
 
 .. _PEP-0566: https://www.python.org/dev/peps/pep-0566/
 .. _importlib_metadata: https://pypi.org/project/importlib-metadata/
