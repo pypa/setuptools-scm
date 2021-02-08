@@ -2,6 +2,7 @@ from .config import Configuration
 from .utils import do_ex, trace, require_command
 from .version import meta
 
+import os
 from os.path import isfile, join
 import warnings
 
@@ -26,9 +27,28 @@ class GitWorkdir(object):
 
     @classmethod
     def from_potential_worktree(cls, wd):
-        real_wd, _, ret = do_ex("git rev-parse --show-toplevel", wd)
+        wd = os.path.abspath(wd)
+        real_wd, _, ret = do_ex("git rev-parse --show-prefix", wd)
         if ret:
             return
+        if not real_wd:
+            real_wd = wd
+        else:
+            wd_parents = []
+            real_wd_parents = ["."]
+            while True:
+                if os.path.abspath(os.path.join(wd, os.pardir)) != wd:
+                    wd = os.path.abspath(os.path.join(wd, os.pardir))
+                    wd_parents.append(wd)
+                else:
+                    break
+            while True:
+                if os.path.basename(real_wd) != "":
+                    real_wd = os.path.join(real_wd, os.pardir)
+                    real_wd_parents.append(real_wd)
+                else:
+                    break
+            real_wd = str(wd_parents[len(real_wd_parents) - 1])
         trace("real root", real_wd)
         if not samefile(real_wd, wd):
             return

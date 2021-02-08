@@ -11,13 +11,35 @@ log = logging.getLogger(__name__)
 
 def _git_toplevel(path):
     try:
+        cwd = os.path.abspath(path or ".")
         with open(os.devnull, "wb") as devnull:
             out = subprocess.check_output(
-                ["git", "rev-parse", "--show-toplevel"],
-                cwd=(path or "."),
+                ["git", "rev-parse", "--show-prefix"],
+                cwd=cwd,
                 universal_newlines=True,
                 stderr=devnull,
             )
+        out = out.strip()
+        if not out:
+            out = cwd
+        else:
+            cwd_parents = []
+            out_parents = ["."]
+            while True:
+                if os.path.abspath(os.path.join(cwd, os.pardir)) != cwd:
+                    cwd = os.path.abspath(os.path.join(cwd, os.pardir))
+                    cwd_parents.append(cwd)
+                else:
+                    break
+            while True:
+                if os.path.basename(out) != "":
+                    out = os.path.join(out, os.pardir)
+                    out_parents.append(out)
+                else:
+                    break
+            print(cwd_parents)
+            print(out_parents)
+            out = str(cwd_parents[len(out_parents) - 1])
         trace("find files toplevel", out)
         return os.path.normcase(os.path.realpath(out.strip()))
     except subprocess.CalledProcessError:
