@@ -37,8 +37,6 @@ def _git_toplevel(path):
                     out_parents.append(out)
                 else:
                     break
-            print(cwd_parents)
-            print(out_parents)
             out = str(cwd_parents[len(out_parents) - 1])
         trace("find files toplevel", out)
         return os.path.normcase(os.path.realpath(out.strip()))
