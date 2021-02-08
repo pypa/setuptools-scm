@@ -29,13 +29,13 @@ class GitWorkdir(object):
     def from_potential_worktree(cls, wd):
         wd = os.path.abspath(wd)
         real_wd, _, ret = do_ex("git rev-parse --show-prefix", wd)
-        real_wd = real_wd[:-1] #remove the trailing pathsep
+        real_wd = real_wd[:-1]  # remove the trailing pathsep
         if ret:
             return
         if not real_wd:
             real_wd = wd
         else:
-            real_wd = wd[:len(wd)-len(real_wd)-1]
+            real_wd = wd[: len(wd) - len(real_wd) - 1]
         trace("real root", real_wd)
         if not samefile(real_wd, wd):
             return

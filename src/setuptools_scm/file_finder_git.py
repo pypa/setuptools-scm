@@ -19,7 +19,7 @@ def _git_toplevel(path):
                 universal_newlines=True,
                 stderr=devnull,
             )
-        out = out.strip()[:-1] #remove the trailing pathsep
+        out = out.strip()[:-1]  # remove the trailing pathsep
         if not out:
             out = cwd
         else:
@@ -27,7 +27,7 @@ def _git_toplevel(path):
             # ``cwd`` is absolute path to current working directory.
             # the below method removes the length of ``out`` from
             # ``cwd``, which gives the git toplevel
-            out = cwd[:len(cwd)-len(out)-1]
+            out = cwd[: len(cwd) - len(out) - 1]
         trace("find files toplevel", out)
         return os.path.normcase(os.path.realpath(out.strip()))
     except subprocess.CalledProcessError:
