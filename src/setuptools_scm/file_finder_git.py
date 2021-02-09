@@ -29,7 +29,8 @@ def _git_toplevel(path):
             # ``cwd``, which gives the git toplevel
             assert cwd.replace("\\", "/").endswith(out)
             # In windows cwd contains ``\`` which should be replaced by ``/``
-            # for this assertion to work.
+            # for this assertion to work. Length of string isn't changed by replace
+            # ``\\`` is just and escape for `\`
             out = cwd[: -len(out)]
         trace("find files toplevel", out)
         return os.path.normcase(os.path.realpath(out.strip()))

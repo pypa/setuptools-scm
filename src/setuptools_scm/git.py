@@ -37,7 +37,8 @@ class GitWorkdir(object):
         else:
             assert wd.replace("\\", "/").endswith(real_wd)
             # In windows wd contains ``\`` which should be replaced by ``/``
-            # for this assertion to work.
+            # for this assertion to work.  Length of string isn't changed by replace
+            # ``\\`` is just and escape for `\`
             real_wd = wd[: -len(real_wd)]
         trace("real root", real_wd)
         if not samefile(real_wd, wd):
