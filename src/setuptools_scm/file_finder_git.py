@@ -30,7 +30,7 @@ def _git_toplevel(path):
             assert cwd.replace("\\", "/").endswith(out)
             # In windows cwd contains ``\`` which should be replaced by ``/``
             # for this assertion to work.
-            out = cwd[: len(cwd) - len(out) - 1]
+            out = cwd[: -len(out)]
         trace("find files toplevel", out)
         return os.path.normcase(os.path.realpath(out.strip()))
     except subprocess.CalledProcessError:
