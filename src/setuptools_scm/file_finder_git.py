@@ -27,7 +27,7 @@ def _git_toplevel(path):
             # ``cwd`` is absolute path to current working directory.
             # the below method removes the length of ``out`` from
             # ``cwd``, which gives the git toplevel
-            assert cwd[len(cwd) - len(out):].replace('\\','/') == out
+            assert cwd[len(cwd) - len(out) :].replace("\\", "/") == out
             # In windows cwd contains ``\`` which should be replaced by ``/``
             # for this assertion to work.
             out = cwd[: len(cwd) - len(out) - 1]
