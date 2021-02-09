@@ -35,7 +35,7 @@ class GitWorkdir(object):
         if not real_wd:
             real_wd = wd
         else:
-            assert wd[len(wd) - len(real_wd) :].replace("\\", "/") == real_wd
+            assert wd.replace("\\", "/").endswith(real_wd)
             # In windows wd contains ``\`` which should be replaced by ``/``
             # for this assertion to work.
             real_wd = wd[: len(wd) - len(real_wd) - 1]
