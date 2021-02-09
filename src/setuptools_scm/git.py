@@ -2,6 +2,7 @@ from .config import Configuration
 from .utils import do_ex, trace, require_command
 from .version import meta
 
+import os
 from os.path import isfile, join
 import warnings
 
@@ -26,9 +27,19 @@ class GitWorkdir(object):
 
     @classmethod
     def from_potential_worktree(cls, wd):
-        real_wd, _, ret = do_ex("git rev-parse --show-toplevel", wd)
+        wd = os.path.abspath(wd)
+        real_wd, _, ret = do_ex("git rev-parse --show-prefix", wd)
+        real_wd = real_wd[:-1]  # remove the trailing pathsep
         if ret:
             return
+        if not real_wd:
+            real_wd = wd
+        else:
+            assert wd.replace("\\", "/").endswith(real_wd)
+            # In windows wd contains ``\`` which should be replaced by ``/``
+            # for this assertion to work.  Length of string isn't changed by replace
+            # ``\\`` is just and escape for `\`
+            real_wd = wd[: -len(real_wd)]
         trace("real root", real_wd)
         if not samefile(real_wd, wd):
             return

@@ -11,13 +11,27 @@ log = logging.getLogger(__name__)
 
 def _git_toplevel(path):
     try:
+        cwd = os.path.abspath(path or ".")
         with open(os.devnull, "wb") as devnull:
             out = subprocess.check_output(
-                ["git", "rev-parse", "--show-toplevel"],
-                cwd=(path or "."),
+                ["git", "rev-parse", "--show-prefix"],
+                cwd=cwd,
                 universal_newlines=True,
                 stderr=devnull,
             )
+        out = out.strip()[:-1]  # remove the trailing pathsep
+        if not out:
+            out = cwd
+        else:
+            # Here, ``out`` is a relative path to root of git.
+            # ``cwd`` is absolute path to current working directory.
+            # the below method removes the length of ``out`` from
+            # ``cwd``, which gives the git toplevel
+            assert cwd.replace("\\", "/").endswith(out)
+            # In windows cwd contains ``\`` which should be replaced by ``/``
+            # for this assertion to work. Length of string isn't changed by replace
+            # ``\\`` is just and escape for `\`
+            out = cwd[: -len(out)]
         trace("find files toplevel", out)
         return os.path.normcase(os.path.realpath(out.strip()))
     except subprocess.CalledProcessError:

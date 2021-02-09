@@ -23,13 +23,15 @@ jobs:
         include:
         - os: ubuntu-latest
           python_version: '3.9-dev'
+        - os: windows-latest
+          python_version: 'msys2'
 
     name: ${{ matrix.os }} - Python ${{ matrix.python_version }}
     steps:
       - uses: actions/checkout@v1
       - name: Setup python
         uses: actions/setup-python@v2
-        if: matrix.python_version != '3.9-dev'
+        if: matrix.python_version != '3.9-dev' && matrix.python_version != 'msys2'
         with:
           python-version: ${{ matrix.python_version }}
           architecture: x64
@@ -39,7 +41,15 @@ jobs:
         with:
           python-version: ${{ matrix.python_version }}
           architecture: x64
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        if: matrix.python_version == 'msys2'
+        with:
+          msystem: MINGW64
+          install: git mingw-w64-x86_64-python mingw-w64-x86_64-python-setuptools
+          update: true
       - run: pip install -U setuptools
+        if: matrix.python_version != 'msys2'
       - run: pip install -e .[toml] pytest
       - run: pytest
 
