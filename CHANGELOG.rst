@@ -1,3 +1,8 @@
+v5.0.2
+======
+
+* fix #415: use git for matching prefixes to support the windows situation
+
 v5.0.1
 ======
 
