@@ -59,7 +59,8 @@ jobs:
       fail-fast: false
       matrix:
         python_version: [ '2.7', '3.5', '3.6', '3.7', '3.8', 'pypy2', 'pypy3' ]
-    name: check self install - Python ${{ matrix.python_version }}
+        installer: ["pip install", easy_install]
+    name: check self install - Python ${{ matrix.python_version }} via ${{ matrix.installer }}
     steps:
       - uses: actions/checkout@v1
       - name: Setup python
@@ -69,10 +70,11 @@ jobs:
           architecture: x64
       # self install testing needs some clarity
       # so its being executed without any other tools running
-      - run: pip install -U setuptools
+      # setuptools smaller 52 is needed too di easy_install
+      - run: pip install -U "setuptools<52"
       - run: python setup.py egg_info
       - run: python setup.py sdist
-      - run: easy_install dist/*
+      - run: ${{ matrix.installer }} dist/*
       - run: python testing/check_self_install.py
 
 
