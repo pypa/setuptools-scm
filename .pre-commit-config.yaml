@@ -1,12 +1,11 @@
-exclude: setuptools_scm/win_py31_compat.py
 repos:
--   repo: https://github.com/ambv/black
+-   repo: https://github.com/psf/black
     rev: 20.8b1
     hooks:
     - id: black
       args: [--safe, --quiet]
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.3.0
+    rev: v3.4.0
     hooks:
     -   id: trailing-whitespace
     -   id: end-of-file-fixer
@@ -17,6 +16,6 @@ repos:
     hooks:
     -   id: flake8
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v2.7.4
+    rev: v2.10.0
     hooks:
     - id: pyupgrade
