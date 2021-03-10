@@ -325,6 +325,24 @@ def no_guess_dev_version(version):
         return version.format_with("{tag}.post1.dev{distance}")
 
 
+def calver_by_date(version):
+    version_ = version.branch  # FIXME set to None
+    if version.branch is not None and version.branch.startswith('release-'):
+        trace('in release branch')
+        version_ = version.branch.replace('relese-', '')
+    elif version.dirty:
+        # get next release
+        trace('in dirty')
+        version_ = guess_next_version(version.tag)
+    elif version.exact:
+        trace('in exact')
+        version_ = version.format_with("{tag}")
+    else:
+        trace('in default fallback')
+        version_ = format_version(version, version_scheme=None, local_scheme=None)
+    return version_
+
+
 def _format_local_with_time(version, time_format):
 
     if version.exact or version.node is None:

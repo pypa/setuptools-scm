@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 import pytest
 from setuptools_scm.config import Configuration
 from setuptools_scm.version import (
@@ -7,6 +9,7 @@ from setuptools_scm.version import (
     tags_to_versions,
     no_guess_dev_version,
     guess_next_version,
+    calver_by_date
 )
 
 
@@ -170,3 +173,48 @@ def test_version_bump_bad():
     ):
 
         guess_next_version(tag_version="2.0.0-alpha.5-PMC")
+
+
+def date_to_str(date_=None, days_offset=0, fmt="%y.%-m.%-d"):
+    date_ = date_ or date.today()
+    date_ = date_ - timedelta(days=days_offset)
+    return date_.strftime("%y.%-m.%-d")
+
+
+# TODO check it does not break semver
+@pytest.mark.parametrize(
+    "version, expected_next",
+    [
+        pytest.param(meta("1.0.0", config=c), "1.0.0", id="exact SemVer"),
+        # pytest.param(meta(date_to_str(), config=c), date_to_str(), id="exact"),
+        # pytest.param(meta(date_to_str(fmt="%y.%m.%d"), config=c), date_to_str(), id="leading 0s"),
+        # pytest.param(
+        #     meta(date_to_str(), distance=2, branch="default", config=c),
+        #     date_to_str() + ".2",
+        #     id="normal_branch",
+        # ),
+        # pytest.param(
+        #     meta("1.0", distance=2, branch="default", config=c),
+        #     "1.0.1.dev2",
+        #     id="normal_branch_short_tag",
+        # ),
+        # pytest.param(
+        #     meta("1.0.0", distance=2, branch="feature", config=c),
+        #     "1.1.0.dev2",
+        #     id="feature_branch",
+        # ),
+        # pytest.param(
+        #     meta("1.0", distance=2, branch="feature", config=c),
+        #     "1.1.0.dev2",
+        #     id="feature_branch_short_tag",
+        # ),
+        # pytest.param(
+        #     meta("1.0.0", distance=2, branch="features/test", config=c),
+        #     "1.1.0.dev2",
+        #     id="feature_in_branch",
+        # ),
+    ],
+)
+def test_calver_by_date(version, expected_next):
+    computed = calver_by_date(version)
+    assert computed == expected_next
