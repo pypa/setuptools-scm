@@ -326,20 +326,34 @@ def no_guess_dev_version(version):
 
 
 def guess_next_date_ver(version, retain=False, increment=True):
-    match = re.match(r"^(?P<lead>[vV]?)(?P<date>(?P<year>\d{2}|\d{4})(?:\.\d{1,2}){2})(?:\.(?P<patch>\d*)){0,1}?$", str(version))
+    """
+    same-day -> patch +1
+    other-day -> today
+
+    distance is always added as .devX
+    """
+    match = re.match(
+        (
+            r"^(?P<lead>[vV]?)(?P<date>(?P<year>\d{2}|\d{4})"
+            r"(?:\.\d{1,2}){2})(?:\.(?P<patch>\d*)){0,1}?$"
+        ),
+        str(version),
+    )
     if match is None:
         raise ValueError(
             "{version} does not correspond to a valid versioning date, "
             "please correct or use a custom version scheme".format(version=version)
         )
     # keep same formatting style
-    fmt = match.group('lead') or ''
-    fmt += "%Y.%-m.%-d" if len(match.group('year')) == 4 else "%y.%-m.%-d"
+    fmt = match.group("lead") or ""
+    fmt += "%Y.%-m.%-d" if len(match.group("year")) == 4 else "%y.%-m.%-d"
     next_version = datetime.date.today().strftime(fmt)
-    if next_version == match.group('date'):
-        patch = match.group('patch') or '0'
-        next_version += ".{}".format(int(patch)+1)
-    print(next_version)
+    if next_version == match.group("date"):
+        patch = match.group("patch") or "0"
+        patch = int(patch) + 1
+    else:
+        patch = 0
+    next_version += ".{}".format(patch)
     return next_version
 
 
@@ -348,7 +362,6 @@ def calver_by_date(version):
         version_ = version.format_with("{tag}")
     else:
         version_ = version.format_next_version(guess_next_date_ver)
-
     return version_
 
 
