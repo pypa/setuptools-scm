@@ -325,21 +325,30 @@ def no_guess_dev_version(version):
         return version.format_with("{tag}.post1.dev{distance}")
 
 
+def guess_next_date_ver(version, retain=False, increment=True):
+    match = re.match(r"^(?P<lead>[vV]?)(?P<date>(?P<year>\d{2}|\d{4})(?:\.\d{1,2}){2})(?:\.(?P<patch>\d*)){0,1}?$", str(version))
+    if match is None:
+        raise ValueError(
+            "{version} does not correspond to a valid versioning date, "
+            "please correct or use a custom version scheme".format(version=version)
+        )
+    # keep same formatting style
+    fmt = match.group('lead') or ''
+    fmt += "%Y.%-m.%-d" if len(match.group('year')) == 4 else "%y.%-m.%-d"
+    next_version = datetime.date.today().strftime(fmt)
+    if next_version == match.group('date'):
+        patch = match.group('patch') or '0'
+        next_version += ".{}".format(int(patch)+1)
+    print(next_version)
+    return next_version
+
+
 def calver_by_date(version):
-    version_ = version.branch  # FIXME set to None
-    if version.branch is not None and version.branch.startswith('release-'):
-        trace('in release branch')
-        version_ = version.branch.replace('relese-', '')
-    elif version.dirty:
-        # get next release
-        trace('in dirty')
-        version_ = guess_next_version(version.tag)
-    elif version.exact:
-        trace('in exact')
+    if version.exact and not version.dirty:
         version_ = version.format_with("{tag}")
     else:
-        trace('in default fallback')
-        version_ = format_version(version, version_scheme=None, local_scheme=None)
+        version_ = version.format_next_version(guess_next_date_ver)
+
     return version_
 
 

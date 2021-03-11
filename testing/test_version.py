@@ -185,9 +185,13 @@ def date_to_str(date_=None, days_offset=0, fmt="%y.%-m.%-d"):
 @pytest.mark.parametrize(
     "version, expected_next",
     [
-        pytest.param(meta("1.0.0", config=c), "1.0.0", id="exact SemVer"),
-        # pytest.param(meta(date_to_str(), config=c), date_to_str(), id="exact"),
-        # pytest.param(meta(date_to_str(fmt="%y.%m.%d"), config=c), date_to_str(), id="leading 0s"),
+        pytest.param(meta("1.0.0", config=c), '1.0.0', id="SemVer exact"),
+        pytest.param(meta("1.0.0", config=c, dirty=True), pytest.raises(ValueError), id="SemVer dirty"),
+        pytest.param(meta(date_to_str(), config=c), date_to_str(), id="exact"),
+        pytest.param(meta(date_to_str(fmt="%y.%m.%d"), config=c), date_to_str(), id="leading 0s"),
+        pytest.param(meta(date_to_str(), config=c, dirty=True), date_to_str()+'.1', id="dirty same day"),
+        pytest.param(meta(date_to_str(days_offset=3), config=c, dirty=True), date_to_str(), id="dirty other day"),
+
         # pytest.param(
         #     meta(date_to_str(), distance=2, branch="default", config=c),
         #     date_to_str() + ".2",
@@ -198,11 +202,11 @@ def date_to_str(date_=None, days_offset=0, fmt="%y.%-m.%-d"):
         #     "1.0.1.dev2",
         #     id="normal_branch_short_tag",
         # ),
-        # pytest.param(
-        #     meta("1.0.0", distance=2, branch="feature", config=c),
-        #     "1.1.0.dev2",
-        #     id="feature_branch",
-        # ),
+        pytest.param(
+            meta(date_to_str(), distance=2, branch="feature", config=c),
+            date_to_str() + ".2",
+            id="feature_branch",
+        ),
         # pytest.param(
         #     meta("1.0", distance=2, branch="feature", config=c),
         #     "1.1.0.dev2",
