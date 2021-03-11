@@ -175,10 +175,10 @@ def test_version_bump_bad():
         guess_next_version(tag_version="2.0.0-alpha.5-PMC")
 
 
-def date_to_str(date_=None, days_offset=0, fmt="%y.%-m.%-d"):
+def date_to_str(date_=None, days_offset=0, fmt="{dt:%y}.{dt.month}.{dt.day}"):
     date_ = date_ or date.today()
     date_ = date_ - timedelta(days=days_offset)
-    return date_.strftime("%y.%-m.%-d")
+    return fmt.format(dt=date_)
 
 
 # TODO check it does not break semver
@@ -196,7 +196,9 @@ def date_to_str(date_=None, days_offset=0, fmt="%y.%-m.%-d"):
             id="other day",
         ),
         pytest.param(
-            meta(date_to_str(fmt="%y.%m.%d"), config=c), date_to_str(), id="leading 0s"
+            meta(date_to_str(fmt="{dt:%y}.{dt:%m}.{dt:%d}"), config=c),
+            date_to_str(),
+            id="leading 0s",
         ),
         pytest.param(
             meta(date_to_str(), config=c, dirty=True),
