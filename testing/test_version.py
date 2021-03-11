@@ -235,6 +235,16 @@ def date_to_str(date_=None, days_offset=0, fmt="{dt:%y}.{dt.month}.{dt.day}"):
             date_to_str() + ".1.dev2",
             id="feature branch",
         ),
+        pytest.param(
+            meta(date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}"), config=c),
+            date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}"),
+            id="exact with 4 digits year",
+        ),
+        pytest.param(
+            meta(date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}") + ".1", config=c),
+            date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}") + ".1",
+            id="exact patch with 4 digits year",
+        ),
     ],
 )
 def test_calver_by_date(version, expected_next):
