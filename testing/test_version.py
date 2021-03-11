@@ -196,8 +196,8 @@ def date_to_str(date_=None, days_offset=0, fmt="{dt:%y}.{dt.month}.{dt.day}"):
             id="other day",
         ),
         pytest.param(
-            meta(date_to_str(fmt="{dt:%y}.{dt:%m}.{dt:%d}"), config=c),
-            date_to_str(),
+            meta(date_to_str(fmt="20.01.02"), config=c),
+            "20.1.2",
             id="leading 0s",
         ),
         pytest.param(
