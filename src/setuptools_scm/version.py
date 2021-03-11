@@ -345,9 +345,13 @@ def guess_next_date_ver(version, retain=False, increment=True):
             "please correct or use a custom version scheme".format(version=version)
         )
     # keep same formatting style
-    fmt = match.group("lead") or ""
-    fmt += "%Y.%-m.%-d" if len(match.group("year")) == 4 else "%y.%-m.%-d"
-    next_version = datetime.date.today().strftime(fmt)
+    # "%y.%-m.%-d" will not work on windows:
+    # https://stackoverflow.com/questions/904928/python-strftime-date-without-leading-0
+    fmt = "{lead}{{dt:%{year_fmt}}}.{{dt.month}}.{{dt.day}}".format(
+        lead=match.group("lead") or "",
+        year_fmt="Y" if len(match.group("year")) == 4 else "y",
+    )
+    next_version = fmt.format(dt=datetime.date.today())
     if next_version == match.group("date"):
         patch = match.group("patch") or "0"
         patch = int(patch) + 1
