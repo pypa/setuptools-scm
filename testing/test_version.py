@@ -357,5 +357,5 @@ def test_calver_by_date_semver(version, expected_next):
 
 
 def test_calver_by_date_future_warning():
-    with pytest.warns(UserWarning, match="your previous tag is in the future*"):
+    with pytest.warns(UserWarning, match="your previous tag*"):
         calver_by_date(meta(date_to_str(days_offset=-2), config=c, distance=2))
