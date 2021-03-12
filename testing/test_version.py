@@ -251,6 +251,21 @@ def date_to_str(date_=None, days_offset=0, fmt="{dt:%y}.{dt.month}.{dt.day}"):
             date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}") + ".1",
             id="exact patch with 4 digits year",
         ),
+        pytest.param(
+            meta(date_to_str(), distance=2, branch="release-2021.05.06", config=c),
+            "2021.05.06",
+            id="release branch",
+        ),
+        pytest.param(
+            meta(date_to_str() + ".2", distance=2, branch="release-21.5.1", config=c),
+            "21.5.1",
+            id="release branch short",
+        ),
+        pytest.param(
+            meta(date_to_str(), branch="release-21.5.1", config=c),
+            date_to_str(),
+            id="release branch exact",
+        ),
         # pytest.param(
         #     meta("v" + date_to_str(), config=c), date_to_str(), id="exact leading v"
         # ),

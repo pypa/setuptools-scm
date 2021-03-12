@@ -325,6 +325,17 @@ def no_guess_dev_version(version):
         return version.format_with("{tag}.post1.dev{distance}")
 
 
+def date_ver_match(ver):
+    match = re.match(
+        (
+            r"^(?P<date>(?P<year>\d{2}|\d{4})(?:\.\d{1,2}){2})"
+            r"(?:\.(?P<patch>\d*)){0,1}?$"
+        ),
+        str(ver),
+    )
+    return match
+
+
 def guess_next_date_ver(version, retain=False, increment=True):
     """
     same-day -> patch +1
@@ -332,13 +343,7 @@ def guess_next_date_ver(version, retain=False, increment=True):
 
     distance is always added as .devX
     """
-    match = re.match(
-        (
-            r"^(?P<date>(?P<year>\d{2}|\d{4})(?:\.\d{1,2}){2})"
-            r"(?:\.(?P<patch>\d*)){0,1}?$"
-        ),
-        str(version),
-    )
+    match = date_ver_match(version)
     if match is None:
         raise ValueError(
             "{version} does not correspond to a valid versioning date, "
@@ -368,10 +373,15 @@ def guess_next_date_ver(version, retain=False, increment=True):
 
 def calver_by_date(version):
     if version.exact and not version.dirty:
-        version_ = version.format_with("{tag}")
-    else:
-        version_ = version.format_next_version(guess_next_date_ver)
-    return version_
+        return version.format_with("{tag}")
+    if version.branch is not None and version.branch.startswith("release-"):
+        branch_ver = _parse_version_tag(version.branch.split("-")[-1], version.config)
+        if branch_ver is not None:
+            ver = branch_ver["version"]
+            match = date_ver_match(ver)
+            if match:
+                return ver
+    return version.format_next_version(guess_next_date_ver)
 
 
 def _format_local_with_time(version, time_format):
