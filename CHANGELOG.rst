@@ -4,7 +4,8 @@ v6.0.0
 * drop dead python support >3.6 required
 * drop dead setuptools support > 45 required (can install wheels)
 * drop egg building (use wheels)
-
+* add git node_date metadata to get the commit time-stamp of HEAD
+* allow version schemes to be priority ordered lists of version schemes
 
 v5.0.2
 ======
