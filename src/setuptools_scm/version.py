@@ -110,6 +110,7 @@ class ScmVersion(object):
         preformatted=False,
         branch=None,
         config=None,
+        node_date=None,
         **kw
     ):
         if kw:
@@ -119,6 +120,7 @@ class ScmVersion(object):
             distance = 0
         self.distance = distance
         self.node = node
+        self.node_date = node_date
         self.time = datetime.datetime.utcfromtimestamp(
             int(os.environ.get("SOURCE_DATE_EPOCH", time.time()))
         )
@@ -154,6 +156,7 @@ class ScmVersion(object):
             node=self.node,
             dirty=self.dirty,
             branch=self.branch,
+            node_date=self.node_date,
             **kw
         )
 

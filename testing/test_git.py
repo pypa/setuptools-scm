@@ -1,5 +1,5 @@
 import sys
-
+import os
 from setuptools_scm import integration
 from setuptools_scm.utils import do, has_command
 from setuptools_scm import git
@@ -7,7 +7,7 @@ import pytest
 from datetime import datetime
 from os.path import join as opj
 from setuptools_scm.file_finder_git import git_find_files
-
+from datetime import date
 
 skip_if_win_27 = pytest.mark.skipif(
     sys.platform == "win32" and sys.version_info[0] < 3,
@@ -298,3 +298,20 @@ def test_gitdir(monkeypatch, wd):
     # git hooks set this and break subsequent setuptools_scm unless we clean
     monkeypatch.setenv("GIT_DIR", __file__)
     assert wd.version == normal
+
+
+def test_git_getdate(wd):
+    # TODO: case coverage for git wd parse
+    today = date.today()
+
+    def parse_date():
+        return lambda: git.parse(os.fspath(wd.cwd)).node_date
+
+    git_wd = git.GitWorkdir(os.fspath(wd.cwd))
+    assert git_wd.get_head_date() is None
+    assert parse_date() == today
+
+    wd.commit_testfile()
+    assert git_wd.get_head_date() == today
+    meta = git.parse(os.fspath(wd.cwd))
+    assert meta.node_date == today
