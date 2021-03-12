@@ -305,7 +305,7 @@ def test_git_getdate(wd):
     today = date.today()
 
     def parse_date():
-        return lambda: git.parse(os.fspath(wd.cwd)).node_date
+        return git.parse(os.fspath(wd.cwd)).node_date
 
     git_wd = git.GitWorkdir(os.fspath(wd.cwd))
     assert git_wd.get_head_date() is None

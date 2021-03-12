@@ -7,6 +7,7 @@ from setuptools_scm.version import (
     tags_to_versions,
     no_guess_dev_version,
     guess_next_version,
+    format_version,
 )
 
 
@@ -170,3 +171,12 @@ def test_version_bump_bad():
     ):
 
         guess_next_version(tag_version="2.0.0-alpha.5-PMC")
+
+
+def test_format_version_schemes():
+    version = meta("1.0", config=c)
+    format_version(
+        version,
+        local_scheme="no-local-version",
+        version_scheme=[lambda v: None, "guess-next-dev"],
+    )
