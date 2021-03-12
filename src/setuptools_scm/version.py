@@ -8,9 +8,15 @@ import os
 from .config import Configuration
 from .utils import trace, string_types
 
-from pkg_resources import iter_entry_points
+try:
+    from packaging.version import Version
+except ImportError:
+    import pkg_resources
 
-from pkg_resources import parse_version as pkg_parse_version
+    Version = pkg_resources.packaging.version.Version
+
+
+from pkg_resources import iter_entry_points
 
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3
@@ -36,30 +42,6 @@ def _parse_version_tag(tag, config):
 
     trace("tag '{}' parsed to {}".format(tag, result))
     return result
-
-
-def _get_version_class():
-    modern_version = pkg_parse_version("1.0")
-    if isinstance(modern_version, tuple):
-        return None
-    else:
-        return type(modern_version)
-
-
-VERSION_CLASS = _get_version_class()
-
-
-class SetuptoolsOutdatedWarning(Warning):
-    pass
-
-
-# append so integrators can disable the warning
-warnings.simplefilter("error", SetuptoolsOutdatedWarning, append=True)
-
-
-def _warn_if_setuptools_outdated():
-    if VERSION_CLASS is None:
-        warnings.warn("your setuptools is too old (<12)", SetuptoolsOutdatedWarning)
 
 
 def callable_or_entrypoint(group, callable_or_name):
@@ -98,9 +80,8 @@ def tag_to_version(tag, config=None):
             )
         )
 
-    if VERSION_CLASS is not None:
-        version = pkg_parse_version(version)
-        trace("version", repr(version))
+    version = Version(version)
+    trace("version", repr(version))
 
     return version
 
@@ -187,7 +168,7 @@ class ScmVersion(object):
 def _parse_tag(tag, preformatted, config):
     if preformatted:
         return tag
-    if VERSION_CLASS is None or not isinstance(tag, VERSION_CLASS):
+    if not isinstance(tag, Version):
         tag = tag_to_version(tag, config)
     return tag
 

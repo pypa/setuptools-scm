@@ -7,10 +7,7 @@ from os.path import isfile, join
 import warnings
 
 
-try:
-    from os.path import samefile
-except ImportError:
-    from .win_py31_compat import samefile
+from os.path import samefile
 
 
 DEFAULT_DESCRIBE = "git describe --dirty --tags --long --match *[0-9]*"
