@@ -79,13 +79,6 @@ jobs:
     - uses: actions/checkout@v1
     - name: Setup python
       uses: actions/setup-python@v2
-      if: matrix.python_version != '3.9'
-      with:
-        python-version: ${{ matrix.python_version }}
-        architecture: x64
-    - name: Set up Python ${{ matrix.python_version }} (deadsnakes)
-      uses: deadsnakes/action@v2.0.1
-      if: matrix.python_version == '3.9-dev'
       with:
         python-version: ${{ matrix.python_version }}
         architecture: x64
