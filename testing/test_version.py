@@ -9,6 +9,7 @@ from setuptools_scm.version import (
     tags_to_versions,
     no_guess_dev_version,
     guess_next_version,
+    format_version,
     calver_by_date,
 )
 
@@ -55,7 +56,7 @@ def test_next_semver(version, expected_next):
 
 def test_next_semver_bad_tag():
 
-    version = meta("1.0.0-foo", config=c)
+    version = meta("1.0.0-foo", preformatted=True, config=c)
     with pytest.raises(
         ValueError, match="1.0.0-foo can't be parsed as numeric version"
     ):
@@ -173,6 +174,15 @@ def test_version_bump_bad():
     ):
 
         guess_next_version(tag_version="2.0.0-alpha.5-PMC")
+
+
+def test_format_version_schemes():
+    version = meta("1.0", config=c)
+    format_version(
+        version,
+        local_scheme="no-local-version",
+        version_scheme=[lambda v: None, "guess-next-dev"],
+    )
 
 
 def date_to_str(date_=None, days_offset=0, fmt="{dt:%y}.{dt.month}.{dt.day}"):

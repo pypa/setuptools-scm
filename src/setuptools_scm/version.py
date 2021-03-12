@@ -8,9 +8,15 @@ import os
 from .config import Configuration
 from .utils import trace, string_types
 
-from pkg_resources import iter_entry_points
+try:
+    from packaging.version import Version
+except ImportError:
+    import pkg_resources
 
-from pkg_resources import parse_version as pkg_parse_version
+    Version = pkg_resources.packaging.version.Version
+
+
+from pkg_resources import iter_entry_points
 
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3
@@ -36,30 +42,6 @@ def _parse_version_tag(tag, config):
 
     trace("tag '{}' parsed to {}".format(tag, result))
     return result
-
-
-def _get_version_class():
-    modern_version = pkg_parse_version("1.0")
-    if isinstance(modern_version, tuple):
-        return None
-    else:
-        return type(modern_version)
-
-
-VERSION_CLASS = _get_version_class()
-
-
-class SetuptoolsOutdatedWarning(Warning):
-    pass
-
-
-# append so integrators can disable the warning
-warnings.simplefilter("error", SetuptoolsOutdatedWarning, append=True)
-
-
-def _warn_if_setuptools_outdated():
-    if VERSION_CLASS is None:
-        warnings.warn("your setuptools is too old (<12)", SetuptoolsOutdatedWarning)
 
 
 def callable_or_entrypoint(group, callable_or_name):
@@ -98,9 +80,8 @@ def tag_to_version(tag, config=None):
             )
         )
 
-    if VERSION_CLASS is not None:
-        version = pkg_parse_version(version)
-        trace("version", repr(version))
+    version = Version(version)
+    trace("version", repr(version))
 
     return version
 
@@ -129,6 +110,7 @@ class ScmVersion(object):
         preformatted=False,
         branch=None,
         config=None,
+        node_date=None,
         **kw
     ):
         if kw:
@@ -138,6 +120,7 @@ class ScmVersion(object):
             distance = 0
         self.distance = distance
         self.node = node
+        self.node_date = node_date
         self.time = datetime.datetime.utcfromtimestamp(
             int(os.environ.get("SOURCE_DATE_EPOCH", time.time()))
         )
@@ -173,6 +156,7 @@ class ScmVersion(object):
             node=self.node,
             dirty=self.dirty,
             branch=self.branch,
+            node_date=self.node_date,
             **kw
         )
 
@@ -187,7 +171,7 @@ class ScmVersion(object):
 def _parse_tag(tag, preformatted, config):
     if preformatted:
         return tag
-    if VERSION_CLASS is None or not isinstance(tag, VERSION_CLASS):
+    if not isinstance(tag, Version):
         tag = tag_to_version(tag, config)
     return tag
 
@@ -419,19 +403,47 @@ def postrelease_version(version):
         return version.format_with("{tag}.post{distance}")
 
 
+def _get_ep(group, name):
+    for ep in iter_entry_points(group, name):
+        trace("ep found:", ep.name)
+        return ep.load()
+
+
+def _iter_version_schemes(entrypoint, scheme_value, _memo=None):
+    if _memo is None:
+        _memo = set()
+    if isinstance(scheme_value, str):
+        scheme_value = _get_ep(entrypoint, scheme_value)
+
+    if isinstance(scheme_value, (list, tuple)):
+        for variant in scheme_value:
+            if variant not in _memo:
+                _memo.add(variant)
+                yield from _iter_version_schemes(entrypoint, variant, _memo=_memo)
+    elif callable(scheme_value):
+        yield scheme_value
+
+
+def _call_version_scheme(version, entypoint, given_value, default):
+    for scheme in _iter_version_schemes(entypoint, given_value):
+        result = scheme(version)
+        if result is not None:
+            return result
+    return default
+
+
 def format_version(version, **config):
     trace("scm version", version)
     trace("config", config)
     if version.preformatted:
         return version.tag
-    version_scheme = callable_or_entrypoint(
-        "setuptools_scm.version_scheme", config["version_scheme"]
+    main_version = _call_version_scheme(
+        version, "setuptools_scm.version_scheme", config["version_scheme"], None
     )
-    local_scheme = callable_or_entrypoint(
-        "setuptools_scm.local_scheme", config["local_scheme"]
-    )
-    main_version = version_scheme(version)
     trace("version", main_version)
-    local_version = local_scheme(version)
+    assert main_version is not None
+    local_version = _call_version_scheme(
+        version, "setuptools_scm.local_scheme", config["local_scheme"], "+unknown"
+    )
     trace("local_version", local_version)
-    return version_scheme(version) + local_scheme(version)
+    return main_version + local_version
