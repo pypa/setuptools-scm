@@ -334,8 +334,8 @@ def guess_next_date_ver(version, retain=False, increment=True):
     """
     match = re.match(
         (
-            r"^(?P<lead>[vV]?)(?P<date>(?P<year>\d{2}|\d{4})"
-            r"(?:\.\d{1,2}){2})(?:\.(?P<patch>\d*)){0,1}?$"
+            r"^(?P<date>(?P<year>\d{2}|\d{4})(?:\.\d{1,2}){2})"
+            r"(?:\.(?P<patch>\d*)){0,1}?$"
         ),
         str(version),
     )
@@ -347,11 +347,16 @@ def guess_next_date_ver(version, retain=False, increment=True):
     # keep same formatting style
     # "%y.%-m.%-d" will not work on windows:
     # https://stackoverflow.com/questions/904928/python-strftime-date-without-leading-0
-    fmt = "{lead}{{dt:%{year_fmt}}}.{{dt.month}}.{{dt.day}}".format(
-        lead=match.group("lead") or "",
+    fmt = "{{dt:%{year_fmt}}}.{{dt.month}}.{{dt.day}}".format(
         year_fmt="Y" if len(match.group("year")) == 4 else "y",
     )
-    next_version = fmt.format(dt=datetime.date.today())
+    today = datetime.date.today()
+    next_version = fmt.format(dt=today)
+    # warn on future times
+    tag_fmt = "%Y.%m.%d" if len(match.group("year")) == 4 else "%y.%m.%d"
+    tag_date = datetime.datetime.strptime(match.group("date"), tag_fmt).date()
+    if tag_date > today:
+        warnings.warn("your previous tag is in the future {}".format(next_version))
     if next_version == match.group("date"):
         patch = match.group("patch") or "0"
         patch = int(patch) + 1

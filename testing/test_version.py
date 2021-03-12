@@ -186,6 +186,12 @@ def date_to_str(date_=None, days_offset=0, fmt="{dt:%y}.{dt.month}.{dt.day}"):
     "version, expected_next",
     [
         pytest.param(meta("1.0.0", config=c), "1.0.0", id="SemVer exact"),
+        pytest.param(
+            meta("1.0.0", config=c, dirty=True),
+            "1.0.0",
+            id="SemVer dirty",
+            marks=pytest.mark.xfail,
+        ),
         pytest.param(meta(date_to_str(), config=c), date_to_str(), id="exact"),
         pytest.param(
             meta(date_to_str() + ".1", config=c), date_to_str() + ".1", id="exact patch"
@@ -245,8 +251,36 @@ def date_to_str(date_=None, days_offset=0, fmt="{dt:%y}.{dt.month}.{dt.day}"):
             date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}") + ".1",
             id="exact patch with 4 digits year",
         ),
+        # pytest.param(
+        #     meta("v" + date_to_str(), config=c), date_to_str(), id="exact leading v"
+        # ),
+        # pytest.param(
+        #     meta("v" + date_to_str() + ".1", config=c),
+        #     date_to_str() + ".1",
+        #     id="exact patch leading v",
+        # ),
+        # pytest.param(
+        #     meta("v" + date_to_str(), config=c, distance=2),
+        #     date_to_str() + ".1.dev2",
+        #     id="distance with leading v",
+        # ),
+        # pytest.param(
+        #     meta("v" + date_to_str() + ".1", config=c, dirty=True),
+        #     date_to_str() + ".2.dev0",
+        #     id="dirty patch leading v",
+        # ),
+        # pytest.param(
+        #     meta("v" + date_to_str(days_offset=3), config=c, dirty=True),
+        #     date_to_str() + ".0.dev0",
+        #     id="offset leading v",
+        # ),
     ],
 )
 def test_calver_by_date(version, expected_next):
     computed = calver_by_date(version)
     assert computed == expected_next
+
+
+def test_calver_by_date_future_warning():
+    with pytest.warns(UserWarning, match="your previous tag is in the future*"):
+        calver_by_date(meta(date_to_str(days_offset=-2), config=c, distance=2))
