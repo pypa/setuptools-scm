@@ -333,23 +333,27 @@ def guess_next_date_ver(version, node_date=None):
             "{version} does not correspond to a valid versioning date, "
             "please correct or use a custom version scheme".format(version=version)
         )
-    # keep same formatting style
-    # "%y.%-m.%-d" will not work on windows:
-    # https://stackoverflow.com/questions/904928/python-strftime-date-without-leading-0
-    fmt = "{{dt:%{year_fmt}}}.{{dt.month}}.{{dt.day}}".format(
-        year_fmt="Y" if len(match.group("year")) == 4 else "y",
-    )
+    fmt = "%Y.%m.%d" if len(match.group("year")) == 4 else "%y.%m.%d"
     head_date = node_date or datetime.date.today()
-    next_version = fmt.format(dt=head_date)
+    next_version = format(head_date, fmt)
+    # rely on the Version object to remove leading 0s for months and days
+    # TODO: consider using python number formatting in the fmt string
+    next_version = str(Version(next_version))
+    trace(next_version)
     # warn on future times
-    tag_fmt = "%Y.%m.%d" if len(match.group("year")) == 4 else "%y.%m.%d"
-    tag_date = datetime.datetime.strptime(match.group("date"), tag_fmt).date()
+    tag_date = datetime.datetime.strptime(match.group("date"), fmt).date()
+    trace(tag_date)
+    trace("----")
+    trace(head_date)
     if tag_date > head_date:
+        trace("must warn")
         warnings.warn(
             "your previous tag  ({}) is ahead your node date ({})".format(
-                next_version, head_date
+                tag_date, head_date
             )
         )
+    trace(next_version)
+    trace(match.group("date"))
     if next_version == match.group("date"):
         patch = match.group("patch") or "0"
         patch = int(patch) + 1
