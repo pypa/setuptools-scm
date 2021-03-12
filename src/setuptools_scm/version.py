@@ -320,7 +320,7 @@ def date_ver_match(ver):
     return match
 
 
-def guess_next_date_ver(version, retain=False, increment=True):
+def guess_next_date_ver(version, node_date=None):
     """
     same-day -> patch +1
     other-day -> today
@@ -339,13 +339,17 @@ def guess_next_date_ver(version, retain=False, increment=True):
     fmt = "{{dt:%{year_fmt}}}.{{dt.month}}.{{dt.day}}".format(
         year_fmt="Y" if len(match.group("year")) == 4 else "y",
     )
-    today = datetime.date.today()
-    next_version = fmt.format(dt=today)
+    head_date = node_date or datetime.date.today()
+    next_version = fmt.format(dt=head_date)
     # warn on future times
     tag_fmt = "%Y.%m.%d" if len(match.group("year")) == 4 else "%y.%m.%d"
     tag_date = datetime.datetime.strptime(match.group("date"), tag_fmt).date()
-    if tag_date > today:
-        warnings.warn("your previous tag is in the future {}".format(next_version))
+    if tag_date > head_date:
+        warnings.warn(
+            "your previous tag  ({}) is ahead your node date ({})".format(
+                next_version, head_date
+            )
+        )
     if next_version == match.group("date"):
         patch = match.group("patch") or "0"
         patch = int(patch) + 1
@@ -365,7 +369,7 @@ def calver_by_date(version):
             match = date_ver_match(ver)
             if match:
                 return ver
-    return version.format_next_version(guess_next_date_ver)
+    return version.format_next_version(guess_next_date_ver, node_date=version.node_date)
 
 
 def _format_local_with_time(version, time_format):
