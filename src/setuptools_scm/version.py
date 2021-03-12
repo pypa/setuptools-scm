@@ -339,25 +339,18 @@ def guess_next_date_ver(version, node_date=None):
     # rely on the Version object to remove leading 0s for months and days
     # TODO: consider using python number formatting in the fmt string
     next_version = str(Version(next_version))
-    trace(next_version)
     # warn on future times
     tag_date = datetime.datetime.strptime(match.group("date"), fmt).date()
-    trace(tag_date)
-    trace("----")
-    trace(head_date)
-    if tag_date > head_date:
-        trace("must warn")
-        warnings.warn(
-            "your previous tag  ({}) is ahead your node date ({})".format(
-                tag_date, head_date
-            )
-        )
-    trace(next_version)
-    trace(match.group("date"))
-    if next_version == match.group("date"):
+    if tag_date == head_date:
         patch = match.group("patch") or "0"
         patch = int(patch) + 1
     else:
+        if tag_date > head_date:
+            warnings.warn(
+                "your previous tag  ({}) is ahead your node date ({})".format(
+                    tag_date, head_date
+                )
+            )
         patch = 0
     next_version += ".{}".format(patch)
     return next_version
