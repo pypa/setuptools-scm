@@ -1,3 +1,11 @@
+v6.0.0
+======
+
+* drop dead python support >3.6 required
+* drop dead setuptools support > 45 required (can install wheels)
+* drop egg building (use wheels)
+
+
 v5.0.2
 ======
 
