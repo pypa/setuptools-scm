@@ -181,7 +181,105 @@ def date_to_str(date_=None, days_offset=0, fmt="{dt:%y}.{dt.month}.{dt.day}"):
     return fmt.format(dt=date_)
 
 
-# TODO check it does not break semver
+@pytest.mark.parametrize("prefix", ["", "v", "V"])
+@pytest.mark.parametrize(
+    "tag, version_params, expected_next",
+    [
+        pytest.param(date_to_str(), {"config": c}, date_to_str(), id="exact"),
+        pytest.param(
+            date_to_str() + ".1", {"config": c}, date_to_str() + ".1", id="exact patch"
+        ),
+        pytest.param(
+            date_to_str(days_offset=3),
+            {"config": c},
+            date_to_str(days_offset=3),
+            id="other day",
+        ),
+        pytest.param(
+            date_to_str(fmt="20.01.02"),
+            {"config": c},
+            "20.1.2",
+            id="leading 0s",
+        ),
+        pytest.param(
+            date_to_str(),
+            {"config": c, "dirty": True},
+            date_to_str() + ".1.dev0",
+            id="dirty same day",
+        ),
+        pytest.param(
+            date_to_str() + ".0",
+            {"config": c, "dirty": True},
+            date_to_str() + ".1.dev0",
+            id="dirty same day & patch",
+        ),
+        pytest.param(
+            date_to_str(days_offset=3),
+            {"config": c, "dirty": True},
+            date_to_str() + ".0.dev0",
+            id="dirty other day",
+        ),
+        pytest.param(
+            date_to_str(days_offset=3) + ".2",
+            {"config": c, "dirty": True},
+            date_to_str() + ".0.dev0",
+            id="dirty other day patch",
+        ),
+        pytest.param(
+            date_to_str(),
+            {"distance": 2, "branch": "default", "config": c},
+            date_to_str() + ".1.dev2",
+            id="normal branch",
+        ),
+        pytest.param(
+            date_to_str() + ".2",
+            {"distance": 2, "branch": "default", "config": c},
+            date_to_str() + ".3.dev2",
+            id="normal branch patch",
+        ),
+        pytest.param(
+            date_to_str(),
+            {"distance": 2, "branch": "feature", "config": c},
+            date_to_str() + ".1.dev2",
+            id="feature branch",
+        ),
+        pytest.param(
+            date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}"),
+            {"config": c},
+            date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}"),
+            id="exact with 4 digits year",
+        ),
+        pytest.param(
+            date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}") + ".1",
+            {"config": c},
+            date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}") + ".1",
+            id="exact patch with 4 digits year",
+        ),
+        pytest.param(
+            date_to_str(),
+            {"distance": 2, "branch": "release-2021.05.06", "config": c},
+            "2021.05.06",
+            id="release branch",
+        ),
+        pytest.param(
+            date_to_str() + ".2",
+            {"distance": 2, "branch": "release-21.5.1", "config": c},
+            "21.5.1",
+            id="release branch short",
+        ),
+        pytest.param(
+            date_to_str(),
+            {"branch": "release-21.5.1", "config": c},
+            date_to_str(),
+            id="release branch exact",
+        ),
+    ],
+)
+def test_calver_by_date(tag, version_params, expected_next, prefix):
+    computed = calver_by_date(meta(prefix + tag, **version_params))
+    assert computed == expected_next
+
+
 @pytest.mark.parametrize(
     "version, expected_next",
     [
@@ -192,106 +290,9 @@ def date_to_str(date_=None, days_offset=0, fmt="{dt:%y}.{dt.month}.{dt.day}"):
             id="SemVer dirty",
             marks=pytest.mark.xfail,
         ),
-        pytest.param(meta(date_to_str(), config=c), date_to_str(), id="exact"),
-        pytest.param(
-            meta(date_to_str() + ".1", config=c), date_to_str() + ".1", id="exact patch"
-        ),
-        pytest.param(
-            meta(date_to_str(days_offset=3), config=c),
-            date_to_str(days_offset=3),
-            id="other day",
-        ),
-        pytest.param(
-            meta(date_to_str(fmt="20.01.02"), config=c),
-            "20.1.2",
-            id="leading 0s",
-        ),
-        pytest.param(
-            meta(date_to_str(), config=c, dirty=True),
-            date_to_str() + ".1.dev0",
-            id="dirty same day",
-        ),
-        pytest.param(
-            meta(date_to_str() + ".0", config=c, dirty=True),
-            date_to_str() + ".1.dev0",
-            id="dirty same day & patch",
-        ),
-        pytest.param(
-            meta(date_to_str(days_offset=3), config=c, dirty=True),
-            date_to_str() + ".0.dev0",
-            id="dirty other day",
-        ),
-        pytest.param(
-            meta(date_to_str(days_offset=3) + ".2", config=c, dirty=True),
-            date_to_str() + ".0.dev0",
-            id="dirty other day patch",
-        ),
-        pytest.param(
-            meta(date_to_str(), distance=2, branch="default", config=c),
-            date_to_str() + ".1.dev2",
-            id="normal branch",
-        ),
-        pytest.param(
-            meta(date_to_str() + ".2", distance=2, branch="default", config=c),
-            date_to_str() + ".3.dev2",
-            id="normal branch patch",
-        ),
-        pytest.param(
-            meta(date_to_str(), distance=2, branch="feature", config=c),
-            date_to_str() + ".1.dev2",
-            id="feature branch",
-        ),
-        pytest.param(
-            meta(date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}"), config=c),
-            date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}"),
-            id="exact with 4 digits year",
-        ),
-        pytest.param(
-            meta(date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}") + ".1", config=c),
-            date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}") + ".1",
-            id="exact patch with 4 digits year",
-        ),
-        pytest.param(
-            meta(date_to_str(), distance=2, branch="release-2021.05.06", config=c),
-            "2021.05.06",
-            id="release branch",
-        ),
-        pytest.param(
-            meta(date_to_str() + ".2", distance=2, branch="release-21.5.1", config=c),
-            "21.5.1",
-            id="release branch short",
-        ),
-        pytest.param(
-            meta(date_to_str(), branch="release-21.5.1", config=c),
-            date_to_str(),
-            id="release branch exact",
-        ),
-        # pytest.param(
-        #     meta("v" + date_to_str(), config=c), date_to_str(), id="exact leading v"
-        # ),
-        # pytest.param(
-        #     meta("v" + date_to_str() + ".1", config=c),
-        #     date_to_str() + ".1",
-        #     id="exact patch leading v",
-        # ),
-        # pytest.param(
-        #     meta("v" + date_to_str(), config=c, distance=2),
-        #     date_to_str() + ".1.dev2",
-        #     id="distance with leading v",
-        # ),
-        # pytest.param(
-        #     meta("v" + date_to_str() + ".1", config=c, dirty=True),
-        #     date_to_str() + ".2.dev0",
-        #     id="dirty patch leading v",
-        # ),
-        # pytest.param(
-        #     meta("v" + date_to_str(days_offset=3), config=c, dirty=True),
-        #     date_to_str() + ".0.dev0",
-        #     id="offset leading v",
-        # ),
     ],
 )
-def test_calver_by_date(version, expected_next):
+def test_calver_by_date_semver(version, expected_next):
     computed = calver_by_date(version)
     assert computed == expected_next
 
