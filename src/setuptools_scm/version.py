@@ -333,27 +333,30 @@ def guess_next_date_ver(version, node_date=None, date_fmt=None):
             "{version} does not correspond to a valid versioning date, "
             "please correct or use a custom version scheme".format(version=version)
         )
-    if date_fmt is None:  # deduct it
+    # deduct date format if not provided
+    if date_fmt is None:
         date_fmt = "%Y.%m.%d" if len(match.group("year")) == 4 else "%y.%m.%d"
     head_date = node_date or datetime.date.today()
-    next_version = format(head_date, date_fmt)
-    # rely on the Version object to remove leading 0s for months and days
-    # TODO: consider using python number formatting in the fmt string
-    next_version = str(Version(next_version))
-    # warn on future times
+    # compute patch
     tag_date = datetime.datetime.strptime(match.group("date"), date_fmt).date()
     if tag_date == head_date:
         patch = match.group("patch") or "0"
         patch = int(patch) + 1
     else:
         if tag_date > head_date:
+            # warn on future times
             warnings.warn(
                 "your previous tag  ({}) is ahead your node date ({})".format(
                     tag_date, head_date
                 )
             )
         patch = 0
-    next_version += ".{}".format(patch)
+    next_version = "{node_date:{date_fmt}}.{patch}".format(
+        node_date=head_date, date_fmt=date_fmt, patch=patch
+    )
+    # rely on the Version object to remove leading 0s for months and days
+    # TODO: consider using python number formatting in the fmt string
+    next_version = str(Version(next_version))
     return next_version
 
 
