@@ -354,8 +354,8 @@ def guess_next_date_ver(version, node_date=None, date_fmt=None):
     next_version = "{node_date:{date_fmt}}.{patch}".format(
         node_date=head_date, date_fmt=date_fmt, patch=patch
     )
-    # rely on the Version object to remove leading 0s for months and days
-    # TODO: consider using python number formatting in the fmt string
+    # rely on the Version object to ensure consistency (e.g. remove leading 0s)
+    # TODO: support for intentionally non-normalized date versions
     next_version = str(Version(next_version))
     return next_version
 
@@ -363,6 +363,7 @@ def guess_next_date_ver(version, node_date=None, date_fmt=None):
 def calver_by_date(version):
     if version.exact and not version.dirty:
         return version.format_with("{tag}")
+    # TODO: move the release-X check to a new scheme
     if version.branch is not None and version.branch.startswith("release-"):
         branch_ver = _parse_version_tag(version.branch.split("-")[-1], version.config)
         if branch_ver is not None:
