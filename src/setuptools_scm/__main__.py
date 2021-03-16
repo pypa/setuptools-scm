@@ -1,4 +1,3 @@
-from __future__ import print_function
 import sys
 from setuptools_scm import get_version
 from setuptools_scm.integration import find_files

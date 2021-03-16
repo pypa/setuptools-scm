@@ -1,23 +1,18 @@
 """
 utils
 """
-from __future__ import print_function, unicode_literals
 import inspect
 import warnings
 import sys
 import shlex
 import subprocess
 import os
-import io
 import platform
 import traceback
 
 
 DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
 IS_WINDOWS = platform.system() == "Windows"
-PY2 = sys.version_info < (3,)
-PY3 = sys.version_info > (3,)
-string_types = (str,) if PY3 else (str, unicode)  # noqa
 
 
 def no_git_env(env):
@@ -63,7 +58,7 @@ def _always_strings(env_dict):
     On Windows and Python 2, environment dictionaries must be strings
     and not unicode.
     """
-    if IS_WINDOWS or PY2:
+    if IS_WINDOWS:
         env_dict.update((key, str(value)) for (key, value) in env_dict.items())
     return env_dict
 
@@ -111,7 +106,7 @@ def do(cmd, cwd="."):
 
 
 def data_from_mime(path):
-    with io.open(path, encoding="utf-8") as fp:
+    with open(path, encoding="utf-8") as fp:
         content = fp.read()
     trace("content", repr(content))
     # the complex conditions come from reading pseudo-mime-messages
@@ -123,11 +118,7 @@ def data_from_mime(path):
 def function_has_arg(fn, argname):
     assert inspect.isfunction(fn)
 
-    if PY2:
-        argspec = inspect.getargspec(fn).args
-    else:
-
-        argspec = inspect.signature(fn).parameters
+    argspec = inspect.signature(fn).parameters
 
     return argname in argspec
 
@@ -148,4 +139,4 @@ def has_command(name, warn=True):
 
 def require_command(name):
     if not has_command(name, warn=False):
-        raise EnvironmentError("%r was not found" % name)
+        raise OSError("%r was not found" % name)

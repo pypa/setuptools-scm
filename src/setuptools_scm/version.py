@@ -1,4 +1,3 @@
-from __future__ import print_function
 import datetime
 import warnings
 import re
@@ -6,7 +5,7 @@ import time
 import os
 
 from .config import Configuration
-from .utils import trace, string_types
+from .utils import trace
 
 try:
     from packaging.version import Version
@@ -24,7 +23,7 @@ SEMVER_LEN = 3
 
 
 def _parse_version_tag(tag, config):
-    tagstring = tag if not isinstance(tag, string_types) else str(tag)
+    tagstring = tag if not isinstance(tag, str) else str(tag)
     match = config.tag_regex.match(tagstring)
 
     result = None
@@ -40,7 +39,7 @@ def _parse_version_tag(tag, config):
             "suffix": match.group(0)[match.end(key) :],
         }
 
-    trace("tag '{}' parsed to {}".format(tag, result))
+    trace(f"tag '{tag}' parsed to {result}")
     return result
 
 
@@ -67,7 +66,7 @@ def tag_to_version(tag, config=None):
 
     tagdict = _parse_version_tag(tag, config)
     if not isinstance(tagdict, dict) or not tagdict.get("version", None):
-        warnings.warn("tag {!r} no version found".format(tag))
+        warnings.warn(f"tag {tag!r} no version found")
         return None
 
     version = tagdict["version"]
@@ -100,7 +99,7 @@ def tags_to_versions(tags, config=None):
     return result
 
 
-class ScmVersion(object):
+class ScmVersion:
     def __init__(
         self,
         tag_version,
@@ -111,7 +110,7 @@ class ScmVersion(object):
         branch=None,
         config=None,
         node_date=None,
-        **kw
+        **kw,
     ):
         if kw:
             trace("unknown args", kw)
@@ -157,7 +156,7 @@ class ScmVersion(object):
             dirty=self.dirty,
             branch=self.branch,
             node_date=self.node_date,
-            **kw
+            **kw,
         )
 
     def format_choice(self, clean_format, dirty_format, **kw):
@@ -184,7 +183,7 @@ def meta(
     preformatted=False,
     branch=None,
     config=None,
-    **kw
+    **kw,
 ):
     if not config:
         warnings.warn(
@@ -247,9 +246,7 @@ def guess_next_simple_semver(version, retain, increment=True):
     try:
         parts = [int(i) for i in str(version).split(".")[:retain]]
     except ValueError:
-        raise ValueError(
-            "{version} can't be parsed as numeric version".format(version=version)
-        )
+        raise ValueError(f"{version} can't be parsed as numeric version")
     while len(parts) < retain:
         parts.append(0)
     if increment:
