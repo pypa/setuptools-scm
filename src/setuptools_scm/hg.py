@@ -33,6 +33,11 @@ def _hg_tagdist_normalize_tagcommit(config, tag, dist, node, branch):
 
 
 def parse(root, config=None):
+    if os.path.exists(os.path.join(root, ".hg/git")):
+        from .git import parse as git_parse
+
+        return git_parse(root, config=config)
+
     if not config:
         config = Configuration(root=root)
 

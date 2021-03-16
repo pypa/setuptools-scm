@@ -15,8 +15,10 @@ DEFAULT_DESCRIBE = "git describe --dirty --tags --long --match *[0-9]*"
 
 class GitWorkdir:
     """experimental, may change at any time"""
+    COMMAND = "git"
 
     def __init__(self, path):
+        require_command(self.COMMAND)
         self.path = path
 
     def do_ex(self, cmd):
@@ -81,6 +83,105 @@ class GitWorkdir:
         revs, _, _ = self.do_ex("git rev-list HEAD")
         return revs.count("\n") + 1
 
+    def default_describe(self):
+        return self.do_ex(DEFAULT_DESCRIBE)
+
+
+class GitWorkdirHgClient(GitWorkdir):
+    COMMAND = "hg"
+
+    @classmethod
+    def from_potential_worktree(cls, wd):
+        root, _, ret = do_ex("hg root", wd)
+        if ret:
+            return
+        return cls(root)
+
+    def is_dirty(self):
+        out, _, _ = self.do_ex("hg id -T '{dirty}'")
+        return bool(out)
+
+    def get_branch(self):
+        branch, err, ret = self.do_ex("hg id -T {bookmarks}")
+        if ret:
+            trace("branch err", branch, err, ret)
+            return
+        return branch
+
+    def get_head_date(self):
+        date_part, err, ret = self.do_ex("hg log -r . -T {shortdate(date)}")
+        if ret:
+            trace("head date err", date_part, err, ret)
+            return
+        return datetime.strptime(date_part, r"%Y-%m-%d").date()
+
+    def is_shallow(self):
+        return False
+
+    def fetch_shallow(self):
+        pass
+
+    def get_hg_node(self):
+        rev_node, _, ret = self.do_ex("hg log -r . -T {node}")
+        if not ret:
+            return rev_node
+
+    def node(self):
+        hg_node = self.get_hg_node()
+        if hg_node is None:
+            return
+
+        with open(os.path.join(self.path, ".hg/git-mapfile"), "r") as file:
+            for line in file:
+                if hg_node in line:
+                    git_node, hg_node = line.split()
+                    break
+
+        return git_node[:7]
+
+    def count_all_nodes(self):
+        revs, _, _ = self.do_ex("hg log -r 'ancestors(.)' -T '.'")
+        return len(revs) + 1
+
+    def default_describe(self):
+        """
+        Tentative to reproduce the output of
+
+        `git describe --dirty --tags --long --match *[0-9]*`
+
+        """
+        hg_tags, _, ret = self.do_ex(
+            "hg log -r reverse(ancestors(.)) -T {tags}{if(tags, ' ', '')}"
+        )
+
+        if ret:
+            return None, None, None
+
+        git_tags = {}
+        with open(os.path.join(self.path, ".hg/git-tags"), "r") as file:
+            for line in file:
+                node, tag = line.split()
+                git_tags[tag] = node
+
+        # find the first hg tag which is also a git tag
+        # TODO: also check for match *[0-9]*
+        for tag in hg_tags:
+            if tag in git_tags:
+                break
+
+        out, _, ret = self.do_ex("hg log -r .:" + tag + " -T .")
+        if ret:
+            return None, None, None
+        distance = len(out) - 1
+
+        rev_node = self.node()
+        desc = f"{tag}-{distance}-g{rev_node}"
+
+        if self.is_dirty():
+            desc += "-dirty"
+
+        return desc, None, 0
+
 
 def warn_on_shallow(wd):
     """experimental, may change at any time"""
@@ -99,31 +200,35 @@ def fail_on_shallow(wd):
     """experimental, may change at any time"""
     if wd.is_shallow():
         raise ValueError(
-            "%r is shallow, please correct with " '"git fetch --unshallow"' % wd.path
+            "%r is shallow, please correct with "
+            '"git fetch --unshallow"' % wd.path
         )
 
 
-def parse(
-    root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow, config=None
-):
+def parse(root, describe_command=None, pre_parse=warn_on_shallow, config=None):
     """
     :param pre_parse: experimental pre_parse action, may change at any time
     """
     if not config:
         config = Configuration(root=root)
 
-    require_command("git")
 
     wd = GitWorkdir.from_potential_worktree(config.absolute_root)
+    if wd is None:
+        wd = GitWorkdirHgClient.from_potential_worktree(config.absolute_root)
     if wd is None:
         return
     if pre_parse:
         pre_parse(wd)
 
-    if config.git_describe_command:
+    if config.git_describe_command is not None:
         describe_command = config.git_describe_command
 
-    out, unused_err, ret = wd.do_ex(describe_command)
+    if describe_command is not None:
+        out, unused_err, ret = wd.do_ex(describe_command)
+    else:
+        out, unused_err, ret = wd.default_describe()
+
     node_date = wd.get_head_date() or date.today()
 
     if ret:
