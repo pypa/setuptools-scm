@@ -309,6 +309,71 @@ def no_guess_dev_version(version):
         return version.format_with("{tag}.post1.dev{distance}")
 
 
+def date_ver_match(ver):
+    match = re.match(
+        (
+            r"^(?P<date>(?P<year>\d{2}|\d{4})(?:\.\d{1,2}){2})"
+            r"(?:\.(?P<patch>\d*)){0,1}?$"
+        ),
+        str(ver),
+    )
+    return match
+
+
+def guess_next_date_ver(version, node_date=None, date_fmt=None):
+    """
+    same-day -> patch +1
+    other-day -> today
+
+    distance is always added as .devX
+    """
+    match = date_ver_match(version)
+    if match is None:
+        raise ValueError(
+            "{version} does not correspond to a valid versioning date, "
+            "please correct or use a custom version scheme".format(version=version)
+        )
+    # deduct date format if not provided
+    if date_fmt is None:
+        date_fmt = "%Y.%m.%d" if len(match.group("year")) == 4 else "%y.%m.%d"
+    head_date = node_date or datetime.date.today()
+    # compute patch
+    tag_date = datetime.datetime.strptime(match.group("date"), date_fmt).date()
+    if tag_date == head_date:
+        patch = match.group("patch") or "0"
+        patch = int(patch) + 1
+    else:
+        if tag_date > head_date:
+            # warn on future times
+            warnings.warn(
+                "your previous tag  ({}) is ahead your node date ({})".format(
+                    tag_date, head_date
+                )
+            )
+        patch = 0
+    next_version = "{node_date:{date_fmt}}.{patch}".format(
+        node_date=head_date, date_fmt=date_fmt, patch=patch
+    )
+    # rely on the Version object to ensure consistency (e.g. remove leading 0s)
+    # TODO: support for intentionally non-normalized date versions
+    next_version = str(Version(next_version))
+    return next_version
+
+
+def calver_by_date(version):
+    if version.exact and not version.dirty:
+        return version.format_with("{tag}")
+    # TODO: move the release-X check to a new scheme
+    if version.branch is not None and version.branch.startswith("release-"):
+        branch_ver = _parse_version_tag(version.branch.split("-")[-1], version.config)
+        if branch_ver is not None:
+            ver = branch_ver["version"]
+            match = date_ver_match(ver)
+            if match:
+                return ver
+    return version.format_next_version(guess_next_date_ver, node_date=version.node_date)
+
+
 def _format_local_with_time(version, time_format):
 
     if version.exact or version.node is None:

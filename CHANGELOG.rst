@@ -6,6 +6,7 @@ v6.0.0
 * drop egg building (use wheels)
 * add git node_date metadata to get the commit time-stamp of HEAD
 * allow version schemes to be priority ordered lists of version schemes
+* support for calendar versioning (calver) by date
 
 v5.0.2
 ======
