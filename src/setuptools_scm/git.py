@@ -13,7 +13,7 @@ from os.path import samefile
 DEFAULT_DESCRIBE = "git describe --dirty --tags --long --match *[0-9]*"
 
 
-class GitWorkdir(object):
+class GitWorkdir:
     """experimental, may change at any time"""
 
     def __init__(self, path):
@@ -82,7 +82,7 @@ class GitWorkdir(object):
 def warn_on_shallow(wd):
     """experimental, may change at any time"""
     if wd.is_shallow():
-        warnings.warn('"{}" is shallow and may cause errors'.format(wd.path))
+        warnings.warn(f'"{wd.path}" is shallow and may cause errors')
 
 
 def fetch_on_shallow(wd):

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from setuptools_scm.config import Configuration
 import re
 import pytest

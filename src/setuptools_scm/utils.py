@@ -1,7 +1,6 @@
 """
 utils
 """
-from __future__ import print_function, unicode_literals
 import inspect
 import warnings
 import sys
@@ -111,7 +110,7 @@ def do(cmd, cwd="."):
 
 
 def data_from_mime(path):
-    with io.open(path, encoding="utf-8") as fp:
+    with open(path, encoding="utf-8") as fp:
         content = fp.read()
     trace("content", repr(content))
     # the complex conditions come from reading pseudo-mime-messages
@@ -148,4 +147,4 @@ def has_command(name, warn=True):
 
 def require_command(name):
     if not has_command(name, warn=False):
-        raise EnvironmentError("%r was not found" % name)
+        raise OSError("%r was not found" % name)

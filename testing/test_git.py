@@ -48,7 +48,7 @@ def test_root_relative_to(tmpdir, wd, monkeypatch):
     p = wd.cwd.joinpath("sub/package")
     p.mkdir(parents=True)
     p.joinpath("setup.py").write_text(
-        u"""from setuptools import setup
+        """from setuptools import setup
 setup(use_scm_version={"root": "../..",
                        "relative_to": __file__})
 """

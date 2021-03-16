@@ -1,4 +1,3 @@
-from __future__ import print_function
 import datetime
 import warnings
 import re
@@ -40,7 +39,7 @@ def _parse_version_tag(tag, config):
             "suffix": match.group(0)[match.end(key) :],
         }
 
-    trace("tag '{}' parsed to {}".format(tag, result))
+    trace(f"tag '{tag}' parsed to {result}")
     return result
 
 
@@ -67,7 +66,7 @@ def tag_to_version(tag, config=None):
 
     tagdict = _parse_version_tag(tag, config)
     if not isinstance(tagdict, dict) or not tagdict.get("version", None):
-        warnings.warn("tag {!r} no version found".format(tag))
+        warnings.warn(f"tag {tag!r} no version found")
         return None
 
     version = tagdict["version"]
@@ -100,7 +99,7 @@ def tags_to_versions(tags, config=None):
     return result
 
 
-class ScmVersion(object):
+class ScmVersion:
     def __init__(
         self,
         tag_version,
@@ -248,7 +247,7 @@ def guess_next_simple_semver(version, retain, increment=True):
         parts = [int(i) for i in str(version).split(".")[:retain]]
     except ValueError:
         raise ValueError(
-            "{version} can't be parsed as numeric version".format(version=version)
+            f"{version} can't be parsed as numeric version"
         )
     while len(parts) < retain:
         parts.append(0)
