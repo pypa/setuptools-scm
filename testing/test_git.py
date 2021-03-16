@@ -9,11 +9,6 @@ from os.path import join as opj
 from setuptools_scm.file_finder_git import git_find_files
 from datetime import date
 
-skip_if_win_27 = pytest.mark.skipif(
-    sys.platform == "win32" and sys.version_info[0] < 3,
-    reason="Not supported on Windows + Python 2.7",
-)
-
 
 pytestmark = pytest.mark.skipif(
     not has_command("git", warn=False), reason="git executable not found"
@@ -204,7 +199,6 @@ def test_alphanumeric_tags_match(wd):
     assert wd.version.startswith("0.1.dev1+g")
 
 
-@skip_if_win_27
 def test_git_archive_export_ignore(wd, monkeypatch):
     wd.write("test1.txt", "test")
     wd.write("test2.txt", "test")
@@ -220,7 +214,6 @@ def test_git_archive_export_ignore(wd, monkeypatch):
     assert integration.find_files(".") == [opj(".", "test1.txt")]
 
 
-@skip_if_win_27
 @pytest.mark.issue(228)
 def test_git_archive_subdirectory(wd, monkeypatch):
     wd("mkdir foobar")
@@ -231,7 +224,6 @@ def test_git_archive_subdirectory(wd, monkeypatch):
     assert integration.find_files(".") == [opj(".", "foobar", "test1.txt")]
 
 
-@skip_if_win_27
 @pytest.mark.issue(251)
 def test_git_archive_run_from_subdirectory(wd, monkeypatch):
     wd("mkdir foobar")

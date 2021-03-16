@@ -5,7 +5,7 @@ import time
 import os
 
 from .config import Configuration
-from .utils import trace, string_types
+from .utils import trace
 
 try:
     from packaging.version import Version
@@ -23,7 +23,7 @@ SEMVER_LEN = 3
 
 
 def _parse_version_tag(tag, config):
-    tagstring = tag if not isinstance(tag, string_types) else str(tag)
+    tagstring = tag if not isinstance(tag, str) else str(tag)
     match = config.tag_regex.match(tagstring)
 
     result = None
@@ -110,7 +110,7 @@ class ScmVersion:
         branch=None,
         config=None,
         node_date=None,
-        **kw
+        **kw,
     ):
         if kw:
             trace("unknown args", kw)
@@ -156,7 +156,7 @@ class ScmVersion:
             dirty=self.dirty,
             branch=self.branch,
             node_date=self.node_date,
-            **kw
+            **kw,
         )
 
     def format_choice(self, clean_format, dirty_format, **kw):
@@ -183,7 +183,7 @@ def meta(
     preformatted=False,
     branch=None,
     config=None,
-    **kw
+    **kw,
 ):
     if not config:
         warnings.warn(
@@ -246,9 +246,7 @@ def guess_next_simple_semver(version, retain, increment=True):
     try:
         parts = [int(i) for i in str(version).split(".")[:retain]]
     except ValueError:
-        raise ValueError(
-            f"{version} can't be parsed as numeric version"
-        )
+        raise ValueError(f"{version} can't be parsed as numeric version")
     while len(parts) < retain:
         parts.append(0)
     if increment:
