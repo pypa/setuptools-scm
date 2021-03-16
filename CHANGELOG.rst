@@ -1,7 +1,7 @@
 v6.0.0
 ======
 
-* drop dead python support >3.6 required
+* fix #517: drop dead python support >3.6 required
 * drop dead setuptools support > 45 required (can install wheels)
 * drop egg building (use wheels)
 * add git node_date metadata to get the commit time-stamp of HEAD
@@ -39,7 +39,7 @@ Bugfixes:
 * enhance documentation
 * consider SOURCE_DATE_EPOCH for versioning
 * add a version_tuple to write_to templates
-* fix #321: add suppport for the ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DISTRIBUTION_NAME}`` env var to target the pretend key
+* fix #321: add support for the ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DISTRIBUTION_NAME}`` env var to target the pretend key
 * fix #142: clearly list supported scm
 * fix #213: better error message for non-zero dev numbers in tags
 * fix #356: add git branch to version on describe failure
