@@ -15,6 +15,7 @@ DEFAULT_DESCRIBE = "git describe --dirty --tags --long --match *[0-9]*"
 
 class GitWorkdir:
     """experimental, may change at any time"""
+
     COMMAND = "git"
 
     def __init__(self, path):
@@ -59,7 +60,7 @@ class GitWorkdir:
     def get_head_date(self):
         timestamp, err, ret = self.do_ex("git log -n 1 HEAD --format=%cI")
         if ret:
-            trace("branch err", timestamp, err, ret)
+            trace("timestamp err", timestamp, err, ret)
             return
         # TODO, when dropping python3.6 use fromiso
         date_part = timestamp.split("T")[0]
@@ -200,8 +201,7 @@ def fail_on_shallow(wd):
     """experimental, may change at any time"""
     if wd.is_shallow():
         raise ValueError(
-            "%r is shallow, please correct with "
-            '"git fetch --unshallow"' % wd.path
+            f'{wd.path} is shallow, please correct with "git fetch --unshallow"'
         )
 
 
@@ -211,7 +211,6 @@ def parse(root, describe_command=None, pre_parse=warn_on_shallow, config=None):
     """
     if not config:
         config = Configuration(root=root)
-
 
     wd = GitWorkdir.from_potential_worktree(config.absolute_root)
     if wd is None:
@@ -229,8 +228,6 @@ def parse(root, describe_command=None, pre_parse=warn_on_shallow, config=None):
     else:
         out, unused_err, ret = wd.default_describe()
 
-    node_date = wd.get_head_date() or date.today()
-
     if ret:
         # If 'git git_describe_command' failed, try to get the information otherwise.
         branch, branch_err, branch_ret = wd.do_ex("git symbolic-ref --short HEAD")
@@ -241,48 +238,33 @@ def parse(root, describe_command=None, pre_parse=warn_on_shallow, config=None):
         rev_node = wd.node()
         dirty = wd.is_dirty()
 
-        if rev_node is None:
-            return meta(
-                "0.0",
-                distance=0,
-                node_date=node_date,
-                dirty=dirty,
-                branch=branch,
-                config=config,
-            )
+        tag = "0.0"
 
-        return meta(
-            "0.0",
-            distance=wd.count_all_nodes(),
-            node="g" + rev_node,
-            dirty=dirty,
-            branch=wd.get_branch(),
-            node_date=node_date,
-            config=config,
-        )
+        if rev_node is None:
+            distance = 0
+        else:
+            distance = wd.count_all_nodes()
+            branch = wd.get_branch()
+            node = "g" + rev_node
+
     else:
-        tag, number, node, dirty = _git_parse_describe(out)
+        tag, distance, node, dirty = _git_parse_describe(out)
 
         branch = wd.get_branch()
-        if number:
-            return meta(
-                tag,
-                config=config,
-                distance=number,
-                node=node,
-                dirty=dirty,
-                branch=branch,
-                node_date=node_date,
-            )
-        else:
-            return meta(
-                tag,
-                config=config,
-                node=node,
-                node_date=node_date,
-                dirty=dirty,
-                branch=branch,
-            )
+        if distance == 0:
+            distance = None
+
+    node_date = wd.get_head_date() or date.today()
+
+    return meta(
+        tag,
+        branch=branch,
+        node=node,
+        node_date=node_date,
+        distance=distance,
+        dirty=dirty,
+        config=config,
+    )
 
 
 def _git_parse_describe(describe_output):
