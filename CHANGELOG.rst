@@ -1,3 +1,8 @@
+v6.0.1
+=======
+
+*  fix #537: drop node_date on old git to avoid errors on missing %cI
+
 v6.0.0
 ======
 

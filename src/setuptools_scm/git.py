@@ -61,6 +61,9 @@ class GitWorkdir:
             return
         # TODO, when dropping python3.6 use fromiso
         date_part = timestamp.split("T")[0]
+        if "%c" in date_part:
+            trace("git too old -> timestamp is ", timestamp)
+            return None
         return datetime.strptime(date_part, r"%Y-%m-%d").date()
 
     def is_shallow(self):

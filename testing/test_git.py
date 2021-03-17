@@ -8,7 +8,7 @@ from datetime import datetime
 from os.path import join as opj
 from setuptools_scm.file_finder_git import git_find_files
 from datetime import date
-
+from unittest.mock import patch, Mock
 
 pytestmark = pytest.mark.skipif(
     not has_command("git", warn=False), reason="git executable not found"
@@ -307,3 +307,12 @@ def test_git_getdate(wd):
     assert git_wd.get_head_date() == today
     meta = git.parse(os.fspath(wd.cwd))
     assert meta.node_date == today
+
+
+def test_git_getdate_badgit(
+    wd,
+):
+    wd.commit_testfile()
+    git_wd = git.GitWorkdir(os.fspath(wd.cwd))
+    with patch.object(git_wd, "do_ex", Mock(return_value=("%cI", "", 0))):
+        assert git_wd.get_head_date() is None
