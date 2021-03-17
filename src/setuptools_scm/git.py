@@ -19,7 +19,6 @@ class GitWorkdir:
     COMMAND = "git"
 
     def __init__(self, path):
-        require_command(self.COMMAND)
         self.path = path
 
     def do_ex(self, cmd):
@@ -27,6 +26,7 @@ class GitWorkdir:
 
     @classmethod
     def from_potential_worktree(cls, wd):
+        require_command(cls.COMMAND)
         wd = os.path.abspath(wd)
         real_wd, _, ret = do_ex("git rev-parse --show-prefix", wd)
         real_wd = real_wd[:-1]  # remove the trailing pathsep
@@ -54,7 +54,11 @@ class GitWorkdir:
         branch, err, ret = self.do_ex("git rev-parse --abbrev-ref HEAD")
         if ret:
             trace("branch err", branch, err, ret)
-            return
+            # TODO: understand the diff between these 2 commands
+            branch, err, ret = self.do_ex("git symbolic-ref --short HEAD")
+            if ret:
+                trace("branch err (symbolic-ref)", branch, err, ret)
+                branch = None
         return branch
 
     def get_head_date(self):
@@ -76,9 +80,9 @@ class GitWorkdir:
         self.do_ex("git fetch --unshallow")
 
     def node(self):
-        rev_node, _, ret = self.do_ex("git rev-parse --verify --quiet HEAD")
+        node, _, ret = self.do_ex("git rev-parse --verify --quiet HEAD")
         if not ret:
-            return rev_node[:7]
+            return node[:7]
 
     def count_all_nodes(self):
         revs, _, _ = self.do_ex("git rev-list HEAD")
@@ -93,6 +97,7 @@ class GitWorkdirHgClient(GitWorkdir):
 
     @classmethod
     def from_potential_worktree(cls, wd):
+        require_command(cls.COMMAND)
         root, _, ret = do_ex("hg root", wd)
         if ret:
             return
@@ -123,9 +128,9 @@ class GitWorkdirHgClient(GitWorkdir):
         pass
 
     def get_hg_node(self):
-        rev_node, _, ret = self.do_ex("hg log -r . -T {node}")
+        node, _, ret = self.do_ex("hg log -r . -T {node}")
         if not ret:
-            return rev_node
+            return node
 
     def node(self):
         hg_node = self.get_hg_node()
@@ -154,9 +159,9 @@ class GitWorkdirHgClient(GitWorkdir):
         hg_tags, _, ret = self.do_ex(
             "hg log -r reverse(ancestors(.)) -T {tags}{if(tags, ' ', '')}"
         )
-
         if ret:
             return None, None, None
+        hg_tags = hg_tags.split()
 
         git_tags = {}
         with open(os.path.join(self.path, ".hg/git-tags"), "r") as file:
@@ -170,13 +175,13 @@ class GitWorkdirHgClient(GitWorkdir):
             if tag in git_tags:
                 break
 
-        out, _, ret = self.do_ex("hg log -r .:" + tag + " -T .")
+        out, _, ret = self.do_ex("hg log -r .::" + tag + " -T .")
         if ret:
             return None, None, None
         distance = len(out) - 1
 
-        rev_node = self.node()
-        desc = f"{tag}-{distance}-g{rev_node}"
+        node = self.node()
+        desc = f"{tag}-{distance}-g{node}"
 
         if self.is_dirty():
             desc += "-dirty"
@@ -193,7 +198,7 @@ def warn_on_shallow(wd):
 def fetch_on_shallow(wd):
     """experimental, may change at any time"""
     if wd.is_shallow():
-        warnings.warn('"%s" was shallow, git fetch was used to rectify')
+        warnings.warn(f'"{wd.path}" was shallow, git fetch was used to rectify')
         wd.fetch_shallow()
 
 
@@ -224,36 +229,26 @@ def parse(root, describe_command=None, pre_parse=warn_on_shallow, config=None):
         describe_command = config.git_describe_command
 
     if describe_command is not None:
-        out, unused_err, ret = wd.do_ex(describe_command)
+        out, _, ret = wd.do_ex(describe_command)
     else:
-        out, unused_err, ret = wd.default_describe()
+        out, _, ret = wd.default_describe()
 
-    if ret:
+    if ret == 0:
+        tag, distance, node, dirty = _git_parse_describe(out)
+    else:
         # If 'git git_describe_command' failed, try to get the information otherwise.
-        branch, branch_err, branch_ret = wd.do_ex("git symbolic-ref --short HEAD")
-
-        if branch_ret:
-            branch = None
-
-        rev_node = wd.node()
-        dirty = wd.is_dirty()
-
         tag = "0.0"
-
-        if rev_node is None:
+        node = wd.node()
+        if node is None:
             distance = 0
         else:
             distance = wd.count_all_nodes()
-            branch = wd.get_branch()
-            node = "g" + rev_node
-
-    else:
-        tag, distance, node, dirty = _git_parse_describe(out)
-
-        branch = wd.get_branch()
+            node = "g" + node
         if distance == 0:
             distance = None
+        dirty = wd.is_dirty()
 
+    branch = wd.get_branch()
     node_date = wd.get_head_date() or date.today()
 
     return meta(
