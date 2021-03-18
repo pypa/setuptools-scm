@@ -53,7 +53,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
             return
 
         git_node = None
-        with open(os.path.join(self.path, ".hg/git-mapfile"), "r") as file:
+        with open(os.path.join(self.path, ".hg/git-mapfile")) as file:
             for line in file:
                 if hg_node in line:
                     git_node, hg_node = line.split()
@@ -92,7 +92,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         hg_tags = hg_tags.split()
 
         git_tags = {}
-        with open(os.path.join(self.path, ".hg/git-tags"), "r") as file:
+        with open(os.path.join(self.path, ".hg/git-tags")) as file:
             for line in file:
                 node, tag = line.split()
                 git_tags[tag] = node

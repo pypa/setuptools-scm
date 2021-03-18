@@ -70,7 +70,7 @@ class HgWorkdir(Workdir):
                     dirty=dirty,
                     branch=branch,
                     config=config,
-                    node_date=date
+                    node_date=date,
                 )
             else:
                 return meta(tag, config=config)
