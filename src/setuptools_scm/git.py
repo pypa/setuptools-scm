@@ -235,6 +235,8 @@ def parse(root, describe_command=None, pre_parse=warn_on_shallow, config=None):
 
     if ret == 0:
         tag, distance, node, dirty = _git_parse_describe(out)
+        if distance == 0 and not dirty:
+            distance = None
     else:
         # If 'git git_describe_command' failed, try to get the information otherwise.
         tag = "0.0"
@@ -244,8 +246,6 @@ def parse(root, describe_command=None, pre_parse=warn_on_shallow, config=None):
         else:
             distance = wd.count_all_nodes()
             node = "g" + node
-        if distance == 0:
-            distance = None
         dirty = wd.is_dirty()
 
     branch = wd.get_branch()
