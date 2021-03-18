@@ -24,10 +24,19 @@ class HgWorkdir(Workdir):
             ".", "{node}\n{tag}\n{bookmark}\n{date|shortdate}"
         ).split("\n")
 
+        # TODO: support bookmarks and topics (but nowadays bookmarks are
+        # mainly used to emulate Git branches, which is already supported with
+        # the dedicated class GitWorkdirHgClient)
+
         branch, dirty, dirty_date = self.do(
             ["hg", "id", "-T", "{branch}\n{if(dirty, 1, 0)}\n{date|shortdate}"]
         ).split("\n")
         dirty = bool(int(dirty))
+
+        if dirty:
+            date = dirty_date
+        else:
+            date = node_date
 
         if all(c == "0" for c in node):
             trace("initial node", self.path)
@@ -61,6 +70,7 @@ class HgWorkdir(Workdir):
                     dirty=dirty,
                     branch=branch,
                     config=config,
+                    node_date=date
                 )
             else:
                 return meta(tag, config=config)

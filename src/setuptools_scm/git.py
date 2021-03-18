@@ -46,7 +46,6 @@ class GitWorkdir(Workdir):
         branch, err, ret = self.do_ex("git rev-parse --abbrev-ref HEAD")
         if ret:
             trace("branch err", branch, err, ret)
-            # TODO: understand the diff between these 2 commands
             branch, err, ret = self.do_ex("git symbolic-ref --short HEAD")
             if ret:
                 trace("branch err (symbolic-ref)", branch, err, ret)

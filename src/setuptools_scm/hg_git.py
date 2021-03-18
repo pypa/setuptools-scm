@@ -78,7 +78,14 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
 
         """
         hg_tags, _, ret = self.do_ex(
-            "hg log -r reverse(ancestors(.)) -T {tags}{if(tags, ' ', '')}"
+            [
+                "hg",
+                "log",
+                "-r",
+                "(reverse(ancestors(.)) and tag(r're:[0-9]'))",
+                "-T",
+                "{tags}{if(tags, ' ', '')}",
+            ]
         )
         if ret:
             return None, None, None
@@ -91,7 +98,6 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
                 git_tags[tag] = node
 
         # find the first hg tag which is also a git tag
-        # TODO: also check for match *[0-9]*
         for tag in hg_tags:
             if tag in git_tags:
                 break
