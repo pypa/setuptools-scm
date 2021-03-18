@@ -137,11 +137,17 @@ class GitWorkdirHgClient(GitWorkdir):
         if hg_node is None:
             return
 
+        git_node = None
         with open(os.path.join(self.path, ".hg/git-mapfile"), "r") as file:
             for line in file:
                 if hg_node in line:
                     git_node, hg_node = line.split()
                     break
+
+        if git_node is None:
+            # trying again after hg -> git
+            self.do_ex("hg gexport")
+            return self.node()
 
         return git_node[:7]
 
