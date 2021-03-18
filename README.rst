@@ -73,8 +73,12 @@ to be supplied to ``get_version()``. For example:
     write_to = "pkg/version.py"
 
 
-``setup.py`` usage
-------------------
+``setup.py`` usage (deprecated)
+-------------------------------
+
+.. warning::
+
+   ``setup_requires`` has been deprecated in favor of ``pyproject.toml``
 
 The following settings are considered legacy behavior and
 superseded by the ``pyproject.toml`` usage, but for maximal
@@ -129,8 +133,8 @@ You can confirm the version number locally via ``setup.py``:
    not defined in ``setup.cfg``.
 
 
-``setup.cfg`` usage
--------------------
+``setup.cfg`` usage (deprecated)
+------------------------------------
 
 as ``setup_requires`` is deprecated in favour of ``pyproject.toml``
 usage in ``setup.cfg`` is considered deprecated,
@@ -147,7 +151,7 @@ than the project's root, you can use:
     from setuptools_scm import get_version
     version = get_version(root='..', relative_to=__file__)
 
-See `setup.py Usage`_ above for how to use this within ``setup.py``.
+See `setup.py Usage (deprecated)`_ above for how to use this within ``setup.py``.
 
 
 Retrieving package version at runtime
@@ -169,7 +173,7 @@ or the `importlib_metadata`_ backport:
         pass
 
 Alternatively, you can use ``pkg_resources`` which is included in
-``setuptools``:
+``setuptools`` (but has a significant runtime cost):
 
 .. code:: python
 
@@ -192,13 +196,14 @@ Usage from Sphinx
 -----------------
 
 It is discouraged to use ``setuptools_scm`` from Sphinx itself,
-instead use ``pkg_resources`` after editable/real installation:
+instead use ``importlib.metadata`` after editable/real installation:
 
 .. code:: python
 
+    # contents of docs/conf.py
     from importlib.metadata import version
-
-    release = version("package-name")
+    release = version('myproject')
+    # for example take major/minor
     version = '.'.join(release.split('.')[:2])
 
 The underlying reason is, that services like *Read the Docs* sometimes change
