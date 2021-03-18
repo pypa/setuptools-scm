@@ -1,19 +1,8 @@
 import os
 from .config import Configuration
-from .utils import do_ex, do, trace, data_from_mime, require_command
-from .version import meta, tags_to_versions, tag_to_version
-
-
-class Workdir:
-    def __init__(self, path):
-        require_command(self.COMMAND)
-        self.path = path
-
-    def do_ext(self, cmd):
-        return do_ex(cmd, cwd=self.path)
-
-    def do(self, cmd):
-        return do(cmd, cwd=self.path)
+from .utils import do_ex, trace, data_from_mime, require_command
+from .version import meta, tag_to_version
+from .scm_workdir import Workdir
 
 
 class HgWorkdir(Workdir):
