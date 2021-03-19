@@ -591,7 +591,9 @@ ship rather old setuptools versions due to various release management details.
 
 On such distributions one might observe errors like:
 
-:code:``setuptools_scm.version.SetuptoolsOutdatedWarning: your setuptools is too old (<12)``
+.. code::
+
+  setuptools_scm.version.SetuptoolsOutdatedWarning: your setuptools is too old (<12)
 
 In those case its typically possible to build by using a sdist against ``setuptools_scm<2.0``.
 As those old setuptools versions lack sensible types for versions,
