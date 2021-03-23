@@ -47,22 +47,30 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         if not ret:
             return node
 
-    def node(self):
-        hg_node = self.get_hg_node()
-        if hg_node is None:
-            return
-
+    def _hg2git(self, hg_node):
         git_node = None
         with open(os.path.join(self.path, ".hg/git-mapfile")) as file:
             for line in file:
                 if hg_node in line:
                     git_node, hg_node = line.split()
                     break
+        return git_node
+
+    def node(self):
+        hg_node = self.get_hg_node()
+        if hg_node is None:
+            return
+
+        git_node = self._hg2git(hg_node)
 
         if git_node is None:
             # trying again after hg -> git
             self.do_ex("hg gexport")
-            return self.node()
+            git_node = self._hg2git(hg_node)
+
+            if git_node is None:
+                trace("Cannot get git node so we use hg node", hg_node)
+                return hg_node
 
         return git_node[:7]
 
@@ -90,6 +98,9 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         if ret:
             return None, None, None
         hg_tags = hg_tags.split()
+
+        if not hg_tags:
+            return None, None, None
 
         git_tags = {}
         with open(os.path.join(self.path, ".hg/git-tags")) as file:

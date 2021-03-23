@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+
 from .config import Configuration
 from .utils import do_ex, trace, data_from_mime, require_command
 from .version import meta, tag_to_version
@@ -116,9 +118,15 @@ class HgWorkdir(Workdir):
 
 def parse(root, config=None):
     if os.path.exists(os.path.join(root, ".hg/git")):
-        from .git import parse as git_parse
+        paths, _, ret = do_ex("hg path", root)
+        if not ret:
+            for line in paths.split("\n"):
+                if line.startswith("default ="):
+                    path = Path(line.split()[2])
+                    if path.name.endswith(".git") or (path / ".git").exists():
+                        from .git import parse as git_parse
 
-        return git_parse(root, config=config)
+                        return git_parse(root, config=config)
 
     if not config:
         config = Configuration(root=root)
