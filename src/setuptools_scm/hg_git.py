@@ -70,13 +70,18 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
 
             if git_node is None:
                 trace("Cannot get git node so we use hg node", hg_node)
+
+                if hg_node == "0" * len(hg_node):
+                    # mimick Git behavior
+                    return None
+
                 return hg_node
 
         return git_node[:7]
 
     def count_all_nodes(self):
         revs, _, _ = self.do_ex("hg log -r 'ancestors(.)' -T '.'")
-        return len(revs) + 1
+        return len(revs)
 
     def default_describe(self):
         """
@@ -113,7 +118,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
             if tag in git_tags:
                 break
 
-        out, _, ret = self.do_ex("hg log -r " + tag + "::. -T .")
+        out, _, ret = self.do_ex(["hg", "log", "-r", f"'{tag}'::.", "-T", "."])
         if ret:
             return None, None, None
         distance = len(out) - 1

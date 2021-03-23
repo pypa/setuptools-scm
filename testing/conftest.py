@@ -95,3 +95,29 @@ def wd(tmp_path):
     target_wd = tmp_path.resolve() / "wd"
     target_wd.mkdir()
     return Wd(target_wd)
+
+
+@pytest.fixture
+def repositories_hg_git(tmp_path):
+    from setuptools_scm.utils import do
+
+    tmp_path = tmp_path.resolve()
+    path_git = tmp_path / "repo_git"
+    path_git.mkdir()
+
+    wd = Wd(path_git)
+    wd("git init")
+    wd("git config user.email test@example.com")
+    wd('git config user.name "a test"')
+    wd.add_command = "git add ."
+    wd.commit_command = "git commit -m test-{reason}"
+
+    path_hg = tmp_path / "repo_hg"
+    do(f"hg clone {path_git} {path_hg}")
+    assert path_hg.exists()
+
+    wd_hg = Wd(path_hg)
+    wd_hg.add_command = "hg add ."
+    wd_hg.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
+
+    return wd_hg, wd
