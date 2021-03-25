@@ -113,8 +113,11 @@ def repositories_hg_git(tmp_path):
     wd.commit_command = "git commit -m test-{reason}"
 
     path_hg = tmp_path / "repo_hg"
-    do(f"hg clone {path_git} {path_hg}")
+    do(f"hg clone {path_git} {path_hg} --config extensions.hggit=")
     assert path_hg.exists()
+
+    with open(path_hg / ".hg/hgrc", "a") as file:
+        file.write("[extensions]\nhggit =\n")
 
     wd_hg = Wd(path_hg)
     wd_hg.add_command = "hg add ."

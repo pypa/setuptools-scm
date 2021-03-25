@@ -40,6 +40,8 @@ jobs:
       - run: pip install -U setuptools
         if: matrix.python_version != 'msys2'
       - run: pip install -e .[toml] pytest
+      - run: $(hg debuginstall --template "{pythonexe}") -m pip install hg-git --user
+        if: matrix.os == "ubuntu-latest"
       - run: pytest
 
   check_selfinstall:
