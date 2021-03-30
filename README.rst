@@ -41,7 +41,7 @@ built step by specifying it as one of the build requirements.
 
     # pyproject.toml
     [build-system]
-    requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=3.4"]
+    requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.0"]
 
 Note that the ``toml`` extra must be supplied.
 
@@ -132,48 +132,9 @@ You can confirm the version number locally via ``setup.py``:
 ``setup.cfg`` usage
 -------------------
 
-If using `setuptools 30.3.0
-<https://setuptools.readthedocs.io/en/latest/setuptools.html#configuring-setup-using-setup-cfg-files>`_
-or greater, you can store ``setup_requires`` configuration in ``setup.cfg``.
-However, ``use_scm_version`` must still be placed in ``setup.py``. For example:
-
-.. code:: python
-
-    # setup.py
-    from setuptools import setup
-    setup(
-        use_scm_version=True,
-    )
-
-.. code:: ini
-
-    # setup.cfg
-    [metadata]
-    ...
-
-    [options]
-    setup_requires =
-      setuptools_scm
-    ...
-
-.. important::
-
-    Ensure neither the ``[metadata]`` ``version`` option nor the ``[egg_info]``
-    section are defined, as these will interfere with ``setuptools_scm``.
-
-You may also need to define a ``pyproject.toml`` file (`PEP-0518
-<https://www.python.org/dev/peps/pep-0518>`_) to ensure you have the required
-version of ``setuptools``:
-
-.. code:: ini
-
-    # pyproject.toml
-    [build-system]
-    requires = ["setuptools>=30.3.0", "wheel", "setuptools_scm"]
-
-For more information, refer to the `setuptools issue #1002
-<https://github.com/pypa/setuptools/issues/1002>`_.
-
+as ``setup_requires`` is deprecated in favour of ``pyproject.toml``
+usage in ``setup.cfg`` is considered deprecated,
+please use ``pyproject.toml`` whenever possible.
 
 Programmatic usage
 ------------------
@@ -235,10 +196,9 @@ instead use ``pkg_resources`` after editable/real installation:
 
 .. code:: python
 
-    # contents of docs/conf.py
-    from pkg_resources import get_distribution
-    release = get_distribution('myproject').version
-    # for example take major/minor
+    from importlib.metadata import version
+
+    release = version("package-name")
     version = '.'.join(release.split('.')[:2])
 
 The underlying reason is, that services like *Read the Docs* sometimes change
@@ -589,10 +549,6 @@ Interaction with Enterprise Distributions
 Some enterprise distributions like RHEL7 and others
 ship rather old setuptools versions due to various release management details.
 
-On such distributions one might observe errors like:
-
-:code:``setuptools_scm.version.SetuptoolsOutdatedWarning: your setuptools is too old (<12)``
-
 In those case its typically possible to build by using a sdist against ``setuptools_scm<2.0``.
 As those old setuptools versions lack sensible types for versions,
 modern setuptools_scm is unable to support them sensibly.
@@ -600,7 +556,6 @@ modern setuptools_scm is unable to support them sensibly.
 In case the project you need to build can not be patched to either use old setuptools_scm,
 its still possible to install a more recent version of setuptools in order to handle the build
 and/or install the package by using wheels or eggs.
-
 
 
 
