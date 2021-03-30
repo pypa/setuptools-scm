@@ -12,15 +12,15 @@ repos:
     -   id: check-yaml
     -   id: debug-statements
 -   repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.4
+    rev: 3.9.0
     hooks:
     -   id: flake8
 -   repo: https://github.com/asottile/pyupgrade
-    rev: v2.10.0
+    rev: v2.11.0
     hooks:
     - id: pyupgrade
       args: [--py36-plus]
 -   repo: https://github.com/asottile/setup-cfg-fmt
-    rev: v1.16.0
+    rev: v1.17.0
     hooks:
     -   id: setup-cfg-fmt
