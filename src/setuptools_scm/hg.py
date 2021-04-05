@@ -83,7 +83,7 @@ def get_latest_normalizable_tag(root):
 
 
 def get_graph_distance(root, rev1, rev2="."):
-    cmd = ["hg", "log", "-q", "-r", "{}::{}".format(rev1, rev2)]
+    cmd = ["hg", "log", "-q", "-r", f"{rev1}::{rev2}"]
     out = do(cmd, root)
     return len(out.strip().splitlines()) - 1
 

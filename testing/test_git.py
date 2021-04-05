@@ -1,5 +1,5 @@
 import sys
-
+import os
 from setuptools_scm import integration
 from setuptools_scm.utils import do, has_command
 from setuptools_scm import git
@@ -7,13 +7,8 @@ import pytest
 from datetime import datetime
 from os.path import join as opj
 from setuptools_scm.file_finder_git import git_find_files
-
-
-skip_if_win_27 = pytest.mark.skipif(
-    sys.platform == "win32" and sys.version_info[0] < 3,
-    reason="Not supported on Windows + Python 2.7",
-)
-
+from datetime import date
+from unittest.mock import patch, Mock
 
 pytestmark = pytest.mark.skipif(
     not has_command("git", warn=False), reason="git executable not found"
@@ -48,7 +43,7 @@ def test_root_relative_to(tmpdir, wd, monkeypatch):
     p = wd.cwd.joinpath("sub/package")
     p.mkdir(parents=True)
     p.joinpath("setup.py").write_text(
-        u"""from setuptools import setup
+        """from setuptools import setup
 setup(use_scm_version={"root": "../..",
                        "relative_to": __file__})
 """
@@ -204,7 +199,6 @@ def test_alphanumeric_tags_match(wd):
     assert wd.version.startswith("0.1.dev1+g")
 
 
-@skip_if_win_27
 def test_git_archive_export_ignore(wd, monkeypatch):
     wd.write("test1.txt", "test")
     wd.write("test2.txt", "test")
@@ -220,7 +214,6 @@ def test_git_archive_export_ignore(wd, monkeypatch):
     assert integration.find_files(".") == [opj(".", "test1.txt")]
 
 
-@skip_if_win_27
 @pytest.mark.issue(228)
 def test_git_archive_subdirectory(wd, monkeypatch):
     wd("mkdir foobar")
@@ -231,7 +224,6 @@ def test_git_archive_subdirectory(wd, monkeypatch):
     assert integration.find_files(".") == [opj(".", "foobar", "test1.txt")]
 
 
-@skip_if_win_27
 @pytest.mark.issue(251)
 def test_git_archive_run_from_subdirectory(wd, monkeypatch):
     wd("mkdir foobar")
@@ -298,3 +290,29 @@ def test_gitdir(monkeypatch, wd):
     # git hooks set this and break subsequent setuptools_scm unless we clean
     monkeypatch.setenv("GIT_DIR", __file__)
     assert wd.version == normal
+
+
+def test_git_getdate(wd):
+    # TODO: case coverage for git wd parse
+    today = date.today()
+
+    def parse_date():
+        return git.parse(os.fspath(wd.cwd)).node_date
+
+    git_wd = git.GitWorkdir(os.fspath(wd.cwd))
+    assert git_wd.get_head_date() is None
+    assert parse_date() == today
+
+    wd.commit_testfile()
+    assert git_wd.get_head_date() == today
+    meta = git.parse(os.fspath(wd.cwd))
+    assert meta.node_date == today
+
+
+def test_git_getdate_badgit(
+    wd,
+):
+    wd.commit_testfile()
+    git_wd = git.GitWorkdir(os.fspath(wd.cwd))
+    with patch.object(git_wd, "do_ex", Mock(return_value=("%cI", "", 0))):
+        assert git_wd.get_head_date() is None

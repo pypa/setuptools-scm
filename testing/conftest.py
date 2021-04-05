@@ -15,16 +15,16 @@ def pytest_report_header():
     for pkg in VERSION_PKGS:
         version = pkg_resources.get_distribution(pkg).version
         path = __import__(pkg).__file__
-        res.append("{} version {} from {!r}".format(pkg, version, path))
+        res.append(f"{pkg} version {version} from {path!r}")
     return res
 
 
-class Wd(object):
+class Wd:
     commit_command = None
     add_command = None
 
     def __repr__(self):
-        return "<WD {cwd}>".format(cwd=self.cwd)
+        return f"<WD {self.cwd}>"
 
     def __init__(self, cwd):
         self.cwd = cwd

@@ -9,7 +9,6 @@ once before running sdist or easy_install on a fresh checkouts
 
 pip usage is recommended
 """
-from __future__ import print_function
 import os
 import sys
 import setuptools
@@ -34,7 +33,7 @@ def scm_config():
     def parse(root):
         try:
             return parse_pkginfo(root)
-        except IOError:
+        except OSError:
             return parse_git(root)
 
     config = dict(
