@@ -5,7 +5,7 @@ import time
 import os
 
 from .config import Configuration
-from .utils import trace
+from .utils import trace, iter_entry_points
 
 try:
     from packaging.version import Version
@@ -14,8 +14,6 @@ except ImportError:
 
     Version = pkg_resources.packaging.version.Version
 
-
-from pkg_resources import iter_entry_points
 
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3
