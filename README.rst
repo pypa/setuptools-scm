@@ -192,7 +192,7 @@ Usage from Sphinx
 -----------------
 
 It is discouraged to use ``setuptools_scm`` from Sphinx itself,
-instead use ``pkg_resources`` after editable/real installation:
+instead use ``importlib.metadata`` after editable/real installation:
 
 .. code:: python
 
