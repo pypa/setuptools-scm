@@ -65,7 +65,7 @@ class Configuration:
         parse=None,
         git_describe_command=None,
         dist_name=None,
-        skip_version_parser=False
+        skip_version_parser=False,
     ):
         # TODO:
         self._relative_to = relative_to
