@@ -65,6 +65,7 @@ class Configuration:
         parse=None,
         git_describe_command=None,
         dist_name=None,
+        skip_version_parser=False
     ):
         # TODO:
         self._relative_to = relative_to
@@ -82,6 +83,7 @@ class Configuration:
         self.tag_regex = tag_regex
         self.git_describe_command = git_describe_command
         self.dist_name = dist_name
+        self.skip_version_parser = skip_version_parser
 
     @property
     def fallback_root(self):
