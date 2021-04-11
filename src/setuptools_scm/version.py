@@ -188,7 +188,10 @@ def meta(
             "meta invoked without explicit configuration,"
             " will use defaults where required."
         )
-    parsed_version = _parse_tag(tag, preformatted, config)
+    if config.skip_version_parser:
+        parsed_version = tag
+    else:
+        parsed_version = _parse_tag(tag, preformatted, config)
     trace("version", tag, "->", parsed_version)
     assert parsed_version is not None, "Can't parse version %s" % tag
     return ScmVersion(
