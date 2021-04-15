@@ -5,6 +5,11 @@
 import os
 import warnings
 
+try:
+    from packaging.version import parse
+except ImportError:
+    from pkg_resources import parse_version as parse
+
 from .config import (
     Configuration,
     DEFAULT_VERSION_SCHEME,
@@ -83,15 +88,12 @@ def dump_version(root, version, write_to, template=None):
             )
         )
 
-    # version_tuple: each field is converted to an int if possible or kept as string
-    fields = tuple(version.split("."))
-    version_fields = []
-    for field in fields:
-        try:
-            v = int(field)
-        except ValueError:
-            v = field
-        version_fields.append(v)
+    parsed_version = parse(version)
+    version_fields = parsed_version.release
+    if parsed_version.dev is not None:
+        version_fields += (f"dev{parsed_version.dev}",)
+    if parsed_version.local is not None:
+        version_fields += (parsed_version.local,)
 
     with open(target, "w") as fp:
         fp.write(template.format(version=version, version_tuple=tuple(version_fields)))
