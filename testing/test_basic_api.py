@@ -112,6 +112,18 @@ def test_dump_version(tmpdir):
     assert "version = '1.0.dev42'" in lines
     assert "version_tuple = (1, 0, 'dev42')" in lines
 
+    dump_version(sp, "1.0.1+g4ac9d2c", "second.py")
+    content = tmpdir.join("second.py").read()
+    lines = content.splitlines()
+    assert "version = '1.0.1+g4ac9d2c'" in lines
+    assert "version_tuple = (1, 0, 1, 'g4ac9d2c')" in lines
+
+    dump_version(sp, "1.2.3.dev18+gb366d8b.d20210415", "third.py")
+    content = tmpdir.join("third.py").read()
+    lines = content.splitlines()
+    assert "version = '1.2.3.dev18+gb366d8b.d20210415'" in lines
+    assert "version_tuple = (1, 2, 3, 'dev18', 'gb366d8b.d20210415')" in lines
+
     import ast
 
     ast.parse(content)
