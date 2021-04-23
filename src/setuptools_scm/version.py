@@ -240,6 +240,10 @@ def guess_next_dev_version(version):
         return version.format_next_version(guess_next_version)
 
 
+def increment_version(version):
+    return version.format_next_version(guess_next_version, fmt="{guessed}")
+
+
 def guess_next_simple_semver(version, retain, increment=True):
     try:
         parts = [int(i) for i in str(version).split(".")[:retain]]
@@ -427,6 +431,7 @@ def _iter_version_schemes(entrypoint, scheme_value, _memo=None):
 
 def _call_version_scheme(version, entypoint, given_value, default):
     for scheme in _iter_version_schemes(entypoint, given_value):
+        trace("scheme", scheme)
         result = scheme(version)
         if result is not None:
             return result
