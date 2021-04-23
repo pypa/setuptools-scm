@@ -8,6 +8,7 @@ on:
     tags:
     - "v*"
   release:
+    types: [published]
 
 jobs:
   test:
