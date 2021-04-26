@@ -48,7 +48,7 @@ def _check_absolute_root(root, relative_to):
 
 
 class Configuration:
-    """ Global configuration model """
+    """Global configuration model"""
 
     def __init__(
         self,
