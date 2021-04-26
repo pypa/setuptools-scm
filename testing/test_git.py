@@ -284,7 +284,7 @@ def test_non_dotted_tag_no_version_match(wd):
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/381")
 def test_gitdir(monkeypatch, wd):
-    """"""
+    """ """
     wd.commit_testfile()
     normal = wd.version
     # git hooks set this and break subsequent setuptools_scm unless we clean
