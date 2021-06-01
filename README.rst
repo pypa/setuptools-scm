@@ -70,7 +70,7 @@ to be supplied to ``get_version()``. For example:
     # pyproject.toml
 
     [tool.setuptools_scm]
-    write_to = "pkg/version.py"
+    write_to = "pkg/_version.py"
 
 
 ``setup.py`` usage (deprecated)
@@ -316,7 +316,7 @@ The currently supported configuration keys are:
 
 :write_to:
     A path to a file that gets replaced with a file containing the current
-    version. It is ideal for creating a ``version.py`` file within the
+    version. It is ideal for creating a ``_version.py`` file within the
     package, typically used to avoid using `pkg_resources.get_distribution`
     (which adds some overhead).
 
@@ -395,7 +395,7 @@ Example configuration in ``setup.py`` format:
 
     setup(
         use_scm_version={
-            'write_to': 'version.py',
+            'write_to': '_version.py',
             'write_to_template': '__version__ = "{version}"',
             'tag_regex': r'^(?P<prefix>v)?(?P<version>[^\+]+)(?P<suffix>.*)?$',
         }
