@@ -1,4 +1,5 @@
 import os
+import re
 import warnings
 from datetime import date
 from datetime import datetime
@@ -8,10 +9,15 @@ from os.path import samefile
 
 from .config import Configuration
 from .scm_workdir import Workdir
+from .utils import data_from_mime
 from .utils import do_ex
 from .utils import require_command
 from .utils import trace
 from .version import meta
+from .version import tags_to_versions
+
+REF_TAG_RE = re.compile(r"(?<=\btag: )([^,]+)\b")
+DESCRIBE_UNSUPPORTED = "%(describe"
 
 # If testing command in shell make sure to quote the match argument like
 # '*[0-9]*' as it will expand before being sent to git if there are any matching
@@ -231,3 +237,29 @@ def search_parent(dirname):
 
         if not tail:
             return None
+
+
+def archival_to_version(data, config=None):
+    trace("data", data)
+    archival_describe = data.get("describe-name", DESCRIBE_UNSUPPORTED)
+    if DESCRIBE_UNSUPPORTED in archival_describe:
+        warnings.warn("git archive did not support describe output")
+    else:
+        tag, number, node, _ = _git_parse_describe(archival_describe)
+        return meta(
+            tag,
+            config=config,
+            distance=None if number == 0 else number,
+            node=node,
+        )
+    versions = tags_to_versions(REF_TAG_RE.findall(data.get("ref-names", "")))
+    if versions:
+        return meta(versions[0], config=config)
+    else:
+        return meta("0.0", node=data.get("node"), config=config)
+
+
+def parse_archival(root, config=None):
+    archival = os.path.join(root, ".git_archival.txt")
+    data = data_from_mime(archival)
+    return archival_to_version(data, config=config)

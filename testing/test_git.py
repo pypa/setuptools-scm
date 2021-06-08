@@ -9,10 +9,13 @@ from unittest.mock import patch
 
 import pytest
 
+from setuptools_scm import Configuration
+from setuptools_scm import format_version
 from setuptools_scm import git
 from setuptools_scm import integration
 from setuptools_scm import NonNormalizedVersion
 from setuptools_scm.file_finder_git import git_find_files
+from setuptools_scm.git import archival_to_version
 from setuptools_scm.utils import do
 from setuptools_scm.utils import has_command
 
@@ -395,9 +398,7 @@ def test_git_getdate(wd):
     assert meta.node_date == today
 
 
-def test_git_getdate_badgit(
-    wd,
-):
+def test_git_getdate_badgit(wd):
     wd.commit_testfile()
     git_wd = git.GitWorkdir(os.fspath(wd.cwd))
     with patch.object(git_wd, "do_ex", Mock(return_value=("%cI", "", 0))):
@@ -435,3 +436,34 @@ def test_git_getdate_signed_commit(signed_commit_wd):
     signed_commit_wd.commit_testfile(signed=True)
     git_wd = git.GitWorkdir(os.fspath(signed_commit_wd.cwd))
     assert git_wd.get_head_date() == today
+
+
+@pytest.mark.parametrize(
+    "expected, from_data",
+    [
+        (
+            "1.0",
+            {"describe-name": "1.0-0-g0000"},
+        ),
+        (
+            "1.1.dev3+g0000",
+            {
+                "describe-name": "1.0-3-g0000",
+                "node": "0" * 20,
+            },
+        ),
+        ("0.0", {"node": "0" * 20}),
+        ("1.2.2", {"describe-name": "release-1.2.2-0-g00000"}),
+        ("1.2.2.dev0", {"ref-names": "tag: release-1.2.2.dev"}),
+    ],
+)
+@pytest.mark.filterwarnings("ignore:git archive did not support describe output")
+def test_git_archival_to_version(expected, from_data):
+    config = Configuration()
+    version = archival_to_version(from_data, config=config)
+    assert (
+        format_version(
+            version, version_scheme="guess-next-dev", local_scheme="node-and-date"
+        )
+        == expected
+    )
