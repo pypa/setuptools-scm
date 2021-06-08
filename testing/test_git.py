@@ -333,7 +333,7 @@ def test_git_getdate_badgit(wd):
         ),
         ("0.0", {"node": "0" * 20}),
         ("1.2.2", {"describe-name": "release-1.2.2-0-g00000"}),
-        ("1.2.2.dev0", {"ref-names": "release-1.2.2.dev"}),
+        ("1.2.2.dev0", {"ref-names": "tag: release-1.2.2.dev"}),
     ],
 )
 @pytest.mark.filterwarnings("ignore:git archive did not support describe output")
