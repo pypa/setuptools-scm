@@ -1,14 +1,18 @@
 from .config import Configuration
 from .utils import do_ex, trace, require_command, data_from_mime
-from .version import meta
+from .version import meta, tags_to_versions
 from datetime import datetime, date
 import os
+import re
 from os.path import isfile, join
 import warnings
 
 
 from os.path import samefile
 
+
+REF_TAG_RE = re.compile(r"(?<=\btag: )([^,]+)\b")
+DESCRIBE_UNSUPPORTED = "%(describe"
 
 DEFAULT_DESCRIBE = "git describe --dirty --tags --long --match *[0-9]*"
 
@@ -197,20 +201,22 @@ def _git_parse_describe(describe_output):
 
 def archival_to_version(data, config=None):
     trace("data", data)
-    node = data.get("node", "")[:12]
-    if node:
-        node = "h" + node
-    if "tag" in data:
-        return meta(data["tag"], config=config)
-    elif "latesttag" in data:
-        return meta(
-            data["latesttag"],
-            distance=data["latesttagdistance"],
-            node=node,
-            config=config,
-        )
+    archival_describe = data.get("describe-name", DESCRIBE_UNSUPPORTED)
+    if DESCRIBE_UNSUPPORTED in archival_describe:
+        warnings.warn("git archive did not support describe output")
     else:
-        return meta("0.0", node=node, config=config)
+        tag, number, node, _ = _git_parse_describe(archival_describe)
+        return meta(
+            tag,
+            config=config,
+            distance=None if number == 0 else number,
+            node=node,
+        )
+    versions = tags_to_versions(REF_TAG_RE.findall(data.get("ref-names", "")))
+    if versions:
+        return meta(versions[0], config=config)
+    else:
+        return meta("0.0", node=data.get("node"), config=config)
 
 
 def parse_archival(root, config=None):
