@@ -1,5 +1,6 @@
 exclude *.nix
 exclude .pre-commit-config.yaml
+exclude .git_archival.txt
 include *.py
 include testing/*.py
 include tox.ini
