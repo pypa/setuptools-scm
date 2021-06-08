@@ -1,5 +1,5 @@
 from .config import Configuration
-from .utils import do_ex, trace, require_command
+from .utils import do_ex, trace, require_command, data_from_mime
 from .version import meta
 from datetime import datetime, date
 import os
@@ -193,3 +193,27 @@ def _git_parse_describe(describe_output):
     tag, number, node = describe_output.rsplit("-", 2)
     number = int(number)
     return tag, number, node, dirty
+
+
+def archival_to_version(data, config=None):
+    trace("data", data)
+    node = data.get("node", "")[:12]
+    if node:
+        node = "h" + node
+    if "tag" in data:
+        return meta(data["tag"], config=config)
+    elif "latesttag" in data:
+        return meta(
+            data["latesttag"],
+            distance=data["latesttagdistance"],
+            node=node,
+            config=config,
+        )
+    else:
+        return meta("0.0", node=node, config=config)
+
+
+def parse_archival(root, config=None):
+    archival = os.path.join(root, ".git_archival.txt")
+    data = data_from_mime(archival)
+    return archival_to_version(data, config=config)
