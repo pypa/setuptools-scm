@@ -275,11 +275,15 @@ def release_branch_semver_version(version):
         # Does the branch name (stripped of namespace) parse as a version?
         branch_ver = _parse_version_tag(version.branch.split("/")[-1], version.config)
         if branch_ver is not None:
+            branch_ver = branch_ver["version"]
+            if branch_ver[0] == "v":
+                # Allow branches that start with 'v', similar to Version.
+                branch_ver = branch_ver[1:]
             # Does the branch version up to the minor part match the tag? If not it
             # might be like, an issue number or something and not a version number, so
             # we only want to use it if it matches.
             tag_ver_up_to_minor = str(version.tag).split(".")[:SEMVER_MINOR]
-            branch_ver_up_to_minor = branch_ver["version"].split(".")[:SEMVER_MINOR]
+            branch_ver_up_to_minor = branch_ver.split(".")[:SEMVER_MINOR]
             if branch_ver_up_to_minor == tag_ver_up_to_minor:
                 # We're in a release/maintenance branch, next is a patch/rc/beta bump:
                 return version.format_next_version(guess_next_version)

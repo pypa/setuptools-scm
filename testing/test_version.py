@@ -83,6 +83,11 @@ def test_next_semver_bad_tag():
             id="release_branch_legacy_version",
         ),
         pytest.param(
+            meta("1.0.0", distance=2, branch="v1.0.x", config=c),
+            "1.0.1.dev2",
+            id="release_branch_with_v_prefix",
+        ),
+        pytest.param(
             meta("1.0.0", distance=2, branch="release-1.0", config=c),
             "1.0.1.dev2",
             id="release_branch_with_prefix",
