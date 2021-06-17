@@ -123,3 +123,17 @@ def test_parse_plain_fails(recwarn):
 
     with pytest.raises(TypeError):
         setuptools_scm.get_version(parse=parse)
+
+
+# def test_custom_version_cls(monkeypatch):
+#
+#     monkeypatch.setenv(setuptools_scm.PRETEND_KEY, "1.0.1")
+#
+#     class MyVersion:
+#         def __init__(self, tag_str: str):
+#             # todo
+#             pass
+#
+#     # TODO unfortunately with PRETEND_KEY the preformatted flag becomes True which bypasses our class.
+#     #   which other mechanism would be ok to use ?
+#     assert setuptools_scm.get_version(version_cls=MyVersion) == "1"

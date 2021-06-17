@@ -170,3 +170,19 @@ def test_version_bump_bad():
     ):
 
         guess_next_version(tag_version="2.0.0-alpha.5-PMC")
+
+
+def test_custom_version_cls():
+    """Test that we can pass our own version class instead of pkg_resources"""
+
+    class MyVersion:
+        def __init__(self, tag_str: str):
+            self.tag = tag_str
+
+        def __repr__(self):
+            return "Custom %s" % self.tag
+
+    scm_version = meta("1.0.0-foo", config=Configuration(version_cls=MyVersion))
+
+    assert isinstance(scm_version.tag, MyVersion)
+    assert repr(scm_version.tag) == "Custom 1.0.0-foo"

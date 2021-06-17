@@ -98,7 +98,11 @@ def tag_to_version(tag, config=None):
             )
         )
 
-    if VERSION_CLASS is not None:
+    # use custom version class if provided
+    if config.version_cls is not None:
+        version = config.version_cls(version)
+        trace("version", repr(version))
+    elif VERSION_CLASS is not None:
         version = pkg_parse_version(version)
         trace("version", repr(version))
 
@@ -187,7 +191,9 @@ class ScmVersion(object):
 def _parse_tag(tag, preformatted, config):
     if preformatted:
         return tag
-    if VERSION_CLASS is None or not isinstance(tag, VERSION_CLASS):
+    # use custom version class if provided
+    version_cls = config.version_cls or VERSION_CLASS
+    if version_cls is None or not isinstance(tag, version_cls):
         tag = tag_to_version(tag, config)
     return tag
 
