@@ -159,7 +159,8 @@ def get_version(
     parse=None,
     git_describe_command=None,
     dist_name=None,
-    version_cls=None,  # or name it version_factory ?
+    version_cls=None,
+    normalize=True,
 ):
     """
     If supplied, relative_to should be a file from which root may

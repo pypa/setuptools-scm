@@ -1,3 +1,8 @@
+In progress
+===========
+
+* fix #524: new parameters :ref:`normalize` and :ref:`version_cls` to customize the version normalization class.
+
 v6.0.1
 =======
 

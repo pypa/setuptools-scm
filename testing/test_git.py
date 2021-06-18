@@ -1,14 +1,15 @@
 import sys
 import os
-from setuptools_scm import integration
-from setuptools_scm.utils import do, has_command
-from setuptools_scm import git
-import pytest
-from datetime import datetime
 from os.path import join as opj
-from setuptools_scm.file_finder_git import git_find_files
-from datetime import date
+import pytest
+from datetime import datetime, date
 from unittest.mock import patch, Mock
+
+from setuptools_scm import integration, git
+from setuptools_scm.utils import do, has_command
+from setuptools_scm.file_finder_git import git_find_files
+from setuptools_scm.version import NonNormalizedVersion
+
 
 pytestmark = pytest.mark.skipif(
     not has_command("git", warn=False), reason="git executable not found"
@@ -103,6 +104,9 @@ def test_version_from_git(wd):
     wd.commit_testfile()
     wd("git tag 17.33.0-rc")
     assert wd.version == "17.33.0rc0"
+
+    assert wd.get_version(normalize=False) == "17.33.0-rc"
+    assert wd.get_version(version_cls=NonNormalizedVersion) == "17.33.0-rc"
 
 
 @pytest.mark.issue(179)

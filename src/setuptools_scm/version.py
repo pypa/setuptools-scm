@@ -20,6 +20,33 @@ SEMVER_PATCH = 3
 SEMVER_LEN = 3
 
 
+class NonNormalizedVersion:
+    """A non-normalizing version handler.
+
+    You can use this class to disable all version verification and normalization.
+    For example you can use this to avoid git release candidate version tags ("1.0.0-rc1") to be normalized to
+    "1.0.0rc1". Only use this if you fully trust the version tags.
+    """
+    def __init__(self, tag):
+        self.tag = tag
+
+    def __repr__(self):
+        return self.tag
+
+
+def _get_version_cls(config):
+    """Return the class to use for versions normalization based on configuration"""
+
+    if not config.normalize:
+        if config.version_cls is not None:
+            raise ValueError(f"Providing a custom `version_cls` is not permitted when `normalize=False`")
+
+        return NonNormalizedVersion
+    else:
+        # Use custom class if provided, default to packaging or pkg_resources
+        return config.version_cls or Version
+
+
 def _parse_version_tag(tag, config):
     tagstring = tag if not isinstance(tag, str) else str(tag)
     match = config.tag_regex.match(tagstring)
@@ -77,8 +104,7 @@ def tag_to_version(tag, config=None):
             )
         )
 
-    # use custom version class if provided, default to pkg_resources
-    version_cls = config.version_cls or Version
+    version_cls = _get_version_cls(config)
     version = version_cls(version)
     trace("version", repr(version))
 
@@ -170,8 +196,7 @@ class ScmVersion:
 def _parse_tag(tag, preformatted, config):
     if preformatted:
         return tag
-    # use custom version class if provided, default to pkg_resources
-    version_cls = config.version_cls or Version
+    version_cls = _get_version_cls(config)
     if not isinstance(tag, version_cls):
         tag = tag_to_version(tag, config)
     return tag

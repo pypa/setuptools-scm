@@ -376,6 +376,20 @@ The currently supported configuration keys are:
     Defaults to the value set by ``setuptools_scm.git.DEFAULT_DESCRIBE``
     (see `git.py <src/setuptools_scm/git.py>`_).
 
+:normalize:
+    A boolean flag indicating if the version string should be normalized.
+    Defaults to ``True``. Setting this to ``False`` is equivalent to setting
+    :ref:`version_cls` to ``setuptools_scm.version.NonNormalizedVersion``
+
+:version_cls:
+    An optional class used to parse, verify and possibly normalize the version
+    string. Its constructor should receive a single string argument, and its
+    ``repr`` should return the normalized version string to use.
+
+    This defaults to ``packaging.version.Version`` if available. If
+    ``packaging`` is not installed, ``pkg_resources.packaging.version.Version``
+     is used. Note that it is known to modify git release candidate schemes.
+
 To use ``setuptools_scm`` in other Python code you can use the ``get_version``
 function:
 
