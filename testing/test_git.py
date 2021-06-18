@@ -107,10 +107,12 @@ def test_version_from_git(wd):
     # custom normalization
     assert wd.get_version(normalize=False) == "17.33.0-rc"
     assert wd.get_version(version_cls=NonNormalizedVersion) == "17.33.0-rc"
+    assert (wd.get_version(version_cls="setuptools_scm.NonNormalizedVersion")
+            == "17.33.0-rc")
 
 
 @pytest.mark.parametrize("with_class", [False, type, str])
-def test_version_from_git_custom(with_class, tmpdir, wd, monkeypatch):
+def test_git_version_unnormalized_setuptools(with_class, tmpdir, wd, monkeypatch):
     """
     Test that when integrating with setuptools without normalization,
     the version is not normalized in write_to files,
