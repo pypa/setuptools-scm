@@ -195,4 +195,4 @@ class NonNormalizedVersion(Version):
 
     def __repr__(self):
         # same pattern as parent
-        return f"<NonNormalizedVersion({repr(str(self))})>"
+        return f"<NonNormalizedVersion({self._raw_version!r})>"
