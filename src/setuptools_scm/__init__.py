@@ -15,6 +15,7 @@ from .config import (
     DEFAULT_VERSION_SCHEME,
     DEFAULT_LOCAL_SCHEME,
     DEFAULT_TAG_REGEX,
+    NonNormalizedVersion
 )
 from .utils import function_has_arg, trace
 from .version import format_version, meta
