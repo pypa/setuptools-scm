@@ -379,7 +379,7 @@ The currently supported configuration keys are:
 :normalize:
     A boolean flag indicating if the version string should be normalized.
     Defaults to ``True``. Setting this to ``False`` is equivalent to setting
-    :ref:`version_cls` to ``setuptools_scm.version.NonNormalizedVersion``
+    ``version_cls`` to ``setuptools_scm.version.NonNormalizedVersion``
 
 :version_cls:
     An optional class used to parse, verify and possibly normalize the version
@@ -395,7 +395,7 @@ The currently supported configuration keys are:
     provided to disable the normalization step done by
     ``packaging.version.Version``. If this is used while ``setuptools_scm``
     is integrated in a setuptools packaging process, the non-normalized
-    version number will appear in all files (see :ref:`write_to`) BUT note
+    version number will appear in all files (see ``write_to``) BUT note
     that setuptools will still normalize it to create the final distribution,
     so as to stay compliant with the python packaging standards.
 
