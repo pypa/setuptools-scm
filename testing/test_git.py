@@ -107,8 +107,10 @@ def test_version_from_git(wd):
     # custom normalization
     assert wd.get_version(normalize=False) == "17.33.0-rc"
     assert wd.get_version(version_cls=NonNormalizedVersion) == "17.33.0-rc"
-    assert (wd.get_version(version_cls="setuptools_scm.NonNormalizedVersion")
-            == "17.33.0-rc")
+    assert (
+        wd.get_version(version_cls="setuptools_scm.NonNormalizedVersion")
+        == "17.33.0-rc"
+    )
 
 
 @pytest.mark.parametrize("with_class", [False, type, str])
