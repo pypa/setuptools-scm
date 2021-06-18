@@ -57,7 +57,7 @@ def scm_find_files(path, scm_files, scm_dirs):
 
 
 def is_toplevel_acceptable(toplevel):
-    ""
+    """ """
     if toplevel is None:
         return False
 

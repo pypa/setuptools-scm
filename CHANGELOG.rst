@@ -1,3 +1,23 @@
+v6.0.1
+=======
+
+*  fix #537: drop node_date on old git to avoid errors on missing %cI
+
+v6.0.0
+======
+
+* fix #517: drop dead python support >3.6 required
+* drop dead setuptools support > 45 required (can install wheels)
+* drop egg building (use wheels)
+* add git node_date metadata to get the commit time-stamp of HEAD
+* allow version schemes to be priority ordered lists of version schemes
+* support for calendar versioning (calver) by date
+
+v5.0.2
+======
+
+* fix #415: use git for matching prefixes to support the windows situation
+
 v5.0.1
 ======
 
@@ -24,7 +44,7 @@ Bugfixes:
 * enhance documentation
 * consider SOURCE_DATE_EPOCH for versioning
 * add a version_tuple to write_to templates
-* fix #321: add suppport for the ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DISTRIBUTION_NAME}`` env var to target the pretend key
+* fix #321: add support for the ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DISTRIBUTION_NAME}`` env var to target the pretend key
 * fix #142: clearly list supported scm
 * fix #213: better error message for non-zero dev numbers in tags
 * fix #356: add git branch to version on describe failure

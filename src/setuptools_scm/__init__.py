@@ -5,13 +5,18 @@
 import os
 import warnings
 
+try:
+    from packaging.version import parse
+except ImportError:
+    from pkg_resources import parse_version as parse
+
 from .config import (
     Configuration,
     DEFAULT_VERSION_SCHEME,
     DEFAULT_LOCAL_SCHEME,
     DEFAULT_TAG_REGEX,
 )
-from .utils import function_has_arg, string_types, trace
+from .utils import function_has_arg, trace
 from .version import format_version, meta
 from .discover import iter_matching_entrypoints
 
@@ -69,7 +74,7 @@ def _version_from_entrypoints(config, fallback=False):
 
 
 def dump_version(root, version, write_to, template=None):
-    assert isinstance(version, string_types)
+    assert isinstance(version, str)
     if not write_to:
         return
     target = os.path.normpath(os.path.join(root, write_to))
@@ -83,15 +88,12 @@ def dump_version(root, version, write_to, template=None):
             )
         )
 
-    # version_tuple: each field is converted to an int if possible or kept as string
-    fields = tuple(version.split("."))
-    version_fields = []
-    for field in fields:
-        try:
-            v = int(field)
-        except ValueError:
-            v = field
-        version_fields.append(v)
+    parsed_version = parse(version)
+    version_fields = parsed_version.release
+    if parsed_version.dev is not None:
+        version_fields += (f"dev{parsed_version.dev}",)
+    if parsed_version.local is not None:
+        version_fields += (parsed_version.local,)
 
     with open(target, "w") as fp:
         fp.write(template.format(version=version, version_tuple=tuple(version_fields)))
@@ -117,7 +119,7 @@ def _do_parse(config):
 
     if config.parse:
         parse_result = _call_entrypoint_fn(config.absolute_root, config, config.parse)
-        if isinstance(parse_result, string_types):
+        if isinstance(parse_result, str):
             raise TypeError(
                 "version parse result was a string\nplease return a parsed version"
             )

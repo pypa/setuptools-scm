@@ -4,10 +4,11 @@ on:
   pull_request:
   push:
     branches:
-    - master
+    - main
     tags:
     - "v*"
   release:
+    types: [published]
 
 jobs:
   test:
@@ -15,14 +16,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: [ '2.7', '3.5', '3.6', '3.7', '3.8', 'pypy2', 'pypy3' ]
+        python_version: [ '3.6', '3.7', '3.8', '3.9', 'pypy3' ]
         os: [windows-latest, ubuntu-latest] #, macos-latest]
-        exclude:
-        - os: windows-latest
-          python_version: "pypy2"
         include:
-        - os: ubuntu-latest
-          python_version: '3.9-dev'
         - os: windows-latest
           python_version: 'msys2'
 
@@ -31,13 +27,7 @@ jobs:
       - uses: actions/checkout@v1
       - name: Setup python
         uses: actions/setup-python@v2
-        if: matrix.python_version != '3.9-dev' && matrix.python_version != 'msys2'
-        with:
-          python-version: ${{ matrix.python_version }}
-          architecture: x64
-      - name: Set up Python ${{ matrix.python_version }} (deadsnakes)
-        uses: deadsnakes/action@v2.0.1
-        if: matrix.python_version == '3.9-dev'
+        if: matrix.python_version != 'msys2'
         with:
           python-version: ${{ matrix.python_version }}
           architecture: x64
@@ -58,8 +48,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: [ '2.7', '3.5', '3.6', '3.7', '3.8', 'pypy2', 'pypy3' ]
-    name: check self install - Python ${{ matrix.python_version }}
+        python_version: [  '3.6', '3.9', 'pypy3' ]
+        installer: ["pip install", easy_install]
+    name: check self install - Python ${{ matrix.python_version }} via ${{ matrix.installer }}
     steps:
       - uses: actions/checkout@v1
       - name: Setup python
@@ -69,46 +60,13 @@ jobs:
           architecture: x64
       # self install testing needs some clarity
       # so its being executed without any other tools running
-      - run: pip install -U setuptools
+      # setuptools smaller 52 is needed too di easy_install
+      - run: pip install -U "setuptools<52"
       - run: python setup.py egg_info
       - run: python setup.py sdist
-      - run: easy_install dist/*
+      - run: ${{ matrix.installer }} dist/*
       - run: python testing/check_self_install.py
 
-
-  eggs:
-    runs-on: ubuntu-latest
-
-    needs: [test]
-    name: Python ${{ matrix.python_version }} eggs
-    strategy:
-      matrix:
-        python_version: ['2.7', '3.5', '3.6', '3.7', '3.8', '3.9-dev']
-    steps:
-    - uses: actions/checkout@v1
-    - name: Setup python
-      uses: actions/setup-python@v2
-      if: matrix.python_version != '3.9-dev'
-      with:
-        python-version: ${{ matrix.python_version }}
-        architecture: x64
-    - name: Set up Python ${{ matrix.python_version }} (deadsnakes)
-      uses: deadsnakes/action@v2.0.1
-      if: matrix.python_version == '3.9-dev'
-      with:
-        python-version: ${{ matrix.python_version }}
-        architecture: x64
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install --upgrade wheel setuptools
-    - run: python setup.py egg_info
-    - name: Build package
-      run: python setup.py bdist_egg
-    - uses: actions/upload-artifact@v2
-      with:
-        name: dist
-        path: dist
 
   dist:
     runs-on: ubuntu-latest
@@ -123,10 +81,10 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install --upgrade wheel setuptools
-    - run: python setup.py egg_info
+        pip install --upgrade wheel setuptools build
+
     - name: Build package
-      run: python setup.py bdist_wheel sdist
+      run: python -m build -s -w -o dist/
     - uses: actions/upload-artifact@v2
       with:
         name: dist
@@ -135,7 +93,7 @@ jobs:
 
   dist_check:
     runs-on: ubuntu-latest
-    needs: [eggs, dist]
+    needs: [dist]
     steps:
     - uses: actions/setup-python@v2
       with:

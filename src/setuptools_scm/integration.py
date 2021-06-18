@@ -1,12 +1,8 @@
-from pkg_resources import iter_entry_points
-
-from .version import _warn_if_setuptools_outdated
-from .utils import do, trace_exception, trace
+from .utils import do, trace_exception, trace, iter_entry_points
 from . import _get_version, Configuration
 
 
 def version_keyword(dist, keyword, value):
-    _warn_if_setuptools_outdated()
     if not value:
         return
     if value is True:

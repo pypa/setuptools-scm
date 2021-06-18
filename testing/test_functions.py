@@ -1,5 +1,4 @@
 import pytest
-import sys
 import pkg_resources
 from setuptools_scm import dump_version, get_version, PRETEND_KEY
 from setuptools_scm.version import (
@@ -11,8 +10,6 @@ from setuptools_scm.version import (
 
 from setuptools_scm.config import Configuration
 from setuptools_scm.utils import has_command
-
-PY3 = sys.version_info > (2,)
 
 
 @pytest.mark.parametrize(

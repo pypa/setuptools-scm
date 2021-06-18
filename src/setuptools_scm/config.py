@@ -1,5 +1,4 @@
 """ configuration """
-from __future__ import print_function, unicode_literals
 import os
 import re
 import warnings
@@ -48,8 +47,8 @@ def _check_absolute_root(root, relative_to):
     return os.path.abspath(root)
 
 
-class Configuration(object):
-    """ Global configuration model """
+class Configuration:
+    """Global configuration model"""
 
     def __init__(
         self,

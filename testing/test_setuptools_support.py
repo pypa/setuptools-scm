@@ -6,16 +6,6 @@ import os
 import subprocess
 import pytest
 
-pytestmark = [
-    pytest.mark.skipif(
-        "sys.version_info >= (3,6,0)",
-        reason="integration with old versions no longer needed on py3.6+",
-    ),
-    pytest.mark.xfail(
-        sys.platform == "win32", reason="path behaves unexpected on windows ci"
-    ),
-]
-
 
 @pytest.fixture(scope="session")
 def get_setuptools_packagedir(request):
@@ -56,7 +46,7 @@ def check(packagedir, expected_version, **env):
 
     old_pythonpath = os.environ.get("PYTHONPATH")
     if old_pythonpath:
-        pythonpath = "{}:{}".format(old_pythonpath, packagedir)
+        pythonpath = f"{old_pythonpath}:{packagedir}"
     else:
         pythonpath = str(packagedir)
     subprocess.check_call(
@@ -65,19 +55,6 @@ def check(packagedir, expected_version, **env):
     )
 
 
-def test_old_setuptools_fails(get_setuptools_packagedir):
-    packagedir = get_setuptools_packagedir("0.9.8")
-    with pytest.raises(subprocess.CalledProcessError):
-        check(packagedir, "0.9.8")
-
-
-def test_old_setuptools_allows_with_warnings(get_setuptools_packagedir):
-
-    packagedir = get_setuptools_packagedir("0.9.8")
-    # filter using warning since in the early python startup
-    check(packagedir, "0.9.8", PYTHONWARNINGS="once::Warning")
-
-
 def test_distlib_setuptools_works(get_setuptools_packagedir):
-    packagedir = get_setuptools_packagedir("12.0.1")
-    check(packagedir, "12.0.1")
+    packagedir = get_setuptools_packagedir("45.0.0")
+    check(packagedir, "45.0.0")

@@ -9,24 +9,32 @@ once before running sdist or easy_install on a fresh checkouts
 
 pip usage is recommended
 """
-from __future__ import print_function
 import os
 import sys
 import setuptools
 
 
 def scm_config():
+
+    if sys.version_info < (3, 6):
+        raise RuntimeError(
+            "support for python < 3.6 has been removed in setuptools_scm>=6.0.0"
+        )
+
     here = os.path.dirname(os.path.abspath(__file__))
     src = os.path.join(here, "src")
     egg_info = os.path.join(src, "setuptools_scm.egg-info")
     has_entrypoints = os.path.isdir(egg_info)
     import pkg_resources
 
+    pkg_resources.require("setuptools>=45")
+
     sys.path.insert(0, src)
     pkg_resources.working_set.add_entry(src)
     # FIXME: remove debug
     print(src)
     print(pkg_resources.working_set)
+
     from setuptools_scm.hacks import parse_pkginfo
     from setuptools_scm.git import parse as parse_git
     from setuptools_scm.version import guess_next_dev_version, get_local_node_and_date
@@ -34,7 +42,7 @@ def scm_config():
     def parse(root):
         try:
             return parse_pkginfo(root)
-        except IOError:
+        except OSError:
             return parse_git(root)
 
     config = dict(

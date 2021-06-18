@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 import pytest
 from setuptools_scm.config import Configuration
 from setuptools_scm.version import (
@@ -7,6 +9,8 @@ from setuptools_scm.version import (
     tags_to_versions,
     no_guess_dev_version,
     guess_next_version,
+    format_version,
+    calver_by_date,
 )
 
 
@@ -52,7 +56,7 @@ def test_next_semver(version, expected_next):
 
 def test_next_semver_bad_tag():
 
-    version = meta("1.0.0-foo", config=c)
+    version = meta("1.0.0-foo", preformatted=True, config=c)
     with pytest.raises(
         ValueError, match="1.0.0-foo can't be parsed as numeric version"
     ):
@@ -77,6 +81,11 @@ def test_next_semver_bad_tag():
             meta("1.0.0", distance=2, branch="maintenance/1.0.x", config=c),
             "1.0.1.dev2",
             id="release_branch_legacy_version",
+        ),
+        pytest.param(
+            meta("1.0.0", distance=2, branch="v1.0.x", config=c),
+            "1.0.1.dev2",
+            id="release_branch_with_v_prefix",
         ),
         pytest.param(
             meta("1.0.0", distance=2, branch="release-1.0", config=c),
@@ -170,6 +179,110 @@ def test_version_bump_bad():
     ):
 
         guess_next_version(tag_version="2.0.0-alpha.5-PMC")
+
+
+def test_format_version_schemes():
+    version = meta("1.0", config=c)
+    format_version(
+        version,
+        local_scheme="no-local-version",
+        version_scheme=[lambda v: None, "guess-next-dev"],
+    )
+
+
+def date_to_str(date_=None, days_offset=0, fmt="{dt:%y}.{dt.month}.{dt.day}"):
+    date_ = date_ or date.today()
+    date_ = date_ - timedelta(days=days_offset)
+    return fmt.format(dt=date_)
+
+
+@pytest.mark.parametrize(
+    "version, expected_next",
+    [
+        pytest.param(
+            meta(date_to_str(days_offset=3), config=c),
+            date_to_str(days_offset=3),
+            id="exact",
+        ),
+        pytest.param(
+            meta(date_to_str() + ".1", config=c), date_to_str() + ".1", id="exact patch"
+        ),
+        pytest.param(
+            meta(date_to_str(fmt="20.01.02"), config=c),
+            "20.1.2",
+            id="leading 0s",
+        ),
+        pytest.param(
+            meta(date_to_str(days_offset=3), config=c, dirty=True),
+            date_to_str() + ".0.dev0",
+            id="dirty other day",
+        ),
+        pytest.param(
+            meta(date_to_str(), config=c, distance=2, branch="default"),
+            date_to_str() + ".1.dev2",
+            id="normal branch",
+        ),
+        pytest.param(
+            meta(date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}"), config=c),
+            date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}"),
+            id="4 digits year",
+        ),
+        pytest.param(
+            meta(date_to_str(), config=c, distance=2, branch="release-2021.05.06"),
+            "2021.05.06",
+            id="release branch",
+        ),
+        pytest.param(
+            meta(date_to_str() + ".2", config=c, distance=2, branch="release-21.5.1"),
+            "21.5.1",
+            id="release branch short",
+        ),
+        pytest.param(
+            meta(
+                date_to_str(days_offset=3) + ".2",
+                config=c,
+                node_date=date.today() - timedelta(days=2),
+            ),
+            date_to_str(days_offset=3) + ".2",
+            id="node date clean",
+        ),
+        pytest.param(
+            meta(
+                date_to_str(days_offset=2) + ".2",
+                config=c,
+                distance=2,
+                node_date=date.today() - timedelta(days=2),
+            ),
+            date_to_str(date.today() - timedelta(days=2)) + ".3.dev2",
+            id="node date distance",
+        ),
+    ],
+)
+def test_calver_by_date(version, expected_next):
+    computed = calver_by_date(version)
+    assert computed == expected_next
+
+
+@pytest.mark.parametrize(
+    "version, expected_next",
+    [
+        pytest.param(meta("1.0.0", config=c), "1.0.0", id="SemVer exact"),
+        pytest.param(
+            meta("1.0.0", config=c, dirty=True),
+            "1.0.0",
+            id="SemVer dirty",
+            marks=pytest.mark.xfail,
+        ),
+    ],
+)
+def test_calver_by_date_semver(version, expected_next):
+    computed = calver_by_date(version)
+    assert computed == expected_next
+
+
+def test_calver_by_date_future_warning():
+    with pytest.warns(UserWarning, match="your previous tag*"):
+        calver_by_date(meta(date_to_str(days_offset=-2), config=c, distance=2))
 
 
 def test_custom_version_cls():
