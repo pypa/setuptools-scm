@@ -389,7 +389,7 @@ The currently supported configuration keys are:
 
     This defaults to ``packaging.version.Version`` if available. If
     ``packaging`` is not installed, ``pkg_resources.packaging.version.Version``
-     is used. Note that it is known to modify git release candidate schemes.
+    is used. Note that it is known to modify git release candidate schemes.
 
     The ``setuptools_scm.NonNormalizedVersion`` convenience class is
     provided to disable the normalization step done by
