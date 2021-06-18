@@ -364,8 +364,11 @@ def calver_by_date(version):
             match = date_ver_match(ver)
             if match:
                 return ver
-    return version.format_next_version(guess_next_date_ver, node_date=version.node_date,
-                                       version_cls=version.config.version_cls)
+    return version.format_next_version(
+        guess_next_date_ver,
+        node_date=version.node_date,
+        version_cls=version.config.version_cls,
+    )
 
 
 def _format_local_with_time(version, time_format):
