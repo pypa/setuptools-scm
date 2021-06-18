@@ -42,8 +42,8 @@ def _get_version_cls(config):
     if not config.normalize:
         if config.version_cls is not None:
             raise ValueError(
-                f"Providing a custom `version_cls` is not permitted when "
-                f"`normalize=False`"
+                "Providing a custom `version_cls` is not permitted when "
+                "`normalize=False`"
             )
 
         return NonNormalizedVersion
