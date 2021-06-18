@@ -138,14 +138,14 @@ class MyVersion:
 
     def __repr__(self):
         return self.version
-        
+
 setup(use_scm_version={'version_cls': MyVersion, 'write_to': '%s'})
 """
     elif with_class is str:
         # non-normalizing class referenced by name
         setup_py = """from setuptools import setup
 setup(use_scm_version={
-    'version_cls': 'setuptools_scm.NonNormalizedVersion', 
+    'version_cls': 'setuptools_scm.NonNormalizedVersion',
     'write_to': '%s'
 })
 """

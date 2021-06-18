@@ -109,13 +109,13 @@ class Configuration:
                 try:
                     # Not sure this will work in old python
                     import importlib
+
                     pkg, cls_name = version_cls.rsplit(".", 1)
                     version_cls_host = importlib.import_module(pkg)
                     version_cls = getattr(version_cls_host, cls_name)
                 except:  # noqa
                     raise ValueError(f"Unable to import version_cls='{version_cls}'")
             self.version_cls = version_cls
-
 
     @property
     def fallback_root(self):
@@ -184,7 +184,7 @@ class NonNormalizedVersion(Version):
 
     def __init__(self, version):
         # parse and validate using parent
-        super(NonNormalizedVersion, self).__init__(version)
+        super().__init__(version)
 
         # store raw for str
         self._raw_version = version
@@ -195,4 +195,4 @@ class NonNormalizedVersion(Version):
 
     def __repr__(self):
         # same pattern as parent
-        return "<NonNormalizedVersion({0})>".format(repr(str(self)))
+        return f"<NonNormalizedVersion({repr(str(self))})>"
