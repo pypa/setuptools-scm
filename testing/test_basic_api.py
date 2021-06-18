@@ -151,7 +151,8 @@ def test_custom_version_cls():
     with pytest.raises(ValueError):
         setuptools_scm.get_version(normalize=False, version_cls=MyVersion)
 
-    # TODO unfortunately with PRETEND_KEY the preformatted flag becomes True which bypasses our class.
-    #   which other mechanism would be ok to use here to create a test?
+    # TODO unfortunately with PRETEND_KEY the preformatted flag becomes True
+    #  which bypasses our class. which other mechanism would be ok to use here
+    #  to create a test?
     # monkeypatch.setenv(setuptools_scm.PRETEND_KEY, "1.0.1")
     # assert setuptools_scm.get_version(version_cls=MyVersion) == "1"
