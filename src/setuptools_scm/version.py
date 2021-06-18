@@ -4,52 +4,13 @@ import re
 import time
 import os
 
-from .config import Configuration
+from .config import Configuration, Version as PkgVersion
 from .utils import trace, iter_entry_points
-
-try:
-    from packaging.version import Version
-except ImportError:
-    import pkg_resources
-
-    Version = pkg_resources.packaging.version.Version
 
 
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3
 SEMVER_LEN = 3
-
-
-class NonNormalizedVersion:
-    """A non-normalizing version handler.
-
-    You can use this class to disable all version verification and normalization.
-    For example you can use this to avoid git release candidate version tags
-    ("1.0.0-rc1") to be normalized to "1.0.0rc1". Only use this if you fully
-    trust the version tags.
-    """
-
-    def __init__(self, tag):
-        self.tag = tag
-
-    def __repr__(self):
-        return self.tag
-
-
-def _get_version_cls(config):
-    """Return the class to use for versions normalization based on configuration"""
-
-    if not config.normalize:
-        if config.version_cls is not None:
-            raise ValueError(
-                "Providing a custom `version_cls` is not permitted when "
-                "`normalize=False`"
-            )
-
-        return NonNormalizedVersion
-    else:
-        # Use custom class if provided, default to packaging or pkg_resources
-        return config.version_cls or Version
 
 
 def _parse_version_tag(tag, config):
@@ -109,8 +70,7 @@ def tag_to_version(tag, config=None):
             )
         )
 
-    version_cls = _get_version_cls(config)
-    version = version_cls(version)
+    version = config.version_cls(version)
     trace("version", repr(version))
 
     return version
@@ -201,8 +161,7 @@ class ScmVersion:
 def _parse_tag(tag, preformatted, config):
     if preformatted:
         return tag
-    version_cls = _get_version_cls(config)
-    if not isinstance(tag, version_cls):
+    if not isinstance(tag, config.version_cls):
         tag = tag_to_version(tag, config)
     return tag
 
@@ -353,7 +312,7 @@ def date_ver_match(ver):
     return match
 
 
-def guess_next_date_ver(version, node_date=None, date_fmt=None):
+def guess_next_date_ver(version, node_date=None, date_fmt=None, version_cls=None):
     """
     same-day -> patch +1
     other-day -> today
@@ -388,8 +347,9 @@ def guess_next_date_ver(version, node_date=None, date_fmt=None):
         node_date=head_date, date_fmt=date_fmt, patch=patch
     )
     # rely on the Version object to ensure consistency (e.g. remove leading 0s)
-    # TODO: support for intentionally non-normalized date versions
-    next_version = str(Version(next_version))
+    if version_cls is None:
+        version_cls = PkgVersion
+    next_version = str(version_cls(next_version))
     return next_version
 
 
@@ -404,7 +364,8 @@ def calver_by_date(version):
             match = date_ver_match(ver)
             if match:
                 return ver
-    return version.format_next_version(guess_next_date_ver, node_date=version.node_date)
+    return version.format_next_version(guess_next_date_ver, node_date=version.node_date,
+                                       version_cls=version.config.version_cls)
 
 
 def _format_local_with_time(version, time_format):

@@ -3,6 +3,14 @@ import os
 import re
 import warnings
 
+try:
+    from packaging.version import Version
+except ImportError:
+    import pkg_resources
+
+    Version = pkg_resources.packaging.version.Version
+
+
 from .utils import trace
 
 DEFAULT_TAG_REGEX = r"^(?:[\w-]+-)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"
@@ -84,8 +92,18 @@ class Configuration:
         self.tag_regex = tag_regex
         self.git_describe_command = git_describe_command
         self.dist_name = dist_name
-        self.version_cls = version_cls
-        self.normalize = normalize
+
+        if not normalize:
+            # `normalize = False` means `version_cls = NonNormalizedVersion`
+            if version_cls is not None:
+                raise ValueError(
+                    "Providing a custom `version_cls` is not permitted when "
+                    "`normalize=False`"
+                )
+            self.version_cls = NonNormalizedVersion
+        else:
+            # Use `version_cls` if provided, default to packaging or pkg_resources
+            self.version_cls = version_cls if version_cls is not None else Version
 
     @property
     def fallback_root(self):
@@ -141,3 +159,28 @@ class Configuration:
             defn = __import__("toml").load(strm)
         section = defn.get("tool", {})["setuptools_scm"]
         return cls(dist_name=dist_name, **section)
+
+
+class NonNormalizedVersion(Version):
+    """A non-normalizing version handler.
+
+    You can use this class to preserve version verification but skip normalization.
+    For example you can use this to avoid git release candidate version tags
+    ("1.0.0-rc1") to be normalized to "1.0.0rc1". Only use this if you fully
+    trust the version tags.
+    """
+
+    def __init__(self, version):
+        # parse and validate using parent
+        super(NonNormalizedVersion, self).__init__(version)
+
+        # store raw for str
+        self._raw_version = version
+
+    def __str__(self):
+        # return the non-normalized version (parent returns the normalized)
+        return self._raw_version
+
+    def __repr__(self):
+        # same pattern as parent
+        return "<NonNormalizedVersion({0})>".format(repr(str(self)))
