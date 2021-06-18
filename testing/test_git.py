@@ -109,6 +109,62 @@ def test_version_from_git(wd):
     assert wd.get_version(version_cls=NonNormalizedVersion) == "17.33.0-rc"
 
 
+@pytest.mark.parametrize("with_class", [False, type, str])
+def test_version_from_git_custom(with_class, tmpdir, wd, monkeypatch):
+    """
+    Test that when integrating with setuptools without normalization,
+    the version is not normalized in write_to files,
+    but still normalized by setuptools for the final dist metadata.
+    """
+    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
+    p = wd.cwd
+
+    # create a setup.py
+    dest_file = str(tmpdir.join("VERSION.txt")).replace("\\", "/")
+    if with_class is False:
+        # try normalize = False
+        setup_py = """
+from setuptools import setup
+setup(use_scm_version={'normalize': False, 'write_to': '%s'})
+"""
+    elif with_class is type:
+        # custom non-normalizing class
+        setup_py = """
+from setuptools import setup
+
+class MyVersion:
+    def __init__(self, tag_str: str):
+        self.version = tag_str
+
+    def __repr__(self):
+        return self.version
+        
+setup(use_scm_version={'version_cls': MyVersion, 'write_to': '%s'})
+"""
+    elif with_class is str:
+        # non-normalizing class referenced by name
+        setup_py = """from setuptools import setup
+setup(use_scm_version={
+    'version_cls': 'setuptools_scm.NonNormalizedVersion', 
+    'write_to': '%s'
+})
+"""
+
+    # finally write the setup.py file
+    p.joinpath("setup.py").write_text(setup_py % dest_file)
+
+    # do git operations and tag
+    wd.commit_testfile()
+    wd("git tag 17.33.0-rc1")
+
+    # setuptools still normalizes using packaging.Version (removing the dash)
+    res = do((sys.executable, "setup.py", "--version"), p)
+    assert res == "17.33.0rc1"
+
+    # but the version tag in the file is non-normalized (with the dash)
+    assert tmpdir.join("VERSION.txt").read() == "17.33.0-rc1"
+
+
 @pytest.mark.issue(179)
 def test_unicode_version_scheme(wd):
     scheme = b"guess-next-dev".decode("ascii")

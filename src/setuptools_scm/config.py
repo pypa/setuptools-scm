@@ -103,7 +103,19 @@ class Configuration:
             self.version_cls = NonNormalizedVersion
         else:
             # Use `version_cls` if provided, default to packaging or pkg_resources
-            self.version_cls = version_cls if version_cls is not None else Version
+            if version_cls is None:
+                version_cls = Version
+            elif isinstance(version_cls, str):
+                try:
+                    # Not sure this will work in old python
+                    import importlib
+                    pkg, cls_name = version_cls.rsplit(".", 1)
+                    version_cls_host = importlib.import_module(pkg)
+                    version_cls = getattr(version_cls_host, cls_name)
+                except:  # noqa
+                    raise ValueError(f"Unable to import version_cls='{version_cls}'")
+            self.version_cls = version_cls
+
 
     @property
     def fallback_root(self):

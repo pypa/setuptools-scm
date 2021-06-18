@@ -384,11 +384,21 @@ The currently supported configuration keys are:
 :version_cls:
     An optional class used to parse, verify and possibly normalize the version
     string. Its constructor should receive a single string argument, and its
-    ``repr`` should return the normalized version string to use.
+    ``str`` should return the normalized version string to use.
+    This option can also receive a class qualified name as a string.
 
     This defaults to ``packaging.version.Version`` if available. If
     ``packaging`` is not installed, ``pkg_resources.packaging.version.Version``
      is used. Note that it is known to modify git release candidate schemes.
+
+    The ``setuptools_scm.NonNormalizedVersion`` convenience class is
+    provided to disable the normalization step done by
+    ``packaging.version.Version``. If this is used while ``setuptools_scm``
+    is integrated in a setuptools packaging process, the non-normalized
+    version number will appear in all files (see :ref:`write_to`) BUT note
+    that setuptools will still normalize it to create the final distribution,
+    so as to stay compliant with the python packaging standards.
+
 
 To use ``setuptools_scm`` in other Python code you can use the ``get_version``
 function:
