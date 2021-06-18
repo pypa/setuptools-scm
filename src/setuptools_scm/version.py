@@ -27,6 +27,7 @@ class NonNormalizedVersion:
     For example you can use this to avoid git release candidate version tags ("1.0.0-rc1") to be normalized to
     "1.0.0rc1". Only use this if you fully trust the version tags.
     """
+
     def __init__(self, tag):
         self.tag = tag
 
@@ -39,7 +40,9 @@ def _get_version_cls(config):
 
     if not config.normalize:
         if config.version_cls is not None:
-            raise ValueError(f"Providing a custom `version_cls` is not permitted when `normalize=False`")
+            raise ValueError(
+                f"Providing a custom `version_cls` is not permitted when `normalize=False`"
+            )
 
         return NonNormalizedVersion
     else:
