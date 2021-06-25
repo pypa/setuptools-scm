@@ -3,6 +3,14 @@ import os
 import re
 import warnings
 
+try:
+    from packaging.version import Version
+except ImportError:
+    import pkg_resources
+
+    Version = pkg_resources.packaging.version.Version
+
+
 from .utils import trace
 
 DEFAULT_TAG_REGEX = r"^(?:[\w-]+-)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"
@@ -65,6 +73,8 @@ class Configuration:
         parse=None,
         git_describe_command=None,
         dist_name=None,
+        version_cls=None,
+        normalize=True,
     ):
         # TODO:
         self._relative_to = relative_to
@@ -82,6 +92,30 @@ class Configuration:
         self.tag_regex = tag_regex
         self.git_describe_command = git_describe_command
         self.dist_name = dist_name
+
+        if not normalize:
+            # `normalize = False` means `version_cls = NonNormalizedVersion`
+            if version_cls is not None:
+                raise ValueError(
+                    "Providing a custom `version_cls` is not permitted when "
+                    "`normalize=False`"
+                )
+            self.version_cls = NonNormalizedVersion
+        else:
+            # Use `version_cls` if provided, default to packaging or pkg_resources
+            if version_cls is None:
+                version_cls = Version
+            elif isinstance(version_cls, str):
+                try:
+                    # Not sure this will work in old python
+                    import importlib
+
+                    pkg, cls_name = version_cls.rsplit(".", 1)
+                    version_cls_host = importlib.import_module(pkg)
+                    version_cls = getattr(version_cls_host, cls_name)
+                except:  # noqa
+                    raise ValueError(f"Unable to import version_cls='{version_cls}'")
+            self.version_cls = version_cls
 
     @property
     def fallback_root(self):
@@ -137,3 +171,28 @@ class Configuration:
             defn = __import__("toml").load(strm)
         section = defn.get("tool", {})["setuptools_scm"]
         return cls(dist_name=dist_name, **section)
+
+
+class NonNormalizedVersion(Version):
+    """A non-normalizing version handler.
+
+    You can use this class to preserve version verification but skip normalization.
+    For example you can use this to avoid git release candidate version tags
+    ("1.0.0-rc1") to be normalized to "1.0.0rc1". Only use this if you fully
+    trust the version tags.
+    """
+
+    def __init__(self, version):
+        # parse and validate using parent
+        super().__init__(version)
+
+        # store raw for str
+        self._raw_version = version
+
+    def __str__(self):
+        # return the non-normalized version (parent returns the normalized)
+        return self._raw_version
+
+    def __repr__(self):
+        # same pattern as parent
+        return f"<NonNormalizedVersion({self._raw_version!r})>"

@@ -4,15 +4,8 @@ import re
 import time
 import os
 
-from .config import Configuration
+from .config import Configuration, Version as PkgVersion
 from .utils import trace, iter_entry_points
-
-try:
-    from packaging.version import Version
-except ImportError:
-    import pkg_resources
-
-    Version = pkg_resources.packaging.version.Version
 
 
 SEMVER_MINOR = 2
@@ -77,7 +70,7 @@ def tag_to_version(tag, config=None):
             )
         )
 
-    version = Version(version)
+    version = config.version_cls(version)
     trace("version", repr(version))
 
     return version
@@ -168,7 +161,7 @@ class ScmVersion:
 def _parse_tag(tag, preformatted, config):
     if preformatted:
         return tag
-    if not isinstance(tag, Version):
+    if not isinstance(tag, config.version_cls):
         tag = tag_to_version(tag, config)
     return tag
 
@@ -319,7 +312,7 @@ def date_ver_match(ver):
     return match
 
 
-def guess_next_date_ver(version, node_date=None, date_fmt=None):
+def guess_next_date_ver(version, node_date=None, date_fmt=None, version_cls=None):
     """
     same-day -> patch +1
     other-day -> today
@@ -354,8 +347,9 @@ def guess_next_date_ver(version, node_date=None, date_fmt=None):
         node_date=head_date, date_fmt=date_fmt, patch=patch
     )
     # rely on the Version object to ensure consistency (e.g. remove leading 0s)
-    # TODO: support for intentionally non-normalized date versions
-    next_version = str(Version(next_version))
+    if version_cls is None:
+        version_cls = PkgVersion
+    next_version = str(version_cls(next_version))
     return next_version
 
 
@@ -370,7 +364,11 @@ def calver_by_date(version):
             match = date_ver_match(ver)
             if match:
                 return ver
-    return version.format_next_version(guess_next_date_ver, node_date=version.node_date)
+    return version.format_next_version(
+        guess_next_date_ver,
+        node_date=version.node_date,
+        version_cls=version.config.version_cls,
+    )
 
 
 def _format_local_with_time(version, time_format):

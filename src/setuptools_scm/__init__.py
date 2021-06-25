@@ -15,6 +15,7 @@ from .config import (
     DEFAULT_VERSION_SCHEME,
     DEFAULT_LOCAL_SCHEME,
     DEFAULT_TAG_REGEX,
+    NonNormalizedVersion,
 )
 from .utils import function_has_arg, trace
 from .version import format_version, meta
@@ -159,6 +160,8 @@ def get_version(
     parse=None,
     git_describe_command=None,
     dist_name=None,
+    version_cls=None,
+    normalize=True,
 ):
     """
     If supplied, relative_to should be a file from which root may
@@ -188,3 +191,22 @@ def _get_version(config):
         )
 
         return version_string
+
+
+# Public API
+__all__ = [
+    "get_version",
+    "dump_version",
+    "version_from_scm",
+    "Configuration",
+    "NonNormalizedVersion",
+    "DEFAULT_VERSION_SCHEME",
+    "DEFAULT_LOCAL_SCHEME",
+    "DEFAULT_TAG_REGEX",
+    # TODO: are the symbols below part of public API ?
+    "function_has_arg",
+    "trace",
+    "format_version",
+    "meta",
+    "iter_matching_entrypoints",
+]
