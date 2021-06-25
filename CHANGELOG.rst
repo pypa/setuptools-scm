@@ -2,6 +2,7 @@ In progress
 ===========
 
 * fix #524: new parameters ``normalize`` and ``version_cls`` to customize the version normalization class.
+* fix #585: switch from toml to tomli
 
 v6.0.1
 =======
