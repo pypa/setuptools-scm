@@ -38,9 +38,10 @@ def find_files(path=""):
 def _args_from_toml(name="pyproject.toml"):
     # todo: more sensible config initialization
     # move this helper back to config and unify it with the code from get_config
+    import tomli
 
     with open(name) as strm:
-        defn = __import__("toml").load(strm)
+        defn = tomli.load(strm)
     return defn.get("tool", {})["setuptools_scm"]
 
 
