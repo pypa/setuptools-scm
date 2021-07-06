@@ -5,11 +5,17 @@
 import os
 import warnings
 
+try:
+    from packaging.version import parse
+except ImportError:
+    from pkg_resources import parse_version as parse
+
 from .config import (
     Configuration,
     DEFAULT_VERSION_SCHEME,
     DEFAULT_LOCAL_SCHEME,
     DEFAULT_TAG_REGEX,
+    NonNormalizedVersion,
 )
 from .utils import function_has_arg, trace
 from .version import format_version, meta
@@ -83,15 +89,12 @@ def dump_version(root, version, write_to, template=None):
             )
         )
 
-    # version_tuple: each field is converted to an int if possible or kept as string
-    fields = tuple(version.split("."))
-    version_fields = []
-    for field in fields:
-        try:
-            v = int(field)
-        except ValueError:
-            v = field
-        version_fields.append(v)
+    parsed_version = parse(version)
+    version_fields = parsed_version.release
+    if parsed_version.dev is not None:
+        version_fields += (f"dev{parsed_version.dev}",)
+    if parsed_version.local is not None:
+        version_fields += (parsed_version.local,)
 
     with open(target, "w") as fp:
         fp.write(template.format(version=version, version_tuple=tuple(version_fields)))
@@ -157,6 +160,8 @@ def get_version(
     parse=None,
     git_describe_command=None,
     dist_name=None,
+    version_cls=None,
+    normalize=True,
 ):
     """
     If supplied, relative_to should be a file from which root may
@@ -186,3 +191,22 @@ def _get_version(config):
         )
 
         return version_string
+
+
+# Public API
+__all__ = [
+    "get_version",
+    "dump_version",
+    "version_from_scm",
+    "Configuration",
+    "NonNormalizedVersion",
+    "DEFAULT_VERSION_SCHEME",
+    "DEFAULT_LOCAL_SCHEME",
+    "DEFAULT_TAG_REGEX",
+    # TODO: are the symbols below part of public API ?
+    "function_has_arg",
+    "trace",
+    "format_version",
+    "meta",
+    "iter_matching_entrypoints",
+]

@@ -49,7 +49,7 @@ class Wd:
 
     def _reason(self, given_reason):
         if given_reason is None:
-            return "number-{c}".format(c=next(self.__counter))
+            return f"number-{next(self.__counter)}"
         else:
             return given_reason
 

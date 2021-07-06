@@ -140,3 +140,16 @@ def has_command(name, warn=True):
 def require_command(name):
     if not has_command(name, warn=False):
         raise OSError("%r was not found" % name)
+
+
+try:
+    from importlib.metadata import entry_points
+except ImportError:
+    from pkg_resources import iter_entry_points
+else:
+
+    def iter_entry_points(group, name=None):
+        eps = entry_points()[group]
+        if name is None:
+            return iter(eps)
+        return (ep for ep in eps if ep.name == name)

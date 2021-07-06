@@ -83,6 +83,11 @@ def test_next_semver_bad_tag():
             id="release_branch_legacy_version",
         ),
         pytest.param(
+            meta("1.0.0", distance=2, branch="v1.0.x", config=c),
+            "1.0.1.dev2",
+            id="release_branch_with_v_prefix",
+        ),
+        pytest.param(
             meta("1.0.0", distance=2, branch="release-1.0", config=c),
             "1.0.1.dev2",
             id="release_branch_with_prefix",
@@ -278,3 +283,19 @@ def test_calver_by_date_semver(version, expected_next):
 def test_calver_by_date_future_warning():
     with pytest.warns(UserWarning, match="your previous tag*"):
         calver_by_date(meta(date_to_str(days_offset=-2), config=c, distance=2))
+
+
+def test_custom_version_cls():
+    """Test that we can pass our own version class instead of pkg_resources"""
+
+    class MyVersion:
+        def __init__(self, tag_str: str):
+            self.tag = tag_str
+
+        def __repr__(self):
+            return "Custom %s" % self.tag
+
+    scm_version = meta("1.0.0-foo", config=Configuration(version_cls=MyVersion))
+
+    assert isinstance(scm_version.tag, MyVersion)
+    assert repr(scm_version.tag) == "Custom 1.0.0-foo"

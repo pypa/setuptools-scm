@@ -4,18 +4,9 @@ import re
 import time
 import os
 
-from .config import Configuration
-from .utils import trace
+from .config import Configuration, Version as PkgVersion
+from .utils import trace, iter_entry_points
 
-try:
-    from packaging.version import Version
-except ImportError:
-    import pkg_resources
-
-    Version = pkg_resources.packaging.version.Version
-
-
-from pkg_resources import iter_entry_points
 
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3
@@ -79,7 +70,7 @@ def tag_to_version(tag, config=None):
             )
         )
 
-    version = Version(version)
+    version = config.version_cls(version)
     trace("version", repr(version))
 
     return version
@@ -170,7 +161,7 @@ class ScmVersion:
 def _parse_tag(tag, preformatted, config):
     if preformatted:
         return tag
-    if not isinstance(tag, Version):
+    if not isinstance(tag, config.version_cls):
         tag = tag_to_version(tag, config)
     return tag
 
@@ -277,11 +268,15 @@ def release_branch_semver_version(version):
         # Does the branch name (stripped of namespace) parse as a version?
         branch_ver = _parse_version_tag(version.branch.split("/")[-1], version.config)
         if branch_ver is not None:
+            branch_ver = branch_ver["version"]
+            if branch_ver[0] == "v":
+                # Allow branches that start with 'v', similar to Version.
+                branch_ver = branch_ver[1:]
             # Does the branch version up to the minor part match the tag? If not it
             # might be like, an issue number or something and not a version number, so
             # we only want to use it if it matches.
             tag_ver_up_to_minor = str(version.tag).split(".")[:SEMVER_MINOR]
-            branch_ver_up_to_minor = branch_ver["version"].split(".")[:SEMVER_MINOR]
+            branch_ver_up_to_minor = branch_ver.split(".")[:SEMVER_MINOR]
             if branch_ver_up_to_minor == tag_ver_up_to_minor:
                 # We're in a release/maintenance branch, next is a patch/rc/beta bump:
                 return version.format_next_version(guess_next_version)
@@ -317,7 +312,7 @@ def date_ver_match(ver):
     return match
 
 
-def guess_next_date_ver(version, node_date=None, date_fmt=None):
+def guess_next_date_ver(version, node_date=None, date_fmt=None, version_cls=None):
     """
     same-day -> patch +1
     other-day -> today
@@ -352,8 +347,9 @@ def guess_next_date_ver(version, node_date=None, date_fmt=None):
         node_date=head_date, date_fmt=date_fmt, patch=patch
     )
     # rely on the Version object to ensure consistency (e.g. remove leading 0s)
-    # TODO: support for intentionally non-normalized date versions
-    next_version = str(Version(next_version))
+    if version_cls is None:
+        version_cls = PkgVersion
+    next_version = str(version_cls(next_version))
     return next_version
 
 
@@ -368,7 +364,11 @@ def calver_by_date(version):
             match = date_ver_match(ver)
             if match:
                 return ver
-    return version.format_next_version(guess_next_date_ver, node_date=version.node_date)
+    return version.format_next_version(
+        guess_next_date_ver,
+        node_date=version.node_date,
+        version_cls=version.config.version_cls,
+    )
 
 
 def _format_local_with_time(version, time_format):

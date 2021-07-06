@@ -112,6 +112,18 @@ def test_dump_version(tmpdir):
     assert "version = '1.0.dev42'" in lines
     assert "version_tuple = (1, 0, 'dev42')" in lines
 
+    dump_version(sp, "1.0.1+g4ac9d2c", "second.py")
+    content = tmpdir.join("second.py").read()
+    lines = content.splitlines()
+    assert "version = '1.0.1+g4ac9d2c'" in lines
+    assert "version_tuple = (1, 0, 1, 'g4ac9d2c')" in lines
+
+    dump_version(sp, "1.2.3.dev18+gb366d8b.d20210415", "third.py")
+    content = tmpdir.join("third.py").read()
+    lines = content.splitlines()
+    assert "version = '1.2.3.dev18+gb366d8b.d20210415'" in lines
+    assert "version_tuple = (1, 2, 3, 'dev18', 'gb366d8b.d20210415')" in lines
+
     import ast
 
     ast.parse(content)
@@ -123,3 +135,24 @@ def test_parse_plain_fails(recwarn):
 
     with pytest.raises(TypeError):
         setuptools_scm.get_version(parse=parse)
+
+
+def test_custom_version_cls():
+    """Test that `normalize` and `version_cls` work as expected"""
+
+    class MyVersion:
+        def __init__(self, tag_str: str):
+            self.version = tag_str
+
+        def __repr__(self):
+            return f"hello,{self.version}"
+
+    # you can not use normalize=False and version_cls at the same time
+    with pytest.raises(ValueError):
+        setuptools_scm.get_version(normalize=False, version_cls=MyVersion)
+
+    # TODO unfortunately with PRETEND_KEY the preformatted flag becomes True
+    #  which bypasses our class. which other mechanism would be ok to use here
+    #  to create a test?
+    # monkeypatch.setenv(setuptools_scm.PRETEND_KEY, "1.0.1")
+    # assert setuptools_scm.get_version(version_cls=MyVersion) == "1"

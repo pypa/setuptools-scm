@@ -1,14 +1,14 @@
 import sys
 import os
-from setuptools_scm import integration
-from setuptools_scm.utils import do, has_command
-from setuptools_scm import git
-import pytest
-from datetime import datetime
 from os.path import join as opj
-from setuptools_scm.file_finder_git import git_find_files
-from datetime import date
+import pytest
+from datetime import datetime, date
 from unittest.mock import patch, Mock
+
+from setuptools_scm import integration, git, NonNormalizedVersion
+from setuptools_scm.utils import do, has_command
+from setuptools_scm.file_finder_git import git_find_files
+
 
 pytestmark = pytest.mark.skipif(
     not has_command("git", warn=False), reason="git executable not found"
@@ -103,6 +103,70 @@ def test_version_from_git(wd):
     wd.commit_testfile()
     wd("git tag 17.33.0-rc")
     assert wd.version == "17.33.0rc0"
+
+    # custom normalization
+    assert wd.get_version(normalize=False) == "17.33.0-rc"
+    assert wd.get_version(version_cls=NonNormalizedVersion) == "17.33.0-rc"
+    assert (
+        wd.get_version(version_cls="setuptools_scm.NonNormalizedVersion")
+        == "17.33.0-rc"
+    )
+
+
+@pytest.mark.parametrize("with_class", [False, type, str])
+def test_git_version_unnormalized_setuptools(with_class, tmpdir, wd, monkeypatch):
+    """
+    Test that when integrating with setuptools without normalization,
+    the version is not normalized in write_to files,
+    but still normalized by setuptools for the final dist metadata.
+    """
+    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
+    p = wd.cwd
+
+    # create a setup.py
+    dest_file = str(tmpdir.join("VERSION.txt")).replace("\\", "/")
+    if with_class is False:
+        # try normalize = False
+        setup_py = """
+from setuptools import setup
+setup(use_scm_version={'normalize': False, 'write_to': '%s'})
+"""
+    elif with_class is type:
+        # custom non-normalizing class
+        setup_py = """
+from setuptools import setup
+
+class MyVersion:
+    def __init__(self, tag_str: str):
+        self.version = tag_str
+
+    def __repr__(self):
+        return self.version
+
+setup(use_scm_version={'version_cls': MyVersion, 'write_to': '%s'})
+"""
+    elif with_class is str:
+        # non-normalizing class referenced by name
+        setup_py = """from setuptools import setup
+setup(use_scm_version={
+    'version_cls': 'setuptools_scm.NonNormalizedVersion',
+    'write_to': '%s'
+})
+"""
+
+    # finally write the setup.py file
+    p.joinpath("setup.py").write_text(setup_py % dest_file)
+
+    # do git operations and tag
+    wd.commit_testfile()
+    wd("git tag 17.33.0-rc1")
+
+    # setuptools still normalizes using packaging.Version (removing the dash)
+    res = do((sys.executable, "setup.py", "--version"), p)
+    assert res == "17.33.0rc1"
+
+    # but the version tag in the file is non-normalized (with the dash)
+    assert tmpdir.join("VERSION.txt").read() == "17.33.0-rc1"
 
 
 @pytest.mark.issue(179)
@@ -284,7 +348,7 @@ def test_non_dotted_tag_no_version_match(wd):
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/381")
 def test_gitdir(monkeypatch, wd):
-    """"""
+    """ """
     wd.commit_testfile()
     normal = wd.version
     # git hooks set this and break subsequent setuptools_scm unless we clean
