@@ -1,7 +1,6 @@
-import textwrap
-
 from setuptools_scm.config import Configuration
 import re
+import textwrap
 import pytest
 
 
