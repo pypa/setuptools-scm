@@ -1,5 +1,6 @@
 from setuptools_scm.config import Configuration
 import re
+import textwrap
 import pytest
 
 
@@ -27,7 +28,17 @@ def test_tag_regex(tag, expected_version):
 
 def test_config_from_pyproject(tmpdir):
     fn = tmpdir / "pyproject.toml"
-    fn.write_text("[tool.setuptools_scm]\n", encoding="utf-8")
+    fn.write_text(
+        textwrap.dedent(
+            """
+            [tool.setuptools_scm]
+            [project]
+            description = "Factory ⸻ A code generator 🏭"
+            authors = [{name = "Łukasz Langa"}]
+            """
+        ),
+        encoding="utf-8",
+    )
     assert Configuration.from_file(str(fn))
 
 

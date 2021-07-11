@@ -1,5 +1,6 @@
 import sys
 import os
+import textwrap
 
 import pytest
 
@@ -21,10 +22,17 @@ def test_pyproject_support(tmpdir, monkeypatch):
     pytest.importorskip("toml")
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
     pkg = tmpdir.ensure("package", dir=42)
-    pkg.join("pyproject.toml").write(
-        """[tool.setuptools_scm]
-fallback_version = "12.34"
-"""
+    pkg.join("pyproject.toml").write_text(
+        textwrap.dedent(
+            """
+            [tool.setuptools_scm]
+            fallback_version = "12.34"
+            [project]
+            description = "Factory ⸻ A code generator 🏭"
+            authors = [{name = "Łukasz Langa"}]
+            """
+        ),
+        encoding="utf-8",
     )
     pkg.join("setup.py").write("__import__('setuptools').setup()")
     res = do((sys.executable, "setup.py", "--version"), pkg)

@@ -167,7 +167,7 @@ class Configuration:
         not installed or the file has invalid format or does
         not contain the [tool.setuptools_scm] section.
         """
-        with open(name) as strm:
+        with open(name, encoding="UTF-8") as strm:
             defn = __import__("toml").load(strm)
         section = defn.get("tool", {})["setuptools_scm"]
         return cls(dist_name=dist_name, **section)

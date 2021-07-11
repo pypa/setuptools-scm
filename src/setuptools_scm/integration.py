@@ -40,7 +40,7 @@ def _args_from_toml(name="pyproject.toml"):
     # move this helper back to config and unify it with the code from get_config
     import tomli
 
-    with open(name) as strm:
+    with open(name, encoding="UTF-8") as strm:
         defn = tomli.load(strm)
     return defn.get("tool", {})["setuptools_scm"]
 

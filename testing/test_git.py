@@ -280,7 +280,7 @@ def test_git_archive_export_ignore(wd, monkeypatch):
 
 @pytest.mark.issue(228)
 def test_git_archive_subdirectory(wd, monkeypatch):
-    wd("mkdir foobar")
+    os.mkdir(wd.cwd / "foobar")
     wd.write("foobar/test1.txt", "test")
     wd("git add foobar")
     wd.commit()
@@ -290,7 +290,7 @@ def test_git_archive_subdirectory(wd, monkeypatch):
 
 @pytest.mark.issue(251)
 def test_git_archive_run_from_subdirectory(wd, monkeypatch):
-    wd("mkdir foobar")
+    os.mkdir(wd.cwd / "foobar")
     wd.write("foobar/test1.txt", "test")
     wd("git add foobar")
     wd.commit()
