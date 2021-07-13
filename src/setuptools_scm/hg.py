@@ -1,91 +1,142 @@
 import os
+from pathlib import Path
+
 from .config import Configuration
-from .utils import do, trace, data_from_mime, require_command
-from .version import meta, tags_to_versions
+from .utils import do_ex, trace, data_from_mime, require_command
+from .version import meta, tag_to_version
+from .scm_workdir import Workdir
 
 
-def _hg_tagdist_normalize_tagcommit(config, tag, dist, node, branch):
-    dirty = node.endswith("+")
-    node = "h" + node.strip("+")
+class HgWorkdir(Workdir):
 
-    # Detect changes since the specified tag
-    revset = (
-        "(branch(.)"  # look for revisions in this branch only
-        " and tag({tag!r})::."  # after the last tag
-        # ignore commits that only modify .hgtags and nothing else:
-        " and (merge() or file('re:^(?!\\.hgtags).*$'))"
-        " and not tag({tag!r}))"  # ignore the tagged commit itself
-    ).format(tag=tag)
-    if tag != "0.0":
-        commits = do(
-            ["hg", "log", "-r", revset, "--template", "{node|short}"],
-            config.absolute_root,
+    COMMAND = "hg"
+
+    @classmethod
+    def from_potential_worktree(cls, wd):
+        require_command(cls.COMMAND)
+        root, err, ret = do_ex("hg root", wd)
+        if ret:
+            print(err)
+            return
+        return cls(root)
+
+    def get_meta(self, config):
+
+        node, tags, bookmark, node_date = self.hg_log(
+            ".", "{node}\n{tag}\n{bookmark}\n{date|shortdate}"
+        ).split("\n")
+
+        # TODO: support bookmarks and topics (but nowadays bookmarks are
+        # mainly used to emulate Git branches, which is already supported with
+        # the dedicated class GitWorkdirHgClient)
+
+        branch, dirty, dirty_date = self.do(
+            ["hg", "id", "-T", "{branch}\n{if(dirty, 1, 0)}\n{date|shortdate}"]
+        ).split("\n")
+        dirty = bool(int(dirty))
+
+        if dirty:
+            date = dirty_date
+        else:
+            date = node_date
+
+        if all(c == "0" for c in node):
+            trace("initial node", self.path)
+            return meta("0.0", config=config, dirty=dirty, branch=branch)
+
+        node = "h" + node[:7]
+
+        tags = tags.split()
+        if "tip" in tags:
+            # tip is not a real tag
+            tags = tags.remove("tip")
+
+        if tags:
+            tag = tags[0]
+            tag = tag_to_version(tag)
+            if tag:
+                return meta(tag, dirty=dirty, branch=branch, config=config)
+
+        try:
+            tag = self.get_latest_normalizable_tag()
+            dist = self.get_distance_revs(tag)
+            if tag == "null":
+                tag = "0.0"
+                dist = int(dist) + 1
+
+            if self.check_changes_since_tag(tag) or dirty:
+                return meta(
+                    tag,
+                    distance=dist,
+                    node=node,
+                    dirty=dirty,
+                    branch=branch,
+                    config=config,
+                    node_date=date,
+                )
+            else:
+                return meta(tag, config=config)
+
+        except ValueError:
+            pass  # unpacking failed, old hg
+
+    def hg_log(self, revset, template):
+        cmd = ["hg", "log", "-r", revset, "-T", template]
+        return self.do(cmd)
+
+    def get_latest_normalizable_tag(self):
+        # Gets all tags containing a '.' (see #229) from oldest to newest
+        outlines = self.hg_log(
+            revset="ancestors(.) and tag('re:\\.')",
+            template="{tags}{if(tags, '\n', '')}",
+        ).split()
+        if not outlines:
+            return "null"
+        tag = outlines[-1].split()[-1]
+        return tag
+
+    def get_distance_revs(self, rev1, rev2="."):
+        revset = f"({rev1}::{rev2})"
+        out = self.hg_log(revset, ".")
+        return len(out) - 1
+
+    def check_changes_since_tag(self, tag):
+
+        if tag == "0.0":
+            return True
+
+        revset = (
+            "(branch(.)"  # look for revisions in this branch only
+            f" and tag({tag!r})::."  # after the last tag
+            # ignore commits that only modify .hgtags and nothing else:
+            " and (merge() or file('re:^(?!\\.hgtags).*$'))"
+            f" and not tag({tag!r}))"  # ignore the tagged commit itself
         )
-    else:
-        commits = True
-    trace("normalize", locals())
-    if commits or dirty:
-        return meta(
-            tag, distance=dist, node=node, dirty=dirty, branch=branch, config=config
-        )
-    else:
-        return meta(tag, config=config)
+
+        return bool(self.hg_log(revset, "."))
 
 
 def parse(root, config=None):
+    if os.path.exists(os.path.join(root, ".hg/git")):
+        paths, _, ret = do_ex("hg path", root)
+        if not ret:
+            for line in paths.split("\n"):
+                if line.startswith("default ="):
+                    path = Path(line.split()[2])
+                    if path.name.endswith(".git") or (path / ".git").exists():
+                        from .git import parse as git_parse
+
+                        return git_parse(root, config=config)
+
     if not config:
         config = Configuration(root=root)
 
-    require_command("hg")
-    identity_data = do("hg id -i -b -t", config.absolute_root).split()
-    if not identity_data:
+    wd = HgWorkdir.from_potential_worktree(config.absolute_root)
+
+    if wd is None:
         return
-    node = identity_data.pop(0)
-    branch = identity_data.pop(0)
-    if "tip" in identity_data:
-        # tip is not a real tag
-        identity_data.remove("tip")
-    tags = tags_to_versions(identity_data)
-    dirty = node[-1] == "+"
-    if tags:
-        return meta(tags[0], dirty=dirty, branch=branch, config=config)
 
-    if node.strip("+") == "0" * 12:
-        trace("initial node", config.absolute_root)
-        return meta("0.0", config=config, dirty=dirty, branch=branch)
-
-    try:
-        tag = get_latest_normalizable_tag(config.absolute_root)
-        dist = get_graph_distance(config.absolute_root, tag)
-        if tag == "null":
-            tag = "0.0"
-            dist = int(dist) + 1
-        return _hg_tagdist_normalize_tagcommit(config, tag, dist, node, branch)
-    except ValueError:
-        pass  # unpacking failed, old hg
-
-
-def get_latest_normalizable_tag(root):
-    # Gets all tags containing a '.' (see #229) from oldest to newest
-    cmd = [
-        "hg",
-        "log",
-        "-r",
-        "ancestors(.) and tag('re:\\.')",
-        "--template",
-        "{tags}\n",
-    ]
-    outlines = do(cmd, root).split()
-    if not outlines:
-        return "null"
-    tag = outlines[-1].split()[-1]
-    return tag
-
-
-def get_graph_distance(root, rev1, rev2="."):
-    cmd = ["hg", "log", "-q", "-r", f"{rev1}::{rev2}"]
-    out = do(cmd, root)
-    return len(out.strip().splitlines()) - 1
+    return wd.get_meta(config)
 
 
 def archival_to_version(data, config=None):

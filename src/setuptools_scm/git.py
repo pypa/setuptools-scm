@@ -1,29 +1,24 @@
+from datetime import datetime, date
+import os
+from os.path import isfile, join, samefile
+import warnings
+
 from .config import Configuration
 from .utils import do_ex, trace, require_command
 from .version import meta
-from datetime import datetime, date
-import os
-from os.path import isfile, join
-import warnings
-
-
-from os.path import samefile
-
+from .scm_workdir import Workdir
 
 DEFAULT_DESCRIBE = "git describe --dirty --tags --long --match *[0-9]*"
 
 
-class GitWorkdir:
+class GitWorkdir(Workdir):
     """experimental, may change at any time"""
 
-    def __init__(self, path):
-        self.path = path
-
-    def do_ex(self, cmd):
-        return do_ex(cmd, cwd=self.path)
+    COMMAND = "git"
 
     @classmethod
     def from_potential_worktree(cls, wd):
+        require_command(cls.COMMAND)
         wd = os.path.abspath(wd)
         real_wd, _, ret = do_ex("git rev-parse --show-prefix", wd)
         real_wd = real_wd[:-1]  # remove the trailing pathsep
@@ -51,13 +46,16 @@ class GitWorkdir:
         branch, err, ret = self.do_ex("git rev-parse --abbrev-ref HEAD")
         if ret:
             trace("branch err", branch, err, ret)
-            return
+            branch, err, ret = self.do_ex("git symbolic-ref --short HEAD")
+            if ret:
+                trace("branch err (symbolic-ref)", branch, err, ret)
+                branch = None
         return branch
 
     def get_head_date(self):
         timestamp, err, ret = self.do_ex("git log -n 1 HEAD --format=%cI")
         if ret:
-            trace("branch err", timestamp, err, ret)
+            trace("timestamp err", timestamp, err, ret)
             return
         # TODO, when dropping python3.6 use fromiso
         date_part = timestamp.split("T")[0]
@@ -73,13 +71,16 @@ class GitWorkdir:
         self.do_ex("git fetch --unshallow")
 
     def node(self):
-        rev_node, _, ret = self.do_ex("git rev-parse --verify --quiet HEAD")
+        node, _, ret = self.do_ex("git rev-parse --verify --quiet HEAD")
         if not ret:
-            return rev_node[:7]
+            return node[:7]
 
     def count_all_nodes(self):
         revs, _, _ = self.do_ex("git rev-list HEAD")
         return revs.count("\n") + 1
+
+    def default_describe(self):
+        return self.do_ex(DEFAULT_DESCRIBE)
 
 
 def warn_on_shallow(wd):
@@ -91,7 +92,7 @@ def warn_on_shallow(wd):
 def fetch_on_shallow(wd):
     """experimental, may change at any time"""
     if wd.is_shallow():
-        warnings.warn('"%s" was shallow, git fetch was used to rectify')
+        warnings.warn(f'"{wd.path}" was shallow, git fetch was used to rectify')
         wd.fetch_shallow()
 
 
@@ -99,85 +100,62 @@ def fail_on_shallow(wd):
     """experimental, may change at any time"""
     if wd.is_shallow():
         raise ValueError(
-            "%r is shallow, please correct with " '"git fetch --unshallow"' % wd.path
+            f'{wd.path} is shallow, please correct with "git fetch --unshallow"'
         )
 
 
-def parse(
-    root, describe_command=DEFAULT_DESCRIBE, pre_parse=warn_on_shallow, config=None
-):
+def parse(root, describe_command=None, pre_parse=warn_on_shallow, config=None):
     """
     :param pre_parse: experimental pre_parse action, may change at any time
     """
     if not config:
         config = Configuration(root=root)
 
-    require_command("git")
-
     wd = GitWorkdir.from_potential_worktree(config.absolute_root)
+    if wd is None:
+        from .hg_git import GitWorkdirHgClient
+
+        wd = GitWorkdirHgClient.from_potential_worktree(config.absolute_root)
     if wd is None:
         return
     if pre_parse:
         pre_parse(wd)
 
-    if config.git_describe_command:
+    if config.git_describe_command is not None:
         describe_command = config.git_describe_command
 
-    out, unused_err, ret = wd.do_ex(describe_command)
-    node_date = wd.get_head_date() or date.today()
+    if describe_command is not None:
+        out, _, ret = wd.do_ex(describe_command)
+    else:
+        out, _, ret = wd.default_describe()
 
-    if ret:
+    if ret == 0:
+        tag, distance, node, dirty = _git_parse_describe(out)
+        if distance == 0 and not dirty:
+            distance = None
+    else:
         # If 'git git_describe_command' failed, try to get the information otherwise.
-        branch, branch_err, branch_ret = wd.do_ex("git symbolic-ref --short HEAD")
-
-        if branch_ret:
-            branch = None
-
-        rev_node = wd.node()
+        tag = "0.0"
+        node = wd.node()
+        if node is None:
+            distance = 0
+        else:
+            distance = wd.count_all_nodes()
+            node = "g" + node
         dirty = wd.is_dirty()
 
-        if rev_node is None:
-            return meta(
-                "0.0",
-                distance=0,
-                node_date=node_date,
-                dirty=dirty,
-                branch=branch,
-                config=config,
-            )
+    branch = wd.get_branch()
+    node_date = wd.get_head_date() or date.today()
 
-        return meta(
-            "0.0",
-            distance=wd.count_all_nodes(),
-            node="g" + rev_node,
-            dirty=dirty,
-            branch=wd.get_branch(),
-            node_date=node_date,
-            config=config,
-        )
-    else:
-        tag, number, node, dirty = _git_parse_describe(out)
-
-        branch = wd.get_branch()
-        if number:
-            return meta(
-                tag,
-                config=config,
-                distance=number,
-                node=node,
-                dirty=dirty,
-                branch=branch,
-                node_date=node_date,
-            )
-        else:
-            return meta(
-                tag,
-                config=config,
-                node=node,
-                node_date=node_date,
-                dirty=dirty,
-                branch=branch,
-            )
+    return meta(
+        tag,
+        branch=branch,
+        node=node,
+        node_date=node_date,
+        distance=distance,
+        dirty=dirty,
+        config=config,
+    )
 
 
 def _git_parse_describe(describe_output):

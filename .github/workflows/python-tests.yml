@@ -41,6 +41,12 @@ jobs:
       - run: pip install -U setuptools
         if: matrix.python_version != 'msys2'
       - run: pip install -e .[toml] pytest
+      # pip2 is needed because Mercurial uses python2 on Ubuntu 20.04
+      - run: |
+          curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
+          sudo python2 get-pip.py
+          $(hg debuginstall --template "{pythonexe}") -m pip install hg-git --user
+        if: matrix.os == 'ubuntu-latest'
       - run: pytest
 
   check_selfinstall:
