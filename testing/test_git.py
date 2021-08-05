@@ -52,6 +52,19 @@ setup(use_scm_version={"root": "../..",
     assert res == "0.1.dev0"
 
 
+def test_root_search_parent_directories(tmpdir, wd, monkeypatch):
+    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
+    p = wd.cwd.joinpath("sub/package")
+    p.mkdir(parents=True)
+    p.joinpath("setup.py").write_text(
+        """from setuptools import setup
+setup(use_scm_version={"search_parent_directories": True})
+"""
+    )
+    res = do((sys.executable, "setup.py", "--version"), p)
+    assert res == "0.1.dev0"
+
+
 def test_git_gone(wd, monkeypatch):
     monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
     with pytest.raises(EnvironmentError, match="'git' was not found"):

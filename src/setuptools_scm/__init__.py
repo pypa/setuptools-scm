@@ -67,7 +67,8 @@ def _version_from_entrypoints(config, fallback=False):
     else:
         entrypoint = "setuptools_scm.parse_scm"
         root = config.absolute_root
-    for ep in iter_matching_entrypoints(root, entrypoint):
+
+    for ep in iter_matching_entrypoints(root, entrypoint, config):
         version = _call_entrypoint_fn(root, config, ep.load())
 
         if version:
@@ -162,6 +163,7 @@ def get_version(
     dist_name=None,
     version_cls=None,
     normalize=True,
+    search_parent_directories=False,
 ):
     """
     If supplied, relative_to should be a file from which root may

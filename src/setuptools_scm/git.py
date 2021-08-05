@@ -104,6 +104,27 @@ def fail_on_shallow(wd):
         )
 
 
+def get_working_directory(config):
+    """
+    Return the working directory (``GitWorkdir``).
+    """
+
+    if config.parent:
+        return GitWorkdir.from_potential_worktree(config.parent)
+
+    if config.search_parent_directories:
+        return search_parent(config.absolute_root)
+
+    wd = GitWorkdir.from_potential_worktree(config.absolute_root)
+
+    if wd is not None:
+        return wd
+
+    from .hg_git import GitWorkdirHgClient
+
+    return GitWorkdirHgClient.from_potential_worktree(config.absolute_root)
+
+
 def parse(root, describe_command=None, pre_parse=warn_on_shallow, config=None):
     """
     :param pre_parse: experimental pre_parse action, may change at any time
@@ -111,13 +132,11 @@ def parse(root, describe_command=None, pre_parse=warn_on_shallow, config=None):
     if not config:
         config = Configuration(root=root)
 
-    wd = GitWorkdir.from_potential_worktree(config.absolute_root)
-    if wd is None:
-        from .hg_git import GitWorkdirHgClient
+    wd = get_working_directory(config)
 
-        wd = GitWorkdirHgClient.from_potential_worktree(config.absolute_root)
     if wd is None:
         return
+
     if pre_parse:
         pre_parse(wd)
 
@@ -171,3 +190,30 @@ def _git_parse_describe(describe_output):
     tag, number, node = describe_output.rsplit("-", 2)
     number = int(number)
     return tag, number, node, dirty
+
+
+def search_parent(dirname):
+    """
+    Walk up the path to find the `.git` directory.
+    :param dirname: Directory from which to start searching.
+    """
+
+    # Code based on:
+    # https://github.com/gitpython-developers/GitPython/blob/main/git/repo/base.py
+
+    curpath = os.path.abspath(dirname)
+
+    while curpath:
+
+        try:
+            wd = GitWorkdir.from_potential_worktree(curpath)
+        except Exception:
+            wd = None
+
+        if wd is not None:
+            return wd
+
+        curpath, tail = os.path.split(curpath)
+
+        if not tail:
+            return None

@@ -75,6 +75,7 @@ class Configuration:
         dist_name=None,
         version_cls=None,
         normalize=True,
+        search_parent_directories=False,
     ):
         # TODO:
         self._relative_to = relative_to
@@ -92,6 +93,8 @@ class Configuration:
         self.tag_regex = tag_regex
         self.git_describe_command = git_describe_command
         self.dist_name = dist_name
+        self.search_parent_directories = search_parent_directories
+        self.parent = None
 
         if not normalize:
             # `normalize = False` means `version_cls = NonNormalizedVersion`
