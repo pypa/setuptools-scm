@@ -2,9 +2,13 @@ import os
 from pathlib import Path
 
 from .config import Configuration
-from .utils import do_ex, trace, data_from_mime, require_command
-from .version import meta, tag_to_version
 from .scm_workdir import Workdir
+from .utils import data_from_mime
+from .utils import do_ex
+from .utils import require_command
+from .utils import trace
+from .version import meta
+from .version import tag_to_version
 
 
 class HgWorkdir(Workdir):

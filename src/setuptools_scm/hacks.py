@@ -1,6 +1,9 @@
 import os
-from .utils import data_from_mime, trace
-from .version import tag_to_version, meta
+
+from .utils import data_from_mime
+from .utils import trace
+from .version import meta
+from .version import tag_to_version
 
 
 def parse_pkginfo(root, config=None):

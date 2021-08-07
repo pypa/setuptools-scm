@@ -1,5 +1,7 @@
 import os
-from .utils import trace, iter_entry_points
+
+from .utils import iter_entry_points
+from .utils import trace
 
 
 def walk_potential_roots(root, search_parents=True):

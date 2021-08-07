@@ -1,9 +1,10 @@
 """
 integration tests that check setuptools version support
 """
-import sys
 import os
 import subprocess
+import sys
+
 import pytest
 
 

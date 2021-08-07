@@ -1,11 +1,13 @@
 import os
 import sys
+
 import py
 import pytest
 
 import setuptools_scm
 from setuptools_scm import dump_version
-from setuptools_scm.utils import data_from_mime, do
+from setuptools_scm.utils import data_from_mime
+from setuptools_scm.utils import do
 
 
 @pytest.mark.parametrize("cmd", ["ls", "dir"])

@@ -1,5 +1,6 @@
-import os
 import itertools
+import os
+
 import pytest
 
 # 2009-02-13T23:31:30+00:00

@@ -2,13 +2,13 @@
 utils
 """
 import inspect
-import warnings
-import sys
-import shlex
-import subprocess
 import os
 import platform
+import shlex
+import subprocess
+import sys
 import traceback
+import warnings
 
 
 DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))

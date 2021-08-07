@@ -1,15 +1,15 @@
-import pytest
 import pkg_resources
-from setuptools_scm import dump_version, get_version, PRETEND_KEY
-from setuptools_scm.version import (
-    guess_next_version,
-    meta,
-    format_version,
-    tag_to_version,
-)
+import pytest
 
+from setuptools_scm import dump_version
+from setuptools_scm import get_version
+from setuptools_scm import PRETEND_KEY
 from setuptools_scm.config import Configuration
 from setuptools_scm.utils import has_command
+from setuptools_scm.version import format_version
+from setuptools_scm.version import guess_next_version
+from setuptools_scm.version import meta
+from setuptools_scm.version import tag_to_version
 
 
 @pytest.mark.parametrize(
