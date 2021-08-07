@@ -115,14 +115,7 @@ def get_working_directory(config):
     if config.search_parent_directories:
         return search_parent(config.absolute_root)
 
-    wd = GitWorkdir.from_potential_worktree(config.absolute_root)
-
-    if wd is not None:
-        return wd
-
-    from .hg_git import GitWorkdirHgClient
-
-    return GitWorkdirHgClient.from_potential_worktree(config.absolute_root)
+    return GitWorkdir.from_potential_worktree(config.absolute_root)
 
 
 def parse(root, describe_command=None, pre_parse=warn_on_shallow, config=None):
@@ -133,10 +126,13 @@ def parse(root, describe_command=None, pre_parse=warn_on_shallow, config=None):
         config = Configuration(root=root)
 
     wd = get_working_directory(config)
+    if wd:
+        return _git_parse_inner(
+            config, wd, describe_command=describe_command, pre_parse=pre_parse
+        )
 
-    if wd is None:
-        return
 
+def _git_parse_inner(config, wd, pre_parse=None, describe_command=None):
     if pre_parse:
         pre_parse(wd)
 

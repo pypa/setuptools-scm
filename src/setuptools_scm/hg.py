@@ -16,7 +16,6 @@ class HgWorkdir(Workdir):
         require_command(cls.COMMAND)
         root, err, ret = do_ex("hg root", wd)
         if ret:
-            print(err)
             return
         return cls(root)
 
@@ -117,6 +116,9 @@ class HgWorkdir(Workdir):
 
 
 def parse(root, config=None):
+    if not config:
+        config = Configuration(root=root)
+
     if os.path.exists(os.path.join(root, ".hg/git")):
         paths, _, ret = do_ex("hg path", root)
         if not ret:
@@ -124,12 +126,12 @@ def parse(root, config=None):
                 if line.startswith("default ="):
                     path = Path(line.split()[2])
                     if path.name.endswith(".git") or (path / ".git").exists():
-                        from .git import parse as git_parse
+                        from .git import _git_parse_inner
+                        from .hg_git import GitWorkdirHgClient
 
-                        return git_parse(root, config=config)
-
-    if not config:
-        config = Configuration(root=root)
+                        wd = GitWorkdirHgClient.from_potential_worktree(root)
+                        if wd:
+                            return _git_parse_inner(config, wd)
 
     wd = HgWorkdir.from_potential_worktree(config.absolute_root)
 

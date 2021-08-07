@@ -14,7 +14,6 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         require_command(cls.COMMAND)
         root, err, ret = do_ex("hg root", wd)
         if ret:
-            print(err)
             return
         return cls(root)
 
