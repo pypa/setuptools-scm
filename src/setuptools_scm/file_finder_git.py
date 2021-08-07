@@ -1,9 +1,10 @@
+import logging
 import os
 import subprocess
 import tarfile
-import logging
-from .file_finder import scm_find_files
+
 from .file_finder import is_toplevel_acceptable
+from .file_finder import scm_find_files
 from .utils import trace
 
 log = logging.getLogger(__name__)

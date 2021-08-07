@@ -1,11 +1,12 @@
-import sys
 import os
+import sys
 import textwrap
 
 import pytest
 
+from setuptools_scm import PRETEND_KEY
+from setuptools_scm import PRETEND_KEY_NAMED
 from setuptools_scm.utils import do
-from setuptools_scm import PRETEND_KEY, PRETEND_KEY_NAMED
 
 
 @pytest.fixture

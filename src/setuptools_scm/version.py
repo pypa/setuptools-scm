@@ -1,11 +1,13 @@
 import datetime
-import warnings
+import os
 import re
 import time
-import os
+import warnings
 
-from .config import Configuration, Version as PkgVersion
-from .utils import trace, iter_entry_points
+from .config import Configuration
+from .config import Version as PkgVersion
+from .utils import iter_entry_points
+from .utils import trace
 
 
 SEMVER_MINOR = 2

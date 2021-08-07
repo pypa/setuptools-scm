@@ -1,7 +1,9 @@
-from setuptools_scm.config import Configuration
 import re
 import textwrap
+
 import pytest
+
+from setuptools_scm.config import Configuration
 
 
 @pytest.mark.parametrize(

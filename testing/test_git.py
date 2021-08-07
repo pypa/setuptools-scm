@@ -1,13 +1,19 @@
-import sys
 import os
+import sys
+from datetime import date
+from datetime import datetime
 from os.path import join as opj
-import pytest
-from datetime import datetime, date
-from unittest.mock import patch, Mock
+from unittest.mock import Mock
+from unittest.mock import patch
 
-from setuptools_scm import integration, git, NonNormalizedVersion
-from setuptools_scm.utils import do, has_command
+import pytest
+
+from setuptools_scm import git
+from setuptools_scm import integration
+from setuptools_scm import NonNormalizedVersion
 from setuptools_scm.file_finder_git import git_find_files
+from setuptools_scm.utils import do
+from setuptools_scm.utils import has_command
 
 
 pytestmark = pytest.mark.skipif(

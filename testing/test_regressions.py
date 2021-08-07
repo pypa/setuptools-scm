@@ -1,11 +1,12 @@
-import sys
 import subprocess
+import sys
+
+import pytest
 
 from setuptools_scm import get_version
 from setuptools_scm.git import parse
-from setuptools_scm.utils import do_ex, do
-
-import pytest
+from setuptools_scm.utils import do
+from setuptools_scm.utils import do_ex
 
 
 def test_pkginfo_noscmroot(tmpdir, monkeypatch):

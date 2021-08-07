@@ -1,4 +1,6 @@
-from .utils import do_ex, do, require_command
+from .utils import do
+from .utils import do_ex
+from .utils import require_command
 
 
 class Workdir:

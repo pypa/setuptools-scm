@@ -1,17 +1,17 @@
-from datetime import date, timedelta
+from datetime import date
+from datetime import timedelta
 
 import pytest
+
 from setuptools_scm.config import Configuration
-from setuptools_scm.version import (
-    meta,
-    simplified_semver_version,
-    release_branch_semver_version,
-    tags_to_versions,
-    no_guess_dev_version,
-    guess_next_version,
-    format_version,
-    calver_by_date,
-)
+from setuptools_scm.version import calver_by_date
+from setuptools_scm.version import format_version
+from setuptools_scm.version import guess_next_version
+from setuptools_scm.version import meta
+from setuptools_scm.version import no_guess_dev_version
+from setuptools_scm.version import release_branch_semver_version
+from setuptools_scm.version import simplified_semver_version
+from setuptools_scm.version import tags_to_versions
 
 
 c = Configuration()

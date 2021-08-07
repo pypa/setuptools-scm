@@ -1,5 +1,7 @@
 import pytest
-from setuptools_scm.utils import has_command, do_ex
+
+from setuptools_scm.utils import do_ex
+from setuptools_scm.utils import has_command
 
 python_hg, err, ret = do_ex("hg debuginstall --template {pythonexe}")
 

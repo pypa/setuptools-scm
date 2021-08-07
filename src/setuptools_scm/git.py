@@ -1,12 +1,17 @@
-from datetime import datetime, date
 import os
-from os.path import isfile, join, samefile
 import warnings
+from datetime import date
+from datetime import datetime
+from os.path import isfile
+from os.path import join
+from os.path import samefile
 
 from .config import Configuration
-from .utils import do_ex, trace, require_command
-from .version import meta
 from .scm_workdir import Workdir
+from .utils import do_ex
+from .utils import require_command
+from .utils import trace
+from .version import meta
 
 DEFAULT_DESCRIBE = "git describe --dirty --tags --long --match *[0-9]*"
 

@@ -1,9 +1,10 @@
 import sys
+
 from setuptools_scm import get_version
 from setuptools_scm.integration import find_files
 
 
-def main():
+def main() -> None:
     print("Guessed Version", get_version())
     if "ls" in sys.argv:
         for fname in find_files("."):

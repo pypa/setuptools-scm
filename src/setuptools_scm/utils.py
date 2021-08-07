@@ -2,14 +2,14 @@
 utils
 """
 import inspect
-import warnings
-import sys
-import shlex
-import subprocess
 import os
 import platform
+import shlex
+import subprocess
+import sys
 import traceback
-
+import warnings
+from typing import Optional
 
 DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
 IS_WINDOWS = platform.system() == "Windows"
@@ -36,14 +36,15 @@ def no_git_env(env):
     }
 
 
-def trace(*k):
+def trace(*k) -> None:
     if DEBUG:
         print(*k)
         sys.stdout.flush()
 
 
-def trace_exception():
-    DEBUG and traceback.print_exc()
+def trace_exception() -> None:
+    if DEBUG:
+        traceback.print_exc()
 
 
 def ensure_stripped_str(str_or_bytes):
@@ -144,12 +145,12 @@ def require_command(name):
 
 
 try:
-    from importlib.metadata import entry_points
+    from importlib.metadata import entry_points  # type: ignore
 except ImportError:
     from pkg_resources import iter_entry_points
 else:
 
-    def iter_entry_points(group, name=None):
+    def iter_entry_points(group: str, name: Optional[str] = None):
         eps = entry_points()[group]
         if name is None:
             return iter(eps)
