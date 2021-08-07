@@ -8,7 +8,7 @@ try:
 except ImportError:
     import pkg_resources
 
-    Version = pkg_resources.packaging.version.Version
+    Version = pkg_resources.packaging.version.Version  # type: ignore
 
 
 from .utils import trace
