@@ -1,6 +1,6 @@
 import os
 
-from .utils import trace
+from setuptools_scm._trace import trace
 
 
 def scm_find_files(path, scm_files, scm_dirs):

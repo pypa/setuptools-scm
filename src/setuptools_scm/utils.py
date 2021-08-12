@@ -1,23 +1,31 @@
-"""
-utils
-"""
 import inspect
 import os
 import platform
 import shlex
 import subprocess
-import sys
-import traceback
 import warnings
+from typing import cast
+from typing import Mapping
 from typing import Optional
+from typing import Sequence
+from typing import TYPE_CHECKING
+from typing import Union
 
 from ._trace import DEBUG
 from ._trace import trace
 
 IS_WINDOWS = platform.system() == "Windows"
 
+if TYPE_CHECKING:
+    CompletedProcess = subprocess.CompletedProcess[str]
+else:
+    try:
+        CompletedProcess = subprocess.CompletedProcess[str]
+    except TypeError:
+        CompletedProcess = subprocess.CompletedProcess
 
-def no_git_env(env):
+
+def no_git_env(env) -> Mapping[str, str]:
     # adapted from pre-commit
     # Too many bugs dealing with environment variables and GIT:
     # https://github.com/pre-commit/pre-commit/issues/300
@@ -36,75 +44,59 @@ def no_git_env(env):
     }
 
 
-def trace(*k) -> None:
-    if DEBUG:
-        print(*k)
-        sys.stdout.flush()
-
-
-def trace_exception() -> None:
-    if DEBUG:
-        traceback.print_exc()
-
-
-def ensure_stripped_str(str_or_bytes):
-    if isinstance(str_or_bytes, str):
-        return str_or_bytes.strip()
-    else:
-        return str_or_bytes.decode("utf-8", "surrogateescape").strip()
-
-
-def _always_strings(env_dict):
-    """
-    On Windows and Python 2, environment dictionaries must be strings
-    and not unicode.
-    """
-    if IS_WINDOWS:
-        env_dict.update((key, str(value)) for (key, value) in env_dict.items())
-    return env_dict
-
-
-def _popen_pipes(cmd, cwd):
-    return subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        cwd=str(cwd),
-        env=_always_strings(
-            dict(
-                no_git_env(os.environ),
-                # os.environ,
-                # try to disable i18n
-                LC_ALL="C",
-                LANGUAGE="",
-                HGPLAIN="1",
-            )
-        ),
+def run(
+    cmd: Union[str, Sequence[str]],
+    cwd: str = ".",
+    strip_output: bool = True,
+    show_error: bool = False,
+) -> CompletedProcess:
+    trace("cmd", cmd, cwd=cwd)
+    if os.name == "posix" and isinstance(cmd, str):
+        cmd = shlex.split(cmd)
+    env: Mapping[str, str] = dict(
+        no_git_env(os.environ),
+        # os.environ,
+        # try to disable i18n
+        LC_ALL="C",
+        LANGUAGE="",
+        HGPLAIN="1",
     )
+
+    res = subprocess.run(
+        cmd,
+        stderr=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        cwd=cwd,
+        encoding="utf-8",
+        errors="surrogate-escape",
+        env=env,
+    )  # type: ignore
+
+    if strip_output:
+        if res.stdout:
+            res.stdout = res.stdout.strip()
+        if res.stderr:
+            res.stderr = res.stderr.strip()
+    trace(
+        "results",
+        returncode=res.returncode,
+        stdout=res.stdout,
+        stderr=res.stderr,
+        indent=2,
+    )
+    if res.returncode and not DEBUG and show_error:
+        print(res.stderr)
+    return cast(CompletedProcess, res)
 
 
 def do_ex(cmd, cwd="."):
-    trace("cmd", repr(cmd))
-    trace(" in", cwd)
-    if os.name == "posix" and not isinstance(cmd, (list, tuple)):
-        cmd = shlex.split(cmd)
 
-    p = _popen_pipes(cmd, cwd)
-    out, err = p.communicate()
-    if out:
-        trace("out", repr(out))
-    if err:
-        trace("err", repr(err))
-    if p.returncode:
-        trace("ret", p.returncode)
-    return ensure_stripped_str(out), ensure_stripped_str(err), p.returncode
+    p = run(cmd, cwd, show_error=False)
+    return p.stdout, p.stderr, p.returncode
 
 
 def do(cmd, cwd="."):
-    out, err, ret = do_ex(cmd, cwd)
-    if ret:
-        print(err)
-    return out
+    return run(cmd, cwd).stdout
 
 
 def data_from_mime(path):
@@ -127,12 +119,15 @@ def function_has_arg(fn, argname):
 
 def has_command(name, warn=True):
     try:
-        p = _popen_pipes([name, "help"], ".")
+        p = subprocess.run(
+            [name, "help"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True,
+        )
     except OSError:
-        trace(*sys.exc_info())
         res = False
     else:
-        p.communicate()
         res = not p.returncode
     if not res and warn:
         warnings.warn("%r was not found" % name, category=RuntimeWarning)

@@ -1,7 +1,7 @@
 import os
 
+from ._trace import trace
 from .utils import iter_entry_points
-from .utils import trace
 
 
 def walk_potential_roots(root, search_parents=True):
@@ -33,12 +33,12 @@ def match_entrypoint(root, name):
     if os.path.exists(os.path.join(root, name)):
         if not os.path.isabs(name):
             return True
-        trace("ignoring bad ep", name)
+        trace("ignoring bad ep", name=name, indent=2)
 
     return False
 
 
-def iter_matching_entrypoints(root, entrypoint, config):
+def iter_matching_entrypoints(path, entrypoint, config):
     """
     Consider different entry-points in ``root`` and optionally its parents.
     :param root: File path.
@@ -47,11 +47,11 @@ def iter_matching_entrypoints(root, entrypoint, config):
         read ``search_parent_directories``, write found parent to ``parent``.
     """
 
-    trace("looking for ep", entrypoint, root)
+    trace("looking for ep", entrypoint=entrypoint, path=path)
 
-    for wd in walk_potential_roots(root, config.search_parent_directories):
+    for wd in walk_potential_roots(path, config.search_parent_directories):
         for ep in iter_entry_points(entrypoint):
             if match_entrypoint(wd, ep.name):
-                trace("found ep", ep, "in", wd)
+                trace("found ep", ep=ep, wd=wd)
                 config.parent = wd
                 yield ep

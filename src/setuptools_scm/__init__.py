@@ -6,9 +6,10 @@ import os
 import warnings
 
 try:
-    from packaging.version import parse
+    from packaging.version import parse as _parse_version
 except ImportError:
-    from pkg_resources import parse_version as parse
+    from pkg_resources import parse_version as _parse_version
+
 from ._trace import trace as _trace
 
 from .config import (
@@ -91,7 +92,7 @@ def dump_version(root, version, write_to, template=None):
             )
         )
 
-    parsed_version = parse(version)
+    parsed_version = _parse_version(version)
     version_fields = parsed_version.release
     if parsed_version.dev is not None:
         version_fields += (f"dev{parsed_version.dev}",)
@@ -206,10 +207,4 @@ __all__ = [
     "DEFAULT_VERSION_SCHEME",
     "DEFAULT_LOCAL_SCHEME",
     "DEFAULT_TAG_REGEX",
-    # TODO: are the symbols below part of public API ?
-    "function_has_arg",
-    "trace",
-    "format_version",
-    "meta",
-    "iter_matching_entrypoints",
 ]
