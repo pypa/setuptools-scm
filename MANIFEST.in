@@ -7,3 +7,4 @@ include *.rst
 include LICENSE
 include *.toml
 recursive-include testing *.bash
+include mypy.ini
