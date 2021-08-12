@@ -1,12 +1,12 @@
 import os
 from pathlib import Path
 
+from ._trace import trace
 from .config import Configuration
 from .scm_workdir import Workdir
 from .utils import data_from_mime
 from .utils import do_ex
 from .utils import require_command
-from .utils import trace
 from .version import meta
 from .version import tag_to_version
 

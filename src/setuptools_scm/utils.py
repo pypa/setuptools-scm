@@ -11,7 +11,9 @@ import traceback
 import warnings
 from typing import Optional
 
-DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
+from ._trace import DEBUG
+from ._trace import trace
+
 IS_WINDOWS = platform.system() == "Windows"
 
 
@@ -25,9 +27,7 @@ def no_git_env(env):
     # while running pre-commit hooks in submodules.
     # GIT_DIR: Causes git clone to clone wrong thing
     # GIT_INDEX_FILE: Causes 'error invalid object ...' during commit
-    for k, v in env.items():
-        if k.startswith("GIT_"):
-            trace(k, v)
+    trace("git vars", {k: v for k, v in env.items() if k.startswith("GIT_")})
     return {
         k: v
         for k, v in env.items()
@@ -110,7 +110,7 @@ def do(cmd, cwd="."):
 def data_from_mime(path):
     with open(path, encoding="utf-8") as fp:
         content = fp.read()
-    trace("content", repr(content))
+    trace("content", content)
     # the complex conditions come from reading pseudo-mime-messages
     data = dict(x.split(": ", 1) for x in content.splitlines() if ": " in x)
     trace("data", data)

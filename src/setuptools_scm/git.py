@@ -6,11 +6,11 @@ from os.path import isfile
 from os.path import join
 from os.path import samefile
 
+from ._trace import trace
 from .config import Configuration
 from .scm_workdir import Workdir
 from .utils import do_ex
 from .utils import require_command
-from .utils import trace
 from .version import meta
 
 DEFAULT_DESCRIBE = "git describe --dirty --tags --long --match *[0-9]*"
@@ -50,17 +50,17 @@ class GitWorkdir(Workdir):
     def get_branch(self):
         branch, err, ret = self.do_ex("git rev-parse --abbrev-ref HEAD")
         if ret:
-            trace("branch err", branch, err, ret)
+            trace("branch err", branch=branch, err=err, ret=ret)
             branch, err, ret = self.do_ex("git symbolic-ref --short HEAD")
             if ret:
-                trace("branch err (symbolic-ref)", branch, err, ret)
+                trace("branch err (symbolic-ref)", branch=branch, err=err, ret=ret)
                 branch = None
         return branch
 
     def get_head_date(self):
         timestamp, err, ret = self.do_ex("git log -n 1 HEAD --format=%cI")
         if ret:
-            trace("timestamp err", timestamp, err, ret)
+            trace("timestamp err", timestamp=timestamp, err=err, ret=ret)
             return
         # TODO, when dropping python3.6 use fromiso
         date_part = timestamp.split("T")[0]

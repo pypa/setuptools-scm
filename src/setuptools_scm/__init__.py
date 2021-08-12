@@ -9,6 +9,7 @@ try:
     from packaging.version import parse
 except ImportError:
     from pkg_resources import parse_version as parse
+from ._trace import trace as _trace
 
 from .config import (
     Configuration,
@@ -17,7 +18,7 @@ from .config import (
     DEFAULT_TAG_REGEX,
     NonNormalizedVersion,
 )
-from .utils import function_has_arg, trace
+from .utils import function_has_arg as function_has_arg
 from .version import format_version, meta
 from .discover import iter_matching_entrypoints
 
@@ -102,18 +103,18 @@ def dump_version(root, version, write_to, template=None):
 
 
 def _do_parse(config):
-
-    trace("dist name:", config.dist_name)
+    _trace("dist", name=config.dist_name)
     if config.dist_name is not None:
-        pretended = os.environ.get(
-            PRETEND_KEY_NAMED.format(name=config.dist_name.upper())
-        )
+        key = PRETEND_KEY_NAMED.format(name=config.dist_name.upper())
+
+        pretended = os.environ.get(key)
+        _trace("pretend key", name=key, pretended=pretended, indent=1)
     else:
         pretended = None
 
     if pretended is None:
         pretended = os.environ.get(PRETEND_KEY)
-
+        _trace("pretend key", name=PRETEND_KEY, pretended=pretended, indent=1)
     if pretended:
         # we use meta here since the pretended version
         # must adhere to the pep to begin with

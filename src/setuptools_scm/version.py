@@ -4,11 +4,10 @@ import re
 import time
 import warnings
 
+from ._trace import trace
 from .config import Configuration
 from .config import Version as PkgVersion
 from .utils import iter_entry_points
-from .utils import trace
-
 
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3
@@ -32,12 +31,12 @@ def _parse_version_tag(tag, config):
             "suffix": match.group(0)[match.end(key) :],
         }
 
-    trace(f"tag '{tag}' parsed to {result}")
+    trace("tag", tag, parsed_to=result)
     return result
 
 
 def callable_or_entrypoint(group, callable_or_name):
-    trace("ep", (group, callable_or_name))
+    trace("ep", group=group, can=callable_or_name)
 
     if callable(callable_or_name):
         return callable_or_name
@@ -73,7 +72,7 @@ def tag_to_version(tag, config=None):
         )
 
     version = config.version_cls(version)
-    trace("version", repr(version))
+    trace("version", version)
 
     return version
 
@@ -184,7 +183,7 @@ def meta(
             " will use defaults where required."
         )
     parsed_version = _parse_tag(tag, preformatted, config)
-    trace("version", tag, "->", parsed_version)
+    trace("version", tag=tag, parsed=parsed_version)
     assert parsed_version is not None, "Can't parse version %s" % tag
     return ScmVersion(
         parsed_version, distance, node, dirty, preformatted, branch, config, **kw

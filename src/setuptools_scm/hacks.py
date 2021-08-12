@@ -1,7 +1,7 @@
 import os
 
+from ._trace import trace
 from .utils import data_from_mime
-from .utils import trace
 from .version import meta
 from .version import tag_to_version
 
@@ -21,7 +21,7 @@ def parse_pip_egg_info(root, config=None):
     if not os.path.isdir(pipdir):
         return
     items = os.listdir(pipdir)
-    trace("pip-egg-info", pipdir, items)
+    trace("pip-egg-info", pipdir=pipdir, items=items)
     if not items:
         return
     return parse_pkginfo(os.path.join(pipdir, items[0]), config=config)

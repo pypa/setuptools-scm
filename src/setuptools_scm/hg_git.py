@@ -1,11 +1,11 @@
 import os
 from datetime import datetime
 
+from ._trace import trace
 from .git import GitWorkdir
 from .hg import HgWorkdir
 from .utils import do_ex
 from .utils import require_command
-from .utils import trace
 
 
 class GitWorkdirHgClient(GitWorkdir, HgWorkdir):

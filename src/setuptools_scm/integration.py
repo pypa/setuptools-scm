@@ -1,9 +1,9 @@
 from . import _get_version
 from . import Configuration
+from ._trace import trace
+from ._trace import trace_exception
 from .utils import do
 from .utils import iter_entry_points
-from .utils import trace
-from .utils import trace_exception
 
 
 def version_keyword(dist, keyword, value):
