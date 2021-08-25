@@ -33,7 +33,7 @@ def _check_tag_regex(value):
 
 
 def _check_absolute_root(root, relative_to):
-    trace("paths", root=root, relative_to=relative_to)
+    trace("checking root paths", root=root, relative_to=relative_to)
     if relative_to:
         if os.path.isabs(root) and not root.startswith(relative_to):
             warnings.warn(
@@ -170,7 +170,7 @@ class Configuration:
         with open(name, encoding="UTF-8") as strm:
             defn = __import__("toml").load(strm)
         section = defn.get("tool", {})["setuptools_scm"]
-        trace("configfile input", section)
+        trace("load configfile", path=name, data=section)
         return cls(dist_name=dist_name, **section)
 
 

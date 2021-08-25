@@ -35,7 +35,7 @@ def no_git_env(env) -> Mapping[str, str]:
     # while running pre-commit hooks in submodules.
     # GIT_DIR: Causes git clone to clone wrong thing
     # GIT_INDEX_FILE: Causes 'error invalid object ...' during commit
-    trace("git vars", {k: v for k, v in env.items() if k.startswith("GIT_")})
+    trace("git vars filtered", {k: v for k, v in env.items() if k.startswith("GIT_")})
     return {
         k: v
         for k, v in env.items()
@@ -50,7 +50,7 @@ def run(
     strip_output: bool = True,
     show_error: bool = False,
 ) -> CompletedProcess:
-    trace("cmd", cmd, cwd=cwd)
+    trace("run shell command", cmd, cwd=cwd)
     if os.name == "posix" and isinstance(cmd, str):
         cmd = shlex.split(cmd)
     env: Mapping[str, str] = dict(
@@ -90,7 +90,6 @@ def run(
 
 
 def do_ex(cmd, cwd="."):
-
     p = run(cmd, cwd, show_error=False)
     return p.stdout, p.stderr, p.returncode
 
