@@ -1,6 +1,7 @@
 In progress
 ===========
 
+* fix #587: don't fail file finders when distribution is not given
 * fix #524: new parameters ``normalize`` and ``version_cls`` to customize the version normalization class.
 * fix #585: switch from toml to tomli
 

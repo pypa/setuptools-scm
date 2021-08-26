@@ -3,6 +3,7 @@ import subprocess
 
 from .file_finder import is_toplevel_acceptable
 from .file_finder import scm_find_files
+from .utils import do_ex
 
 
 def _hg_toplevel(path):
@@ -26,9 +27,9 @@ def _hg_toplevel(path):
 def _hg_ls_files_and_dirs(toplevel):
     hg_files = set()
     hg_dirs = {toplevel}
-    out = subprocess.check_output(
-        ["hg", "files"], cwd=toplevel, universal_newlines=True
-    )
+    out, err, ret = do_ex(["hg", "files"], cwd=toplevel)
+    if ret:
+        (), ()
     for name in out.splitlines():
         name = os.path.normcase(name).replace("/", os.path.sep)
         fullname = os.path.join(toplevel, name)
