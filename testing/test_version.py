@@ -208,7 +208,7 @@ def date_to_str(date_=None, days_offset=0, fmt="{dt:%y}.{dt.month}.{dt.day}"):
             meta(date_to_str() + ".1", config=c), date_to_str() + ".1", id="exact patch"
         ),
         pytest.param(
-            meta(date_to_str(fmt="20.01.02"), config=c),
+            meta("20.01.02", config=c),
             "20.1.2",
             id="leading 0s",
         ),
@@ -255,6 +255,19 @@ def date_to_str(date_=None, days_offset=0, fmt="{dt:%y}.{dt.month}.{dt.day}"):
             ),
             date_to_str(date.today() - timedelta(days=2)) + ".3.dev2",
             id="node date distance",
+        ),
+        pytest.param(
+            meta(
+                "1.2.0",
+                config=c,
+                distance=2,
+                node_date=date.today() - timedelta(days=2),
+            ),
+            date_to_str(days_offset=2) + ".0.dev2",
+            marks=pytest.mark.filterwarnings(
+                "ignore:.*not correspond to a valid versioning date.*:UserWarning"
+            ),
+            id="using on old version tag",
         ),
     ],
 )
