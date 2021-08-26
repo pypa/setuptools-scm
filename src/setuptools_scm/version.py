@@ -323,21 +323,27 @@ def guess_next_date_ver(version, node_date=None, date_fmt=None, version_cls=None
     """
     match = date_ver_match(version)
     if match is None:
-        raise ValueError(
-            "{version} does not correspond to a valid versioning date, "
-            "please correct or use a custom version scheme".format(version=version)
+        warnings.warn(
+            f"{version} does not correspond to a valid versioning date, "
+            "assuming legacy version"
         )
+        if date_fmt is None:
+            date_fmt = "%y.%m.%d"
+
     # deduct date format if not provided
     if date_fmt is None:
         date_fmt = "%Y.%m.%d" if len(match.group("year")) == 4 else "%y.%m.%d"
     head_date = node_date or datetime.date.today()
     # compute patch
-    tag_date = datetime.datetime.strptime(match.group("date"), date_fmt).date()
+    if match is None:
+        tag_date = datetime.date.today()
+    else:
+        tag_date = datetime.datetime.strptime(match.group("date"), date_fmt).date()
     if tag_date == head_date:
-        patch = match.group("patch") or "0"
+        patch = "0" if match is None else (match.group("patch") or "0")
         patch = int(patch) + 1
     else:
-        if tag_date > head_date:
+        if tag_date > head_date and match is not None:
             # warn on future times
             warnings.warn(
                 "your previous tag  ({}) is ahead your node date ({})".format(
