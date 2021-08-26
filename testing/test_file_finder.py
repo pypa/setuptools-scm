@@ -31,7 +31,8 @@ def inwd(request, wd, monkeypatch):
     bdir = wd.cwd / "bdir"
     bdir.mkdir()
     (bdir / "fileb").touch()
-    wd.add_and_commit()
+    if request.node.get_closest_marker("skip_commit") is None:
+        wd.add_and_commit()
     monkeypatch.chdir(wd.cwd)
     yield wd
 
@@ -184,3 +185,9 @@ def test_symlink_not_in_scm_while_target_is(inwd):
             "data/datafile",
         }
     )
+
+
+@pytest.mark.issue(587)
+@pytest.mark.skip_commit
+def test_not_commited(inwd):
+    assert find_files() == []
