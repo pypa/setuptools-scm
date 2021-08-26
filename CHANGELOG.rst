@@ -1,9 +1,9 @@
-In progress
-===========
+v6.1.0
+======
 
 * fix #587: don't fail file finders when distribution is not given
 * fix #524: new parameters ``normalize`` and ``version_cls`` to customize the version normalization class.
-* fix #585: switch from toml to tomli
+* fix #585: switch from toml to tomli for toml 1.0 support
 * fix #591: allow to opt in for searching parent directories in the api
 * fix #589: handle yaml encoding using the expected defaults
 * fix #575: recommend storing the version_module inside of ``mypkg/_version.py``
@@ -12,7 +12,7 @@ In progress
 * fix #544: enhance errors on unsupported python/setuptools versions
 
 v6.0.1
-=======
+======
 
 *  fix #537: drop node_date on old git to avoid errors on missing %cI
 
