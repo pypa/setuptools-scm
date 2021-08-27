@@ -3,6 +3,8 @@ v6.1.1
 
 * fix #605: completely disallow bdist_egg - modern enough setuptools>=45 uses pip
 * fix #606: re-integrate and harden toml parsing
+* fix #597: harden and expand support for figuring the current distribution name from
+  `pyproject.toml` (`project.name` or `tool.setuptools_scm.dist_name`) section or `setup.cfg` (`metadata.name`)
 
 v6.1.0
 ======

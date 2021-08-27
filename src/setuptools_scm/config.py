@@ -192,9 +192,23 @@ class Configuration:
                 f"{name} does not contain a tool.setuptools_scm section"
             ) from None
         if "dist_name" in section:
-            assert dist_name is None or dist_name == section["dist_name"]
-            del section["dist_name"]
-        # todo: investigate getting dist_name from
+            if dist_name is None:
+                dist_name = section.pop("dist_name")
+            else:
+                assert dist_name == section["dist_name"]
+                del section["dist_name"]
+        if dist_name is None:
+            if "project" in defn:
+                # minimal pep 621 support for figuring the pretend keys
+                dist_name = defn["project"].get("name")
+        if dist_name is None:
+            # minimal effort to read dist_name off setup.cfg metadata
+            import configparser
+
+            parser = configparser.SafeConfigParser()
+            parser.read(["setup.cfg"])
+            dist_name = parser.get("metadata", "name", fallback=None)
+
         return cls(dist_name=dist_name, **section)
 
 
