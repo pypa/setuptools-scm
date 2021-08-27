@@ -1,3 +1,10 @@
+v6.2.0
+=======
+
+* fix #608: resolve tomli dependency issue by making it a hard dependency
+  as all intended/supported install options use pip/wheel this is only a feature release
+* ensure python 3.10 works
+
 v6.1.1
 =======
 
