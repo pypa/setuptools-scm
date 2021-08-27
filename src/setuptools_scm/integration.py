@@ -1,12 +1,15 @@
+import warnings
+
+import setuptools
+
 from . import _get_version
 from . import Configuration
 from .utils import do
 from .utils import iter_entry_points
 from .utils import trace
-from .utils import trace_exception
 
 
-def version_keyword(dist, keyword, value):
+def version_keyword(dist: setuptools.Distribution, keyword, value):
     if not value:
         return
     if value is True:
@@ -39,17 +42,7 @@ def find_files(path=""):
     return []
 
 
-def _args_from_toml(name="pyproject.toml"):
-    # todo: more sensible config initialization
-    # move this helper back to config and unify it with the code from get_config
-    import tomli
-
-    with open(name, encoding="UTF-8") as strm:
-        defn = tomli.load(strm)
-    return defn.get("tool", {})["setuptools_scm"]
-
-
-def infer_version(dist):
+def infer_version(dist: setuptools.Distribution):
     trace(
         "finalize hook",
         vars(dist.metadata),
@@ -57,6 +50,7 @@ def infer_version(dist):
     dist_name = dist.metadata.name
     try:
         config = Configuration.from_file(dist_name=dist_name)
-    except Exception:
-        return trace_exception()
-    dist.metadata.version = _get_version(config)
+    except FileNotFoundError as e:
+        warnings.warn(str(e))
+    else:
+        dist.metadata.version = _get_version(config)

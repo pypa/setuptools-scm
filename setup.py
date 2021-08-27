@@ -28,13 +28,8 @@ def scm_config():
     has_entrypoints = os.path.isdir(egg_info)
     import pkg_resources
 
-    pkg_resources.require("setuptools>=45")
-
     sys.path.insert(0, src)
     pkg_resources.working_set.add_entry(src)
-    # FIXME: remove debug
-    print(src)
-    print(pkg_resources.working_set)
 
     from setuptools_scm.hacks import parse_pkginfo
     from setuptools_scm.git import parse as parse_git
@@ -50,13 +45,22 @@ def scm_config():
         version_scheme=guess_next_dev_version, local_scheme=get_local_node_and_date
     )
 
+    from setuptools.command.bdist_egg import bdist_egg as original_bdist_egg
+
+    class bdist_egg(original_bdist_egg):
+        def run(self):
+            raise SystemExit("bdist_egg is forbidden, please update to setuptools>=45")
+
     if has_entrypoints:
-        return dict(use_scm_version=config)
+        return dict(use_scm_version=config, cmdclass={"bdist_egg": bdist_egg})
     else:
         from setuptools_scm import get_version
 
-        return dict(version=get_version(root=here, parse=parse, **config))
+        return dict(
+            version=get_version(root=here, parse=parse, **config),
+            cmdclass={"bdist_egg": bdist_egg},
+        )
 
 
 if __name__ == "__main__":
-    setuptools.setup(**scm_config())
+    setuptools.setup(setup_requires=["setuptools>=45", "tomli"], **scm_config())

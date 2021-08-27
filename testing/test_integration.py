@@ -40,30 +40,64 @@ def test_pyproject_support(tmpdir, monkeypatch):
     assert res == "12.34"
 
 
-def test_pyproject_support_with_git(tmpdir, monkeypatch, wd):
-    pytest.importorskip("toml")
-    pkg = tmpdir.join("wd")
-    pkg.join("pyproject.toml").write("""[tool.setuptools_scm]""")
-    pkg.join("setup.py").write(
-        "__import__('setuptools').setup(name='setuptools_scm_example')"
-    )
-    res = do((sys.executable, "setup.py", "--version"), pkg)
+PYPROJECT_FILES = {
+    "setup.py": "[tool.setuptools_scm]",
+    "setup.cfg": "[tool.setuptools_scm]",
+    "pyproject tool.setuptools_scm": (
+        "[tool.setuptools_scm]\ndist_name='setuptools_scm_example'"
+    ),
+    "pyproject.project": (
+        "[project]\nname='setuptools_scm_example'\n[tool.setuptools_scm]"
+    ),
+}
+
+SETUP_PY_PLAIN = "__import__('setuptools').setup()"
+SETUP_PY_WITH_NAME = "__import__('setuptools').setup(name='setuptools_scm_example')"
+
+SETUP_PY_FILES = {
+    "setup.py": SETUP_PY_WITH_NAME,
+    "setup.cfg": SETUP_PY_PLAIN,
+    "pyproject tool.setuptools_scm": SETUP_PY_PLAIN,
+    "pyproject.project": SETUP_PY_PLAIN,
+}
+
+SETUP_CFG_FILES = {
+    "setup.py": "",
+    "setup.cfg": "[metadata]\nname=setuptools_scm_example",
+    "pyproject tool.setuptools_scm": "",
+    "pyproject.project": "",
+}
+
+with_metadata_in = pytest.mark.parametrize(
+    "metadata_in",
+    ["setup.py", "setup.cfg", "pyproject tool.setuptools_scm", "pyproject.project"],
+)
+
+
+@with_metadata_in
+def test_pyproject_support_with_git(wd, metadata_in):
+    pytest.importorskip("tomli")
+    wd.write("pyproject.toml", PYPROJECT_FILES[metadata_in])
+    wd.write("setup.py", SETUP_PY_FILES[metadata_in])
+    wd.write("setup.cfg", SETUP_CFG_FILES[metadata_in])
+    res = wd((sys.executable, "setup.py", "--version"))
     assert res.endswith("0.1.dev0")
 
 
-def test_pretend_version(tmpdir, monkeypatch, wd):
+def test_pretend_version(monkeypatch, wd):
     monkeypatch.setenv(PRETEND_KEY, "1.0.0")
 
     assert wd.get_version() == "1.0.0"
     assert wd.get_version(dist_name="ignored") == "1.0.0"
 
 
-def test_pretend_version_named_pyproject_integration(tmpdir, monkeypatch, wd):
-    test_pyproject_support_with_git(tmpdir, monkeypatch, wd)
+@with_metadata_in
+def test_pretend_version_named_pyproject_integration(monkeypatch, wd, metadata_in):
+    test_pyproject_support_with_git(wd, metadata_in)
     monkeypatch.setenv(
         PRETEND_KEY_NAMED.format(name="setuptools_scm_example".upper()), "3.2.1"
     )
-    res = do((sys.executable, "setup.py", "--version"), tmpdir / "wd")
+    res = wd((sys.executable, "setup.py", "--version"))
     assert res.endswith("3.2.1")
 
 
