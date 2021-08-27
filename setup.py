@@ -63,4 +63,4 @@ def scm_config():
 
 
 if __name__ == "__main__":
-    setuptools.setup(setup_requires=["setuptools>=45"], **scm_config())
+    setuptools.setup(setup_requires=["setuptools>=45", "tomli"], **scm_config())

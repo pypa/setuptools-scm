@@ -67,7 +67,7 @@ jobs:
       # self install testing needs some clarity
       # so its being executed without any other tools running
       # setuptools smaller 52 is needed too di easy_install
-      - run: pip install -U "setuptools<52"
+      - run: pip install -U "setuptools<52" tomli
       - run: python setup.py egg_info
       - run: python setup.py sdist
       - run: ${{ matrix.installer }} dist/*
