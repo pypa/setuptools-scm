@@ -6,4 +6,5 @@ include tox.ini
 include *.rst
 include LICENSE
 include *.toml
+include mypy.ini
 recursive-include testing *.bash

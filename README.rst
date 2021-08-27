@@ -41,9 +41,8 @@ built step by specifying it as one of the build requirements.
 
     # pyproject.toml
     [build-system]
-    requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.0"]
+    requires = ["setuptools>=45", "wheel", "setuptools_scm>=6.2"]
 
-Note that the ``toml`` extra must be supplied.
 
 That will be sufficient to require ``setuptools_scm`` for projects
 that support PEP 518 (`pip <https://pypi.org/project/pip>`_ and
