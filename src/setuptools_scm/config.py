@@ -205,7 +205,7 @@ class Configuration:
             # minimal effort to read dist_name off setup.cfg metadata
             import configparser
 
-            parser = configparser.SafeConfigParser()
+            parser = configparser.ConfigParser()
             parser.read(["setup.cfg"])
             dist_name = parser.get("metadata", "name", fallback=None)
 
