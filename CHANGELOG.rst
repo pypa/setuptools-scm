@@ -1,3 +1,9 @@
+v6.1.1
+=======
+
+* fix #605: completely disallow bdist_egg - modern enough setuptools>=45 uses pip
+* fix #606: re-integrate and harden toml parsing
+
 v6.1.0
 ======
 
