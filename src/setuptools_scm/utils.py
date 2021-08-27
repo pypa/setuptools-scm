@@ -151,7 +151,11 @@ except ImportError:
 else:
 
     def iter_entry_points(group: str, name: Optional[str] = None):
-        eps = entry_points()[group]
+        all_eps = entry_points()
+        if hasattr(all_eps, "select"):
+            eps = all_eps.select(group=group)
+        else:
+            eps = all_eps[group]
         if name is None:
             return iter(eps)
         return (ep for ep in eps if ep.name == name)

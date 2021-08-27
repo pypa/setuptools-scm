@@ -56,6 +56,9 @@ def check(packagedir, expected_version, **env):
     )
 
 
+@pytest.mark.skipif(
+    sys.version_info[:2] >= (3, 10), reason="old setuptools wont work on python 3.10"
+)
 def test_distlib_setuptools_works(get_setuptools_packagedir):
     packagedir = get_setuptools_packagedir("45.0.0")
     check(packagedir, "45.0.0")
