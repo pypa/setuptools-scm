@@ -90,7 +90,7 @@ jobs:
         pip install --upgrade wheel setuptools build
 
     - name: Build package
-      run: python -m build -s -w -o dist/
+      run: python -m build -o dist/
     - uses: actions/upload-artifact@v2
       with:
         name: dist
