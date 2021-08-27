@@ -55,7 +55,7 @@ jobs:
       fail-fast: false
       matrix:
         python_version: [  '3.6', '3.9', 'pypy3' ]
-        installer: ["pip install", easy_install]
+        installer: ["pip install"]
     name: check self install - Python ${{ matrix.python_version }} via ${{ matrix.installer }}
     steps:
       - uses: actions/checkout@v1
