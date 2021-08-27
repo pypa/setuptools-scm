@@ -55,6 +55,12 @@ def _check_absolute_root(root, relative_to):
     return os.path.abspath(root)
 
 
+def _lazy_tomli_load(data):
+    from tomli import loads
+
+    return loads(data)
+
+
 class Configuration:
     """Global configuration model"""
 
@@ -163,16 +169,32 @@ class Configuration:
         self._tag_regex = _check_tag_regex(value)
 
     @classmethod
-    def from_file(cls, name="pyproject.toml", dist_name=None):
+    def from_file(
+        cls,
+        name: str = "pyproject.toml",
+        dist_name=None,  # type: str | None
+        _load_toml=_lazy_tomli_load,
+    ):
         """
         Read Configuration from pyproject.toml (or similar).
         Raises exceptions when file is not found or toml is
         not installed or the file has invalid format or does
         not contain the [tool.setuptools_scm] section.
         """
+
         with open(name, encoding="UTF-8") as strm:
-            defn = __import__("toml").load(strm)
-        section = defn.get("tool", {})["setuptools_scm"]
+            data = strm.read()
+        defn = _load_toml(data)
+        try:
+            section = defn.get("tool", {})["setuptools_scm"]
+        except LookupError:
+            raise FileNotFoundError(
+                f"{name} does not contain a tool.setuptools_scm section"
+            ) from None
+        if "dist_name" in section:
+            assert dist_name is None or dist_name == section["dist_name"]
+            del section["dist_name"]
+        # todo: investigate getting dist_name from
         return cls(dist_name=dist_name, **section)
 
 
