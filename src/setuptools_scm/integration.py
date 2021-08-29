@@ -15,11 +15,11 @@ def _break_on_old_setuptools(_version=setuptools.__version__):
             f"""
 ERROR: setuptools=={_version} is used in combination with setuptools_scm>=6.x
 
-Your build configuration is incomplete and worked by accident!
+Your build configuration is incomplete and previously worked by accident!
 Please ensure setuptools>=45 and setuptools_scm>=6.2 are installed with current tools.
 
 This happens as setuptools is unable to replace itself when a activated build dependeny
-requires a more recent setuptools version.
+requires a more recent setuptools version (it does not respect "setuptools>X" in setup_requires).
 
 Suggested workarounds if applicable:
  - preinstalling build dependencies like setuptools_scm before running setup.py
