@@ -6,6 +6,7 @@ import pytest
 
 from setuptools_scm import PRETEND_KEY
 from setuptools_scm import PRETEND_KEY_NAMED
+from setuptools_scm.integration import _break_on_old_setuptools
 from setuptools_scm.utils import do
 
 
@@ -124,4 +125,21 @@ def test_own_setup_fails_on_old_python(monkeypatch):
         RuntimeError,
         match="support for python < 3.6 has been removed in setuptools_scm>=6.0.0",
     ):
-        setup.scm_config()
+        setup.scm_version()
+
+
+def test_break_on_broken_setuptools():
+    _break_on_old_setuptools("45")
+    with pytest.raises(SystemExit, match="ERROR: setuptools==44"):
+        _break_on_old_setuptools("44")
+
+
+@pytest.mark.issue(611)
+def test_provides_toml_exta():
+    try:
+        from importlib.metadata import distribution
+    except ImportError:
+        from importlib_metadata import distribution
+
+    dist = distribution("setuptools_scm")
+    assert "toml" in dist.metadata["Provides-Extra"]

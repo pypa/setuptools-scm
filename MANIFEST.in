@@ -7,4 +7,5 @@ include *.rst
 include LICENSE
 include *.toml
 include mypy.ini
+include testing/Dockerfile.busted-buster
 recursive-include testing *.bash

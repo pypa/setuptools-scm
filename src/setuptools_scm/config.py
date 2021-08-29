@@ -3,13 +3,7 @@ import os
 import re
 import warnings
 
-try:
-    from packaging.version import Version
-except ImportError:
-    import pkg_resources
-
-    Version = pkg_resources.packaging.version.Version  # type: ignore
-
+from packaging.version import Version
 
 from .utils import trace
 

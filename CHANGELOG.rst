@@ -1,3 +1,27 @@
+
+v7.0.0
+=======
+
+.. warning::
+
+   This release explicitly raises errors on unsupported setuptools.
+   This unfortunately has to happen as the legacy ``setup_requires`` mechanism
+   incorrectly configures the setuptools working-set when a more recent setuptools
+   version than available is required.
+
+   As all releases of setuptools are affected as the historic mechanism
+   for ensuring a working setuptools setup was shipping a ``ez_setup`` file
+   next to ``setup.py``, which would install the required version of setuptools.
+
+   This mechanism has long since been deprecated and removed
+   as most people haven't been using it
+
+
+* fix #612: depend on packaging to ensure version parsing parts
+* fix #611: correct the typo that hid away the toml extra and add it in ``setup.py`` as well
+* fix #615: restore support for the git_archive plugin which doesn't pass over the config
+
+
 v6.2.0
 =======
 
