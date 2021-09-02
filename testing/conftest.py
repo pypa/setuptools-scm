@@ -20,6 +20,13 @@ def pytest_report_header():
     return res
 
 
+def pytest_addoption(parser):
+    group = parser.getgroup("setuptools_scm")
+    group.addoption(
+        "--test-legacy", dest="scm_test_virtualenv", default=False, action="store_true"
+    )
+
+
 class Wd:
     commit_command = None
     add_command = None

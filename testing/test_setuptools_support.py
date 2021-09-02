@@ -59,6 +59,10 @@ class VenvMaker:
 
 @pytest.fixture
 def venv_maker(pytestconfig):
+    if not pytestconfig.getoption("--test-legacy"):
+        pytest.skip(
+            "testing on legacy setuptools disabled, pass --test-legacy to run them"
+        )
     dir = pytestconfig.cache.makedir("setuptools_scm_venvs")
     path = pathlib.Path(str(dir))
     return VenvMaker(path)
