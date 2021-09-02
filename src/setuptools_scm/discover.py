@@ -1,5 +1,6 @@
 import os
 
+from .config import Configuration
 from .utils import iter_entry_points
 from .utils import trace
 
@@ -38,7 +39,7 @@ def match_entrypoint(root, name):
     return False
 
 
-def iter_matching_entrypoints(root, entrypoint, config):
+def iter_matching_entrypoints(root, entrypoint, config: Configuration):
     """
     Consider different entry-points in ``root`` and optionally its parents.
     :param root: File path.

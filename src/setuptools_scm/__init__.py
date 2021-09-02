@@ -5,21 +5,17 @@
 import os
 import warnings
 
-try:
-    from packaging.version import parse
-except ImportError:
-    from pkg_resources import parse_version as parse
-
-from .config import (
-    Configuration,
-    DEFAULT_VERSION_SCHEME,
-    DEFAULT_LOCAL_SCHEME,
-    DEFAULT_TAG_REGEX,
-    NonNormalizedVersion,
-)
-from .utils import function_has_arg, trace
-from .version import format_version, meta
+from ._version_cls import NonNormalizedVersion
+from ._version_cls import Version
+from .config import Configuration
+from .config import DEFAULT_LOCAL_SCHEME
+from .config import DEFAULT_TAG_REGEX
+from .config import DEFAULT_VERSION_SCHEME
 from .discover import iter_matching_entrypoints
+from .utils import function_has_arg
+from .utils import trace
+from .version import format_version
+from .version import meta
 
 PRETEND_KEY = "SETUPTOOLS_SCM_PRETEND_VERSION"
 PRETEND_KEY_NAMED = PRETEND_KEY + "_FOR_{name}"
@@ -40,9 +36,9 @@ def version_from_scm(root):
     warnings.warn(
         "version_from_scm is deprecated please use get_version",
         category=DeprecationWarning,
+        stacklevel=2,
     )
-    config = Configuration()
-    config.root = root
+    config = Configuration(root=root)
     # TODO: Is it API?
     return _version_from_entrypoints(config)
 
@@ -52,15 +48,16 @@ def _call_entrypoint_fn(root, config, fn):
         return fn(root, config=config)
     else:
         warnings.warn(
-            "parse functions are required to provide a named argument"
-            " 'config' in the future.",
-            category=PendingDeprecationWarning,
+            f"parse function {fn.__module__}.{fn.__name__}"
+            " are required to provide a named argument"
+            " 'config', setuptools_scm>=8.0 will remove support.",
+            category=DeprecationWarning,
             stacklevel=2,
         )
         return fn(root)
 
 
-def _version_from_entrypoints(config, fallback=False):
+def _version_from_entrypoints(config: Configuration, fallback=False):
     if fallback:
         entrypoint = "setuptools_scm.parse_scm_fallback"
         root = config.fallback_root
@@ -70,7 +67,7 @@ def _version_from_entrypoints(config, fallback=False):
 
     for ep in iter_matching_entrypoints(root, entrypoint, config):
         version = _call_entrypoint_fn(root, config, ep.load())
-
+        trace(ep, version)
         if version:
             return version
 
@@ -90,7 +87,7 @@ def dump_version(root, version, write_to, template=None):
             )
         )
 
-    parsed_version = parse(version)
+    parsed_version = Version(version)
     version_fields = parsed_version.release
     if parsed_version.dev is not None:
         version_fields += (f"dev{parsed_version.dev}",)
@@ -201,10 +198,11 @@ __all__ = [
     "dump_version",
     "version_from_scm",
     "Configuration",
-    "NonNormalizedVersion",
     "DEFAULT_VERSION_SCHEME",
     "DEFAULT_LOCAL_SCHEME",
     "DEFAULT_TAG_REGEX",
+    "Version",
+    "NonNormalizedVersion",
     # TODO: are the symbols below part of public API ?
     "function_has_arg",
     "trace",

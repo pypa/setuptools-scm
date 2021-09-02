@@ -7,7 +7,6 @@ import platform
 import shlex
 import subprocess
 import sys
-import traceback
 import warnings
 from typing import Optional
 
@@ -38,13 +37,7 @@ def no_git_env(env):
 
 def trace(*k) -> None:
     if DEBUG:
-        print(*k)
-        sys.stdout.flush()
-
-
-def trace_exception() -> None:
-    if DEBUG:
-        traceback.print_exc()
+        print(*k, file=sys.stderr, flush=True)
 
 
 def ensure_stripped_str(str_or_bytes):

@@ -6,7 +6,7 @@ import pytest
 
 from setuptools_scm import PRETEND_KEY
 from setuptools_scm import PRETEND_KEY_NAMED
-from setuptools_scm.integration import _break_on_old_setuptools
+from setuptools_scm.integration import _warn_on_old_setuptools
 from setuptools_scm.utils import do
 
 
@@ -128,10 +128,10 @@ def test_own_setup_fails_on_old_python(monkeypatch):
         setup.scm_version()
 
 
-def test_break_on_broken_setuptools():
-    _break_on_old_setuptools("45")
-    with pytest.raises(SystemExit, match="ERROR: setuptools==44"):
-        _break_on_old_setuptools("44")
+def testwarn_on_broken_setuptools():
+    _warn_on_old_setuptools("45")
+    with pytest.warns(RuntimeWarning, match="ERROR: setuptools==44"):
+        _warn_on_old_setuptools("44")
 
 
 @pytest.mark.issue(611)

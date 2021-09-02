@@ -56,10 +56,8 @@ def scm_version():
 
 if __name__ == "__main__":
     setuptools.setup(
-        setup_requires=["setuptools>=45", "tomli", "packaging"],
+        setup_requires=["setuptools"],
         version=scm_version(),
         extras_require={"toml": []},
-        cmdclass={
-            "bdist_egg": bdist_egg,
-        },
+        cmdclass={"bdist_egg": bdist_egg},
     )
