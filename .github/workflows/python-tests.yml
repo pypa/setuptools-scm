@@ -50,7 +50,7 @@ jobs:
       - run: pytest
 
   test_legacy_setuptools:
-    runs-on: ubuntu-lates
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
       - name: Setup python
