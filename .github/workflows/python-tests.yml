@@ -40,7 +40,7 @@ jobs:
           update: true
       - run: pip install -U setuptools
         if: matrix.python_version != 'msys2'
-      - run: pip install -e .[toml] pytest
+      - run: pip install -e .[toml] pytest virtualenv
       # pip2 is needed because Mercurial uses python2 on Ubuntu 20.04
       - run: |
           curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
