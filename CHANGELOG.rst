@@ -1,3 +1,8 @@
+6.3.1
+=====
+
+* fix #625: restore tomli in install_requires after the regression changes in took it out
+  and some users never added it even tho they have pyproject.toml files
 
 6.3.0
 =======
