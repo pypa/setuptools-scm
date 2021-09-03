@@ -89,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
 
     needs: [test]
-    name: Python bdist/wheel
+    name: Python sdist/wheel
     steps:
     - uses: actions/checkout@v1
     - uses: actions/setup-python@v2
