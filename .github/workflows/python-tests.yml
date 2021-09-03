@@ -121,7 +121,7 @@ jobs:
       with:
         name: dist
         path: dist
-    - run: twine check dist/*
+    - run: twine check --strict dist/*
 
   dist_upload:
 
