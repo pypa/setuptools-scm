@@ -13,54 +13,56 @@ import os
 import sys
 
 import setuptools
+from setuptools.command.bdist_egg import bdist_egg as original_bdist_egg
 
 
-def scm_config():
+class bdist_egg(original_bdist_egg):
+    def run(self):
+        raise SystemExit(
+            f"{type(self).__name__} is forbidden, "
+            "please update to setuptools>=45 which uses pip"
+        )
+
+
+def scm_version():
 
     if sys.version_info < (3, 6):
         raise RuntimeError(
             "support for python < 3.6 has been removed in setuptools_scm>=6.0.0"
         )
-
     here = os.path.dirname(os.path.abspath(__file__))
     src = os.path.join(here, "src")
-    egg_info = os.path.join(src, "setuptools_scm.egg-info")
-    has_entrypoints = os.path.isdir(egg_info)
-    import pkg_resources
 
     sys.path.insert(0, src)
-    pkg_resources.working_set.add_entry(src)
 
+    from setuptools_scm import get_version
     from setuptools_scm.hacks import parse_pkginfo
-    from setuptools_scm.git import parse as parse_git
+    from setuptools_scm import git
     from setuptools_scm.version import guess_next_dev_version, get_local_node_and_date
 
-    def parse(root):
+    def parse(root, config):
         try:
-            return parse_pkginfo(root)
+            return parse_pkginfo(root, config)
         except OSError:
-            return parse_git(root)
+            return git.parse(root, config=config)
 
-    config = dict(
-        version_scheme=guess_next_dev_version, local_scheme=get_local_node_and_date
+    return get_version(
+        root=here,
+        parse=parse,
+        version_scheme=guess_next_dev_version,
+        local_scheme=get_local_node_and_date,
     )
-
-    from setuptools.command.bdist_egg import bdist_egg as original_bdist_egg
-
-    class bdist_egg(original_bdist_egg):
-        def run(self):
-            raise SystemExit("bdist_egg is forbidden, please update to setuptools>=45")
-
-    if has_entrypoints:
-        return dict(use_scm_version=config, cmdclass={"bdist_egg": bdist_egg})
-    else:
-        from setuptools_scm import get_version
-
-        return dict(
-            version=get_version(root=here, parse=parse, **config),
-            cmdclass={"bdist_egg": bdist_egg},
-        )
 
 
 if __name__ == "__main__":
-    setuptools.setup(setup_requires=["setuptools>=45", "tomli"], **scm_config())
+    setuptools.setup(
+        setup_requires=["setuptools"],
+        version=scm_version(),
+        extras_require={
+            "toml": [
+                "setuptools>=42",
+                "tomli>=1.0.0",
+            ],
+        },
+        cmdclass={"bdist_egg": bdist_egg},
+    )

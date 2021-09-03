@@ -47,7 +47,7 @@ def callable_or_entrypoint(group, callable_or_name):
         return ep.load()
 
 
-def tag_to_version(tag, config=None):
+def tag_to_version(tag, config: "Configuration | None" = None):
     """
     take a tag that might be prefixed with a keyword and return only the version part
     :param config: optional configuration object
@@ -160,22 +160,22 @@ class ScmVersion:
         return self.format_with(fmt, guessed=guessed)
 
 
-def _parse_tag(tag, preformatted, config):
+def _parse_tag(tag, preformatted, config: "Configuration|None"):
     if preformatted:
         return tag
-    if not isinstance(tag, config.version_cls):
+    if config is None or not isinstance(tag, config.version_cls):
         tag = tag_to_version(tag, config)
     return tag
 
 
 def meta(
     tag,
-    distance=None,
-    dirty=False,
-    node=None,
-    preformatted=False,
-    branch=None,
-    config=None,
+    distance: "int|None" = None,
+    dirty: bool = False,
+    node: "str|None" = None,
+    preformatted: bool = False,
+    branch: "str|None" = None,
+    config: "Configuration|None" = None,
     **kw,
 ):
     if not config:
@@ -191,7 +191,7 @@ def meta(
     )
 
 
-def guess_next_version(tag_version):
+def guess_next_version(tag_version: ScmVersion):
     version = _strip_local(str(tag_version))
     return _bump_dev(version) or _bump_regex(version)
 

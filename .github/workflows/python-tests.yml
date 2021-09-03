@@ -40,7 +40,7 @@ jobs:
           update: true
       - run: pip install -U setuptools
         if: matrix.python_version != 'msys2'
-      - run: pip install -e .[toml] pytest
+      - run: pip install -e .[toml] pytest virtualenv
       # pip2 is needed because Mercurial uses python2 on Ubuntu 20.04
       - run: |
           curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
@@ -49,6 +49,17 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
       - run: pytest
 
+  test_legacy_setuptools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.6"
+          architecture: x64
+      - run: pip install -e .[toml] pytest virtualenv
+      - run: pytest --test-legacy testing/test_setuptools_support.py || true # ignore fail flaky on ci
   check_selfinstall:
     runs-on: ubuntu-latest
     strategy:
@@ -66,8 +77,8 @@ jobs:
           architecture: x64
       # self install testing needs some clarity
       # so its being executed without any other tools running
-      # setuptools smaller 52 is needed too di easy_install
-      - run: pip install -U "setuptools<52" tomli
+      # setuptools smaller 52 is needed to do easy_install
+      - run: pip install -U "setuptools<52" tomli packaging
       - run: python setup.py egg_info
       - run: python setup.py sdist
       - run: ${{ matrix.installer }} dist/*

@@ -145,7 +145,7 @@ def parse(root, config=None):
     return wd.get_meta(config)
 
 
-def archival_to_version(data, config=None):
+def archival_to_version(data, config: "Configuration | None" = None):
     trace("data", data)
     node = data.get("node", "")[:12]
     if node:

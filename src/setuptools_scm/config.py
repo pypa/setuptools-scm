@@ -3,14 +3,8 @@ import os
 import re
 import warnings
 
-try:
-    from packaging.version import Version
-except ImportError:
-    import pkg_resources
-
-    Version = pkg_resources.packaging.version.Version  # type: ignore
-
-
+from ._version_cls import NonNormalizedVersion
+from ._version_cls import Version
 from .utils import trace
 
 DEFAULT_TAG_REGEX = r"^(?:[\w-]+-)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"
@@ -187,10 +181,10 @@ class Configuration:
         defn = _load_toml(data)
         try:
             section = defn.get("tool", {})["setuptools_scm"]
-        except LookupError:
-            raise FileNotFoundError(
+        except LookupError as e:
+            raise LookupError(
                 f"{name} does not contain a tool.setuptools_scm section"
-            ) from None
+            ) from e
         if "dist_name" in section:
             if dist_name is None:
                 dist_name = section.pop("dist_name")
@@ -202,36 +196,17 @@ class Configuration:
                 # minimal pep 621 support for figuring the pretend keys
                 dist_name = defn["project"].get("name")
         if dist_name is None:
-            # minimal effort to read dist_name off setup.cfg metadata
-            import configparser
-
-            parser = configparser.ConfigParser()
-            parser.read(["setup.cfg"])
-            dist_name = parser.get("metadata", "name", fallback=None)
+            dist_name = _read_dist_name_from_setup_cfg()
 
         return cls(dist_name=dist_name, **section)
 
 
-class NonNormalizedVersion(Version):
-    """A non-normalizing version handler.
+def _read_dist_name_from_setup_cfg():
 
-    You can use this class to preserve version verification but skip normalization.
-    For example you can use this to avoid git release candidate version tags
-    ("1.0.0-rc1") to be normalized to "1.0.0rc1". Only use this if you fully
-    trust the version tags.
-    """
+    # minimal effort to read dist_name off setup.cfg metadata
+    import configparser
 
-    def __init__(self, version):
-        # parse and validate using parent
-        super().__init__(version)
-
-        # store raw for str
-        self._raw_version = version
-
-    def __str__(self):
-        # return the non-normalized version (parent returns the normalized)
-        return self._raw_version
-
-    def __repr__(self):
-        # same pattern as parent
-        return f"<NonNormalizedVersion({self._raw_version!r})>"
+    parser = configparser.ConfigParser()
+    parser.read(["setup.cfg"])
+    dist_name = parser.get("metadata", "name", fallback=None)
+    return dist_name
