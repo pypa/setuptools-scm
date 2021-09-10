@@ -1,3 +1,8 @@
+6.3.2
+=====
+
+* fix #629: correctly convert Version data in tags_to_version parser to avoid errors
+
 6.3.1
 =====
 
