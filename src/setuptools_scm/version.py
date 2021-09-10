@@ -16,7 +16,7 @@ SEMVER_LEN = 3
 
 
 def _parse_version_tag(tag, config):
-    tagstring = tag if not isinstance(tag, str) else str(tag)
+    tagstring = tag if isinstance(tag, str) else str(tag)
     match = config.tag_regex.match(tagstring)
 
     result = None
