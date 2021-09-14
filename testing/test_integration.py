@@ -118,7 +118,7 @@ def test_pretend_version_name_takes_precedence(tmpdir, monkeypatch, wd):
 def test_pretend_version_accepts_bad_string(monkeypatch, wd):
     monkeypatch.setenv(PRETEND_KEY, "dummy")
     wd.write("setup.py", SETUP_PY_PLAIN)
-    assert wd.get_version() == "dummy"
+    assert wd.get_version(write_to="test.py") == "dummy"
     assert wd("python setup.py --version") == "0.0.0"
 
 

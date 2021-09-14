@@ -4,6 +4,7 @@
 """
 import os
 import warnings
+from logging import getLogger as _get_logger
 
 from ._version_cls import NonNormalizedVersion
 from ._version_cls import Version
@@ -86,13 +87,19 @@ def dump_version(root, version, write_to, template=None):
                 os.path.splitext(target)[1], target
             )
         )
+    try:
+        parsed_version = Version(version)
+    except Exception:
 
-    parsed_version = Version(version)
-    version_fields = parsed_version.release
-    if parsed_version.dev is not None:
-        version_fields += (f"dev{parsed_version.dev}",)
-    if parsed_version.local is not None:
-        version_fields += (parsed_version.local,)
+        log = _get_logger("setuptools_scm")
+        log.exception("failed to parse version %s", version)
+        version_fields = (0, 0, 0)
+    else:
+        version_fields = parsed_version.release
+        if parsed_version.dev is not None:
+            version_fields += (f"dev{parsed_version.dev}",)
+        if parsed_version.local is not None:
+            version_fields += (parsed_version.local,)
 
     with open(target, "w") as fp:
         fp.write(template.format(version=version, version_tuple=tuple(version_fields)))
