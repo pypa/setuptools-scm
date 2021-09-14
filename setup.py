@@ -56,13 +56,12 @@ def scm_version():
 
 if __name__ == "__main__":
     setuptools.setup(
-        setup_requires=["setuptools"],
         version=scm_version(),
         extras_require={
             "toml": [
                 "setuptools>=42",
-                "tomli>=1.0.0",
             ],
+            "test": ["pytest>=6.3", "virtualenv>20"],
         },
         cmdclass={"bdist_egg": bdist_egg},
     )
