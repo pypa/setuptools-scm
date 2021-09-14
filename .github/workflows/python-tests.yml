@@ -38,7 +38,7 @@ jobs:
           msystem: MINGW64
           install: git mingw-w64-x86_64-python mingw-w64-x86_64-python-setuptools
           update: true
-      - run: pip install -U setuptools
+      - run: pip install -U 'setuptools>=45'
         if: matrix.python_version != 'msys2'
       - run: pip install -e .[toml,test]
       # pip2 is needed because Mercurial uses python2 on Ubuntu 20.04
