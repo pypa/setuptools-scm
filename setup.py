@@ -38,13 +38,14 @@ def scm_version():
     from setuptools_scm import get_version
     from setuptools_scm.hacks import parse_pkginfo
     from setuptools_scm import git
+    from setuptools_scm import hg
     from setuptools_scm.version import guess_next_dev_version, get_local_node_and_date
 
     def parse(root, config):
         try:
             return parse_pkginfo(root, config)
         except OSError:
-            return git.parse(root, config=config)
+            return git.parse(root, config=config) or hg.parse(root, config=config)
 
     return get_version(
         root=here,
