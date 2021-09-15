@@ -4,8 +4,8 @@
 """
 import os
 import warnings
-from logging import getLogger as _get_logger
 
+from ._version_cls import _version_as_tuple
 from ._version_cls import NonNormalizedVersion
 from ._version_cls import Version
 from .config import Configuration
@@ -73,7 +73,7 @@ def _version_from_entrypoints(config: Configuration, fallback=False):
             return version
 
 
-def dump_version(root, version, write_to, template=None):
+def dump_version(root, version: str, write_to, template: "str | None" = None):
     assert isinstance(version, str)
     if not write_to:
         return
@@ -87,22 +87,10 @@ def dump_version(root, version, write_to, template=None):
                 os.path.splitext(target)[1], target
             )
         )
-    try:
-        parsed_version = Version(version)
-    except Exception:
-
-        log = _get_logger("setuptools_scm")
-        log.exception("failed to parse version %s", version)
-        version_fields = (0, 0, 0)
-    else:
-        version_fields = parsed_version.release
-        if parsed_version.dev is not None:
-            version_fields += (f"dev{parsed_version.dev}",)
-        if parsed_version.local is not None:
-            version_fields += (parsed_version.local,)
+    version_tuple = _version_as_tuple(version)
 
     with open(target, "w") as fp:
-        fp.write(template.format(version=version, version_tuple=tuple(version_fields)))
+        fp.write(template.format(version=version, version_tuple=version_tuple))
 
 
 def _do_parse(config):
