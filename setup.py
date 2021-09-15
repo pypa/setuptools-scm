@@ -61,7 +61,7 @@ if __name__ == "__main__":
             "toml": [
                 "setuptools>=42",
             ],
-            "test": ["pytest>=6.3", "virtualenv>20"],
+            "test": ["pytest>=6.2", "virtualenv>20"],
         },
         cmdclass={"bdist_egg": bdist_egg},
     )
