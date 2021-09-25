@@ -5,6 +5,9 @@
 import os
 import warnings
 
+from ._overrides import _read_pretended_version_for
+from ._overrides import PRETEND_KEY
+from ._overrides import PRETEND_KEY_NAMED
 from ._version_cls import _version_as_tuple
 from ._version_cls import NonNormalizedVersion
 from ._version_cls import Version
@@ -17,9 +20,6 @@ from .utils import function_has_arg
 from .utils import trace
 from .version import format_version
 from .version import meta
-
-PRETEND_KEY = "SETUPTOOLS_SCM_PRETEND_VERSION"
-PRETEND_KEY_NAMED = PRETEND_KEY + "_FOR_{name}"
 
 TEMPLATES = {
     ".py": """\
@@ -94,22 +94,9 @@ def dump_version(root, version: str, write_to, template: "str | None" = None):
 
 
 def _do_parse(config):
-
-    trace("dist name:", config.dist_name)
-    if config.dist_name is not None:
-        pretended = os.environ.get(
-            PRETEND_KEY_NAMED.format(name=config.dist_name.upper())
-        )
-    else:
-        pretended = None
-
-    if pretended is None:
-        pretended = os.environ.get(PRETEND_KEY)
-
-    if pretended:
-        # we use meta here since the pretended version
-        # must adhere to the pep to begin with
-        return meta(tag=pretended, preformatted=True, config=config)
+    pretended = _read_pretended_version_for(config)
+    if pretended is not None:
+        return pretended
 
     if config.parse:
         parse_result = _call_entrypoint_fn(config.absolute_root, config, config.parse)
@@ -196,6 +183,8 @@ __all__ = [
     "DEFAULT_VERSION_SCHEME",
     "DEFAULT_LOCAL_SCHEME",
     "DEFAULT_TAG_REGEX",
+    "PRETEND_KEY",
+    "PRETEND_KEY_NAMED",
     "Version",
     "NonNormalizedVersion",
     # TODO: are the symbols below part of public API ?
