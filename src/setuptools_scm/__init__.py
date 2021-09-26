@@ -5,6 +5,8 @@
 import os
 import warnings
 
+from ._entrypoints import _call_entrypoint_fn
+from ._entrypoints import _version_from_entrypoints
 from ._overrides import _read_pretended_version_for
 from ._overrides import PRETEND_KEY
 from ._overrides import PRETEND_KEY_NAMED
@@ -42,35 +44,6 @@ def version_from_scm(root):
     config = Configuration(root=root)
     # TODO: Is it API?
     return _version_from_entrypoints(config)
-
-
-def _call_entrypoint_fn(root, config, fn):
-    if function_has_arg(fn, "config"):
-        return fn(root, config=config)
-    else:
-        warnings.warn(
-            f"parse function {fn.__module__}.{fn.__name__}"
-            " are required to provide a named argument"
-            " 'config', setuptools_scm>=8.0 will remove support.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-        return fn(root)
-
-
-def _version_from_entrypoints(config: Configuration, fallback=False):
-    if fallback:
-        entrypoint = "setuptools_scm.parse_scm_fallback"
-        root = config.fallback_root
-    else:
-        entrypoint = "setuptools_scm.parse_scm"
-        root = config.absolute_root
-
-    for ep in iter_matching_entrypoints(root, entrypoint, config):
-        version = _call_entrypoint_fn(root, config, ep.load())
-        trace(ep, version)
-        if version:
-            return version
 
 
 def dump_version(root, version: str, write_to, template: "str | None" = None):
