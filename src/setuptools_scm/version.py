@@ -177,7 +177,7 @@ def meta(
     branch: "str|None" = None,
     config: "Configuration|None" = None,
     **kw,
-):
+) -> ScmVersion:
     if not config:
         warnings.warn(
             "meta invoked without explicit configuration,"

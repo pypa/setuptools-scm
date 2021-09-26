@@ -1,3 +1,8 @@
+6.3.3
+======
+
+* only put minimal setuptools version into toml extra to warn people with old strict pins
+
 6.3.2
 =====
 

@@ -38,9 +38,9 @@ jobs:
           msystem: MINGW64
           install: git mingw-w64-x86_64-python mingw-w64-x86_64-python-setuptools
           update: true
-      - run: pip install -U setuptools
+      - run: pip install -U 'setuptools>=45'
         if: matrix.python_version != 'msys2'
-      - run: pip install -e .[toml] pytest virtualenv
+      - run: pip install -e .[toml,test]
       # pip2 is needed because Mercurial uses python2 on Ubuntu 20.04
       - run: |
           curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
@@ -58,7 +58,7 @@ jobs:
         with:
           python-version: "3.6"
           architecture: x64
-      - run: pip install -e .[toml] pytest virtualenv
+      - run: pip install -e .[toml,test] pytest virtualenv
       - run: pytest --test-legacy testing/test_setuptools_support.py || true # ignore fail flaky on ci
   check_selfinstall:
     runs-on: ubuntu-latest

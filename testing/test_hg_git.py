@@ -3,18 +3,23 @@ import pytest
 from setuptools_scm.utils import do_ex
 from setuptools_scm.utils import has_command
 
-python_hg, err, ret = do_ex("hg debuginstall --template {pythonexe}")
 
-if ret:
-    skip_no_hggit = True
-else:
-    out, err, ret = do_ex([python_hg.strip(), "-c", "import hggit"])
-    print(out, err, ret)
+@pytest.fixture(scope="module", autouse=True)
+def _check_hg_git():
+    if not has_command("hg", warn=False):
+        pytest.skip("hg executable not found")
+
+    python_hg, err, ret = do_ex("hg debuginstall --template {pythonexe}")
+
+    if ret:
+        skip_no_hggit = True
+    else:
+        out, err, ret = do_ex([python_hg.strip(), "-c", "import hggit"])
     skip_no_hggit = bool(ret)
+    if skip_no_hggit:
+        pytest.skip("hg-git not installed")
 
 
-@pytest.mark.skipif(not has_command("hg", warn=False), reason="hg executable not found")
-@pytest.mark.skipif(skip_no_hggit, reason="hg-git not installed")
 def test_base(repositories_hg_git):
     wd, wd_git = repositories_hg_git
 

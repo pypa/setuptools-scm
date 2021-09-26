@@ -5,6 +5,12 @@
 import os
 import warnings
 
+from ._entrypoints import _call_entrypoint_fn
+from ._entrypoints import _version_from_entrypoints
+from ._overrides import _read_pretended_version_for
+from ._overrides import PRETEND_KEY
+from ._overrides import PRETEND_KEY_NAMED
+from ._version_cls import _version_as_tuple
 from ._version_cls import NonNormalizedVersion
 from ._version_cls import Version
 from .config import Configuration
@@ -16,9 +22,6 @@ from .utils import function_has_arg
 from .utils import trace
 from .version import format_version
 from .version import meta
-
-PRETEND_KEY = "SETUPTOOLS_SCM_PRETEND_VERSION"
-PRETEND_KEY_NAMED = PRETEND_KEY + "_FOR_{name}"
 
 TEMPLATES = {
     ".py": """\
@@ -43,36 +46,7 @@ def version_from_scm(root):
     return _version_from_entrypoints(config)
 
 
-def _call_entrypoint_fn(root, config, fn):
-    if function_has_arg(fn, "config"):
-        return fn(root, config=config)
-    else:
-        warnings.warn(
-            f"parse function {fn.__module__}.{fn.__name__}"
-            " are required to provide a named argument"
-            " 'config', setuptools_scm>=8.0 will remove support.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-        return fn(root)
-
-
-def _version_from_entrypoints(config: Configuration, fallback=False):
-    if fallback:
-        entrypoint = "setuptools_scm.parse_scm_fallback"
-        root = config.fallback_root
-    else:
-        entrypoint = "setuptools_scm.parse_scm"
-        root = config.absolute_root
-
-    for ep in iter_matching_entrypoints(root, entrypoint, config):
-        version = _call_entrypoint_fn(root, config, ep.load())
-        trace(ep, version)
-        if version:
-            return version
-
-
-def dump_version(root, version, write_to, template=None):
+def dump_version(root, version: str, write_to, template: "str | None" = None):
     assert isinstance(version, str)
     if not write_to:
         return
@@ -86,35 +60,16 @@ def dump_version(root, version, write_to, template=None):
                 os.path.splitext(target)[1], target
             )
         )
-
-    parsed_version = Version(version)
-    version_fields = parsed_version.release
-    if parsed_version.dev is not None:
-        version_fields += (f"dev{parsed_version.dev}",)
-    if parsed_version.local is not None:
-        version_fields += (parsed_version.local,)
+    version_tuple = _version_as_tuple(version)
 
     with open(target, "w") as fp:
-        fp.write(template.format(version=version, version_tuple=tuple(version_fields)))
+        fp.write(template.format(version=version, version_tuple=version_tuple))
 
 
 def _do_parse(config):
-
-    trace("dist name:", config.dist_name)
-    if config.dist_name is not None:
-        pretended = os.environ.get(
-            PRETEND_KEY_NAMED.format(name=config.dist_name.upper())
-        )
-    else:
-        pretended = None
-
-    if pretended is None:
-        pretended = os.environ.get(PRETEND_KEY)
-
-    if pretended:
-        # we use meta here since the pretended version
-        # must adhere to the pep to begin with
-        return meta(tag=pretended, preformatted=True, config=config)
+    pretended = _read_pretended_version_for(config)
+    if pretended is not None:
+        return pretended
 
     if config.parse:
         parse_result = _call_entrypoint_fn(config.absolute_root, config, config.parse)
@@ -201,6 +156,8 @@ __all__ = [
     "DEFAULT_VERSION_SCHEME",
     "DEFAULT_LOCAL_SCHEME",
     "DEFAULT_TAG_REGEX",
+    "PRETEND_KEY",
+    "PRETEND_KEY_NAMED",
     "Version",
     "NonNormalizedVersion",
     # TODO: are the symbols below part of public API ?

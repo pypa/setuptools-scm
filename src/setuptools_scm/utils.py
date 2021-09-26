@@ -8,7 +8,7 @@ import shlex
 import subprocess
 import sys
 import warnings
-from typing import Optional
+
 
 DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
 IS_WINDOWS = platform.system() == "Windows"
@@ -137,18 +137,8 @@ def require_command(name):
         raise OSError("%r was not found" % name)
 
 
-try:
-    from importlib.metadata import entry_points  # type: ignore
-except ImportError:
-    from pkg_resources import iter_entry_points
-else:
+def iter_entry_points(*k, **kw):
 
-    def iter_entry_points(group: str, name: Optional[str] = None):
-        all_eps = entry_points()
-        if hasattr(all_eps, "select"):
-            eps = all_eps.select(group=group)
-        else:
-            eps = all_eps[group]
-        if name is None:
-            return iter(eps)
-        return (ep for ep in eps if ep.name == name)
+    from ._entrypoints import iter_entry_points
+
+    return iter_entry_points(*k, **kw)

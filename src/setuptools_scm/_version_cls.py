@@ -1,9 +1,17 @@
-try:
-    from packaging.version import Version
+from logging import getLogger
+from typing import Tuple
 
-    assert hasattr(Version, "release")
+try:
+    from packaging.version import Version, InvalidVersion
+
+    assert hasattr(
+        Version, "release"
+    ), "broken installation ensure packaging>=20 is available"
 except ImportError:
-    from pkg_resources._vendor.packaging.version import Version as SetuptoolsVersion
+    from pkg_resources._vendor.packaging.version import (
+        Version as SetuptoolsVersion,
+        InvalidVersion,
+    )
 
     try:
         SetuptoolsVersion.release
@@ -47,3 +55,20 @@ class NonNormalizedVersion(Version):
     def __repr__(self):
         # same pattern as parent
         return f"<NonNormalizedVersion({self._raw_version!r})>"
+
+
+def _version_as_tuple(version_str) -> Tuple["int | str", ...]:
+    try:
+        parsed_version = Version(version_str)
+    except InvalidVersion:
+
+        log = getLogger("setuptools_scm")
+        log.exception("failed to parse version %s", version_str)
+        return (version_str,)
+    else:
+        version_fields: Tuple["int | str", ...] = parsed_version.release
+        if parsed_version.dev is not None:
+            version_fields += (f"dev{parsed_version.dev}",)
+        if parsed_version.local is not None:
+            version_fields += (parsed_version.local,)
+        return version_fields
