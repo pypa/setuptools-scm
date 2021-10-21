@@ -13,7 +13,7 @@ from .utils import require_command
 from .utils import trace
 from .version import meta
 
-DEFAULT_DESCRIBE = "git describe --dirty --tags --long --match *[0-9]*"
+DEFAULT_DESCRIBE = "git describe --dirty --tags --long --match '*[0-9]*'"
 
 
 class GitWorkdir(Workdir):
