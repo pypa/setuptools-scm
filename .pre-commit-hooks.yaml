@@ -1,0 +1,20 @@
+---
+
+- id: update-egg-info
+  name: update-egg-info
+  description: "Runs setup.py egg_info to update version info"
+  entry: python -m setuptools_scm.pre_commit_hook
+  language: python
+  always_run: true
+  stages: [post-checkout, post-commit, post-merge]
+  verbose: true
+- id: update-egg-info-rewrite
+  name: update-egg-info-rewrite
+  description: >
+    post-commit for auto_egg skips egg_info during rebases.
+    This forces a egg_info after the rebase.
+  entry: python -m setuptools_scm.pre_commit_hook --post-rewrite
+  language: python
+  always_run: true
+  stages: [post-rewrite]
+  verbose: true

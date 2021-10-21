@@ -490,6 +490,13 @@ Environment variables
     when defined, a ``os.pathsep`` separated list
     of directory names to ignore for root finding
 
+
+:SETUPTOOLS_SCM_SKIP_UPDATE_EGG_INFO:
+    when set to 1, skip running the build command if the ``update-egg-info`` pre-commit
+    hooks are installed. Use this if you are doing a lot of git operations and don't
+    want to wait for the somewhat expensive build command to be run after each of them
+    without uninstalling those pre-commit hooks.
+
 Extending setuptools_scm
 ------------------------
 
@@ -618,6 +625,62 @@ In case the project you need to build can not be patched to either use old setup
 its still possible to install a more recent version of setuptools in order to handle the build
 and/or install the package by using wheels or eggs.
 
+
+Automatic Update of Editable Installs Version
+---------------------------------------------
+While developing a pip package you often will use an editable install of your package
+to make development easier. If you have complex dependencies you may run into
+``VersionConflict`` errors when another package updates its requirements when using
+``pkg_resources`` to process entry points including console_scripts.
+
+.. code-block: python
+
+    pkg_resources.VersionConflict: (My_Package 2.75.0.dev0+g54e73c49.d20211024 (c:\dev\my_package), Requirement.parse('My_Package>=0.0.14'))
+
+
+You can use `pre-commit <https://pre-commit.com/>`_ to install several post git hooks
+that automatically call ``python setup.py egg_info``. If you are using setuptools_scm to
+generate your version this will update the installed version for all editable installs
+using this repo.
+
+To configure your repo to make use of this, add this info to it's
+``.pre-commit-config.yaml`` file.
+
+.. code-block:: yaml
+
+    repos:
+    -   repo: https://github.com/pypa/setuptools_scm
+        rev: 6.3.3
+        hooks:
+          - id: update-egg-info
+          - id: update-egg-info-rewrite
+
+You will need to be using pre-commit >= 2.15.0. You will need to specify multiple
+hook-type arguments to install the required hooks.
+
+.. code-block:: shell
+
+    $ pre-commit install -t post-commit -t post-merge -t post-checkout -t post-rewrite
+
+While this is installed any time you commit, merge, rebase, checkout changes on your git
+repo, the version of your editable pip package will be kept up to date.
+
+
+Customizing the Build Command
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default update-egg-info will use the command ``python setup.py egg_info``, this takes
+the least amount of time to update the version metadata for a standard setuptools_scm
+editable install to update the version information. However if you need to customize the
+build command you can pass a custom build command to each hook.
+
+.. code-block:: yaml
+
+        hooks:
+          - id: update-egg-info
+            args: ["python", "setup.py", "bdist_wheel"]
+          - id: update-egg-info-rewrite
+            args: ["python", "setup.py", "bdist_wheel"]
 
 
 Code of Conduct

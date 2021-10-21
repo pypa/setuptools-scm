@@ -1,4 +1,5 @@
 import os
+import subprocess
 import sys
 from datetime import date
 from datetime import datetime
@@ -12,8 +13,11 @@ from setuptools_scm import git
 from setuptools_scm import integration
 from setuptools_scm import NonNormalizedVersion
 from setuptools_scm.file_finder_git import git_find_files
+from setuptools_scm.pre_commit_hook import PreCommitHook
+from setuptools_scm.utils import _always_strings
 from setuptools_scm.utils import do
 from setuptools_scm.utils import has_command
+from setuptools_scm.utils import no_git_env
 
 
 pytestmark = pytest.mark.skipif(
@@ -401,3 +405,184 @@ def test_git_getdate_badgit(
     git_wd = git.GitWorkdir(os.fspath(wd.cwd))
     with patch.object(git_wd, "do_ex", Mock(return_value=("%cI", "", 0))):
         assert git_wd.get_head_date() is None
+
+
+def create_pip_package(wd):
+    """Creates a simple pip package in this git repo supporting setuptools_scm"""
+    wd.cwd.joinpath("setup.py").write_text(
+        "\n".join(("from setuptools import setup", "setup(use_scm_version=True)", ""))
+    )
+    wd.cwd.joinpath("pyproject.toml").write_text(
+        "\n".join(
+            (
+                "[build-system]",
+                'requires = ["setuptools>=45", "wheel", "setuptools_scm>=6.2"]',
+                "[tool.setuptools_scm]",
+                'write_to = "version.py"',
+            )
+        )
+    )
+    wd.cwd.joinpath("setup.cfg").write_text(
+        "\n".join(("[metadata]", "name = test_package"))
+    )
+    wd("git add setup.py setup.cfg pyproject.toml")
+    wd.commit()
+
+
+def do_interactive(cwd, branch="master"):
+    """Force git into an interactive rebase state."""
+    # Remove all the git variables from the environment so we can add a required one.
+    env = _always_strings(
+        dict(
+            no_git_env(os.environ),
+            # os.environ,
+            # try to disable i18n
+            LC_ALL="C",
+            LANGUAGE="",
+            HGPLAIN="1",
+        )
+    )
+
+    # Force git into an interactive rebase state
+    # Adapted from https://stackoverflow.com/a/15394837
+    env["GIT_SEQUENCE_EDITOR"] = "sed -i -re 's/^noop/e HEAD/'"
+
+    proc = subprocess.Popen(
+        f"git rebase -i {branch}",
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=str(cwd),
+        env=env,
+    )
+    proc.wait()
+
+
+def test_is_git_rebasing(wd):
+    hook = PreCommitHook(wd.cwd, [])
+    wd.commit_testfile()
+
+    # git_dir = hook.work_dir.get_git_dir()
+    assert hook.is_git_rebasing() is False
+    do_interactive(wd.cwd)
+    assert hook.is_git_rebasing() is True
+
+
+def test_pre_commit_hook(wd, monkeypatch):
+    build_command = ["python", "setup.py", "egg_info"]
+    hook = PreCommitHook(wd.cwd, build_command)
+    success_message = f"update-egg-info: Running command: {build_command}"
+    git_wd = git.GitWorkdir(os.fspath(wd.cwd))
+
+    # 1. Test the various skip methods
+    out, ret = hook.update_egg_info()
+    # All skipped hooks should not return a error level
+    assert ret == 0
+    assert out == "update-egg-info: Skipping, no setup script found."
+
+    create_pip_package(wd)
+
+    # At this point there is a valid config but it has not been "editable installed"
+    out, ret = hook.update_egg_info()
+    assert ret == 0
+    assert out == "update-egg-info: Skipping, no .egg-info directory found."
+
+    # Simulate an editable install by creating the egg_info folder
+    git_wd.do_ex("python setup.py egg_info")
+    version_path = wd.cwd.joinpath("version.py")
+
+    # Remove the version.py file so we can verify that build_command was run
+    version_path.unlink()
+
+    # Check that "SETUPTOOLS_SCM_SKIP_UPDATE_EGG_INFO" env var is respected
+    monkeypatch.setenv("SETUPTOOLS_SCM_SKIP_UPDATE_EGG_INFO", "1")
+    out, ret = hook.update_egg_info()
+    assert ret == 0
+    assert out == (
+        'update-egg-info: Skipping, "SETUPTOOLS_SCM_SKIP_UPDATE_EGG_INFO" '
+        "env var set."
+    )
+    assert not version_path.exists()
+
+    monkeypatch.setenv("SETUPTOOLS_SCM_SKIP_UPDATE_EGG_INFO", "0")
+    out, ret = hook.update_egg_info()
+    assert ret == 0
+    assert success_message in out
+    assert version_path.exists()
+    monkeypatch.delenv("SETUPTOOLS_SCM_SKIP_UPDATE_EGG_INFO")
+
+    # 2. Test a correctly configured setuptools_scm working copy
+    version_path.unlink()
+
+    # Simulate post-commit, post-checkout or post-merge hook call
+    out, ret = hook.update_egg_info()
+    assert ret == 0
+    assert success_message in out
+    assert version_path.exists()
+    version_path.unlink()
+
+    # Use an interactive rebase to check that the hook skips processing if
+    # `--post-rewrite` is not passed
+    do_interactive(wd.cwd)
+
+    out, ret = hook.update_egg_info()
+    assert ret == 0
+    assert out == "update-egg-info: Skipping, rebase in progress."
+    assert not version_path.exists()
+
+    # If `--post-rewrite` is passed by the post-rewrite hook, build_command is run
+    # even if git is currently rebasing
+    out, ret = hook.update_egg_info(force_on_rebase=True)
+    assert ret == 0
+    assert success_message in out
+    assert version_path.exists()
+
+    # After the rebase is finished, the hook runs again
+    version_path.unlink()
+    git_wd.do_ex("git rebase --continue")
+    out, ret = hook.update_egg_info()
+    assert ret == 0
+    assert success_message in out
+    assert version_path.exists()
+
+    # 3. Check that if there is a error calling build_command it is reported to git
+    with wd.cwd.joinpath("setup.py").open("a") as f:
+        f.write("\nsyntax error")
+    out, ret = hook.update_egg_info()
+    assert ret == 1
+    assert "update-egg-info: Error running build_command:" in out
+
+
+def test_pre_commit_hook_cli(wd):
+    # Create a working pip package with the egg_info folder
+    create_pip_package(wd)
+    git_wd = git.GitWorkdir(os.fspath(wd.cwd))
+    git_wd.do_ex("python setup.py egg_info")
+    version_path = wd.cwd.joinpath("version.py")
+    # Remove version.py created by egg_info command
+    version_path.unlink()
+
+    build_command = ["python", "setup.py", "egg_info"]
+    success_message = "update-egg-info: Running command: {}"
+
+    # Test post-commit, post-checkout or post-merge hook call
+    out, _, ret = git_wd.do_ex("python -m setuptools_scm.pre_commit_hook")
+    assert ret == 0
+    assert success_message.format(build_command) in out
+    assert version_path.exists()
+
+    # Test that the post-rewrite flag is respected
+    version_path.unlink()
+    out, _, ret = git_wd.do_ex(
+        "python -m setuptools_scm.pre_commit_hook --post-rewrite"
+    )
+    assert ret == 0
+    assert success_message.format(build_command) in out
+    assert version_path.exists()
+
+    # Test that passing a custom command evaluates correctly
+    out, err, ret = git_wd.do_ex(
+        "python -m setuptools_scm.pre_commit_hook touch test.txt"
+    )
+    assert ret == 0
+    assert success_message.format(["touch", "test.txt"]) in out
+    assert wd.cwd.joinpath("test.txt").exists()

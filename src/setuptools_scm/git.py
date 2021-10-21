@@ -57,6 +57,11 @@ class GitWorkdir(Workdir):
                 branch = None
         return branch
 
+    def get_git_dir(self):
+        """Returns the absolute path to the .git directory"""
+        out, err, ret = self.do_ex("git rev-parse --absolute-git-dir")
+        return out.strip()
+
     def get_head_date(self):
         timestamp, err, ret = self.do_ex("git log -n 1 HEAD --format=%cI")
         if ret:
