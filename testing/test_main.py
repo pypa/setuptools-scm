@@ -48,4 +48,15 @@ def test_repo_with_config(repo):
 
 def test_repo_without_config(repo):
     res = repo((sys.executable, "-m", "setuptools_scm"))
-    assert res.startswith("Guessed Version 0.1.1.dev1")
+    assert res.startswith("0.1.1.dev1")
+
+
+def test_repo_with_pyproject_missing_setuptools_scm(repo):
+    pyproject = """\
+    [project]
+    name = "example"
+    """
+    repo.write("pyproject.toml", textwrap.dedent(pyproject))
+    repo.add_and_commit()
+    res = repo((sys.executable, "-m", "setuptools_scm"))
+    assert res.startswith("0.1.1.dev2")
