@@ -20,8 +20,8 @@ class bdist_egg(original_bdist_egg):
     def run(self):
         raise SystemExit(
             "%s is forbidden, "
-            "please update to setuptools>=45 which uses pip"
-            % type(self).__name__)
+            "please update to setuptools>=45 which uses pip" % type(self).__name__
+        )
 
 
 def scm_version():
