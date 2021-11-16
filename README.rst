@@ -214,7 +214,8 @@ Usage from Docker
 
 By default, docker will not copy the ``.git``  folder into your container.
 Therefore, builds with version inference might fail.
-Consequently, you can use the following snipped to infer the version from the host os without copying the entire ``.git`` folder to your Dockerfile.
+Consequently, you can use the following snipped to infer the version from
+the host os without copying the entire ``.git`` folder to your Dockerfile.
 
 .. code:: dockerfile
 
@@ -222,18 +223,23 @@ Consequently, you can use the following snipped to infer the version from the ho
         pip install --no-cache-dir -e .
 
 However, this build step introduces a dependency to the state of your local
-.git folder the build cache.
-To optimize build caching, one can use ``SETUPTOOLS_SCM_PRETEND_VERSION=1`` in
-previous build step, so that a full docker-file might look like that:
+.git folder the build cache and triggers the long-running pip install process on every build.
+To optimize build caching, one can use an environment variable to pretend a pseudo
+version that is used to cache the results of the pip install process:
 
 .. code:: dockerfile
 
     FROM python
     COPY pyproject.toml
-    RUN SETUPTOOLS_SCM_PRETEND_VERSION=1 pip install -e .[test]
+    RUN SETUPTOOLS_SCM_PRETEND_VERSION=ignore pip install -e .[test]
     RUN --mount=source=.git,target=.git,type=bind pip install -e .
 
-Running this Dockerfile requires docker with BuildKit enabled `[docs] <https://github.com/moby/buildkit/blob/v0.8.3/frontend/dockerfile/docs/syntax.md>`_.
+Note that running this Dockerfile requires docker with BuildKit enabled
+`[docs] <https://github.com/moby/buildkit/blob/v0.8.3/frontend/dockerfile/docs/syntax.md>`_.
+
+To avoid BuildKit and mounting of the .git folder altogether, one can also pass the desired
+version as a build argument. Note that ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${UPPERCASED_DIST_NAME}``
+is preferred over ``SETUPTOOLS_SCM_PRETEND_VERSION``.
 
 Notable Plugins
 ---------------
