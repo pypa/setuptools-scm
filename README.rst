@@ -231,7 +231,8 @@ version that is used to cache the results of the pip install process:
 
     FROM python
     COPY pyproject.toml
-    RUN SETUPTOOLS_SCM_PRETEND_VERSION=ignore pip install -e .[test]
+    ARG PSEUDO_VERSION=1
+    RUN SETUPTOOLS_SCM_PRETEND_VERSION=${PSEUDO_VERSION} pip install -e .[test]
     RUN --mount=source=.git,target=.git,type=bind pip install -e .
 
 Note that running this Dockerfile requires docker with BuildKit enabled
