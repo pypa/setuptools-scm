@@ -12,7 +12,7 @@ PRETEND_KEY_NAMED = PRETEND_KEY + "_FOR_{name}"
 
 
 def _read_pretended_version_for(config: Configuration) -> Optional[ScmVersion]:
-    """read a a overriden version from the environment
+    """read a a overridden version from the environment
 
     tries ``SETUPTOOLS_SCM_PRETEND_VERSION``
     and ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_$UPPERCASE_DIST_NAME``
