@@ -7,9 +7,21 @@ import subprocess
 import sys
 
 import pytest
-from virtualenv.run import cli_run
 
-pytestmark = pytest.mark.filterwarnings(r"ignore:.*tool\.setuptools_scm.*")
+
+def cli_run(*k, **kw):
+    """this defers the virtualenv import
+    it helps to avoid warnings from the furthermore imported setuptools
+    """
+    global cli_run
+    from virtualenv.run import cli_run
+
+    return cli_run(*k, **kw)
+
+
+pytestmark = pytest.mark.filterwarnings(
+    r"ignore:.*tool\.setuptools_scm.*", r"always:.*setup.py install is deprecated.*"
+)
 
 
 ROOT = pathlib.Path(__file__).parent.parent
