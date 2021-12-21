@@ -1,3 +1,8 @@
+6.3.4
+======
+
+* compatibility adjustments for setuptools >58
+
 6.3.3
 ======
 
