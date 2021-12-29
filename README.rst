@@ -1,8 +1,8 @@
 setuptools_scm
 ==============
 
-``setuptools_scm`` handles managing your Python package versions
-in SCM metadata instead of declaring them as the version argument
+``setuptools_scm`` extract Python package versions from ``git`` or
+``hg`` metadata instead of declaring them as the version argument
 or in a SCM managed file.
 
 Additionally ``setuptools_scm`` provides setuptools with a list of files that are managed by the SCM
