@@ -1,12 +1,17 @@
-6.3.4
+
+
+6.4.0
 ======
 
 * compatibility adjustments for setuptools >58
-
-6.3.3
-======
-
 * only put minimal setuptools version into toml extra to warn people with old strict pins
+* coorectly handle hg-git self-use
+* better mercurial detection
+* modernize packaging setup
+* python 3.10 support
+* better handling of setuptools install command deprecation
+* consider ``pyproject.tomls`` when running as command
+
 
 6.3.2
 =====
