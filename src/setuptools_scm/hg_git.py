@@ -73,7 +73,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
                 trace("Cannot get git node so we use hg node", hg_node)
 
                 if hg_node == "0" * len(hg_node):
-                    # mimick Git behavior
+                    # mimic Git behavior
                     return None
 
                 return hg_node

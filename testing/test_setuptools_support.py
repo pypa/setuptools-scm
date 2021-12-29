@@ -100,7 +100,7 @@ def check(venv, expected_version, **env):
 
 
 @pytest.mark.skipif(
-    sys.version_info[:2] >= (3, 10), reason="old setuptools wont work on python 3.10"
+    sys.version_info[:2] >= (3, 10), reason="old setuptools won't work on python 3.10"
 )
 def test_distlib_setuptools_works(venv_maker):
     venv = venv_maker.get_venv(setuptools="45.0.0", pip="9.0", python="3.6")
@@ -149,7 +149,7 @@ def prepare_setup_py_config(pkg: pathlib.Path):
 
 
 @pytest.mark.skipif(
-    sys.version_info[:2] >= (3, 10), reason="old setuptools wont work on python 3.10"
+    sys.version_info[:2] >= (3, 10), reason="old setuptools won't work on python 3.10"
 )
 @pytest.mark.parametrize("setuptools", [f"{v}.0" for v in range(31, 45)])
 @pytest.mark.parametrize(

@@ -82,7 +82,7 @@ def test_version_from_hg_id(wd):
     wd("hg up v0.1")
     assert wd.version == "0.1"
 
-    # commit originating from the taged revision
+    # commit originating from the tagged revision
     # that is not a actual tag
     wd.commit_testfile()
     assert wd.version.startswith("0.2.dev1+")
@@ -96,7 +96,7 @@ def test_version_from_hg_id(wd):
 
 def test_version_from_archival(wd):
     # entrypoints are unordered,
-    # cleaning the wd ensure this test wont break randomly
+    # cleaning the wd ensure this test won't break randomly
     wd.cwd.joinpath(".hg").rename(wd.cwd / ".nothg")
     wd.write(".hg_archival.txt", "node: 000000000000\n" "tag: 0.1\n")
     assert wd.version == "0.1"
@@ -172,7 +172,7 @@ def test_version_bump_from_commit_including_hgtag_mods(wd):
 @pytest.mark.usefixtures("version_1_0")
 def test_latest_tag_detection(wd):
     """Tests that tags not containing a "." are ignored, the same as for git.
-    Note that will be superceded by the fix for pypa/setuptools_scm/issues/235
+    Note that will be superseded by the fix for pypa/setuptools_scm/issues/235
     """
     wd('hg tag some-random-tag -u test -d "0 0"')
     assert wd.version == "1.0.0"

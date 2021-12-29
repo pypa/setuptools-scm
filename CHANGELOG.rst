@@ -282,8 +282,8 @@ v3.0.0
 * require parse results to be ScmVersion or None (breaking change)
 * fix #266 by requiring the prefix word to be a word again
   (breaking change as the bug allowed arbitrary prefixes while the original feature only allowed words")
-* introduce a internal config object to allow the configruation fo tag parsing and prefixes
-  (thanks to @punkadiddle for introducing it and passing it trough)
+* introduce an internal config object to allow the configuration for tag parsing and prefixes
+  (thanks to @punkadiddle for introducing it and passing it through)
 
 v2.1.0
 ======
@@ -300,7 +300,7 @@ v2.0.0
 * fix #237 - correct imports in code examples
 * improve mercurial commit detection (thanks Aaron)
 * breaking change: remove support for setuptools before parsed versions
-* reintroduce manifest as the travis deploy cant use the file finder
+* reintroduce manifest as the travis deploy can't use the file finder
 * reconfigure flake8 for future compatibility with black
 * introduce support for branch name in version metadata and support a opt-in simplified semver version scheme
 
@@ -330,8 +330,8 @@ v1.16.0
 =======
 
 * drop support for eol python versions
-* #214 - fix missuse in surogate-escape api
-* add the node-and-timestamp local version sheme
+* #214 - fix misuse in surogate-escape api
+* add the node-and-timestamp local version scheme
 * respect git export ignores
 * avoid shlex.split on windows
 * fix #218 - better handling of mercurial edge-cases with tag commits
@@ -360,7 +360,7 @@ v1.15.5
 v1.15.4
 =======
 
-* fix issue #164: iterate all found entry points to avoid erros when pip remakes egg-info
+* fix issue #164: iterate all found entry points to avoid errors when pip remakes egg-info
 * enhance self-use to enable pip install from github again
 
 v1.15.3
@@ -391,7 +391,7 @@ v1.15.0
   when considering distance in commits
   (thanks Petre Mierlutiu)
 * fix issue #114: stop trying to be smart for the sdist
-  and ensure its always correctly usign itself
+  and ensure its always correctly using itself
 * update trove classifiers
 * fix issue #84: document using the installed package metadata for sphinx
 * fix issue #81: fail more gracious when git/hg are missing
@@ -406,7 +406,7 @@ v1.14.1
             don't consider untracked file
             (this was a regression due to #86 in v1.13.1)
 * consider the distance 0 when the git node is unknown
-  (happens when you haven't commited anything)
+  (happens when you haven't committed anything)
 
 v1.14.0
 =======
@@ -424,7 +424,7 @@ v1.13.0
 
 * fix regression caused by the fix of #101
   * assert types for version dumping
-  * strictly pass all versions trough parsed version metadata
+  * strictly pass all versions through parsed version metadata
 
 v1.12.0
 =======
@@ -462,7 +462,7 @@ v1.10.0
 * add support for overriding the version number via the
   environment variable SETUPTOOLS_SCM_PRETEND_VERSION
 
-* fix isssue #63 by adding the --match parameter to the git describe call
+* fix issue #63 by adding the --match parameter to the git describe call
   and prepare the possibility of passing more options to scm backends
 
 * fix issue #70 and #71 by introducing the parse keyword
@@ -506,7 +506,7 @@ v1.6.0
   before we would let the setup stay at version 0.0,
   now there is a ValueError
 
-* propperly raise errors on write_to missuse (thanks Te-jé Rodgers)
+* properly raise errors on write_to misuse (thanks Te-jé Rodgers)
 
 v1.5.5
 ======
@@ -543,7 +543,7 @@ v1.5.0
 v1.4.0
 ======
 
-* propper handling for sdist
+* proper handling for sdist
 * fix file-finder failure from windows
 * resuffle docs
 
