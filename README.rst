@@ -1,8 +1,8 @@
 setuptools_scm
 ==============
 
-``setuptools_scm`` handles managing your Python package versions
-in SCM metadata instead of declaring them as the version argument
+``setuptools_scm`` extract Python package versions from ``git`` or
+``hg`` metadata instead of declaring them as the version argument
 or in a SCM managed file.
 
 Additionally ``setuptools_scm`` provides setuptools with a list of files that are managed by the SCM
@@ -208,6 +208,39 @@ instead use ``importlib.metadata`` after editable/real installation:
 The underlying reason is, that services like *Read the Docs* sometimes change
 the working directory for good reasons and using the installed metadata
 prevents using needless volatile data there.
+
+Usage from Docker
+-----------------
+
+By default, docker will not copy the ``.git``  folder into your container.
+Therefore, builds with version inference might fail.
+Consequently, you can use the following snipped to infer the version from
+the host os without copying the entire ``.git`` folder to your Dockerfile.
+
+.. code:: dockerfile
+
+    RUN --mount=source=.git,target=.git,type=bind \
+        pip install --no-cache-dir -e .
+
+However, this build step introduces a dependency to the state of your local
+.git folder the build cache and triggers the long-running pip install process on every build.
+To optimize build caching, one can use an environment variable to pretend a pseudo
+version that is used to cache the results of the pip install process:
+
+.. code:: dockerfile
+
+    FROM python
+    COPY pyproject.toml
+    ARG PSEUDO_VERSION=1
+    RUN SETUPTOOLS_SCM_PRETEND_VERSION=${PSEUDO_VERSION} pip install -e .[test]
+    RUN --mount=source=.git,target=.git,type=bind pip install -e .
+
+Note that running this Dockerfile requires docker with BuildKit enabled
+`[docs] <https://github.com/moby/buildkit/blob/v0.8.3/frontend/dockerfile/docs/syntax.md>`_.
+
+To avoid BuildKit and mounting of the .git folder altogether, one can also pass the desired
+version as a build argument. Note that ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${UPPERCASED_DIST_NAME}``
+is preferred over ``SETUPTOOLS_SCM_PRETEND_VERSION``.
 
 Notable Plugins
 ---------------
