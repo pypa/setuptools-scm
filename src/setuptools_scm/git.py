@@ -16,7 +16,15 @@ from .version import meta
 # If testing command in shell make sure to quote the match argument like
 # '*[0-9]*' as it will expand before being sent to git if there are any matching
 # files in current directory.
-DEFAULT_DESCRIBE = ["git", "describe", "--dirty", "--tags", "--long", "--match", "*[0-9]*"]
+DEFAULT_DESCRIBE = [
+    "git",
+    "describe",
+    "--dirty",
+    "--tags",
+    "--long",
+    "--match",
+    "*[0-9]*",
+]
 
 
 class GitWorkdir(Workdir):
