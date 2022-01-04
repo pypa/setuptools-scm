@@ -669,18 +669,35 @@ repo, the version of your editable pip package will be kept up to date.
 Customizing the Build Command
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-By default update-egg-info will use the command ``python setup.py egg_info``, this takes
-the least amount of time to update the version metadata for a standard setuptools_scm
-editable install to update the version information. However if you need to customize the
-build command you can pass a custom build command to each hook.
+By default update-egg-info will create a virtualenv named `.setuptools_scm` in the root
+of your git repo and use `pip install -e . --no-deps` to update the version info of your
+repo.
+
+If desired, you can customize the name of the virtualenv by specifying the venv_name
+property.
 
 .. code-block:: yaml
 
         hooks:
           - id: update-egg-info
-            args: ["python", "setup.py", "bdist_wheel"]
+            args: ["--venv-name", ".st_venv"]
           - id: update-egg-info-rewrite
-            args: ["python", "setup.py", "bdist_wheel"]
+            args: ["--venv-name", ".st_venv"]
+
+
+You can replace this workflow by passing a build command, this will disable creating
+the virtualenv and simply run the specified build command. For non PEP 660 projects
+using the command ``python setup.py egg_info`` likely will suffice. This takes the
+least amount of time to update the version metadata for a standard setuptools_scm
+editable install to update the version information.
+
+.. code-block:: yaml
+
+        hooks:
+          - id: update-egg-info
+            args: ["python", "setup.py", "egg_info"]
+          - id: update-egg-info-rewrite
+            args: ["python", "setup.py", "egg_info"]
 
 
 Code of Conduct

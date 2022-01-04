@@ -5,9 +5,11 @@ from setuptools_scm.git import GitWorkdir
 
 
 class PreCommitHook:
-    def __init__(self, repo_dir, build_command):
+    def __init__(self, repo_dir, venv_name=".setuptools_scm", build_command=None):
         self.build_command = build_command
         self.work_dir = GitWorkdir.from_potential_worktree(repo_dir)
+        self.venv_name = venv_name
+        self.header = "update-egg-info:"
 
     def is_git_rebasing(self):
         """Checks if git is currently in rebase mode and returns the output of build_command.
@@ -28,6 +30,36 @@ class PreCommitHook:
         rebase_apply = os.path.join(git_dir, "rebase-apply")
         return os.path.exists(rebase_merge) or os.path.exists(rebase_apply)
 
+    def run_virtualenv(self):
+        """Create a virtualenv if required and run an editable pip install of this
+        pip package.
+        """
+        output = []
+        venv = os.path.join(self.work_dir.path, self.venv_name)
+
+        # Create the virtualenv only if it doesn't already exist
+        if not os.path.exists(venv):
+            output.append(f"{self.header} Creating Virtualenv: {venv}")
+            cmd_out, error, returncode = self.work_dir.do_ex(["virtualenv", venv])
+            if cmd_out:
+                output.append(cmd_out)
+
+        # Build the pip command. Calling the venv's pip exe will automatically
+        # activate the environment.
+        bin_part = "Scripts" if os.name == "nt" else "bin"
+        pip_path = os.path.join(venv, bin_part, "pip")
+        # Use `--no-deps` to skip the overhead of installing any dependencies
+        # we won't actually be using this install
+        pip_cmd = [pip_path, "install", "-e", self.work_dir.path, "--no-deps"]
+
+        # Run the editable install
+        output.append('{} Running: "{}"'.format(self.header, " ".join(pip_cmd)))
+        cmd_out, error, returncode = self.work_dir.do_ex(pip_cmd)
+        if cmd_out:
+            output.append(cmd_out)
+
+        return "\n".join(output), error, returncode
+
     def update_egg_info(self, force_on_rebase=False):
         """Run the `python setup.py egg_info` if this is a editable install."""
 
@@ -37,41 +69,29 @@ class PreCommitHook:
         # commands, especially for large packages with a lot of files.
         if os.getenv("SETUPTOOLS_SCM_SKIP_UPDATE_EGG_INFO", "0") != "0":
             output = (
-                'update-egg-info: Skipping, "SETUPTOOLS_SCM_SKIP_UPDATE_EGG_INFO" '
+                f'{self.header} Skipping, "SETUPTOOLS_SCM_SKIP_UPDATE_EGG_INFO" '
                 "env var set."
             )
-            return output, 0
-
-        # If this is not an editable install there is no need to run it
-        contents = os.listdir(self.work_dir.path)
-
-        # If there is not a setup.cfg or setup.py file then this can't be an editable
-        # install, no need to try to run build_command.
-        if "setup.cfg" not in contents and "setup.py" not in contents:
-            output = "update-egg-info: Skipping, no setup script found."
-            return output, 0
-
-        # If a egg_info directory doesn't exist its not currently an editable install
-        # don't turn it into one.
-        if not any(filter(lambda i: os.path.splitext(i)[-1] == ".egg-info", contents)):
-            output = "update-egg-info: Skipping, no .egg-info directory found."
             return output, 0
 
         # Check if git is currently rebasing, if so and force_on_rebase is False, this
         # is likely a post-commit call, and the post-rewrite hook will be called later,
         # skip running build_command for now.
         if not force_on_rebase and self.is_git_rebasing():
-            output = "update-egg-info: Skipping, rebase in progress."
+            output = f"{self.header} Skipping, rebase in progress."
             return output, 0
 
-        # Run the build command
-        output = [f"update-egg-info: Running command: {self.build_command}"]
-        cmd_out, error, returncode = self.work_dir.do_ex(self.build_command)
+        output = []
+        if self.build_command:
+            output.append(f"{self.header} Running command: {self.build_command}")
+            cmd_out, error, returncode = self.work_dir.do_ex(self.build_command)
+        else:
+            cmd_out, error, returncode = self.run_virtualenv()
 
         if cmd_out:
-            output += cmd_out
+            output.append(cmd_out)
         if returncode and error:
-            output.append("update-egg-info: Error running build_command:")
+            output.append(f"{self.header} Error running build_command:")
             output.append(error)
 
         output = "\n".join(output)
@@ -97,17 +117,25 @@ def main():
         ),
     )
     parser.add_argument(
+        "--venv-name",
+        default=".setuptools_scm",
+        help=(
+            "By default creates this virtualenv folder inside the repo and does an"
+            "editable install using `pip install -e .`."
+        ),
+    )
+    parser.add_argument(
         "command",
-        default=["python", "setup.py", "egg_info"],
         nargs="*",
         help=(
-            "The command the hook will run to update the editable "
-            'install. Defaults to: "python setup.py egg_info"'
+            "If specified disables creating a virtualenv and simply runs this command."
         ),
     )
     args = parser.parse_args()
 
-    hook = PreCommitHook(os.getcwd(), build_command=args.command)
+    hook = PreCommitHook(
+        os.getcwd(), venv_name=args.venv_name, build_command=args.command
+    )
     output, returncode = hook.update_egg_info(force_on_rebase=args.post_rewrite)
 
     print(output)

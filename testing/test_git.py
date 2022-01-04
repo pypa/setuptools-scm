@@ -469,29 +469,11 @@ def test_is_git_rebasing(wd):
 
 def test_pre_commit_hook(wd, monkeypatch):
     build_command = ["python", "setup.py", "egg_info"]
-    hook = PreCommitHook(wd.cwd, build_command)
+    hook = PreCommitHook(wd.cwd, build_command=build_command)
     success_message = f"update-egg-info: Running command: {build_command}"
     git_wd = git.GitWorkdir(os.fspath(wd.cwd))
-
-    # 1. Test the various skip methods
-    out, ret = hook.update_egg_info()
-    # All skipped hooks should not return a error level
-    assert ret == 0
-    assert out == "update-egg-info: Skipping, no setup script found."
-
     create_pip_package(wd)
-
-    # At this point there is a valid config but it has not been "editable installed"
-    out, ret = hook.update_egg_info()
-    assert ret == 0
-    assert out == "update-egg-info: Skipping, no .egg-info directory found."
-
-    # Simulate an editable install by creating the egg_info folder
-    git_wd.do_ex("python setup.py egg_info")
     version_path = wd.cwd.joinpath("version.py")
-
-    # Remove the version.py file so we can verify that build_command was run
-    version_path.unlink()
 
     # Check that "SETUPTOOLS_SCM_SKIP_UPDATE_EGG_INFO" env var is respected
     monkeypatch.setenv("SETUPTOOLS_SCM_SKIP_UPDATE_EGG_INFO", "1")
@@ -562,7 +544,7 @@ def test_pre_commit_hook_cli(wd):
     version_path.unlink()
 
     build_command = ["python", "setup.py", "egg_info"]
-    success_message = "update-egg-info: Running command: {}"
+    success_message = "pip install -e "
 
     # Test post-commit, post-checkout or post-merge hook call
     out, _, ret = git_wd.do_ex("python -m setuptools_scm.pre_commit_hook")
@@ -584,5 +566,6 @@ def test_pre_commit_hook_cli(wd):
         "python -m setuptools_scm.pre_commit_hook touch test.txt"
     )
     assert ret == 0
+    success_message = "update-egg-info: Running command: {}"
     assert success_message.format(["touch", "test.txt"]) in out
     assert wd.cwd.joinpath("test.txt").exists()
