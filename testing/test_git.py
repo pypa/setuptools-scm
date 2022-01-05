@@ -448,7 +448,7 @@ def do_interactive(cwd, branch="master"):
     env["GIT_SEQUENCE_EDITOR"] = "sed -i -re 's/^noop/e HEAD/'"
 
     proc = subprocess.Popen(
-        f"git rebase -i {branch}",
+        ["git", "rebase", "-i", branch],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=str(cwd),
