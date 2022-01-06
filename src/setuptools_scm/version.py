@@ -193,9 +193,13 @@ def meta(
     parsed_version = _parse_tag(tag, preformatted, config)
     trace("version", tag, "->", parsed_version)
     assert parsed_version is not None, "Can't parse version %s" % tag
-    if config.ignore_dirty or os.environ.get(
-        "SETUPTOOLS_SCM_IGNORE_DIRTY", "False"
-    ).lower() in ["1", "t", "true"]:
+    if (
+        (config is not None and config.ignore_dirty)
+        or os.environ.get(
+            "SETUPTOOLS_SCM_IGNORE_DIRTY", "False"
+        ).lower() in ["1", "t", "true"]
+    ):
+
         dirty = False
     return ScmVersion(
         parsed_version, distance, node, dirty, preformatted, branch, config, **kw
