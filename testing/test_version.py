@@ -1,3 +1,4 @@
+import os
 from datetime import date
 from datetime import timedelta
 
@@ -181,6 +182,49 @@ def test_tag_regex1(tag, expected):
         result = meta(tag, config=c)
 
     assert result.tag.public == expected
+
+
+@pytest.mark.parametrize(
+    "is_dirty, ignore_dirty, ignore_dirty_env, distance",
+    [
+        pytest.param(True, True, False, None, id="ignored_dirty_conf_no_distance"),
+        pytest.param(True, False, False, None, id="not_ignored_dirty_no_distance"),
+        pytest.param(False, True, False, None, id="ignored_no_dirty_conf_no_distance"),
+        pytest.param(True, True, False, 1, id="ignored_dirty_conf_distance"),
+        pytest.param(True, False, False, 1, id="not_ignored_dirty_distance"),
+        pytest.param(False, True, False, 1, id="ignored_no_dirty_conf_distance"),
+        pytest.param(True, True, True, None, id="ignored_dirty_both_no_distance"),
+        pytest.param(True, False, True, None, id="ignored_dirty_env_no_distance"),
+        pytest.param(False, True, True, None, id="ignored_no_dirty_both_no_distance"),
+        pytest.param(True, True, True, 1, id="ignored_dirty_both_distance"),
+        pytest.param(True, False, True, 1, id="ignored_dirty_env_distance"),
+        pytest.param(False, True, True, 1, id="ignored_no_dirty_both_distance"),
+    ],
+)
+def test_ignore_dirty(is_dirty, ignore_dirty, ignore_dirty_env, distance):
+    os.environ["SETUPTOOLS_SCM_IGNORE_DIRTY"] = str(ignore_dirty_env)
+    config = Configuration(ignore_dirty=ignore_dirty)
+    version = meta("1.2.3", distance=distance, dirty=is_dirty, config=config)
+
+    formatted_version = format_version(
+        version,
+        local_scheme="node-and-date",
+        version_scheme="guess-next-dev",
+    )
+
+    if is_dirty and not ignore_dirty and not ignore_dirty_env:
+        dirty_str = "+d20090213"
+        if distance is None:
+            distance = 0
+    else:
+        dirty_str = ""
+
+    if distance is None:
+        expected_version = "1.2.3"
+    else:
+        expected_version = f"1.2.4.dev{distance}{dirty_str}"
+
+    assert formatted_version == expected_version
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/286")

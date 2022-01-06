@@ -108,6 +108,7 @@ class Configuration:
         self.dist_name = dist_name
         self.search_parent_directories = search_parent_directories
         self.parent = None
+        self.ignore_dirty = ignore_dirty
 
         if not normalize:
             # `normalize = False` means `version_cls = NonNormalizedVersion`
