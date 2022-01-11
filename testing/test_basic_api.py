@@ -1,20 +1,22 @@
 import os
+import shutil
 import sys
+from pathlib import Path
 
-import py
 import pytest
 
 import setuptools_scm
 from setuptools_scm import dump_version
 from setuptools_scm.utils import data_from_mime
 from setuptools_scm.utils import do
+from setuptools_scm.version import ScmVersion
 
 
 @pytest.mark.parametrize("cmd", ["ls", "dir"])
-def test_do(cmd, tmpdir):
-    if not py.path.local.sysfind(cmd):
+def test_do(cmd, tmp_path: Path):
+    if not shutil.which(cmd):
         pytest.skip(cmd + " not found")
-    do(cmd, str(tmpdir))
+    do(cmd, cwd=tmp_path)
 
 
 def test_data_from_mime(tmpdir):
@@ -41,6 +43,7 @@ def assert_root(monkeypatch, expected_root):
 
     def assertion(config):
         assert config.absolute_root == expected_root
+        return ScmVersion("1.0")
 
     monkeypatch.setattr(setuptools_scm, "_do_parse", assertion)
 
@@ -92,43 +95,51 @@ def test_pretended(version, monkeypatch):
     assert setuptools_scm.get_version() == version
 
 
-def test_root_relative_to(monkeypatch, tmp_path):
+def test_root_relative_to(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    tmp_path.joinpath("setup.cfg").touch()
     assert_root(monkeypatch, str(tmp_path / "alt"))
     module = tmp_path / "module/file.py"
     module.parent.mkdir()
     module.touch()
-    setuptools_scm.get_version(root="../alt", relative_to=str(module))
+
+    setuptools_scm.get_version(
+        root="../alt",
+        relative_to=str(module),
+    )
     with pytest.warns(UserWarning, match="relative_to is expected to be a file.*"):
-        setuptools_scm.get_version(root="../alt", relative_to=str(module.parent))
+        setuptools_scm.get_version(
+            root="../alt",
+            relative_to=str(module.parent),
+        )
 
 
-def test_dump_version(tmpdir):
-    sp = tmpdir.strpath
+def test_dump_version(tmp_path: Path):
 
-    dump_version(sp, "1.0", "first.txt")
-    assert tmpdir.join("first.txt").read() == "1.0"
+    dump_version(tmp_path, "1.0", "first.txt")
 
-    dump_version(sp, "1.0.dev42", "first.py")
-    content = tmpdir.join("first.py").read()
-    lines = content.splitlines()
+    def read(name: str) -> str:
+        return tmp_path.joinpath(name).read_text()
+
+    assert read("first.txt") == "1.0"
+
+    dump_version(tmp_path, "1.0.dev42", "first.py")
+    lines = read("first.py").splitlines()
     assert "version = '1.0.dev42'" in lines
     assert "version_tuple = (1, 0, 'dev42')" in lines
 
-    dump_version(sp, "1.0.1+g4ac9d2c", "second.py")
-    content = tmpdir.join("second.py").read()
-    lines = content.splitlines()
+    dump_version(tmp_path, "1.0.1+g4ac9d2c", "second.py")
+    lines = read("second.py").splitlines()
     assert "version = '1.0.1+g4ac9d2c'" in lines
     assert "version_tuple = (1, 0, 1, 'g4ac9d2c')" in lines
 
-    dump_version(sp, "1.2.3.dev18+gb366d8b.d20210415", "third.py")
-    content = tmpdir.join("third.py").read()
-    lines = content.splitlines()
+    dump_version(tmp_path, "1.2.3.dev18+gb366d8b.d20210415", "third.py")
+    lines = read("third.py").splitlines()
     assert "version = '1.2.3.dev18+gb366d8b.d20210415'" in lines
     assert "version_tuple = (1, 2, 3, 'dev18', 'gb366d8b.d20210415')" in lines
 
     import ast
 
-    ast.parse(content)
+    ast.parse(read("third.py"))
 
 
 def test_parse_plain_fails(recwarn):

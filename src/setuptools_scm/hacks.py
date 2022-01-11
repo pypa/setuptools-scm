@@ -37,4 +37,5 @@ def fallback_version(root, config=None):
             if version is not None:
                 return meta(str(version), preformatted=True, config=config)
     if config.fallback_version is not None:
+        trace("FALLBACK")
         return meta(config.fallback_version, preformatted=True, config=config)

@@ -5,6 +5,7 @@ from .config import Configuration
 from .discover import iter_matching_entrypoints
 from .utils import function_has_arg
 from .utils import trace
+from setuptools_scm.version import ScmVersion
 
 
 def _call_entrypoint_fn(root, config, fn):
@@ -21,7 +22,9 @@ def _call_entrypoint_fn(root, config, fn):
         return fn(root)
 
 
-def _version_from_entrypoints(config: Configuration, fallback=False):
+def _version_from_entrypoints(
+    config: Configuration, fallback: bool = False
+) -> "ScmVersion|None":
     if fallback:
         entrypoint = "setuptools_scm.parse_scm_fallback"
         root = config.fallback_root
@@ -29,11 +32,13 @@ def _version_from_entrypoints(config: Configuration, fallback=False):
         entrypoint = "setuptools_scm.parse_scm"
         root = config.absolute_root
 
+    trace("version_from_ep", entrypoint, root)
     for ep in iter_matching_entrypoints(root, entrypoint, config):
-        version = _call_entrypoint_fn(root, config, ep.load())
+        version: Optional[ScmVersion] = _call_entrypoint_fn(root, config, ep.load())
         trace(ep, version)
         if version:
             return version
+    return None
 
 
 try:

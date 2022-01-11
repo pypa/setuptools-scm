@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pkg_resources
 import pytest
 
@@ -61,27 +63,28 @@ def test_format_version(version, scheme, expected):
     assert format_version(version, version_scheme=vs, local_scheme=ls) == expected
 
 
-def test_dump_version_doesnt_bail_on_value_error(tmpdir):
+def test_dump_version_doesnt_bail_on_value_error(tmp_path):
     write_to = "VERSION"
     version = str(VERSIONS["exact"].tag)
-    with pytest.raises(ValueError) as exc_info:
-        dump_version(tmpdir.strpath, version, write_to)
-    assert str(exc_info.value).startswith("bad file format:")
+    with pytest.raises(ValueError, match="^bad file format:"):
+        dump_version(tmp_path, version, write_to)
 
 
 @pytest.mark.parametrize(
     "version", ["1.0", "1.2.3.dev1+ge871260", "1.2.3.dev15+ge871260.d20180625"]
 )
-def test_dump_version_works_with_pretend(version, tmpdir, monkeypatch):
+def test_dump_version_works_with_pretend(
+    version: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv(PRETEND_KEY, version)
-    get_version(write_to=str(tmpdir.join("VERSION.txt")))
-    assert tmpdir.join("VERSION.txt").read() == version
+    target = tmp_path.joinpath("VERSION.txt")
+    get_version(write_to=target)
+    assert target.read_text() == version
 
 
-def test_has_command(recwarn):
-    assert not has_command("yadayada_setuptools_aint_ne")
-    msg = recwarn.pop()
-    assert "yadayada" in str(msg.message)
+def test_has_command() -> None:
+    with pytest.warns(RuntimeWarning, match="yadayada"):
+        assert not has_command("yadayada_setuptools_aint_ne")
 
 
 @pytest.mark.parametrize(
@@ -92,6 +95,6 @@ def test_has_command(recwarn):
         pytest.param("3.3.1-rc26", "3.3.1rc26", marks=pytest.mark.issue(266)),
     ],
 )
-def test_tag_to_version(tag, expected_version):
+def test_tag_to_version(tag: str, expected_version: str) -> None:
     version = str(tag_to_version(tag))
     assert version == expected_version

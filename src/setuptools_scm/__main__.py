@@ -27,6 +27,7 @@ def main() -> None:
         config = Configuration(root=root)
 
     version = _get_version(config)
+    assert version is not None
     if opts.strip_dev:
         version = version.partition(".dev")[0]
     print(version)

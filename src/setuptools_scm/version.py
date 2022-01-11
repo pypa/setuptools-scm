@@ -3,6 +3,11 @@ import os
 import re
 import time
 import warnings
+from typing import Callable
+from typing import Iterator
+from typing import List
+from typing import overload
+from typing import Tuple
 
 from .config import Configuration
 from .config import Version as PkgVersion
@@ -95,13 +100,13 @@ def tags_to_versions(tags, config=None):
 class ScmVersion:
     def __init__(
         self,
-        tag_version,
-        distance=None,
-        node=None,
-        dirty=False,
-        preformatted=False,
-        branch=None,
-        config=None,
+        tag_version: str,
+        distance: "int|None" = None,
+        node: "str|None" = None,
+        dirty: bool = False,
+        preformatted: bool = False,
+        branch: "str|None" = None,
+        config: "Configuration|None" = None,
         node_date=None,
         **kw,
     ):
@@ -196,27 +201,40 @@ def guess_next_version(tag_version: ScmVersion):
     return _bump_dev(version) or _bump_regex(version)
 
 
-def _strip_local(version_string):
+def _dont_guess_next_version(tag_version: ScmVersion):
+    version = _strip_local(str(tag_version))
+    return _bump_dev(version) or _add_post(version)
+
+
+def _strip_local(version_string: str) -> str:
     public, sep, local = version_string.partition("+")
     return public
 
 
-def _bump_dev(version):
+def _add_post(version: str):
+    if "post" in version:
+        raise ValueError(
+            f"{version} already is a post release, refusing to guess the update"
+        )
+    return f"{version}.post1"
+
+
+def _bump_dev(version: str) -> "str | None":
     if ".dev" not in version:
-        return
+        return None
 
     prefix, tail = version.rsplit(".dev", 1)
     if tail != "0":
         raise ValueError(
             "choosing custom numbers for the `.devX` distance "
             "is not supported.\n "
-            "The {version} can't be bumped\n"
-            "Please drop the tag or create a new supported one".format(version=version)
+            f"The {version} can't be bumped\n"
+            "Please drop the tag or create a new supported one ending in .dev0"
         )
     return prefix
 
 
-def _bump_regex(version):
+def _bump_regex(version: str) -> str:
     match = re.match(r"(.*?)(\d+)$", version)
     if match is None:
         raise ValueError(
@@ -228,14 +246,14 @@ def _bump_regex(version):
         return "%s%d" % (prefix, int(tail) + 1)
 
 
-def guess_next_dev_version(version):
+def guess_next_dev_version(version: ScmVersion):
     if version.exact:
         return version.format_with("{tag}")
     else:
         return version.format_next_version(guess_next_version)
 
 
-def guess_next_simple_semver(version, retain, increment=True):
+def guess_next_simple_semver(version: str, retain: int, increment=True):
     try:
         parts = [int(i) for i in str(version).split(".")[:retain]]
     except ValueError:
@@ -296,11 +314,11 @@ def release_branch_semver(version):
     return release_branch_semver_version(version)
 
 
-def no_guess_dev_version(version):
+def no_guess_dev_version(version: ScmVersion):
     if version.exact:
         return version.format_with("{tag}")
     else:
-        return version.format_with("{tag}.post1.dev{distance}")
+        return version.format_next_version(_dont_guess_next_version)
 
 
 def date_ver_match(ver):
@@ -420,7 +438,9 @@ def _get_ep(group, name):
         return ep.load()
 
 
-def _iter_version_schemes(entrypoint, scheme_value, _memo=None):
+def _iter_version_schemes(
+    entrypoint: str, scheme_value: "str|List[str]|Tuple[str, ...]", _memo=None
+) -> Iterator[Callable[["ScmVersion"], str]]:
     if _memo is None:
         _memo = set()
     if isinstance(scheme_value, str):
@@ -435,7 +455,23 @@ def _iter_version_schemes(entrypoint, scheme_value, _memo=None):
         yield scheme_value
 
 
-def _call_version_scheme(version, entypoint, given_value, default):
+@overload
+def _call_version_scheme(
+    version: ScmVersion, entypoint: str, given_value: str, default: str
+) -> str:
+    ...
+
+
+@overload
+def _call_version_scheme(
+    version: ScmVersion, entypoint: str, given_value: str, default: None
+) -> "str|None":
+    ...
+
+
+def _call_version_scheme(
+    version: ScmVersion, entypoint: str, given_value: str, default: "str|None"
+) -> "str|None":
     for scheme in _iter_version_schemes(entypoint, given_value):
         result = scheme(version)
         if result is not None:
@@ -443,7 +479,7 @@ def _call_version_scheme(version, entypoint, given_value, default):
     return default
 
 
-def format_version(version, **config):
+def format_version(version: ScmVersion, **config) -> str:
     trace("scm version", version)
     trace("config", config)
     if version.preformatted:
