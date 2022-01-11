@@ -32,6 +32,7 @@ def _version_from_entrypoints(
         entrypoint = "setuptools_scm.parse_scm"
         root = config.absolute_root
 
+    trace("version_from_ep", entrypoint, root)
     for ep in iter_matching_entrypoints(root, entrypoint, config):
         version: Optional[ScmVersion] = _call_entrypoint_fn(root, config, ep.load())
         trace(ep, version)

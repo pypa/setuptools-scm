@@ -4,6 +4,8 @@
 """
 import os
 import warnings
+from typing import NoReturn
+from typing import Optional
 
 from . import _types
 from ._entrypoints import _call_entrypoint_fn
@@ -44,7 +46,6 @@ def version_from_scm(root):
         stacklevel=2,
     )
     config = Configuration(root=root)
-    # TODO: Is it API?
     return _version_from_entrypoints(config)
 
 
@@ -73,7 +74,7 @@ def dump_version(
         fp.write(template.format(version=version, version_tuple=version_tuple))
 
 
-def _do_parse(config: Configuration) -> ScmVersion:
+def _do_parse(config: Configuration) -> "ScmVersion|None":
     pretended = _read_pretended_version_for(config)
     if pretended is not None:
         return pretended
@@ -84,25 +85,31 @@ def _do_parse(config: Configuration) -> ScmVersion:
             raise TypeError(
                 "version parse result was a string\nplease return a parsed version"
             )
-        version = parse_result or _version_from_entrypoints(config, fallback=True)
+        version: Optional[ScmVersion]
+        if parse_result:
+            assert isinstance(parse_result, ScmVersion)
+            version = parse_result
+        else:
+            version = _version_from_entrypoints(config, fallback=True)
     else:
         # include fallbacks after dropping them from the main entrypoint
         version = _version_from_entrypoints(config) or _version_from_entrypoints(
             config, fallback=True
         )
 
-    if version:
-        return version
+    return version
 
+
+def _version_missing(config) -> NoReturn:
     raise LookupError(
-        "setuptools-scm was unable to detect version for %r.\n\n"
+        f"setuptools-scm was unable to detect version for {config.absolute_root}.\n\n"
         "Make sure you're either building from a fully intact git repository "
         "or PyPI tarballs. Most other sources (such as GitHub's tarballs, a "
         "git checkout without the .git folder) don't contain the necessary "
         "metadata and will not work.\n\n"
         "For example, if you're using pip, instead of "
         "https://github.com/user/proj/archive/master.zip "
-        "use git+https://github.com/user/proj.git#egg=proj" % config.absolute_root
+        "use git+https://github.com/user/proj.git#egg=proj"
     )
 
 
@@ -110,16 +117,16 @@ def get_version(
     root: str = ".",
     version_scheme: str = DEFAULT_VERSION_SCHEME,
     local_scheme: str = DEFAULT_LOCAL_SCHEME,
-    write_to: "os.PathLike[str]|str|None" = None,
+    write_to: "_types.PathT|None" = None,
     write_to_template: "str|None" = None,
-    relative_to: "os.PathLike|None" = None,
+    relative_to: "_types.PathT|None" = None,
     tag_regex: str = DEFAULT_TAG_REGEX,
     parentdir_prefix_version=None,
     fallback_version=None,
-    fallback_root=".",
+    fallback_root: _types.PathT = ".",
     parse=None,
     git_describe_command=None,
-    dist_name=None,
+    dist_name: "str|None" = None,
     version_cls=None,
     normalize=True,
     search_parent_directories=False,
@@ -132,11 +139,16 @@ def get_version(
     """
 
     config = Configuration(**locals())
-    return _get_version(config)
+    maybe_version = _get_version(config)
+    if maybe_version is None:
+        _version_missing(config)
+    return maybe_version
 
 
-def _get_version(config: Configuration) -> "str":
+def _get_version(config: Configuration) -> "str|None":
     parsed_version = _do_parse(config)
+    if parsed_version is None:
+        return None
     version_string = format_version(
         parsed_version,
         version_scheme=config.version_scheme,

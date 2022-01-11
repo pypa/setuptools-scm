@@ -136,8 +136,20 @@ def test_no_guess_version(version, expected_next):
     assert computed == expected_next
 
 
+@pytest.mark.parametrize(
+    "version, match",
+    [
+        ("1.0.dev1", "choosing custom numbers for the `.devX` distance"),
+        ("1.0.post1", "already is a post release"),
+    ],
+)
+def test_no_guess_version_bad(version, match):
+    with pytest.raises(ValueError, match=match):
+        no_guess_dev_version(m(version, distance=1))
+
+
 def test_bump_dev_version_zero():
-    guess_next_version("1.0.dev0")
+    assert guess_next_version("1.0.dev0") == "1.0"
 
 
 def test_bump_dev_version_nonzero_raises():

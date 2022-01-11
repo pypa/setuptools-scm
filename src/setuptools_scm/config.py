@@ -28,7 +28,7 @@ def _check_tag_regex(value):
 
 
 def _check_absolute_root(root, relative_to):
-    trace("l", repr(locals()))
+    trace("abs root", repr(locals()))
     if relative_to:
         if os.path.isabs(root) and not root.startswith(relative_to):
             warnings.warn(
@@ -68,7 +68,7 @@ class Configuration:
         write_to_template=None,
         tag_regex=DEFAULT_TAG_REGEX,
         parentdir_prefix_version=None,
-        fallback_version=None,
+        fallback_version: "str|None" = None,
         fallback_root=".",
         parse=None,
         git_describe_command=None,

@@ -4,6 +4,7 @@ import warnings
 import setuptools
 
 from . import _get_version
+from . import _version_missing
 from .config import _read_dist_name_from_setup_cfg
 from .config import Configuration
 from .utils import do
@@ -43,6 +44,15 @@ Suggested workarounds if applicable:
 _warn_on_old_setuptools()
 
 
+def _assign_version(dist: setuptools.Distribution, config: Configuration):
+    maybe_version = _get_version(config)
+
+    if maybe_version is None:
+        _version_missing(config)
+    else:
+        dist.metadata.version = maybe_version
+
+
 def version_keyword(dist: setuptools.Distribution, keyword, value):
     if not value:
         return
@@ -62,7 +72,7 @@ def version_keyword(dist: setuptools.Distribution, keyword, value):
     if dist_name is None:
         dist_name = _read_dist_name_from_setup_cfg()
     config = Configuration(dist_name=dist_name, **value)
-    dist.metadata.version = _get_version(config)
+    _assign_version(dist, config)
 
 
 def find_files(path=""):
@@ -91,4 +101,4 @@ def infer_version(dist: setuptools.Distribution):
     except LookupError as e:
         trace(e)
     else:
-        dist.metadata.version = _get_version(config)
+        _assign_version(dist, config)
