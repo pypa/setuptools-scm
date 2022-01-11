@@ -168,6 +168,7 @@ class Configuration:
         name: str = "pyproject.toml",
         dist_name=None,  # type: str | None
         _load_toml=_lazy_tomli_load,
+        **kwargs,
     ):
         """
         Read Configuration from pyproject.toml (or similar).
@@ -198,7 +199,7 @@ class Configuration:
         if dist_name is None:
             dist_name = _read_dist_name_from_setup_cfg()
 
-        return cls(dist_name=dist_name, **section)
+        return cls(dist_name=dist_name, **section, **kwargs)
 
 
 def _read_dist_name_from_setup_cfg():

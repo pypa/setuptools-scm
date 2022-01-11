@@ -1,6 +1,6 @@
 import argparse
 import os
-import warnings
+import sys
 
 from setuptools_scm import _get_version
 from setuptools_scm.config import Configuration
@@ -15,14 +15,21 @@ def main() -> None:
     try:
         pyproject = opts.config or _find_pyproject(root)
         root = opts.root or os.path.relpath(os.path.dirname(pyproject))
-        config = Configuration.from_file(pyproject)
-        config.root = root
+        config = Configuration.from_file(pyproject, root=root)
     except (LookupError, FileNotFoundError) as ex:
         # no pyproject.toml OR no [tool.setuptools_scm]
-        warnings.warn(f"{ex}. Using default configuration.")
-        config = Configuration(root)
+        print(
+            f"Warning: could not use {os.path.relpath(pyproject)},"
+            " using default configuration.\n"
+            f" Reason: {ex}.",
+            file=sys.stderr,
+        )
+        config = Configuration(root=root)
 
-    print(_get_version(config))
+    version = _get_version(config)
+    if opts.strip_dev:
+        version = version.partition(".dev")[0]
+    print(version)
 
     if opts.command == "ls":
         for fname in find_files(config.root):
@@ -47,6 +54,11 @@ def _get_cli_opts():
         metavar="PATH",
         help="path to 'pyproject.toml' with setuptools_scm config, "
         "default: looked up in the current or parent directories",
+    )
+    parser.add_argument(
+        "--strip-dev",
+        action="store_true",
+        help="remove the dev/local parts of the version before printing the version",
     )
     sub = parser.add_subparsers(title="extra commands", dest="command", metavar="")
     # We avoid `metavar` to prevent printing repetitive information
