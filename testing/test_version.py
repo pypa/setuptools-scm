@@ -104,21 +104,28 @@ def test_next_release_branch_semver(version, expected_next):
     assert computed == expected_next
 
 
+def m(tag, **kw):
+    return meta(tag, **kw, config=c)
+
+
 @pytest.mark.parametrize(
     "version, expected_next",
     [
         pytest.param(
-            meta("1.0.0", distance=2, branch="default", config=c),
+            m("1.0.0", distance=2),
             "1.0.0.post1.dev2",
             id="dev_distance",
         ),
         pytest.param(
-            meta("1.0", distance=2, branch="default", config=c),
+            m("1.0.dev0", distance=2), "1.0.dev2", id="dev_distance_after_dev_tag"
+        ),
+        pytest.param(
+            m("1.0", distance=2),
             "1.0.post1.dev2",
             id="dev_distance_short_tag",
         ),
         pytest.param(
-            meta("1.0.0", distance=None, branch="default", config=c),
+            m("1.0.0"),
             "1.0.0",
             id="no_dev_distance",
         ),
@@ -141,7 +148,7 @@ def test_bump_dev_version_nonzero_raises():
         "choosing custom numbers for the `.devX` distance "
         "is not supported.\n "
         "The 1.0.dev1 can't be bumped\n"
-        "Please drop the tag or create a new supported one"
+        "Please drop the tag or create a new supported one ending in .dev0"
     )
 
 

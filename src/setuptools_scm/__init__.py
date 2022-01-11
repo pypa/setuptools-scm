@@ -5,6 +5,7 @@
 import os
 import warnings
 
+from . import _types
 from ._entrypoints import _call_entrypoint_fn
 from ._entrypoints import _version_from_entrypoints
 from ._overrides import _read_pretended_version_for
@@ -22,6 +23,7 @@ from .utils import function_has_arg
 from .utils import trace
 from .version import format_version
 from .version import meta
+from .version import ScmVersion
 
 TEMPLATES = {
     ".py": """\
@@ -46,7 +48,12 @@ def version_from_scm(root):
     return _version_from_entrypoints(config)
 
 
-def dump_version(root, version: str, write_to, template: "str | None" = None):
+def dump_version(
+    root: _types.PathT,
+    version: str,
+    write_to: _types.PathT,
+    template: "str | None" = None,
+):
     assert isinstance(version, str)
     if not write_to:
         return
@@ -66,7 +73,7 @@ def dump_version(root, version: str, write_to, template: "str | None" = None):
         fp.write(template.format(version=version, version_tuple=version_tuple))
 
 
-def _do_parse(config):
+def _do_parse(config: Configuration) -> ScmVersion:
     pretended = _read_pretended_version_for(config)
     if pretended is not None:
         return pretended
@@ -100,13 +107,13 @@ def _do_parse(config):
 
 
 def get_version(
-    root=".",
-    version_scheme=DEFAULT_VERSION_SCHEME,
-    local_scheme=DEFAULT_LOCAL_SCHEME,
-    write_to=None,
-    write_to_template=None,
-    relative_to=None,
-    tag_regex=DEFAULT_TAG_REGEX,
+    root: str = ".",
+    version_scheme: str = DEFAULT_VERSION_SCHEME,
+    local_scheme: str = DEFAULT_LOCAL_SCHEME,
+    write_to: "os.PathLike[str]|str|None" = None,
+    write_to_template: "str|None" = None,
+    relative_to: "os.PathLike|None" = None,
+    tag_regex: str = DEFAULT_TAG_REGEX,
     parentdir_prefix_version=None,
     fallback_version=None,
     fallback_root=".",
@@ -116,7 +123,7 @@ def get_version(
     version_cls=None,
     normalize=True,
     search_parent_directories=False,
-):
+) -> str:
     """
     If supplied, relative_to should be a file from which root may
     be resolved. Typically called by a script or module that is not
@@ -128,23 +135,21 @@ def get_version(
     return _get_version(config)
 
 
-def _get_version(config):
+def _get_version(config: Configuration) -> "str":
     parsed_version = _do_parse(config)
+    version_string = format_version(
+        parsed_version,
+        version_scheme=config.version_scheme,
+        local_scheme=config.local_scheme,
+    )
+    dump_version(
+        root=config.root,
+        version=version_string,
+        write_to=config.write_to,
+        template=config.write_to_template,
+    )
 
-    if parsed_version:
-        version_string = format_version(
-            parsed_version,
-            version_scheme=config.version_scheme,
-            local_scheme=config.local_scheme,
-        )
-        dump_version(
-            root=config.root,
-            version=version_string,
-            write_to=config.write_to,
-            template=config.write_to_template,
-        )
-
-        return version_string
+    return version_string
 
 
 # Public API
