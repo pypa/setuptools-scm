@@ -11,7 +11,7 @@
 * python 3.10 support
 * better handling of setuptools install command deprecation
 * consider ``pyproject.tomls`` when running as command
-
+* use list in git describe command to avoid shell expansions while supporting both windows and posix
 
 6.3.2
 =====
