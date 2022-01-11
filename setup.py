@@ -19,8 +19,8 @@ from setuptools.command.bdist_egg import bdist_egg as original_bdist_egg
 class bdist_egg(original_bdist_egg):
     def run(self):
         raise SystemExit(
-            f"{type(self).__name__} is forbidden, "
-            "please update to setuptools>=45 which uses pip"
+            "%s is forbidden, "
+            "please update to setuptools>=45 which uses pip" % type(self).__name__
         )
 
 
