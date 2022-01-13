@@ -2,7 +2,10 @@
 import os
 import re
 import warnings
+from typing import Type
+from typing import TypeVar
 
+from . import _types as _t
 from ._version_cls import NonNormalizedVersion
 from ._version_cls import Version
 from .utils import trace
@@ -27,10 +30,13 @@ def _check_tag_regex(value):
     return regex
 
 
-def _check_absolute_root(root, relative_to):
-    trace("l", repr(locals()))
+def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT):
+    trace("abs root", repr(locals()))
     if relative_to:
-        if os.path.isabs(root) and not root.startswith(relative_to):
+        if (
+            os.path.isabs(root)
+            and not os.path.commonpath([root, relative_to]) == relative_to
+        ):
             warnings.warn(
                 "absolute root path '%s' overrides relative_to '%s'"
                 % (root, relative_to)
@@ -49,33 +55,40 @@ def _check_absolute_root(root, relative_to):
     return os.path.abspath(root)
 
 
-def _lazy_tomli_load(data):
+def _lazy_tomli_load(data: str):
     from tomli import loads
 
     return loads(data)
 
 
+VersionT = TypeVar("VersionT", Version, NonNormalizedVersion)
+
+
 class Configuration:
     """Global configuration model"""
 
+    _root: _t.PathT
+    _relative_to: "_t.PathT | None"
+    version_cls: "Type[Version]|Type[NonNormalizedVersion]"
+
     def __init__(
         self,
-        relative_to=None,
-        root=".",
-        version_scheme=DEFAULT_VERSION_SCHEME,
+        relative_to: "_t.PathT | None" = None,
+        root: _t.PathT = ".",
+        version_scheme: str = DEFAULT_VERSION_SCHEME,
         local_scheme=DEFAULT_LOCAL_SCHEME,
-        write_to=None,
-        write_to_template=None,
+        write_to: "_t.PathT | None" = None,
+        write_to_template: "str|None" = None,
         tag_regex=DEFAULT_TAG_REGEX,
         parentdir_prefix_version=None,
-        fallback_version=None,
-        fallback_root=".",
+        fallback_version: "str|None" = None,
+        fallback_root: _t.PathT = ".",
         parse=None,
         git_describe_command=None,
-        dist_name=None,
-        version_cls=None,
-        normalize=True,
-        search_parent_directories=False,
+        dist_name: str = None,
+        version_cls: "Type[Version]|Type[NonNormalizedVersion]|str|None" = None,
+        normalize: bool = True,
+        search_parent_directories: bool = False,
     ):
         # TODO:
         self._relative_to = relative_to
@@ -107,7 +120,7 @@ class Configuration:
         else:
             # Use `version_cls` if provided, default to packaging or pkg_resources
             if version_cls is None:
-                version_cls = Version
+                self.version_cls = Version
             elif isinstance(version_cls, str):
                 try:
                     # Not sure this will work in old python
@@ -115,10 +128,11 @@ class Configuration:
 
                     pkg, cls_name = version_cls.rsplit(".", 1)
                     version_cls_host = importlib.import_module(pkg)
-                    version_cls = getattr(version_cls_host, cls_name)
+                    self.version_cls = getattr(version_cls_host, cls_name)
                 except:  # noqa
                     raise ValueError(f"Unable to import version_cls='{version_cls}'")
-            self.version_cls = version_cls
+            else:
+                self.version_cls = version_cls
 
     @property
     def fallback_root(self):

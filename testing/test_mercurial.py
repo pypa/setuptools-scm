@@ -179,7 +179,7 @@ def test_latest_tag_detection(wd):
 
 
 @pytest.mark.usefixtures("version_1_0")
-def test_feature_branch_increments_major(wd):
+def test_feature_branch_increments_major(wd) -> None:
 
     wd.commit_testfile()
     assert wd.get_version(version_scheme="python-simplified-semver").startswith("1.0.1")

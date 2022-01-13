@@ -36,3 +36,4 @@ repos:
         additional_dependencies:
             - types-setuptools
             - tokenize-rt==3.2.0
+            - pytest == 6.2.5

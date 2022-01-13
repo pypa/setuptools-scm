@@ -27,6 +27,7 @@ def main() -> None:
         config = Configuration(root=root)
 
     version = _get_version(config)
+    assert version is not None
     if opts.strip_dev:
         version = version.partition(".dev")[0]
     print(version)
@@ -36,7 +37,7 @@ def main() -> None:
             print(fname)
 
 
-def _get_cli_opts():
+def _get_cli_opts() -> argparse.Namespace:
     prog = "python -m setuptools_scm"
     desc = "Print project version according to SCM metadata"
     parser = argparse.ArgumentParser(prog, description=desc)
@@ -67,13 +68,15 @@ def _get_cli_opts():
     return parser.parse_args()
 
 
-def _find_pyproject(parent):
+def _find_pyproject(parent: str) -> str:
     for directory in walk_potential_roots(os.path.abspath(parent)):
         pyproject = os.path.join(directory, "pyproject.toml")
-        if os.path.exists(pyproject):
+        if os.path.isfile(pyproject):
             return pyproject
 
-    raise FileNotFoundError("'pyproject.toml' was not found")
+    return os.path.abspath(
+        "pyproject.toml"
+    )  # use default name to trigger the default errors
 
 
 if __name__ == "__main__":

@@ -4,7 +4,10 @@
 """
 import os
 import warnings
+from typing import NoReturn
+from typing import Optional
 
+from . import _types
 from ._entrypoints import _call_entrypoint_fn
 from ._entrypoints import _version_from_entrypoints
 from ._overrides import _read_pretended_version_for
@@ -22,6 +25,7 @@ from .utils import function_has_arg
 from .utils import trace
 from .version import format_version
 from .version import meta
+from .version import ScmVersion
 
 TEMPLATES = {
     ".py": """\
@@ -42,14 +46,16 @@ def version_from_scm(root):
         stacklevel=2,
     )
     config = Configuration(root=root)
-    # TODO: Is it API?
     return _version_from_entrypoints(config)
 
 
-def dump_version(root, version: str, write_to, template: "str | None" = None):
+def dump_version(
+    root: _types.PathT,
+    version: str,
+    write_to: _types.PathT,
+    template: "str | None" = None,
+):
     assert isinstance(version, str)
-    if not write_to:
-        return
     target = os.path.normpath(os.path.join(root, write_to))
     ext = os.path.splitext(target)[1]
     template = template or TEMPLATES.get(ext)
@@ -66,7 +72,7 @@ def dump_version(root, version: str, write_to, template: "str | None" = None):
         fp.write(template.format(version=version, version_tuple=version_tuple))
 
 
-def _do_parse(config):
+def _do_parse(config: Configuration) -> "ScmVersion|None":
     pretended = _read_pretended_version_for(config)
     if pretended is not None:
         return pretended
@@ -77,46 +83,36 @@ def _do_parse(config):
             raise TypeError(
                 "version parse result was a string\nplease return a parsed version"
             )
-        version = parse_result or _version_from_entrypoints(config, fallback=True)
+        version: Optional[ScmVersion]
+        if parse_result:
+            assert isinstance(parse_result, ScmVersion)
+            version = parse_result
+        else:
+            version = _version_from_entrypoints(config, fallback=True)
     else:
         # include fallbacks after dropping them from the main entrypoint
         version = _version_from_entrypoints(config) or _version_from_entrypoints(
             config, fallback=True
         )
 
-    if version:
-        return version
+    return version
 
+
+def _version_missing(config) -> NoReturn:
     raise LookupError(
-        "setuptools-scm was unable to detect version for %r.\n\n"
+        f"setuptools-scm was unable to detect version for {config.absolute_root}.\n\n"
         "Make sure you're either building from a fully intact git repository "
         "or PyPI tarballs. Most other sources (such as GitHub's tarballs, a "
         "git checkout without the .git folder) don't contain the necessary "
         "metadata and will not work.\n\n"
         "For example, if you're using pip, instead of "
         "https://github.com/user/proj/archive/master.zip "
-        "use git+https://github.com/user/proj.git#egg=proj" % config.absolute_root
+        "use git+https://github.com/user/proj.git#egg=proj"
     )
 
 
-def get_version(
-    root=".",
-    version_scheme=DEFAULT_VERSION_SCHEME,
-    local_scheme=DEFAULT_LOCAL_SCHEME,
-    write_to=None,
-    write_to_template=None,
-    relative_to=None,
-    tag_regex=DEFAULT_TAG_REGEX,
-    parentdir_prefix_version=None,
-    fallback_version=None,
-    fallback_root=".",
-    parse=None,
-    git_describe_command=None,
-    dist_name=None,
-    version_cls=None,
-    normalize=True,
-    search_parent_directories=False,
-):
+@_types.transfer_input_args(Configuration)
+def get_version(**kw) -> str:
     """
     If supplied, relative_to should be a file from which root may
     be resolved. Typically called by a script or module that is not
@@ -124,19 +120,23 @@ def get_version(
     root of the repository by supplying ``__file__``.
     """
 
-    config = Configuration(**locals())
-    return _get_version(config)
+    config = Configuration(**kw)
+    maybe_version = _get_version(config)
+    if maybe_version is None:
+        _version_missing(config)
+    return maybe_version
 
 
-def _get_version(config):
+def _get_version(config: Configuration) -> "str|None":
     parsed_version = _do_parse(config)
-
-    if parsed_version:
-        version_string = format_version(
-            parsed_version,
-            version_scheme=config.version_scheme,
-            local_scheme=config.local_scheme,
-        )
+    if parsed_version is None:
+        return None
+    version_string = format_version(
+        parsed_version,
+        version_scheme=config.version_scheme,
+        local_scheme=config.local_scheme,
+    )
+    if config.write_to is not None:
         dump_version(
             root=config.root,
             version=version_string,
@@ -144,7 +144,7 @@ def _get_version(config):
             template=config.write_to_template,
         )
 
-        return version_string
+    return version_string
 
 
 # Public API

@@ -118,7 +118,7 @@ def function_has_arg(fn, argname):
     return argname in argspec
 
 
-def has_command(name, warn=True):
+def has_command(name: str, warn: bool = True) -> bool:
     try:
         p = _popen_pipes([name, "help"], ".")
     except OSError:

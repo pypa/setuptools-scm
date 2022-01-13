@@ -8,14 +8,14 @@ try:
         Version, "release"
     ), "broken installation ensure packaging>=20 is available"
 except ImportError:
-    from pkg_resources._vendor.packaging.version import (
+    from pkg_resources._vendor.packaging.version import (  # type: ignore
         Version as SetuptoolsVersion,
         InvalidVersion,
     )
 
     try:
         SetuptoolsVersion.release
-        Version = SetuptoolsVersion
+        Version = SetuptoolsVersion  # type: ignore
     except AttributeError:
 
         class Version(SetuptoolsVersion):  # type: ignore
