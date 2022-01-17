@@ -1,8 +1,8 @@
-import datetime
 import os
 import re
-import time
 import warnings
+from datetime import datetime
+from datetime import timezone
 from typing import Callable
 from typing import Iterator
 from typing import List
@@ -118,9 +118,11 @@ class ScmVersion:
         self.distance = distance
         self.node = node
         self.node_date = node_date
-        self.time = datetime.datetime.utcfromtimestamp(
-            int(os.environ.get("SOURCE_DATE_EPOCH", time.time()))
-        )
+        if "SOURCE_DATE_EPOCH" in os.environ:
+            date_epoch = int(os.environ["SOURCE_DATE_EPOCH"])
+            self.time = datetime.fromtimestamp(date_epoch, timezone.utc)
+        else:
+            self.time = datetime.now(timezone.utc)
         self._extra = kw
         self.dirty = dirty
         self.preformatted = preformatted
@@ -351,12 +353,13 @@ def guess_next_date_ver(version, node_date=None, date_fmt=None, version_cls=None
     # deduct date format if not provided
     if date_fmt is None:
         date_fmt = "%Y.%m.%d" if len(match.group("year")) == 4 else "%y.%m.%d"
-    head_date = node_date or datetime.date.today()
+    today = datetime.now(timezone.utc).date()
+    head_date = node_date or today
     # compute patch
     if match is None:
-        tag_date = datetime.date.today()
+        tag_date = today
     else:
-        tag_date = datetime.datetime.strptime(match.group("date"), date_fmt).date()
+        tag_date = datetime.strptime(match.group("date"), date_fmt).date()
     if tag_date == head_date:
         patch = "0" if match is None else (match.group("patch") or "0")
         patch = int(patch) + 1
