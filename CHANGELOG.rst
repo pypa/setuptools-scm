@@ -13,7 +13,8 @@
 * consider ``pyproject.tomls`` when running as command
 * use list in git describe command to avoid shell expansions while supporting both windows and posix
 * add ``--strip-dev`` flag to ``python -m setuptools_scm`` to print the next guessed version cleanly
-
+* ensure no-guess-dev will fail on bad tags instead of generating invalid versions
+* ensure we use utc everywhere to avoid confusion
 
 6.3.2
 =====
