@@ -2,6 +2,7 @@ import os
 import sys
 from datetime import date
 from datetime import datetime
+from datetime import timezone
 from os.path import join as opj
 from unittest.mock import Mock
 from unittest.mock import patch
@@ -215,7 +216,7 @@ def test_git_dirty_notag(today, wd, monkeypatch):
     assert wd.version.startswith("0.1.dev1")
     if today:
         # the date on the tag is in UTC
-        tag = datetime.utcnow().date().strftime(".d%Y%m%d")
+        tag = datetime.now(timezone.utc).date().strftime(".d%Y%m%d")
     else:
         tag = ".d20090213"
     # we are dirty, check for the tag

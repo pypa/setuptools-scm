@@ -1,6 +1,5 @@
 import os
 import re
-import time
 import warnings
 from datetime import datetime
 from datetime import timezone
@@ -119,9 +118,11 @@ class ScmVersion:
         self.distance = distance
         self.node = node
         self.node_date = node_date
-        self.time = datetime.utcfromtimestamp(
-            int(os.environ.get("SOURCE_DATE_EPOCH", time.time()))
-        )
+        if "SOURCE_DATE_EPOCH" in os.environ:
+            date_epoch = int(os.environ["SOURCE_DATE_EPOCH"])
+            self.time = datetime.fromtimestamp(date_epoch, timezone.utc)
+        else:
+            self.time = datetime.now(timezone.utc)
         self._extra = kw
         self.dirty = dirty
         self.preformatted = preformatted
