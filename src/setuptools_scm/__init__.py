@@ -111,8 +111,24 @@ def _version_missing(config) -> NoReturn:
     )
 
 
-@_types.transfer_input_args(Configuration)
-def get_version(**kw) -> str:
+def get_version(
+    root=".",
+    version_scheme=DEFAULT_VERSION_SCHEME,
+    local_scheme=DEFAULT_LOCAL_SCHEME,
+    write_to=None,
+    write_to_template=None,
+    relative_to=None,
+    tag_regex=DEFAULT_TAG_REGEX,
+    parentdir_prefix_version=None,
+    fallback_version=None,
+    fallback_root=".",
+    parse=None,
+    git_describe_command=None,
+    dist_name=None,
+    version_cls=None,
+    normalize=True,
+    search_parent_directories=False,
+):
     """
     If supplied, relative_to should be a file from which root may
     be resolved. Typically called by a script or module that is not
@@ -120,7 +136,7 @@ def get_version(**kw) -> str:
     root of the repository by supplying ``__file__``.
     """
 
-    config = Configuration(**kw)
+    config = Configuration(**locals())
     maybe_version = _get_version(config)
     if maybe_version is None:
         _version_missing(config)

@@ -1,4 +1,8 @@
+v6.4.1
+=======
 
+
+* fix regression #669: restore get_version signature
 
 6.4.0
 ======
