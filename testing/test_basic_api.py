@@ -58,9 +58,12 @@ def test_version_from_scm(wd):
         setuptools_scm.version_from_scm(str(wd))
 
 
-def test_root_parameter_pass_by(monkeypatch, tmpdir):
-    assert_root(monkeypatch, tmpdir)
-    setuptools_scm.get_version(root=tmpdir.strpath)
+def test_root_parameter_pass_by(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    assert_root(monkeypatch, os.fspath(tmp_path))
+    setuptools_scm.get_version(root=os.fspath(tmp_path))
+    setuptools_scm.get_version(
+        os.fspath(tmp_path)
+    )  # issue 669 - posarg difference between Configuration and get_version
 
 
 def test_parentdir_prefix(tmpdir, monkeypatch):
