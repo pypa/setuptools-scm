@@ -3,6 +3,7 @@ v6.4.1
 
 
 * fix regression #669: restore get_version signature
+* fix #668: harden the selftest for distribution extras
 
 6.4.0
 ======

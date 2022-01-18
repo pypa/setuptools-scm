@@ -142,11 +142,11 @@ def testwarn_on_broken_setuptools():
 
 
 @pytest.mark.issue(611)
-def test_provides_toml_exta():
+def test_distribution_procides_extras():
     try:
         from importlib.metadata import distribution
     except ImportError:
         from importlib_metadata import distribution
 
     dist = distribution("setuptools_scm")
-    assert "toml" in dist.metadata["Provides-Extra"]
+    assert sorted(dist.metadata.get_all("Provides-Extra")) == ["test", "toml"]
