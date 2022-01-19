@@ -1,3 +1,9 @@
+v6.4.2
+======
+
+* fix #671 : NoReturn is not avaliable in painfully dead python 3.6
+
+
 v6.4.1
 =======
 

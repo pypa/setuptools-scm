@@ -4,8 +4,8 @@
 """
 import os
 import warnings
-from typing import NoReturn
 from typing import Optional
+from typing import TYPE_CHECKING
 
 from . import _types
 from ._entrypoints import _call_entrypoint_fn
@@ -26,6 +26,10 @@ from .utils import trace
 from .version import format_version
 from .version import meta
 from .version import ScmVersion
+
+if TYPE_CHECKING:
+    from typing import NoReturn
+
 
 TEMPLATES = {
     ".py": """\
@@ -98,7 +102,7 @@ def _do_parse(config: Configuration) -> "ScmVersion|None":
     return version
 
 
-def _version_missing(config) -> NoReturn:
+def _version_missing(config) -> "NoReturn":
     raise LookupError(
         f"setuptools-scm was unable to detect version for {config.absolute_root}.\n\n"
         "Make sure you're either building from a fully intact git repository "
