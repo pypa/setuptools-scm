@@ -52,7 +52,7 @@ continue to rely on ``setup_requires``. For maximum compatibility
 with those uses, consider also including a ``setup_requires`` directive
 (described below in ``setup.py usage`` and ``setup.cfg``).
 
-To enable version inference, add this section to your pyproject.toml:
+To enable version inference, add this section to your ``pyproject.toml``:
 
 .. code:: toml
 
@@ -70,6 +70,19 @@ to be supplied to ``get_version()``. For example:
 
     [tool.setuptools_scm]
     write_to = "pkg/_version.py"
+
+
+If you need to confirm which version string is being generated
+or debug the configuration, you can install
+`setuptools-scm <https://github.com/pypa/setuptools_scm>`_
+directly in your working environment and run:
+
+.. code-block:: shell
+
+    $ python -m setuptools_scm
+
+    # To explore other options, try:
+    $ python -m setuptools_scm --help
 
 
 ``setup.py`` usage (deprecated)
