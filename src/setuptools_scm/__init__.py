@@ -132,7 +132,6 @@ def get_version(
     version_cls=None,
     normalize=True,
     search_parent_directories=False,
-    ignore_dirty=False,
 ):
     """
     If supplied, relative_to should be a file from which root may

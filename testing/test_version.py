@@ -184,47 +184,120 @@ def test_tag_regex1(tag, expected):
     assert result.tag.public == expected
 
 
-@pytest.mark.parametrize(
-    "is_dirty, ignore_dirty, ignore_dirty_env, distance",
-    [
-        pytest.param(True, True, False, None, id="ignored_dirty_conf_no_distance"),
-        pytest.param(True, False, False, None, id="not_ignored_dirty_no_distance"),
-        pytest.param(False, True, False, None, id="ignored_no_dirty_conf_no_distance"),
-        pytest.param(True, True, False, 1, id="ignored_dirty_conf_distance"),
-        pytest.param(True, False, False, 1, id="not_ignored_dirty_distance"),
-        pytest.param(False, True, False, 1, id="ignored_no_dirty_conf_distance"),
-        pytest.param(True, True, True, None, id="ignored_dirty_both_no_distance"),
-        pytest.param(True, False, True, None, id="ignored_dirty_env_no_distance"),
-        pytest.param(False, True, True, None, id="ignored_no_dirty_both_no_distance"),
-        pytest.param(True, True, True, 1, id="ignored_dirty_both_distance"),
-        pytest.param(True, False, True, 1, id="ignored_dirty_env_distance"),
-        pytest.param(False, True, True, 1, id="ignored_no_dirty_both_distance"),
+@pytest.fixture(
+    params=[
+        ("SETUPTOOLS_SCM_OVERRIDE_DIRTY", "TrUe"),
+        ("SETUPTOOLS_SCM_OVERRIDE_DIRTY", "T"),
+        ("SETUPTOOLS_SCM_OVERRIDE_DIRTY", "1"),
+        ("SETUPTOOLS_SCM_OVERRIDE_DIRTY", "FaLse"),
+        ("SETUPTOOLS_SCM_OVERRIDE_DIRTY", "F"),
+        ("SETUPTOOLS_SCM_OVERRIDE_DIRTY", "0"),
+        ("SETUPTOOLS_SCM_OVERRIDE_DIRTY", ""),
+        ("SETUPTOOLS_SCM_OVERRIDE_DIRTY_FOR_MY_PACKAGE", "true"),
+        ("SETUPTOOLS_SCM_OVERRIDE_DIRTY_FOR_MY_PACKAGE", "t"),
+        ("SETUPTOOLS_SCM_OVERRIDE_DIRTY_FOR_MY_PACKAGE", "1"),
+        ("SETUPTOOLS_SCM_OVERRIDE_DIRTY_FOR_MY_PACKAGE", "false"),
+        ("SETUPTOOLS_SCM_OVERRIDE_DIRTY_FOR_MY_PACKAGE", "f"),
+        ("SETUPTOOLS_SCM_OVERRIDE_DIRTY_FOR_MY_PACKAGE", "0"),
+        ("SETUPTOOLS_SCM_OVERRIDE_DIRTY_FOR_MY_PACKAGE", "anything_else"),
+        [
+            ("SETUPTOOLS_SCM_OVERRIDE_DIRTY", "true"),
+            ("SETUPTOOLS_SCM_OVERRIDE_DIRTY_FOR_MY_PACKAGE", "false"),
+        ],
+        [
+            ("SETUPTOOLS_SCM_OVERRIDE_DIRTY", "false"),
+            ("SETUPTOOLS_SCM_OVERRIDE_DIRTY_FOR_MY_PACKAGE", "true"),
+        ],
+        [
+            ("SETUPTOOLS_SCM_OVERRIDE_DIRTY", "true"),
+            ("SETUPTOOLS_SCM_OVERRIDE_DIRTY_FOR_MY_PACKAGE", "true"),
+        ],
+        [
+            ("SETUPTOOLS_SCM_OVERRIDE_DIRTY", "false"),
+            ("SETUPTOOLS_SCM_OVERRIDE_DIRTY_FOR_MY_PACKAGE", "false"),
+        ],
+    ],
+    ids=[
+        "override_all_with_true",
+        "override_all_with_t",
+        "override_all_with_1",
+        "override_all_with_false",
+        "override_all_with_f",
+        "override_all_with_0",
+        "no_override_all",
+        "override_my_package_only_with_true",
+        "override_my_package_only_with_t",
+        "override_my_package_only_with_1",
+        "override_my_package_only_with_false",
+        "override_my_package_only_with_f",
+        "override_my_package_only_with_0",
+        "no_override_my_package",
+        "override_both_my_package_priority_false",
+        "override_both_my_package_priority_true",
+        "override_both_global_priority",
+        "override_both_false",
     ],
 )
-def test_ignore_dirty(is_dirty, ignore_dirty, ignore_dirty_env, distance):
-    os.environ["SETUPTOOLS_SCM_IGNORE_DIRTY"] = str(ignore_dirty_env)
-    config = Configuration(ignore_dirty=ignore_dirty)
-    version = meta("1.2.3", distance=distance, dirty=is_dirty, config=config)
+def override_dirty_env(request):
+    param = request.param
+    if not isinstance(param, list):
+        param = [param]
 
-    formatted_version = format_version(
-        version,
-        local_scheme="node-and-date",
-        version_scheme="guess-next-dev",
-    )
+    dirty = None
+    for key, val in param:
+        os.environ[key] = val
 
-    if is_dirty and not ignore_dirty and not ignore_dirty_env:
-        dirty_str = "+d20090213"
+        if dirty is not None and key == "SETUPTOOLS_SCM_OVERRIDE_DIRTY":
+            continue
+
+        if val.lower() in ["1", "t", "true"]:
+            dirty = True
+        elif val.lower() in ["0", "f", "false"]:
+            dirty = False
+        else:
+            dirty = None
+
+    yield dirty
+
+    for key, _ in param:
+        del os.environ[key]
+
+
+@pytest.mark.parametrize(
+    "is_dirty,distance",
+    [
+        pytest.param(True, None, id="dirty_no_distance"),
+        pytest.param(False, None, id="no_dirty_no_distance"),
+        pytest.param(True, 1, id="dirty_distance_1"),
+        pytest.param(False, 1, id="no_dirty_distance_1"),
+    ],
+)
+def test_ignore_dirty(override_dirty_env, is_dirty, distance):
+    config = Configuration(dist_name="my_package")
+
+    def check_version(version, distance, is_dirty, override_dirty):
+        formatted_version = format_version(
+            version,
+            local_scheme="node-and-date",
+            version_scheme="guess-next-dev",
+        )
+
+        if (is_dirty and override_dirty is None) or override_dirty:
+            dirty_str = "+d20090213"
+            if distance is None:
+                distance = 0
+        else:
+            dirty_str = ""
+
         if distance is None:
-            distance = 0
-    else:
-        dirty_str = ""
+            expected_version = "1.2.3"
+        else:
+            expected_version = f"1.2.4.dev{distance}{dirty_str}"
 
-    if distance is None:
-        expected_version = "1.2.3"
-    else:
-        expected_version = f"1.2.4.dev{distance}{dirty_str}"
+        assert formatted_version == expected_version
 
-    assert formatted_version == expected_version
+    version = meta("1.2.3", distance=distance, dirty=is_dirty, config=config)
+    check_version(version, distance, is_dirty, override_dirty_env)
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/286")

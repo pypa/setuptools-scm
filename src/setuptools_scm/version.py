@@ -6,6 +6,7 @@ from datetime import timezone
 from typing import Callable
 from typing import Iterator
 from typing import List
+from typing import Optional
 from typing import overload
 from typing import Tuple
 
@@ -18,6 +19,8 @@ from .utils import trace
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3
 SEMVER_LEN = 3
+DIRTY_KEY = "SETUPTOOLS_SCM_OVERRIDE_DIRTY"
+DIRTY_KEY_NAMED = DIRTY_KEY + "_FOR_{name}"
 
 
 def _parse_version_tag(tag, config):
@@ -175,6 +178,38 @@ def _parse_tag(tag, preformatted, config: "Configuration|None"):
     return tag
 
 
+def _read_dirty_for(config: Optional[Configuration]) -> Optional[bool]:
+    """read an overridden version from the environment
+
+    tries ``SETUPTOOLS_SCM_OVERRIDE_DIRTY``
+    and ``SETUPTOOLS_SCM_OVERRIDE_DIRTY_FOR_$UPPERCASE_DIST_NAME``
+    """
+    if config is not None:
+        dist_name = config.dist_name
+    else:
+        dist_name = None
+    trace("dist name:", dist_name)
+    dirty: Optional[bool] = None
+
+    def process_overriden_value(val: str) -> Optional[bool]:
+        if val.lower() in ["1", "t", "true"]:
+            return True
+        elif val.lower() in ["0", "f", "false"]:
+            return False
+        else:
+            return None
+
+    if dist_name is not None:
+        dirty = process_overriden_value(
+            os.environ.get(DIRTY_KEY_NAMED.format(name=dist_name.upper()), "")
+        )
+
+    if dirty is None:
+        dirty = process_overriden_value(os.environ.get(DIRTY_KEY, ""))
+
+    return dirty
+
+
 def meta(
     tag,
     distance: "int|None" = None,
@@ -193,11 +228,12 @@ def meta(
     parsed_version = _parse_tag(tag, preformatted, config)
     trace("version", tag, "->", parsed_version)
     assert parsed_version is not None, "Can't parse version %s" % tag
-    if (config is not None and config.ignore_dirty) or os.environ.get(
-        "SETUPTOOLS_SCM_IGNORE_DIRTY", "False"
-    ).lower() in ["1", "t", "true"]:
 
-        dirty = False
+    overriden_dirty = _read_dirty_for(config)
+    if overriden_dirty is not None:
+        trace("overriden_dirty", overriden_dirty)
+        dirty = overriden_dirty
+
     return ScmVersion(
         parsed_version, distance, node, dirty, preformatted, branch, config, **kw
     )
