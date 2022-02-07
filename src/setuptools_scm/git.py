@@ -69,7 +69,7 @@ class GitWorkdir(Workdir):
         return branch
 
     def get_head_date(self):
-        timestamp, err, ret = self.do_ex("git log -n 1 HEAD --format=%cI")
+        timestamp, err, ret = self.do_ex("git -c log.showSignature=false log -n 1 HEAD --format=%cI")
         if ret:
             trace("timestamp err", timestamp, err, ret)
             return
