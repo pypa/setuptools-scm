@@ -406,7 +406,7 @@ def test_git_getdate_badgit(
 
 @pytest.fixture
 def signed_commit_wd(tmp_path, monkeypatch, wd):
-    if not has_command("gpg", warn=False):
+    if not has_command("gpg", args=["--version"], warn=False):
         pytest.skip("gpg executable not found")
 
     gpg_batch_params = tmp_path / "gpg_batch_params"
