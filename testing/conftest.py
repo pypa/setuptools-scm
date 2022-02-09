@@ -29,6 +29,7 @@ def pytest_addoption(parser):
 
 class Wd:
     commit_command = None
+    signed_commit_command = None
     add_command = None
 
     def __repr__(self):
@@ -61,19 +62,22 @@ class Wd:
         else:
             return given_reason
 
-    def add_and_commit(self, reason=None):
+    def add_and_commit(self, reason=None, **kwargs):
         self(self.add_command)
-        self.commit(reason)
+        self.commit(reason, **kwargs)
 
-    def commit(self, reason=None):
+    def commit(self, reason=None, signed=False):
         reason = self._reason(reason)
-        self(self.commit_command, reason=reason)
+        self(
+            self.commit_command if not signed else self.signed_commit_command,
+            reason=reason,
+        )
 
-    def commit_testfile(self, reason=None):
+    def commit_testfile(self, reason=None, **kwargs):
         reason = self._reason(reason)
         self.write("test.txt", "test {reason}", reason=reason)
         self(self.add_command)
-        self.commit(reason=reason)
+        self.commit(reason=reason, **kwargs)
 
     def get_version(self, **kw):
         __tracebackhide__ = True
