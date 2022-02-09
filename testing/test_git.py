@@ -414,7 +414,8 @@ def signed_commit_wd(tmp_path, monkeypatch, wd):
         """\
 %no-protection
 %transient-key
-Key-Type: default
+Key-Type: RSA
+Key-Length: 2048
 Name-Real: a test
 Name-Email: test@example.com
 Expire-Date: 0
