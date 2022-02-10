@@ -405,12 +405,12 @@ def test_git_getdate_badgit(
 
 
 @pytest.fixture
-def signed_commit_wd(tmp_path, monkeypatch, wd):
+def signed_commit_wd(monkeypatch, wd):
     if not has_command("gpg", args=["--version"], warn=False):
         pytest.skip("gpg executable not found")
 
-    gpg_batch_params = tmp_path / "gpg_batch_params"
-    gpg_batch_params.write_text(
+    wd.write(
+        ".gpg_batch_params",
         """\
 %no-protection
 %transient-key
@@ -419,10 +419,10 @@ Key-Length: 2048
 Name-Real: a test
 Name-Email: test@example.com
 Expire-Date: 0
-"""
+""",
     )
-    monkeypatch.setenv("GNUPGHOME", str(tmp_path))
-    wd(f"gpg --batch --generate-key {gpg_batch_params}")
+    monkeypatch.setenv("GNUPGHOME", str(wd.cwd.resolve(strict=True)))
+    wd("gpg --batch --generate-key .gpg_batch_params")
 
     wd("git config log.showSignature true")
     wd.signed_commit_command = "git commit -S -m test-{reason}"
