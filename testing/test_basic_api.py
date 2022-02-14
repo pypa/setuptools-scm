@@ -90,6 +90,19 @@ setup(use_scm_version={"fallback_version": "12.34"})
     assert res == "12.34"
 
 
+def test_empty_pretend_version(tmpdir, monkeypatch):
+    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
+    monkeypatch.setenv("SETUPTOOLS_SCM_PRETEND_VERSION", "")
+    p = tmpdir.ensure("sub/package", dir=1)
+    p.join("setup.py").write(
+        """from setuptools import setup
+setup(use_scm_version={"fallback_version": "12.34"})
+"""
+    )
+    res = do((sys.executable, "setup.py", "--version"), p)
+    assert res == "12.34"
+
+
 @pytest.mark.parametrize(
     "version", ["1.0", "1.2.3.dev1+ge871260", "1.2.3.dev15+ge871260.d20180625", "2345"]
 )
