@@ -20,6 +20,7 @@ def _warn_on_old_setuptools(_version=setuptools.__version__):
 ERROR: setuptools=={_version} is used in combination with setuptools_scm>=6.x
 
 Your build configuration is incomplete and previously worked by accident!
+setuptools_scm requires setuptools>=45
 
 
 This happens as setuptools is unable to replace itself when a activated build dependency
