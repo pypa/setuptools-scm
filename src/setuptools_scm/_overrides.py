@@ -29,7 +29,7 @@ def _read_pretended_version_for(config: Configuration) -> Optional[ScmVersion]:
     if pretended is None:
         pretended = os.environ.get(PRETEND_KEY)
 
-    if pretended is not None:
+    if pretended:
         # we use meta here since the pretended version
         # must adhere to the pep to begin with
         return meta(tag=pretended, preformatted=True, config=config)
