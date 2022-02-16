@@ -402,3 +402,36 @@ def test_git_getdate_badgit(
     git_wd = git.GitWorkdir(os.fspath(wd.cwd))
     with patch.object(git_wd, "do_ex", Mock(return_value=("%cI", "", 0))):
         assert git_wd.get_head_date() is None
+
+
+@pytest.fixture
+def signed_commit_wd(monkeypatch, wd):
+    if not has_command("gpg", args=["--version"], warn=False):
+        pytest.skip("gpg executable not found")
+
+    wd.write(
+        ".gpg_batch_params",
+        """\
+%no-protection
+%transient-key
+Key-Type: RSA
+Key-Length: 2048
+Name-Real: a test
+Name-Email: test@example.com
+Expire-Date: 0
+""",
+    )
+    monkeypatch.setenv("GNUPGHOME", str(wd.cwd.resolve(strict=True)))
+    wd("gpg --batch --generate-key .gpg_batch_params")
+
+    wd("git config log.showSignature true")
+    wd.signed_commit_command = "git commit -S -m test-{reason}"
+    return wd
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/548")
+def test_git_getdate_signed_commit(signed_commit_wd):
+    today = date.today()
+    signed_commit_wd.commit_testfile(signed=True)
+    git_wd = git.GitWorkdir(os.fspath(signed_commit_wd.cwd))
+    assert git_wd.get_head_date() == today

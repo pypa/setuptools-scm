@@ -1,3 +1,8 @@
+v6.4.3
+======
+
+* fix #548: correctly handle parsing the commit timestamp of HEAD when ``log.showSignature`` is set
+
 v6.4.2
 ======
 

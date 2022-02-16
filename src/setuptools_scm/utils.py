@@ -8,6 +8,8 @@ import shlex
 import subprocess
 import sys
 import warnings
+from typing import List
+from typing import Optional
 
 
 DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
@@ -118,9 +120,10 @@ def function_has_arg(fn, argname):
     return argname in argspec
 
 
-def has_command(name: str, warn: bool = True) -> bool:
+def has_command(name: str, args: Optional[List[str]] = None, warn: bool = True) -> bool:
     try:
-        p = _popen_pipes([name, "help"], ".")
+        cmd = [name, "help"] if args is None else [name, *args]
+        p = _popen_pipes(cmd, ".")
     except OSError:
         trace(*sys.exc_info())
         res = False

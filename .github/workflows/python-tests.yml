@@ -38,6 +38,29 @@ jobs:
           msystem: MINGW64
           install: git mingw-w64-x86_64-python mingw-w64-x86_64-python-setuptools
           update: true
+      - name: Setup GnuPG
+        # At present, the Windows VMs only come with the copy of GnuPG that's bundled
+        # with Git for Windows. If we want to use this version _and_ be able to set
+        # arbitrary GnuPG home directories, then the test would need to figure out when
+        # to convert Windows-style paths into Unix-style paths with cygpath, which is
+        # unreasonable.
+        #
+        # Instead, we'll install a version of GnuPG that can handle Windows-style paths.
+        # However, due to <https://dev.gnupg.org/T5593>, installation fails if the PATH
+        # environment variable is too long. Consequently, we need to shorten PATH to
+        # something minimal before we can install GnuPG. For further details, see
+        # <https://github.com/actions/virtual-environments/issues/2876>.
+        #
+        # Additionally, we'll explicitly set `gpg.program` to ensure Git for Windows
+        # doesn't invoke the bundled GnuPG, otherwise we'll run into
+        # <https://dev.gnupg.org/T5504>. See also: <https://dev.gnupg.org/T3020>.
+        run: |
+          $env:PATH = "C:\Program Files\Git\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\ProgramData\Chocolatey\bin"
+          [Environment]::SetEnvironmentVariable("Path", $env:PATH, "Machine")
+          choco install gnupg -y --no-progress
+          echo "C:\Program Files (x86)\gnupg\bin" >> $env:GITHUB_PATH
+          git config --system gpg.program "C:\Program Files (x86)\gnupg\bin\gpg.exe"
+        if: runner.os == 'Windows'
       - run: pip install -U 'setuptools>=45'
         if: matrix.python_version != 'msys2'
       - run: pip install -e .[toml,test]
