@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: [ '3.6', '3.7', '3.8', '3.9', '3.10', 'pypy3' ]
+        python_version: [ '3.6', '3.7', '3.8', '3.9', '3.10', 'pypy-3.6' ]
         os: [windows-latest, ubuntu-latest] #, macos-latest]
         include:
         - os: windows-latest
@@ -92,7 +92,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: [  '3.6', '3.9', 'pypy3' ]
+        python_version: [  '3.6', '3.9', 'pypy-3.6' ]
         installer: ["pip install"]
     name: check self install - Python ${{ matrix.python_version }} via ${{ matrix.installer }}
     steps:
