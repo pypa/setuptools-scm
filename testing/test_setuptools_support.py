@@ -122,7 +122,7 @@ setup(use_scm_version={"write_to": "pkg_version.py"})
 PYPROJECT_TOML_WITH_KEY = """
 [build-system]
 # Minimum requirements for the build system to execute.
-requires = ["setuptools>45", "wheel"]  # PEP 508 specifications.
+requires = ["setuptools>45"]  # PEP 508 specifications.
 [tool.setuptools_scm]
 write_to = "pkg_version.py"
 """
