@@ -41,7 +41,7 @@ built step by specifying it as one of the build requirements.
 
     # pyproject.toml
     [build-system]
-    requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+    requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 
 
 That will be sufficient to require ``setuptools_scm`` for projects

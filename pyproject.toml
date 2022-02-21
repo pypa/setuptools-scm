@@ -1,7 +1,6 @@
 [build-system]
 requires = [
     "setuptools>=45",
-    "wheel",
     "tomli>=1.0",
     "packaging>=20.0"
 ]
