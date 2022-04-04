@@ -1,6 +1,6 @@
 repos:
 -   repo: https://github.com/psf/black
-    rev: 22.1.0
+    rev: 22.3.0
     hooks:
     - id: black
       args: [--safe, --quiet]
@@ -26,7 +26,7 @@ repos:
     - id: pyupgrade
       args: [--py36-plus]
 -   repo: https://github.com/asottile/setup-cfg-fmt
-    rev: v1.20.0
+    rev: v1.20.1
     hooks:
     -   id: setup-cfg-fmt
 -   repo: https://github.com/pre-commit/mirrors-mypy
