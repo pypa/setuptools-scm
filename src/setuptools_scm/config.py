@@ -179,7 +179,8 @@ class Configuration:
     @classmethod
     def from_file(
         cls,
-        name: str = "pyproject.toml",
+        name: str = "./pyproject.toml",
+        root = None,
         dist_name=None,  # type: str | None
         _load_toml=_lazy_tomli_load,
         **kwargs,
@@ -212,6 +213,14 @@ class Configuration:
                 dist_name = defn["project"].get("name")
         if dist_name is None:
             dist_name = _read_dist_name_from_setup_cfg()
+
+        if root is not None:
+            # Supercede config file root with parameter
+            section["root"] = root
+        else:
+            if "root" not in section:
+                # Set root to directory of pyproject.toml
+                section["root"] = os.path.relpath(os.path.dirname(name))
 
         return cls(dist_name=dist_name, **section, **kwargs)
 

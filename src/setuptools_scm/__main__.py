@@ -10,12 +10,10 @@ from setuptools_scm.integration import find_files
 
 def main() -> None:
     opts = _get_cli_opts()
-    root = opts.root or "."
 
     try:
-        pyproject = opts.config or _find_pyproject(root)
-        root = opts.root or os.path.relpath(os.path.dirname(pyproject))
-        config = Configuration.from_file(pyproject, root=root)
+        pyproject = opts.config or _find_pyproject(opts.root or ".")
+        config = Configuration.from_file(pyproject, root=opts.root)
     except (LookupError, FileNotFoundError) as ex:
         # no pyproject.toml OR no [tool.setuptools_scm]
         print(
@@ -24,7 +22,7 @@ def main() -> None:
             f" Reason: {ex}.",
             file=sys.stderr,
         )
-        config = Configuration(root=root)
+        config = Configuration(root=opts.root or ".")
 
     version = _get_version(config)
     assert version is not None
