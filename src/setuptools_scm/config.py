@@ -180,7 +180,7 @@ class Configuration:
     def from_file(
         cls,
         name: str = "./pyproject.toml",
-        root = None,
+        root=None,
         dist_name=None,  # type: str | None
         _load_toml=_lazy_tomli_load,
         **kwargs,
