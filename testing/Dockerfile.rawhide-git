@@ -1,4 +1,4 @@
-FROM fedora:rawhide
+FROM registry.fedoraproject.org/fedora:rawhide
 RUN dnf install git -y
 RUN git --version
 USER  1000:1000
