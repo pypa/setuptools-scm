@@ -25,16 +25,16 @@ class WorkDir:
 
         return do(cmd, self.cwd)
 
-    def write(self, name: str, value: "str | bytes", **kw: object) -> Path:
-        filename = self.cwd / name
+    def write(self, name: str, content: "str | bytes", /, **kw: object) -> Path:
+        path = self.cwd / name
         if kw:
-            assert isinstance(value, str)
-            value = value.format(**kw)
-        if isinstance(value, bytes):
-            filename.write_bytes(value)
+            assert isinstance(content, str)
+            content = content.format(**kw)
+        if isinstance(content, bytes):
+            path.write_bytes(content)
         else:
-            filename.write_text(value)
-        return filename
+            path.write_text(content)
+        return path
 
     def _reason(self, given_reason: "str | None") -> str:
         if given_reason is None:
