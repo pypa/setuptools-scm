@@ -8,9 +8,12 @@ import shlex
 import subprocess
 import sys
 import warnings
+from typing import cast
+from typing import Dict
 from typing import List
-from typing import Optional
+from typing import Tuple
 
+from . import _types as _t
 
 DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
 IS_WINDOWS = platform.system() == "Windows"
@@ -42,24 +45,24 @@ def trace(*k) -> None:
         print(*k, file=sys.stderr, flush=True)
 
 
-def ensure_stripped_str(str_or_bytes):
+def ensure_stripped_str(str_or_bytes: "str | bytes") -> str:
     if isinstance(str_or_bytes, str):
         return str_or_bytes.strip()
     else:
         return str_or_bytes.decode("utf-8", "surrogateescape").strip()
 
 
-def _always_strings(env_dict):
+def _always_strings(env_dict: dict) -> Dict[str, str]:
     """
     On Windows and Python 2, environment dictionaries must be strings
     and not unicode.
     """
     if IS_WINDOWS:
         env_dict.update((key, str(value)) for (key, value) in env_dict.items())
-    return env_dict
+    return cast(Dict[str, str], env_dict)
 
 
-def _popen_pipes(cmd, cwd):
+def _popen_pipes(cmd, cwd: "str | _t.PathT"):
     return subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -78,7 +81,7 @@ def _popen_pipes(cmd, cwd):
     )
 
 
-def do_ex(cmd, cwd="."):
+def do_ex(cmd, cwd: "str | _t.PathT" = ".") -> Tuple[str, str, int]:
     trace("cmd", repr(cmd))
     trace(" in", cwd)
     if os.name == "posix" and not isinstance(cmd, (list, tuple)):
@@ -95,14 +98,14 @@ def do_ex(cmd, cwd="."):
     return ensure_stripped_str(out), ensure_stripped_str(err), p.returncode
 
 
-def do(cmd, cwd="."):
+def do(cmd: "List[str] | str", cwd: "str | _t.PathT" = "."):
     out, err, ret = do_ex(cmd, cwd)
     if ret:
         print(err)
     return out
 
 
-def data_from_mime(path):
+def data_from_mime(path: _t.PathT) -> Dict[str, str]:
     with open(path, encoding="utf-8") as fp:
         content = fp.read()
     trace("content", repr(content))
@@ -112,7 +115,7 @@ def data_from_mime(path):
     return data
 
 
-def function_has_arg(fn, argname):
+def function_has_arg(fn: object, argname: str) -> bool:
     assert inspect.isfunction(fn)
 
     argspec = inspect.signature(fn).parameters
@@ -120,7 +123,7 @@ def function_has_arg(fn, argname):
     return argname in argspec
 
 
-def has_command(name: str, args: Optional[List[str]] = None, warn: bool = True) -> bool:
+def has_command(name: str, args: "List[str] | None" = None, warn: bool = True) -> bool:
     try:
         cmd = [name, "help"] if args is None else [name, *args]
         p = _popen_pipes(cmd, ".")

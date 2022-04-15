@@ -30,7 +30,7 @@ def _check_tag_regex(value):
     return regex
 
 
-def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT):
+def _check_absolute_root(root: _t.PathT, relative_to: "_t.PathT | None"):
     trace("abs root", repr(locals()))
     if relative_to:
         if (
@@ -85,7 +85,7 @@ class Configuration:
         fallback_root: _t.PathT = ".",
         parse=None,
         git_describe_command=None,
-        dist_name: str = None,
+        dist_name: "str|None" = None,
         version_cls: "Type[Version]|Type[NonNormalizedVersion]|str|None" = None,
         normalize: bool = True,
         search_parent_directories: bool = False,

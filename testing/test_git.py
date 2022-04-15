@@ -98,7 +98,8 @@ def test_parse_call_order(wd):
 def test_version_from_git(wd):
     assert wd.version == "0.1.dev0"
 
-    assert git.parse(str(wd.cwd), git.DEFAULT_DESCRIBE).branch == "master"
+    parsed = git.parse(str(wd.cwd), git.DEFAULT_DESCRIBE)
+    assert parsed is not None and parsed.branch == "master"
 
     wd.commit_testfile()
     assert wd.version.startswith("0.1.dev1+g")
@@ -386,7 +387,9 @@ def test_git_getdate(wd):
     today = date.today()
 
     def parse_date():
-        return git.parse(os.fspath(wd.cwd)).node_date
+        parsed = git.parse(os.fspath(wd.cwd))
+        assert parsed is not None
+        return parsed.node_date
 
     git_wd = git.GitWorkdir(os.fspath(wd.cwd))
     assert git_wd.get_head_date() is None
@@ -394,8 +397,7 @@ def test_git_getdate(wd):
 
     wd.commit_testfile()
     assert git_wd.get_head_date() == today
-    meta = git.parse(os.fspath(wd.cwd))
-    assert meta.node_date == today
+    assert parse_date() == today
 
 
 def test_git_getdate_badgit(wd):

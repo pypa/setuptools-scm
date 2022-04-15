@@ -85,7 +85,7 @@ def _do_parse(config: Configuration) -> "ScmVersion|None":
         parse_result = _call_entrypoint_fn(config.absolute_root, config, config.parse)
         if isinstance(parse_result, str):
             raise TypeError(
-                "version parse result was a string\nplease return a parsed version"
+                f"version parse result was {str!r}\nplease return a parsed version"
             )
         version: Optional[ScmVersion]
         if parse_result:
