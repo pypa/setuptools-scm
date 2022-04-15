@@ -25,7 +25,7 @@ class WorkDir:
 
         return do(cmd, self.cwd)
 
-    def write(self, name: str, content: "str | bytes", /, **kw: object) -> Path:
+    def write(self, name: str, content: "str | bytes", **kw: object) -> Path:
         path = self.cwd / name
         if kw:
             assert isinstance(content, str)
