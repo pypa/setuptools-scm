@@ -5,6 +5,7 @@ from datetime import datetime
 from os.path import isfile
 from os.path import join
 from os.path import samefile
+from shlex import quote
 
 from .config import Configuration
 from .scm_workdir import Workdir
@@ -36,7 +37,11 @@ class GitWorkdir(Workdir):
     def from_potential_worktree(cls, wd):
         require_command(cls.COMMAND)
         wd = os.path.abspath(wd)
-        real_wd, _, ret = do_ex("git rev-parse --show-prefix", wd)
+        git_dir = join(wd, ".git")
+        real_wd, _, ret = do_ex(
+            f"git --git-dir={quote(git_dir)} rev-parse --show-prefix",
+            wd,
+        )
         real_wd = real_wd[:-1]  # remove the trailing pathsep
         if ret:
             return
@@ -54,15 +59,26 @@ class GitWorkdir(Workdir):
 
         return cls(real_wd)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._git_dir = join(self.path, ".git")
+
     def is_dirty(self):
-        out, _, _ = self.do_ex("git status --porcelain --untracked-files=no")
+        out, _, _ = self.do_ex(
+            f"git --git-dir={quote(self._git_dir)} "
+            "status --porcelain --untracked-files=no"
+        )
         return bool(out)
 
     def get_branch(self):
-        branch, err, ret = self.do_ex("git rev-parse --abbrev-ref HEAD")
+        branch, err, ret = self.do_ex(
+            f"git --git-dir={quote(self._git_dir)} rev-parse --abbrev-ref HEAD"
+        )
         if ret:
             trace("branch err", branch, err, ret)
-            branch, err, ret = self.do_ex("git symbolic-ref --short HEAD")
+            branch, err, ret = self.do_ex(
+                f"git --git-dir={quote(self._git_dir)} symbolic-ref --short HEAD"
+            )
             if ret:
                 trace("branch err (symbolic-ref)", branch, err, ret)
                 branch = None
@@ -70,7 +86,8 @@ class GitWorkdir(Workdir):
 
     def get_head_date(self):
         timestamp, err, ret = self.do_ex(
-            "git -c log.showSignature=false log -n 1 HEAD --format=%cI"
+            f"git --git-dir={quote(self._git_dir)} -c log.showSignature=false "
+            "log -n 1 HEAD --format=%cI"
         )
         if ret:
             trace("timestamp err", timestamp, err, ret)
@@ -83,22 +100,26 @@ class GitWorkdir(Workdir):
         return datetime.strptime(date_part, r"%Y-%m-%d").date()
 
     def is_shallow(self):
-        return isfile(join(self.path, ".git/shallow"))
+        return isfile(join(self._git_dir, "shallow"))
 
     def fetch_shallow(self):
-        self.do_ex("git fetch --unshallow")
+        self.do_ex(f"git --git-dir={quote(self._git_dir)} fetch --unshallow")
 
     def node(self):
-        node, _, ret = self.do_ex("git rev-parse --verify --quiet HEAD")
+        node, _, ret = self.do_ex(
+            f"git --git-dir={quote(self._git_dir)} rev-parse --verify --quiet HEAD"
+        )
         if not ret:
             return node[:7]
 
     def count_all_nodes(self):
-        revs, _, _ = self.do_ex("git rev-list HEAD")
+        revs, _, _ = self.do_ex(f"git --git-dir={quote(self._git_dir)} rev-list HEAD")
         return revs.count("\n") + 1
 
     def default_describe(self):
-        return self.do_ex(DEFAULT_DESCRIBE)
+        return self.do_ex(
+            DEFAULT_DESCRIBE[:1] + ["--git-dir", self._git_dir] + DEFAULT_DESCRIBE[1:]
+        )
 
 
 def warn_on_shallow(wd):
