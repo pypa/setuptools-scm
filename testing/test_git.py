@@ -1,4 +1,6 @@
 import os
+import shutil
+import subprocess
 import sys
 from datetime import date
 from datetime import datetime
@@ -90,6 +92,42 @@ def test_file_finder_no_history(wd, caplog):
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/281")
 def test_parse_call_order(wd):
     git.parse(str(wd.cwd), git.DEFAULT_DESCRIBE)
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/707")
+def test_not_owner(wd):
+    git_dir = opj(wd.cwd)
+    original_stat = os.stat(git_dir)
+    if not shutil.which("sudo"):
+        pytest.skip("sudo executable not found")
+
+    proc = subprocess.run(
+        ["sudo", "chown", "-R", "12345", git_dir], stdin=subprocess.DEVNULL
+    )
+    if proc.returncode != 0:
+        pytest.skip("Failed to change ownership, is passwordless sudo available?")
+    try:
+        subprocess.run(
+            ["sudo", "chmod", "a+r", git_dir], stdin=subprocess.DEVNULL, check=True
+        )
+        subprocess.run(
+            ["sudo", "chgrp", "-R", "12345", git_dir],
+            stdin=subprocess.DEVNULL,
+            check=True,
+        )
+        assert git.parse(str(wd.cwd))
+    finally:
+        # Restore the ownership
+        subprocess.run(
+            ["sudo", "chown", "-R", str(original_stat.st_uid), git_dir],
+            stdin=subprocess.DEVNULL,
+            check=True,
+        )
+        subprocess.run(
+            ["sudo", "chgrp", "-R", str(original_stat.st_gid), git_dir],
+            stdin=subprocess.DEVNULL,
+            check=True,
+        )
 
 
 def test_version_from_git(wd):
