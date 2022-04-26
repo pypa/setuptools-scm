@@ -95,6 +95,7 @@ def test_parse_call_order(wd):
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/707")
+@pytest.mark.xfail(run=False, reason="This test requires passwordless sudo")
 def test_not_owner(wd):
     git_dir = opj(wd.cwd)
     original_stat = os.stat(git_dir)
