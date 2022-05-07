@@ -1,6 +1,6 @@
+from __future__ import annotations
+
 from logging import getLogger
-from typing import Tuple
-from typing import Union
 
 from packaging.version import InvalidVersion
 from packaging.version import Version as Version
@@ -31,7 +31,7 @@ class NonNormalizedVersion(Version):
         return f"<NonNormalizedVersion({self._raw_version!r})>"
 
 
-def _version_as_tuple(version_str: str) -> Tuple[Union[int, str], ...]:
+def _version_as_tuple(version_str: str) -> tuple[int | str, ...]:
     try:
         parsed_version = Version(version_str)
     except InvalidVersion:
@@ -40,7 +40,7 @@ def _version_as_tuple(version_str: str) -> Tuple[Union[int, str], ...]:
         log.exception("failed to parse version %s", version_str)
         return (version_str,)
     else:
-        version_fields: Tuple[Union[int, str], ...] = parsed_version.release
+        version_fields: tuple[int | str, ...] = parsed_version.release
         if parsed_version.dev is not None:
             version_fields += (f"dev{parsed_version.dev}",)
         if parsed_version.local is not None:

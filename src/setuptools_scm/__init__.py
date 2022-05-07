@@ -2,13 +2,13 @@
 :copyright: 2010-2015 by Ronny Pfannschmidt
 :license: MIT
 """
+from __future__ import annotations
+
 import os
 import warnings
 from typing import Any
 from typing import Callable
-from typing import Optional
 from typing import TYPE_CHECKING
-from typing import Union
 
 from . import _types as _t
 from ._entrypoints import _call_entrypoint_fn
@@ -46,7 +46,7 @@ __version_tuple__ = version_tuple = {version_tuple!r}
 }
 
 
-def version_from_scm(root: _t.PathT) -> Optional[ScmVersion]:
+def version_from_scm(root: _t.PathT) -> ScmVersion | None:
     warnings.warn(
         "version_from_scm is deprecated please use get_version",
         category=DeprecationWarning,
@@ -60,7 +60,7 @@ def dump_version(
     root: _t.PathT,
     version: str,
     write_to: _t.PathT,
-    template: "str | None" = None,
+    template: str | None = None,
 ) -> None:
     assert isinstance(version, str)
     target = os.path.normpath(os.path.join(root, write_to))
@@ -79,7 +79,7 @@ def dump_version(
         fp.write(template.format(version=version, version_tuple=version_tuple))
 
 
-def _do_parse(config: Configuration) -> "ScmVersion|None":
+def _do_parse(config: Configuration) -> ScmVersion | None:
     pretended = _read_pretended_version_for(config)
     if pretended is not None:
         return pretended
@@ -90,7 +90,7 @@ def _do_parse(config: Configuration) -> "ScmVersion|None":
             raise TypeError(
                 f"version parse result was {str!r}\nplease return a parsed version"
             )
-        version: Optional[ScmVersion]
+        version: ScmVersion | None
         if parse_result:
             assert isinstance(parse_result, ScmVersion)
             version = parse_result
@@ -105,7 +105,7 @@ def _do_parse(config: Configuration) -> "ScmVersion|None":
     return version
 
 
-def _version_missing(config: Configuration) -> "NoReturn":
+def _version_missing(config: Configuration) -> NoReturn:
     raise LookupError(
         f"setuptools-scm was unable to detect version for {config.absolute_root}.\n\n"
         "Make sure you're either building from a fully intact git repository "
@@ -120,19 +120,19 @@ def _version_missing(config: Configuration) -> "NoReturn":
 
 def get_version(
     root: str = ".",
-    version_scheme: Union[Callable[[ScmVersion], str], str] = DEFAULT_VERSION_SCHEME,
-    local_scheme: Union[Callable[[ScmVersion], str], str] = DEFAULT_LOCAL_SCHEME,
-    write_to: Optional[_t.PathT] = None,
-    write_to_template: Optional[str] = None,
-    relative_to: Optional[str] = None,
+    version_scheme: Callable[[ScmVersion], str] | str = DEFAULT_VERSION_SCHEME,
+    local_scheme: Callable[[ScmVersion], str] | str = DEFAULT_LOCAL_SCHEME,
+    write_to: _t.PathT | None = None,
+    write_to_template: str | None = None,
+    relative_to: str | None = None,
     tag_regex: str = DEFAULT_TAG_REGEX,
-    parentdir_prefix_version: Optional[str] = None,
-    fallback_version: Optional[str] = None,
+    parentdir_prefix_version: str | None = None,
+    fallback_version: str | None = None,
     fallback_root: _t.PathT = ".",
-    parse: Optional[Any] = None,
-    git_describe_command: Optional[Any] = None,
-    dist_name: Optional[str] = None,
-    version_cls: Optional[Any] = None,
+    parse: Any | None = None,
+    git_describe_command: Any | None = None,
+    dist_name: str | None = None,
+    version_cls: Any | None = None,
     normalize: bool = True,
     search_parent_directories: bool = False,
 ) -> str:
@@ -150,7 +150,7 @@ def get_version(
     return maybe_version
 
 
-def _get_version(config: Configuration) -> "str|None":
+def _get_version(config: Configuration) -> str | None:
     parsed_version = _do_parse(config)
     if parsed_version is None:
         return None

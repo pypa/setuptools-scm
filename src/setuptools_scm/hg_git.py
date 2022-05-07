@@ -1,9 +1,8 @@
+from __future__ import annotations
+
 import os
 from datetime import date
 from datetime import datetime
-from typing import Dict
-from typing import Optional
-from typing import Set
 
 from . import _types as _t
 from .git import GitWorkdir
@@ -20,7 +19,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
     COMMAND = "hg"
 
     @classmethod
-    def from_potential_worktree(cls, wd: _t.PathT) -> "GitWorkdirHgClient | None":
+    def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdirHgClient | None:
         require_command(cls.COMMAND)
         root, _, ret = do_ex("hg root", wd)
         if ret:
@@ -31,14 +30,14 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         out, _, _ = self.do_ex("hg id -T '{dirty}'")
         return bool(out)
 
-    def get_branch(self) -> Optional[str]:
+    def get_branch(self) -> str | None:
         res = self.do_ex("hg id -T {bookmarks}")
         if res.returncode:
             trace("branch err", res)
             return None
         return res.out
 
-    def get_head_date(self) -> Optional[date]:
+    def get_head_date(self) -> date | None:
         date_part, err, ret = self.do_ex("hg log -r . -T {shortdate(date)}")
         if ret:
             trace("head date err", date_part, err, ret)
@@ -51,14 +50,14 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
     def fetch_shallow(self) -> None:
         pass
 
-    def get_hg_node(self) -> "str | None":
+    def get_hg_node(self) -> str | None:
         node, _, ret = self.do_ex("hg log -r . -T {node}")
         if not ret:
             return node
         else:
             return None
 
-    def _hg2git(self, hg_node: str) -> "str | None":
+    def _hg2git(self, hg_node: str) -> str | None:
         git_node = None
         with open(os.path.join(self.path, ".hg/git-mapfile")) as file:
             for line in file:
@@ -67,7 +66,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
                     break
         return git_node
 
-    def node(self) -> "str | None":
+    def node(self) -> str | None:
         hg_node = self.get_hg_node()
         if hg_node is None:
             return None
@@ -113,18 +112,18 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         )
         if ret:
             return _FAKE_GIT_DESCRIBE_ERROR
-        hg_tags: Set[str] = set(hg_tags_str.split())
+        hg_tags: set[str] = set(hg_tags_str.split())
 
         if not hg_tags:
             return _FAKE_GIT_DESCRIBE_ERROR
 
-        node: "str | None" = None
+        node: str | None = None
 
         with open(os.path.join(self.path, ".hg/git-tags")) as fp:
 
-            git_tags: Dict[str, str] = dict(line.split() for line in fp)
+            git_tags: dict[str, str] = dict(line.split() for line in fp)
 
-        tag: "str | None" = next(
+        tag: str | None = next(
             # find the first hg tag which is also a git tag
             (tag for tag in hg_tags if tag in git_tags),
             None,

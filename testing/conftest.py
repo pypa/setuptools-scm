@@ -1,9 +1,9 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
 from typing import Any
 from typing import Generator
-from typing import List
-from typing import Tuple
 
 import pytest
 
@@ -16,7 +16,7 @@ os.environ["SETUPTOOLS_SCM_DEBUG"] = "1"
 VERSION_PKGS = ["setuptools", "setuptools_scm"]
 
 
-def pytest_report_header() -> List[str]:
+def pytest_report_header() -> list[str]:
     try:
         from importlib.metadata import version  # type: ignore
     except ImportError:
@@ -53,7 +53,7 @@ def wd(tmp_path: Path) -> WorkDir:
 
 
 @pytest.fixture
-def repositories_hg_git(tmp_path: Path) -> Tuple[WorkDir, WorkDir]:
+def repositories_hg_git(tmp_path: Path) -> tuple[WorkDir, WorkDir]:
     from setuptools_scm.utils import do
 
     tmp_path = tmp_path.resolve()

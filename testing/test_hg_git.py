@@ -1,4 +1,4 @@
-from typing import Tuple
+from __future__ import annotations
 
 import pytest
 
@@ -23,7 +23,7 @@ def _check_hg_git() -> None:
         pytest.skip("hg-git not installed")
 
 
-def test_base(repositories_hg_git: Tuple[WorkDir, WorkDir]) -> None:
+def test_base(repositories_hg_git: tuple[WorkDir, WorkDir]) -> None:
     wd, wd_git = repositories_hg_git
 
     assert wd_git.version == "0.1.dev0"

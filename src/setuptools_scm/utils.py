@@ -1,6 +1,8 @@
 """
 utils
 """
+from __future__ import annotations
+
 import inspect
 import os
 import platform
@@ -8,12 +10,8 @@ import shlex
 import subprocess
 import sys
 import warnings
-from os import _Environ
-from typing import Dict
 from typing import Iterator
-from typing import List
-from typing import Optional
-from typing import Union
+from typing import Mapping
 
 from . import _types as _t
 
@@ -21,7 +19,7 @@ DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
 IS_WINDOWS = platform.system() == "Windows"
 
 
-def no_git_env(env: Union[Dict[str, str], _Environ[str]]) -> Dict[str, str]:
+def no_git_env(env: Mapping[str, str]) -> dict[str, str]:
     # adapted from pre-commit
     # Too many bugs dealing with environment variables and GIT:
     # https://github.com/pre-commit/pre-commit/issues/300
@@ -47,7 +45,7 @@ def trace(*k: object) -> None:
         print(*k, file=sys.stderr, flush=True)
 
 
-def ensure_stripped_str(str_or_bytes: "str | bytes") -> str:
+def ensure_stripped_str(str_or_bytes: str | bytes) -> str:
     if isinstance(str_or_bytes, str):
         return str_or_bytes.strip()
     else:
@@ -90,14 +88,14 @@ def do_ex(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> _t.CmdResult:
     )
 
 
-def do(cmd: "List[str] | str", cwd: "str | _t.PathT" = ".") -> str:
+def do(cmd: list[str] | str, cwd: str | _t.PathT = ".") -> str:
     out, err, ret = do_ex(cmd, cwd)
     if ret:
         print(err)
     return out
 
 
-def data_from_mime(path: _t.PathT) -> Dict[str, str]:
+def data_from_mime(path: _t.PathT) -> dict[str, str]:
     with open(path, encoding="utf-8") as fp:
         content = fp.read()
     trace("content", repr(content))
@@ -115,7 +113,7 @@ def function_has_arg(fn: object, argname: str) -> bool:
     return argname in argspec
 
 
-def has_command(name: str, args: "List[str] | None" = None, warn: bool = True) -> bool:
+def has_command(name: str, args: list[str] | None = None, warn: bool = True) -> bool:
     try:
         cmd = [name, "help"] if args is None else [name, *args]
         p = _popen_pipes(cmd, ".")
@@ -136,7 +134,7 @@ def require_command(name: str) -> None:
 
 
 def iter_entry_points(
-    group: str, name: Optional[str] = None
+    group: str, name: str | None = None
 ) -> Iterator[_t.EntrypointProtocol]:
 
     from ._entrypoints import iter_entry_points

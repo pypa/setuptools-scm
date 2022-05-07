@@ -1,13 +1,14 @@
 """
 integration tests that check setuptools version support
 """
+from __future__ import annotations
+
 import os
 import pathlib
 import subprocess
 import sys
 from typing import Any
 from typing import Callable
-from typing import List
 
 import _pytest.config
 import pytest
@@ -182,7 +183,7 @@ def test_on_old_setuptools(
 
     # monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG", raising=False)
 
-    def run_and_output(cmd: "List[str | pathlib.Path]") -> bytes:
+    def run_and_output(cmd: list[str | pathlib.Path]) -> bytes:
         res = subprocess.run(cmd, cwd=str(pkg), stdout=subprocess.PIPE)
         if not res.returncode:
             return res.stdout.strip()

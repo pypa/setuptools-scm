@@ -9,29 +9,15 @@ once before running sdist or easy_install on a fresh checkouts
 
 pip usage is recommended
 """
+from __future__ import annotations
+
 import os
 import sys
-from typing import NoReturn
-from typing import Optional
 
 import setuptools
-from setuptools.command.bdist_egg import bdist_egg as original_bdist_egg
-
-
-class bdist_egg(original_bdist_egg):
-    def run(self) -> NoReturn:
-        raise SystemExit(
-            "%s is forbidden, "
-            "please update to setuptools>=45 which uses pip" % type(self).__name__
-        )
 
 
 def scm_version() -> str:
-
-    if sys.version_info < (3, 6):
-        raise RuntimeError(
-            "support for python < 3.6 has been removed in setuptools_scm>=6.0.0"
-        )
     here = os.path.dirname(os.path.abspath(__file__))
     src = os.path.join(here, "src")
 
@@ -46,7 +32,7 @@ def scm_version() -> str:
 
     from setuptools_scm.version import ScmVersion
 
-    def parse(root: str, config: Configuration) -> Optional[ScmVersion]:
+    def parse(root: str, config: Configuration) -> ScmVersion | None:
         try:
             return parse_pkginfo(root, config)
         except OSError:
@@ -69,5 +55,4 @@ if __name__ == "__main__":
             ],
             "test": ["pytest>=6.2", "virtualenv>20"],
         },
-        cmdclass={"bdist_egg": bdist_egg},
     )

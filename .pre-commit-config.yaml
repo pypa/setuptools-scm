@@ -10,7 +10,7 @@ repos:
     rev: v3.1.0
     hooks:
     -   id: reorder-python-imports
-        args: [ "--application-directories=.:src" , --py3-plus]
+        args: [ "--application-directories=.:src" , --py37-plus, --add-import, 'from __future__ import annotations']
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.2.0
     hooks:
@@ -26,7 +26,7 @@ repos:
     rev: v2.32.0
     hooks:
     - id: pyupgrade
-      args: [--py36-plus]
+      args: [--py37-plus]
 -   repo: https://github.com/asottile/setup-cfg-fmt
     rev: v1.20.1
     hooks:

@@ -1,9 +1,9 @@
+from __future__ import annotations
+
 import os
 import warnings
 from typing import Any
 from typing import Callable
-from typing import Dict
-from typing import List
 
 import setuptools
 
@@ -62,7 +62,7 @@ def _assign_version(dist: setuptools.Distribution, config: Configuration) -> Non
 def version_keyword(
     dist: setuptools.Distribution,
     keyword: str,
-    value: "bool | Dict[str, Any] | Callable[[], Dict[str, Any]]",
+    value: bool | dict[str, Any] | Callable[[], dict[str, Any]],
 ) -> None:
     if not value:
         return
@@ -85,7 +85,7 @@ def version_keyword(
     _assign_version(dist, config)
 
 
-def find_files(path: _t.PathT = "") -> List[str]:
+def find_files(path: _t.PathT = "") -> list[str]:
     for ep in iter_entry_points("setuptools_scm.files_command"):
         command = ep.load()
         if isinstance(command, str):

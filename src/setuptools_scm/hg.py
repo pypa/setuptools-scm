@@ -1,8 +1,8 @@
+from __future__ import annotations
+
 import datetime
 import os
 from pathlib import Path
-from typing import Dict
-from typing import Optional
 
 from . import _types as _t
 from ._version_cls import Version
@@ -22,14 +22,14 @@ class HgWorkdir(Workdir):
     COMMAND = "hg"
 
     @classmethod
-    def from_potential_worktree(cls, wd: _t.PathT) -> "HgWorkdir | None":
+    def from_potential_worktree(cls, wd: _t.PathT) -> HgWorkdir | None:
         require_command(cls.COMMAND)
         root, err, ret = do_ex("hg root", wd)
         if ret:
             return None
         return cls(root)
 
-    def get_meta(self, config: Configuration) -> Optional[ScmVersion]:
+    def get_meta(self, config: Configuration) -> ScmVersion | None:
 
         node: str
         tags_str: str
@@ -107,7 +107,7 @@ class HgWorkdir(Workdir):
         cmd = ["hg", "log", "-r", revset, "-T", template]
         return self.do(cmd)
 
-    def get_latest_normalizable_tag(self) -> Optional[str]:
+    def get_latest_normalizable_tag(self) -> str | None:
         # Gets all tags containing a '.' (see #229) from oldest to newest
         outlines = self.hg_log(
             revset="ancestors(.) and tag('re:\\.')",
@@ -124,7 +124,7 @@ class HgWorkdir(Workdir):
         out = self.hg_log(revset, ".")
         return len(out) - 1
 
-    def check_changes_since_tag(self, tag: Optional[str]) -> bool:
+    def check_changes_since_tag(self, tag: str | None) -> bool:
 
         if tag == "0.0" or tag is None:
             return True
@@ -140,7 +140,7 @@ class HgWorkdir(Workdir):
         return bool(self.hg_log(revset, "."))
 
 
-def parse(root: _t.PathT, config: "Configuration|None" = None) -> Optional[ScmVersion]:
+def parse(root: _t.PathT, config: Configuration | None = None) -> ScmVersion | None:
     if not config:
         config = Configuration(root=root)
 
@@ -167,7 +167,7 @@ def parse(root: _t.PathT, config: "Configuration|None" = None) -> Optional[ScmVe
 
 
 def archival_to_version(
-    data: Dict[str, str], config: "Configuration | None" = None
+    data: dict[str, str], config: Configuration | None = None
 ) -> ScmVersion:
     trace("data", data)
     node = data.get("node", "")[:12]
@@ -186,9 +186,7 @@ def archival_to_version(
         return meta("0.0", node=node, config=config)
 
 
-def parse_archival(
-    root: _t.PathT, config: Optional[Configuration] = None
-) -> ScmVersion:
+def parse_archival(root: _t.PathT, config: Configuration | None = None) -> ScmVersion:
     archival = os.path.join(root, ".hg_archival.txt")
     data = data_from_mime(archival)
     return archival_to_version(data, config=config)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import date
 from datetime import timedelta
 from typing import Any
@@ -222,7 +224,7 @@ def test_format_version_schemes() -> None:
 
 
 def date_to_str(
-    date_: "date | None" = None,
+    date_: date | None = None,
     days_offset: int = 0,
     fmt: str = "{dt:%y}.{dt.month}.{dt.day}",
 ) -> str:

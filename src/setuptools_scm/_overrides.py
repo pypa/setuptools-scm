@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import os
-from typing import Optional
 
 from .config import Configuration
 from .utils import trace
@@ -11,14 +12,14 @@ PRETEND_KEY = "SETUPTOOLS_SCM_PRETEND_VERSION"
 PRETEND_KEY_NAMED = PRETEND_KEY + "_FOR_{name}"
 
 
-def _read_pretended_version_for(config: Configuration) -> Optional[ScmVersion]:
+def _read_pretended_version_for(config: Configuration) -> ScmVersion | None:
     """read a a overridden version from the environment
 
     tries ``SETUPTOOLS_SCM_PRETEND_VERSION``
     and ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_$UPPERCASE_DIST_NAME``
     """
     trace("dist name:", config.dist_name)
-    pretended: Optional[str]
+    pretended: str | None
     if config.dist_name is not None:
         pretended = os.environ.get(
             PRETEND_KEY_NAMED.format(name=config.dist_name.upper())

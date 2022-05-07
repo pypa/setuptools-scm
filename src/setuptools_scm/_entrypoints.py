@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import warnings
 from typing import Any
 from typing import Iterator
-from typing import Optional
 from typing import overload
 from typing import Protocol
 from typing import TYPE_CHECKING
@@ -21,17 +22,17 @@ class MaybeConfigFunction(Protocol):
     __name__: str
 
     @overload
-    def __call__(self, root: _t.PathT, config: Configuration) -> Optional[ScmVersion]:
+    def __call__(self, root: _t.PathT, config: Configuration) -> ScmVersion | None:
         pass
 
     @overload
-    def __call__(self, root: _t.PathT) -> Optional[ScmVersion]:
+    def __call__(self, root: _t.PathT) -> ScmVersion | None:
         pass
 
 
 def _call_entrypoint_fn(
     root: _t.PathT, config: Configuration, fn: MaybeConfigFunction
-) -> Optional[ScmVersion]:
+) -> ScmVersion | None:
     if function_has_arg(fn, "config"):
         return fn(root, config=config)
     else:
@@ -47,7 +48,7 @@ def _call_entrypoint_fn(
 
 def _version_from_entrypoints(
     config: Configuration, fallback: bool = False
-) -> "ScmVersion|None":
+) -> ScmVersion | None:
     if fallback:
         entrypoint = "setuptools_scm.parse_scm_fallback"
         root = config.fallback_root
@@ -59,7 +60,7 @@ def _version_from_entrypoints(
 
     trace("version_from_ep", entrypoint, root)
     for ep in iter_matching_entrypoints(root, entrypoint, config):
-        version: Optional[ScmVersion] = _call_entrypoint_fn(root, config, ep.load())
+        version: ScmVersion | None = _call_entrypoint_fn(root, config, ep.load())
         trace(ep, version)
         if version:
             return version
@@ -73,7 +74,7 @@ except ImportError:
 
 
 def iter_entry_points(
-    group: str, name: Optional[str] = None
+    group: str, name: str | None = None
 ) -> Iterator[_t.EntrypointProtocol]:
     all_eps = entry_points()
     if hasattr(all_eps, "select"):

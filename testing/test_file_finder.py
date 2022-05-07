@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import os
 import sys
 from typing import Generator
 from typing import Iterable
-from typing import Set
 
 import pytest
 
@@ -44,7 +45,7 @@ def inwd(
     yield wd
 
 
-def _sep(paths: Iterable[str]) -> Set[str]:
+def _sep(paths: Iterable[str]) -> set[str]:
     return {path.replace("/", os.path.sep) for path in paths}
 
 

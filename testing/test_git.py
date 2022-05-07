@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import sys
 from datetime import date
@@ -6,7 +8,6 @@ from datetime import timezone
 from os.path import join as opj
 from pathlib import Path
 from textwrap import dedent
-from typing import Dict
 from unittest.mock import Mock
 from unittest.mock import patch
 
@@ -144,7 +145,7 @@ def test_version_from_git(wd: WorkDir) -> None:
     )
 
 
-setup_py_with_normalize: Dict[str, str] = {
+setup_py_with_normalize: dict[str, str] = {
     "false": """
         from setuptools import setup
         setup(use_scm_version={'normalize': False, 'write_to': 'VERSION.txt'})
@@ -475,7 +476,7 @@ def test_git_getdate_signed_commit(signed_commit_wd: WorkDir) -> None:
     ],
 )
 @pytest.mark.filterwarnings("ignore:git archive did not support describe output")
-def test_git_archival_to_version(expected: str, from_data: Dict[str, str]) -> None:
+def test_git_archival_to_version(expected: str, from_data: dict[str, str]) -> None:
     config = Configuration()
     version = archival_to_version(from_data, config=config)
     assert (

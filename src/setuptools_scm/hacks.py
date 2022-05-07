@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import os
-from typing import Optional
 
 from . import _types as _t
 from .config import Configuration
@@ -13,8 +14,8 @@ _UNKNOWN = "UNKNOWN"
 
 
 def parse_pkginfo(
-    root: _t.PathT, config: Optional[Configuration] = None
-) -> Optional[ScmVersion]:
+    root: _t.PathT, config: Configuration | None = None
+) -> ScmVersion | None:
 
     pkginfo = os.path.join(root, "PKG-INFO")
     trace("pkginfo", pkginfo)
@@ -27,8 +28,8 @@ def parse_pkginfo(
 
 
 def parse_pip_egg_info(
-    root: _t.PathT, config: Optional[Configuration] = None
-) -> Optional[ScmVersion]:
+    root: _t.PathT, config: Configuration | None = None
+) -> ScmVersion | None:
     pipdir = os.path.join(root, "pip-egg-info")
     if not os.path.isdir(pipdir):
         return None
@@ -39,7 +40,7 @@ def parse_pip_egg_info(
     return parse_pkginfo(os.path.join(pipdir, items[0]), config=config)
 
 
-def fallback_version(root: _t.PathT, config: Configuration) -> Optional[ScmVersion]:
+def fallback_version(root: _t.PathT, config: Configuration) -> ScmVersion | None:
     if config.parentdir_prefix_version is not None:
         _, parent_name = os.path.split(os.path.abspath(root))
         if parent_name.startswith(config.parentdir_prefix_version):

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
-from typing import Dict
 
 import pytest
 
@@ -40,7 +41,7 @@ archival_mapping = {
 
 
 @pytest.mark.parametrize("expected,data", sorted(archival_mapping.items()))
-def test_archival_to_version(expected: str, data: Dict[str, str]) -> None:
+def test_archival_to_version(expected: str, data: dict[str, str]) -> None:
     config = Configuration()
     version = archival_to_version(data, config=config)
     assert (

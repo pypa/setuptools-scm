@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import itertools
 from pathlib import Path
 from typing import Any
-from typing import List
 
 
 class WorkDir:
@@ -18,7 +19,7 @@ class WorkDir:
         self.cwd = cwd
         self.__counter = itertools.count()
 
-    def __call__(self, cmd: "List[str] | str", **kw: object) -> str:
+    def __call__(self, cmd: list[str] | str, **kw: object) -> str:
         if kw:
             assert isinstance(cmd, str), "formatting the command requires text input"
             cmd = cmd.format(**kw)
@@ -26,7 +27,7 @@ class WorkDir:
 
         return do(cmd, self.cwd)
 
-    def write(self, name: str, content: "str | bytes", **kw: object) -> Path:
+    def write(self, name: str, content: str | bytes, **kw: object) -> Path:
         path = self.cwd / name
         if kw:
             assert isinstance(content, str)
@@ -37,28 +38,26 @@ class WorkDir:
             path.write_text(content)
         return path
 
-    def _reason(self, given_reason: "str | None") -> str:
+    def _reason(self, given_reason: str | None) -> str:
         if given_reason is None:
             return f"number-{next(self.__counter)}"
         else:
             return given_reason
 
     def add_and_commit(
-        self, reason: "str | None" = None, signed: bool = False, **kwargs: object
+        self, reason: str | None = None, signed: bool = False, **kwargs: object
     ) -> None:
         self(self.add_command)
         self.commit(reason=reason, signed=signed, **kwargs)
 
-    def commit(self, reason: "str | None" = None, signed: bool = False) -> None:
+    def commit(self, reason: str | None = None, signed: bool = False) -> None:
         reason = self._reason(reason)
         self(
             self.commit_command if not signed else self.signed_commit_command,
             reason=reason,
         )
 
-    def commit_testfile(
-        self, reason: "str | None" = None, signed: bool = False
-    ) -> None:
+    def commit_testfile(self, reason: str | None = None, signed: bool = False) -> None:
         reason = self._reason(reason)
         self.write("test.txt", "test {reason}", reason=reason)
         self(self.add_command)

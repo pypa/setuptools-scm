@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import re
 import warnings
@@ -7,12 +9,7 @@ from os.path import isfile
 from os.path import join
 from os.path import samefile
 from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
 from typing import TYPE_CHECKING
-from typing import Union
 
 from . import _types as _t
 from .config import Configuration
@@ -51,7 +48,7 @@ class GitWorkdir(Workdir):
     COMMAND = "git"
 
     @classmethod
-    def from_potential_worktree(cls, wd: _t.PathT) -> Optional["GitWorkdir"]:
+    def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdir | None:
         require_command(cls.COMMAND)
         wd = os.path.abspath(wd)
         real_wd, _, ret = do_ex("git rev-parse --show-prefix", wd)
@@ -76,7 +73,7 @@ class GitWorkdir(Workdir):
         out, _, _ = self.do_ex("git status --porcelain --untracked-files=no")
         return bool(out)
 
-    def get_branch(self) -> Optional[str]:
+    def get_branch(self) -> str | None:
         branch, err, ret = self.do_ex("git rev-parse --abbrev-ref HEAD")
         if ret:
             trace("branch err", branch, err, ret)
@@ -86,7 +83,7 @@ class GitWorkdir(Workdir):
                 return None
         return branch
 
-    def get_head_date(self) -> Optional[date]:
+    def get_head_date(self) -> date | None:
         timestamp, err, ret = self.do_ex(
             "git -c log.showSignature=false log -n 1 HEAD --format=%cI"
         )
@@ -106,7 +103,7 @@ class GitWorkdir(Workdir):
     def fetch_shallow(self) -> None:
         self.do_ex("git fetch --unshallow")
 
-    def node(self) -> Optional[str]:
+    def node(self) -> str | None:
         node, _, ret = self.do_ex("git rev-parse --verify --quiet HEAD")
         if not ret:
             return node[:7]
@@ -142,7 +139,7 @@ def fail_on_shallow(wd: GitWorkdir) -> None:
         )
 
 
-def get_working_directory(config: Configuration) -> Optional[GitWorkdir]:
+def get_working_directory(config: Configuration) -> GitWorkdir | None:
     """
     Return the working directory (``GitWorkdir``).
     """
@@ -158,10 +155,10 @@ def get_working_directory(config: Configuration) -> Optional[GitWorkdir]:
 
 def parse(
     root: str,
-    describe_command: Optional[Union[str, List[str]]] = None,
+    describe_command: str | list[str] | None = None,
     pre_parse: Callable[[GitWorkdir], None] = warn_on_shallow,
-    config: Optional[Configuration] = None,
-) -> Optional[ScmVersion]:
+    config: Configuration | None = None,
+) -> ScmVersion | None:
     """
     :param pre_parse: experimental pre_parse action, may change at any time
     """
@@ -179,11 +176,9 @@ def parse(
 
 def _git_parse_inner(
     config: Configuration,
-    wd: Union[GitWorkdir, "GitWorkdirHgClient"],
-    pre_parse: Optional[
-        Callable[[Union[GitWorkdir, "GitWorkdirHgClient"]], None]
-    ] = None,
-    describe_command: Optional[_t.CMD_TYPE] = None,
+    wd: GitWorkdir | GitWorkdirHgClient,
+    pre_parse: None | (Callable[[GitWorkdir | GitWorkdirHgClient], None]) = None,
+    describe_command: _t.CMD_TYPE | None = None,
 ) -> ScmVersion:
     if pre_parse:
         pre_parse(wd)
@@ -195,8 +190,8 @@ def _git_parse_inner(
         out, _, ret = wd.do_ex(describe_command)
     else:
         out, _, ret = wd.default_describe()
-    distance: Optional[int]
-    node: Optional[str]
+    distance: int | None
+    node: str | None
     if ret == 0:
         tag, distance, node, dirty = _git_parse_describe(out)
         if distance == 0 and not dirty:
@@ -226,7 +221,7 @@ def _git_parse_inner(
     )
 
 
-def _git_parse_describe(describe_output: str) -> Tuple[str, int, str, bool]:
+def _git_parse_describe(describe_output: str) -> tuple[str, int, str, bool]:
     # 'describe_output' looks e.g. like 'v1.5.0-0-g4060507' or
     # 'v1.15.1rc1-37-g9bd1298-dirty'.
 
@@ -240,7 +235,7 @@ def _git_parse_describe(describe_output: str) -> Tuple[str, int, str, bool]:
     return tag, int(number), node, dirty
 
 
-def search_parent(dirname: _t.PathT) -> Optional[GitWorkdir]:
+def search_parent(dirname: _t.PathT) -> GitWorkdir | None:
     """
     Walk up the path to find the `.git` directory.
     :param dirname: Directory from which to start searching.
@@ -269,7 +264,7 @@ def search_parent(dirname: _t.PathT) -> Optional[GitWorkdir]:
 
 
 def archival_to_version(
-    data: Dict[str, str], config: Optional[Configuration] = None
+    data: dict[str, str], config: Configuration | None = None
 ) -> ScmVersion:
     trace("data", data)
     archival_describe = data.get("describe-name", DESCRIBE_UNSUPPORTED)
@@ -291,8 +286,8 @@ def archival_to_version(
 
 
 def parse_archival(
-    root: _t.PathT, config: Optional[Configuration] = None
-) -> Optional[ScmVersion]:
+    root: _t.PathT, config: Configuration | None = None
+) -> ScmVersion | None:
     archival = os.path.join(root, ".git_archival.txt")
     data = data_from_mime(archival)
     return archival_to_version(data, config=config)

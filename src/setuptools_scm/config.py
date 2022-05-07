@@ -1,13 +1,12 @@
 """ configuration """
+from __future__ import annotations
+
 import os
 import re
 import warnings
 from typing import Any
 from typing import Callable
-from typing import Dict
-from typing import Optional
 from typing import Pattern
-from typing import Type
 from typing import TYPE_CHECKING
 from typing import Union
 
@@ -25,7 +24,7 @@ DEFAULT_VERSION_SCHEME = "guess-next-dev"
 DEFAULT_LOCAL_SCHEME = "node-and-date"
 
 
-def _check_tag_regex(value: Optional[Union[str, Pattern[str]]]) -> Pattern[str]:
+def _check_tag_regex(value: str | Pattern[str] | None) -> Pattern[str]:
     if not value:
         value = DEFAULT_TAG_REGEX
     regex = re.compile(value)
@@ -40,7 +39,7 @@ def _check_tag_regex(value: Optional[Union[str, Pattern[str]]]) -> Pattern[str]:
     return regex
 
 
-def _check_absolute_root(root: _t.PathT, relative_to: Optional[_t.PathT]) -> str:
+def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
     trace("abs root", repr(locals()))
     if relative_to:
         if (
@@ -65,7 +64,7 @@ def _check_absolute_root(root: _t.PathT, relative_to: Optional[_t.PathT]) -> str
     return os.path.abspath(root)
 
 
-def _lazy_tomli_load(data: str) -> Dict[str, Any]:
+def _lazy_tomli_load(data: str) -> dict[str, Any]:
     from tomli import loads
 
     return loads(data)
@@ -77,31 +76,33 @@ VersionT = Union[Version, NonNormalizedVersion]
 class Configuration:
     """Global configuration model"""
 
-    parent: Optional[_t.PathT]
+    parent: _t.PathT | None
     _root: str
-    _relative_to: Optional[str]
-    version_cls: Type[VersionT]
+    _relative_to: str | None
+    version_cls: type[VersionT]
 
     def __init__(
         self,
-        relative_to: "_t.PathT | None" = None,
+        relative_to: _t.PathT | None = None,
         root: _t.PathT = ".",
-        version_scheme: Union[
-            str, Callable[["ScmVersion"], Optional[str]]
-        ] = DEFAULT_VERSION_SCHEME,
-        local_scheme: Union[
-            str, Callable[["ScmVersion"], Optional[str]]
-        ] = DEFAULT_LOCAL_SCHEME,
-        write_to: "_t.PathT | None" = None,
-        write_to_template: "str|None" = None,
-        tag_regex: "str | Pattern[str]" = DEFAULT_TAG_REGEX,
-        parentdir_prefix_version: "str|None" = None,
-        fallback_version: "str|None" = None,
+        version_scheme: (
+            str | Callable[[ScmVersion], str | None]
+        ) = DEFAULT_VERSION_SCHEME,
+        local_scheme: (str | Callable[[ScmVersion], str | None]) = DEFAULT_LOCAL_SCHEME,
+        write_to: _t.PathT | None = None,
+        write_to_template: str | None = None,
+        tag_regex: str | Pattern[str] = DEFAULT_TAG_REGEX,
+        parentdir_prefix_version: str | None = None,
+        fallback_version: str | None = None,
         fallback_root: _t.PathT = ".",
-        parse: Optional[Any] = None,
-        git_describe_command: Optional[_t.CMD_TYPE] = None,
-        dist_name: "str|None" = None,
-        version_cls: "Type[Version]|Type[NonNormalizedVersion]|type|str|None" = None,
+        parse: Any | None = None,
+        git_describe_command: _t.CMD_TYPE | None = None,
+        dist_name: str | None = None,
+        version_cls: type[Version]
+        | type[NonNormalizedVersion]
+        | type
+        | str
+        | None = None,
         normalize: bool = True,
         search_parent_directories: bool = False,
     ):
@@ -162,7 +163,7 @@ class Configuration:
         return self._absolute_root
 
     @property
-    def relative_to(self) -> Optional[str]:
+    def relative_to(self) -> str | None:
         return self._relative_to
 
     @relative_to.setter
@@ -188,17 +189,17 @@ class Configuration:
         return self._tag_regex
 
     @tag_regex.setter
-    def tag_regex(self, value: Union[str, Pattern[str]]) -> None:
+    def tag_regex(self, value: str | Pattern[str]) -> None:
         self._tag_regex = _check_tag_regex(value)
 
     @classmethod
     def from_file(
         cls,
         name: str = "pyproject.toml",
-        dist_name: Optional[str] = None,
-        _load_toml: Callable[[str], Dict[str, Any]] = _lazy_tomli_load,
+        dist_name: str | None = None,
+        _load_toml: Callable[[str], dict[str, Any]] = _lazy_tomli_load,
         **kwargs: Any,
-    ) -> "Configuration":
+    ) -> Configuration:
         """
         Read Configuration from pyproject.toml (or similar).
         Raises exceptions when file is not found or toml is
@@ -231,7 +232,7 @@ class Configuration:
         return cls(dist_name=dist_name, **section, **kwargs)
 
 
-def _read_dist_name_from_setup_cfg() -> Optional[str]:
+def _read_dist_name_from_setup_cfg() -> str | None:
 
     # minimal effort to read dist_name off setup.cfg metadata
     import configparser
