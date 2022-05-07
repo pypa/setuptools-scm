@@ -1,14 +1,21 @@
 import os
 import sys
+from typing import Generator
+from typing import Iterable
+from typing import Set
 
 import pytest
 
+from .wd_wrapper import WorkDir
 from setuptools_scm.integration import find_files
 
 
 @pytest.fixture(params=["git", "hg"])
-def inwd(request, wd, monkeypatch):
-    if request.param == "git":
+def inwd(
+    request: pytest.FixtureRequest, wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> Generator[WorkDir, None, None]:
+    param: str = getattr(request, "param")  # todo: fix
+    if param == "git":
         try:
             wd("git init")
         except OSError:
@@ -17,7 +24,7 @@ def inwd(request, wd, monkeypatch):
         wd('git config user.name "a test"')
         wd.add_command = "git add ."
         wd.commit_command = "git commit -m test-{reason}"
-    elif request.param == "hg":
+    elif param == "hg":
         try:
             wd("hg init")
         except OSError:
@@ -37,23 +44,23 @@ def inwd(request, wd, monkeypatch):
     yield wd
 
 
-def _sep(paths):
+def _sep(paths: Iterable[str]) -> Set[str]:
     return {path.replace("/", os.path.sep) for path in paths}
 
 
-def test_basic(inwd):
+def test_basic(inwd: WorkDir) -> None:
     assert set(find_files()) == _sep({"file1", "adir/filea", "bdir/fileb"})
     assert set(find_files(".")) == _sep({"./file1", "./adir/filea", "./bdir/fileb"})
     assert set(find_files("adir")) == _sep({"adir/filea"})
 
 
-def test_whitespace(inwd):
+def test_whitespace(inwd: WorkDir) -> None:
     (inwd.cwd / "adir" / "space file").touch()
     inwd.add_and_commit()
     assert set(find_files("adir")) == _sep({"adir/space file", "adir/filea"})
 
 
-def test_case(inwd):
+def test_case(inwd: WorkDir) -> None:
     (inwd.cwd / "CamelFile").touch()
     (inwd.cwd / "file2").touch()
     inwd.add_and_commit()
@@ -63,14 +70,14 @@ def test_case(inwd):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="symlinks to dir not supported")
-def test_symlink_dir(inwd):
+def test_symlink_dir(inwd: WorkDir) -> None:
     (inwd.cwd / "adir" / "bdirlink").symlink_to("../bdir")
     inwd.add_and_commit()
     assert set(find_files("adir")) == _sep({"adir/filea", "adir/bdirlink/fileb"})
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="symlinks to dir not supported")
-def test_symlink_dir_source_not_in_scm(inwd):
+def test_symlink_dir_source_not_in_scm(inwd: WorkDir) -> None:
     (inwd.cwd / "adir" / "bdirlink").symlink_to("../bdir")
     assert set(find_files("adir")) == _sep({"adir/filea"})
 
@@ -78,7 +85,7 @@ def test_symlink_dir_source_not_in_scm(inwd):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="symlinks to files not supported on windows"
 )
-def test_symlink_file(inwd):
+def test_symlink_file(inwd: WorkDir) -> None:
     (inwd.cwd / "adir" / "file1link").symlink_to("../file1")
     inwd.add_and_commit()
     assert set(find_files("adir")) == _sep(
@@ -89,20 +96,20 @@ def test_symlink_file(inwd):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="symlinks to files not supported on windows"
 )
-def test_symlink_file_source_not_in_scm(inwd):
+def test_symlink_file_source_not_in_scm(inwd: WorkDir) -> None:
     (inwd.cwd / "adir" / "file1link").symlink_to("../file1")
     assert set(find_files("adir")) == _sep({"adir/filea"})
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="symlinks to dir not supported")
-def test_symlink_loop(inwd):
+def test_symlink_loop(inwd: WorkDir) -> None:
     (inwd.cwd / "adir" / "loop").symlink_to("../adir")
     inwd.add_and_commit()
     assert set(find_files("adir")) == _sep({"adir/filea", "adir/loop"})  # -> ../adir
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="symlinks to dir not supported")
-def test_symlink_loop_outside_path(inwd):
+def test_symlink_loop_outside_path(inwd: WorkDir) -> None:
     (inwd.cwd / "bdir" / "loop").symlink_to("../bdir")
     (inwd.cwd / "adir" / "bdirlink").symlink_to("../bdir")
     inwd.add_and_commit()
@@ -110,7 +117,7 @@ def test_symlink_loop_outside_path(inwd):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="symlinks to dir not supported")
-def test_symlink_dir_out_of_git(inwd):
+def test_symlink_dir_out_of_git(inwd: WorkDir) -> None:
     (inwd.cwd / "adir" / "outsidedirlink").symlink_to(os.path.join(__file__, ".."))
     inwd.add_and_commit()
     assert set(find_files("adir")) == _sep({"adir/filea"})
@@ -119,19 +126,21 @@ def test_symlink_dir_out_of_git(inwd):
 @pytest.mark.skipif(
     sys.platform == "win32", reason="symlinks to files not supported on windows"
 )
-def test_symlink_file_out_of_git(inwd):
+def test_symlink_file_out_of_git(inwd: WorkDir) -> None:
     (inwd.cwd / "adir" / "outsidefilelink").symlink_to(__file__)
     inwd.add_and_commit()
     assert set(find_files("adir")) == _sep({"adir/filea"})
 
 
 @pytest.mark.parametrize("path_add", ["{cwd}", "{cwd}" + os.pathsep + "broken"])
-def test_ignore_root(inwd, monkeypatch, path_add):
+def test_ignore_root(
+    inwd: WorkDir, monkeypatch: pytest.MonkeyPatch, path_add: str
+) -> None:
     monkeypatch.setenv("SETUPTOOLS_SCM_IGNORE_VCS_ROOTS", path_add.format(cwd=inwd.cwd))
     assert find_files() == []
 
 
-def test_empty_root(inwd):
+def test_empty_root(inwd: WorkDir) -> None:
     subdir = inwd.cwd / "cdir" / "subdir"
     subdir.mkdir(parents=True)
     (subdir / "filec").touch()
@@ -139,7 +148,7 @@ def test_empty_root(inwd):
     assert set(find_files("cdir")) == _sep({"cdir/subdir/filec"})
 
 
-def test_empty_subdir(inwd):
+def test_empty_subdir(inwd: WorkDir) -> None:
     subdir = inwd.cwd / "adir" / "emptysubdir" / "subdir"
     subdir.mkdir(parents=True)
     (subdir / "xfile").touch()
@@ -150,7 +159,7 @@ def test_empty_subdir(inwd):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="symlinks not supported on windows")
-def test_double_include_through_symlink(inwd):
+def test_double_include_through_symlink(inwd: WorkDir) -> None:
     (inwd.cwd / "data").mkdir()
     (inwd.cwd / "data" / "datafile").touch()
     (inwd.cwd / "adir" / "datalink").symlink_to("../data")
@@ -169,7 +178,7 @@ def test_double_include_through_symlink(inwd):
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="symlinks not supported on windows")
-def test_symlink_not_in_scm_while_target_is(inwd):
+def test_symlink_not_in_scm_while_target_is(inwd: WorkDir) -> None:
     (inwd.cwd / "data").mkdir()
     (inwd.cwd / "data" / "datafile").touch()
     inwd.add_and_commit()
@@ -189,5 +198,5 @@ def test_symlink_not_in_scm_while_target_is(inwd):
 
 @pytest.mark.issue(587)
 @pytest.mark.skip_commit
-def test_not_commited(inwd):
+def test_not_commited(inwd: WorkDir) -> None:
     assert find_files() == []

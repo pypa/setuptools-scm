@@ -8,10 +8,12 @@ import shlex
 import subprocess
 import sys
 import warnings
-from typing import cast
+from os import _Environ
 from typing import Dict
+from typing import Iterator
 from typing import List
-from typing import Tuple
+from typing import Optional
+from typing import Union
 
 from . import _types as _t
 
@@ -19,7 +21,7 @@ DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
 IS_WINDOWS = platform.system() == "Windows"
 
 
-def no_git_env(env):
+def no_git_env(env: Union[Dict[str, str], _Environ[str]]) -> Dict[str, str]:
     # adapted from pre-commit
     # Too many bugs dealing with environment variables and GIT:
     # https://github.com/pre-commit/pre-commit/issues/300
@@ -40,7 +42,7 @@ def no_git_env(env):
     }
 
 
-def trace(*k) -> None:
+def trace(*k: object) -> None:
     if DEBUG:
         print(*k, file=sys.stderr, flush=True)
 
@@ -52,36 +54,24 @@ def ensure_stripped_str(str_or_bytes: "str | bytes") -> str:
         return str_or_bytes.decode("utf-8", "surrogateescape").strip()
 
 
-def _always_strings(env_dict: dict) -> Dict[str, str]:
-    """
-    On Windows and Python 2, environment dictionaries must be strings
-    and not unicode.
-    """
-    if IS_WINDOWS:
-        env_dict.update((key, str(value)) for (key, value) in env_dict.items())
-    return cast(Dict[str, str], env_dict)
-
-
-def _popen_pipes(cmd, cwd: "str | _t.PathT"):
+def _popen_pipes(cmd: _t.CMD_TYPE, cwd: _t.PathT) -> subprocess.Popen[bytes]:
     return subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=str(cwd),
-        env=_always_strings(
-            dict(
-                no_git_env(os.environ),
-                # os.environ,
-                # try to disable i18n
-                LC_ALL="C",
-                LANGUAGE="",
-                HGPLAIN="1",
-            )
+        env=dict(
+            no_git_env(os.environ),
+            # os.environ,
+            # try to disable i18n
+            LC_ALL="C",
+            LANGUAGE="",
+            HGPLAIN="1",
         ),
     )
 
 
-def do_ex(cmd, cwd: "str | _t.PathT" = ".") -> Tuple[str, str, int]:
+def do_ex(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> _t.CmdResult:
     trace("cmd", repr(cmd))
     trace(" in", cwd)
     if os.name == "posix" and not isinstance(cmd, (list, tuple)):
@@ -95,10 +85,12 @@ def do_ex(cmd, cwd: "str | _t.PathT" = ".") -> Tuple[str, str, int]:
         trace("err", repr(err))
     if p.returncode:
         trace("ret", p.returncode)
-    return ensure_stripped_str(out), ensure_stripped_str(err), p.returncode
+    return _t.CmdResult(
+        ensure_stripped_str(out), ensure_stripped_str(err), p.returncode
+    )
 
 
-def do(cmd: "List[str] | str", cwd: "str | _t.PathT" = "."):
+def do(cmd: "List[str] | str", cwd: "str | _t.PathT" = ".") -> str:
     out, err, ret = do_ex(cmd, cwd)
     if ret:
         print(err)
@@ -138,13 +130,15 @@ def has_command(name: str, args: "List[str] | None" = None, warn: bool = True) -
     return res
 
 
-def require_command(name):
+def require_command(name: str) -> None:
     if not has_command(name, warn=False):
         raise OSError("%r was not found" % name)
 
 
-def iter_entry_points(*k, **kw):
+def iter_entry_points(
+    group: str, name: Optional[str] = None
+) -> Iterator[_t.EntrypointProtocol]:
 
     from ._entrypoints import iter_entry_points
 
-    return iter_entry_points(*k, **kw)
+    return iter_entry_points(group, name)

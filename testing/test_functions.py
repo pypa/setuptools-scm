@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import pkg_resources
 import pytest
 
 from setuptools_scm import dump_version
@@ -13,6 +12,8 @@ from setuptools_scm.version import guess_next_version
 from setuptools_scm.version import meta
 from setuptools_scm.version import tag_to_version
 
+c = Configuration()
+
 
 @pytest.mark.parametrize(
     "tag, expected",
@@ -20,15 +21,19 @@ from setuptools_scm.version import tag_to_version
         ("1.1", "1.2"),
         ("1.2.dev", "1.2"),
         ("1.1a2", "1.1a3"),
-        ("23.24.post2+deadbeef", "23.24.post3"),
+        pytest.param(
+            "23.24.post2+deadbeef",
+            "23.24.post3",
+            marks=pytest.mark.filterwarnings(
+                "ignore:.*will be stripped of its suffix.*:UserWarning"
+            ),
+        ),
     ],
 )
-def test_next_tag(tag, expected):
-    version = pkg_resources.parse_version(tag)
+def test_next_tag(tag: str, expected: str) -> None:
+    version = meta(tag, config=c)
     assert guess_next_version(version) == expected
 
-
-c = Configuration()
 
 VERSIONS = {
     "exact": meta("1.1", distance=None, dirty=False, config=c),
@@ -57,13 +62,13 @@ VERSIONS = {
         ("distancedirty", "post-release node-and-date", "1.1.post3+d20090213"),
     ],
 )
-def test_format_version(version, scheme, expected):
-    version = VERSIONS[version]
+def test_format_version(version: str, scheme: str, expected: str) -> None:
+    scm_version = VERSIONS[version]
     vs, ls = scheme.split()
-    assert format_version(version, version_scheme=vs, local_scheme=ls) == expected
+    assert format_version(scm_version, version_scheme=vs, local_scheme=ls) == expected
 
 
-def test_dump_version_doesnt_bail_on_value_error(tmp_path):
+def test_dump_version_doesnt_bail_on_value_error(tmp_path: Path) -> None:
     write_to = "VERSION"
     version = str(VERSIONS["exact"].tag)
     with pytest.raises(ValueError, match="^bad file format:"):

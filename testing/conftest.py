@@ -1,4 +1,9 @@
 import os
+from pathlib import Path
+from typing import Any
+from typing import Generator
+from typing import List
+from typing import Tuple
 
 import pytest
 
@@ -11,11 +16,11 @@ os.environ["SETUPTOOLS_SCM_DEBUG"] = "1"
 VERSION_PKGS = ["setuptools", "setuptools_scm"]
 
 
-def pytest_report_header():
+def pytest_report_header() -> List[str]:
     try:
-        from importlib.metadata import version
+        from importlib.metadata import version  # type: ignore
     except ImportError:
-        from importlib_metadata import version
+        from importlib_metadata import version  # type: ignore
     res = []
     for pkg in VERSION_PKGS:
         pkg_version = version(pkg)
@@ -24,7 +29,7 @@ def pytest_report_header():
     return res
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: Any) -> None:
     group = parser.getgroup("setuptools_scm")
     group.addoption(
         "--test-legacy", dest="scm_test_virtualenv", default=False, action="store_true"
@@ -32,7 +37,7 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture(autouse=True)
-def debug_mode():
+def debug_mode() -> Generator[None, None, None]:
     from setuptools_scm import utils
 
     utils.DEBUG = True
@@ -41,14 +46,14 @@ def debug_mode():
 
 
 @pytest.fixture
-def wd(tmp_path):
+def wd(tmp_path: Path) -> WorkDir:
     target_wd = tmp_path.resolve() / "wd"
     target_wd.mkdir()
     return WorkDir(target_wd)
 
 
 @pytest.fixture
-def repositories_hg_git(tmp_path):
+def repositories_hg_git(tmp_path: Path) -> Tuple[WorkDir, WorkDir]:
     from setuptools_scm.utils import do
 
     tmp_path = tmp_path.resolve()

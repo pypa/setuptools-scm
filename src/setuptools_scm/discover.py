@@ -1,11 +1,15 @@
 import os
+from typing import Iterable
+from typing import Iterator
 
+from . import _types as _t
 from .config import Configuration
-from .utils import iter_entry_points
 from .utils import trace
 
 
-def walk_potential_roots(root, search_parents=True):
+def walk_potential_roots(
+    root: _t.PathT, search_parents: bool = True
+) -> Iterator[_t.PathT]:
     """
     Iterate though a path and each of its parents.
     :param root: File path.
@@ -23,7 +27,7 @@ def walk_potential_roots(root, search_parents=True):
         root, tail = os.path.split(root)
 
 
-def match_entrypoint(root, name):
+def match_entrypoint(root: _t.PathT, name: str) -> bool:
     """
     Consider a ``root`` as entry-point.
     :param root: File path.
@@ -39,7 +43,9 @@ def match_entrypoint(root, name):
     return False
 
 
-def iter_matching_entrypoints(root, entrypoint, config: Configuration):
+def iter_matching_entrypoints(
+    root: _t.PathT, entrypoint: str, config: Configuration
+) -> Iterable[_t.EntrypointProtocol]:
     """
     Consider different entry-points in ``root`` and optionally its parents.
     :param root: File path.
@@ -49,6 +55,7 @@ def iter_matching_entrypoints(root, entrypoint, config: Configuration):
     """
 
     trace("looking for ep", entrypoint, root)
+    from ._entrypoints import iter_entry_points
 
     for wd in walk_potential_roots(root, config.search_parent_directories):
         for ep in iter_entry_points(entrypoint):

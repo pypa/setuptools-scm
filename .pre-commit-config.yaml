@@ -7,7 +7,7 @@ repos:
     - id: black
       args: [--safe, --quiet]
 -   repo: https://github.com/asottile/reorder_python_imports
-    rev: v3.0.1
+    rev: v3.1.0
     hooks:
     -   id: reorder-python-imports
         args: [ "--application-directories=.:src" , --py3-plus]
@@ -32,10 +32,12 @@ repos:
     hooks:
     -   id: setup-cfg-fmt
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v0.942'
+    rev: 'v0.950'
     hooks:
     -   id: mypy
+        args: [--strict]
+        language_version: "3.10"
         additional_dependencies:
             - types-setuptools
             - tokenize-rt==3.2.0
-            - pytest == 6.2.5
+            - pytest == 7.1

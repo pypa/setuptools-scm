@@ -1,5 +1,6 @@
 import itertools
 from pathlib import Path
+from typing import Any
 from typing import List
 
 
@@ -10,14 +11,14 @@ class WorkDir:
     signed_commit_command: str
     add_command: str
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<WD {self.cwd}>"
 
     def __init__(self, cwd: Path) -> None:
         self.cwd = cwd
         self.__counter = itertools.count()
 
-    def __call__(self, cmd: "List[str] | str", **kw):
+    def __call__(self, cmd: "List[str] | str", **kw: object) -> str:
         if kw:
             assert isinstance(cmd, str), "formatting the command requires text input"
             cmd = cmd.format(**kw)
@@ -42,9 +43,11 @@ class WorkDir:
         else:
             return given_reason
 
-    def add_and_commit(self, reason: "str | None" = None, **kwargs):
+    def add_and_commit(
+        self, reason: "str | None" = None, signed: bool = False, **kwargs: object
+    ) -> None:
         self(self.add_command)
-        self.commit(reason, **kwargs)
+        self.commit(reason=reason, signed=signed, **kwargs)
 
     def commit(self, reason: "str | None" = None, signed: bool = False) -> None:
         reason = self._reason(reason)
@@ -53,13 +56,15 @@ class WorkDir:
             reason=reason,
         )
 
-    def commit_testfile(self, reason: "str | None" = None, signed: bool = False):
+    def commit_testfile(
+        self, reason: "str | None" = None, signed: bool = False
+    ) -> None:
         reason = self._reason(reason)
         self.write("test.txt", "test {reason}", reason=reason)
         self(self.add_command)
         self.commit(reason=reason, signed=signed)
 
-    def get_version(self, **kw):
+    def get_version(self, **kw: Any) -> str:
         __tracebackhide__ = True
         from setuptools_scm import get_version
 
@@ -68,6 +73,6 @@ class WorkDir:
         return version
 
     @property
-    def version(self):
+    def version(self) -> str:
         __tracebackhide__ = True
         return self.get_version()

@@ -5,18 +5,22 @@ import os
 import pathlib
 import subprocess
 import sys
+from typing import Any
+from typing import Callable
+from typing import List
 
+import _pytest.config
 import pytest
 
 
-def cli_run(*k, **kw):
+def cli_run(*k: Any, **kw: Any) -> None:
     """this defers the virtualenv import
     it helps to avoid warnings from the furthermore imported setuptools
     """
     global cli_run
-    from virtualenv.run import cli_run
+    from virtualenv.run import cli_run  # type: ignore
 
-    return cli_run(*k, **kw)
+    cli_run(*k, **kw)
 
 
 pytestmark = pytest.mark.filterwarnings(
@@ -28,11 +32,13 @@ ROOT = pathlib.Path(__file__).parent.parent
 
 
 class Venv:
+    location: pathlib.Path
+
     def __init__(self, location: pathlib.Path):
         self.location = location
 
     @property
-    def python(self):
+    def python(self) -> pathlib.Path:
         return self.location / "bin/python"
 
 
@@ -40,10 +46,12 @@ class VenvMaker:
     def __init__(self, base: pathlib.Path):
         self.base = base
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<VenvMaker base={self.base}>"
 
-    def get_venv(self, python, pip, setuptools, prefix="scm"):
+    def get_venv(
+        self, python: str, pip: str, setuptools: str, prefix: str = "scm"
+    ) -> Venv:
         name = f"{prefix}-py={python}-pip={pip}-setuptools={setuptools}"
         path = self.base / name
         if not path.is_dir():
@@ -70,13 +78,13 @@ class VenvMaker:
 
 
 @pytest.fixture
-def venv_maker(pytestconfig):
+def venv_maker(pytestconfig: _pytest.config.Config) -> VenvMaker:
     if not pytestconfig.getoption("--test-legacy"):
         pytest.skip(
             "testing on legacy setuptools disabled, pass --test-legacy to run them"
         )
-    dir = pytestconfig.cache.makedir("setuptools_scm_venvs")
-    path = pathlib.Path(str(dir))
+    assert pytestconfig.cache is not None
+    path = pytestconfig.cache.mkdir("setuptools_scm_venvs")
     return VenvMaker(path)
 
 
@@ -91,7 +99,7 @@ main()
 """
 
 
-def check(venv, expected_version, **env):
+def check(venv: Venv, expected_version: str, **env: str) -> None:
 
     subprocess.check_call(
         [venv.python, "-c", SCRIPT, expected_version],
@@ -102,7 +110,7 @@ def check(venv, expected_version, **env):
 @pytest.mark.skipif(
     sys.version_info[:2] >= (3, 10), reason="old setuptools won't work on python 3.10"
 )
-def test_distlib_setuptools_works(venv_maker):
+def test_distlib_setuptools_works(venv_maker: VenvMaker) -> None:
     venv = venv_maker.get_venv(setuptools="45.0.0", pip="9.0", python="3.6")
     subprocess.run([venv.python, "-m", "pip", "install", "-e", str(ROOT)])
 
@@ -133,14 +141,14 @@ name = setuptools_scm_test_package
 """
 
 
-def prepare_expecting_pyproject_support(pkg: pathlib.Path):
+def prepare_expecting_pyproject_support(pkg: pathlib.Path) -> None:
     pkg.mkdir()
     pkg.joinpath("setup.py").write_text(SETUP_PY_NAME)
     pkg.joinpath("pyproject.toml").write_text(PYPROJECT_TOML_WITH_KEY)
     pkg.joinpath("PKG-INFO").write_text("Version: 1.0.0")
 
 
-def prepare_setup_py_config(pkg: pathlib.Path):
+def prepare_setup_py_config(pkg: pathlib.Path) -> None:
     pkg.mkdir()
     pkg.joinpath("setup.py").write_text(SETUP_PY_KEYWORD)
     pkg.joinpath("setup.cfg").write_text(SETUP_CFG_NAME)
@@ -163,15 +171,18 @@ def prepare_setup_py_config(pkg: pathlib.Path):
     ],
 )
 def test_on_old_setuptools(
-    venv_maker, tmp_path, setuptools, project_create, monkeypatch
-):
+    venv_maker: VenvMaker,
+    tmp_path: pathlib.Path,
+    setuptools: str,
+    project_create: Callable[[pathlib.Path], None],
+) -> None:
     pkg = tmp_path.joinpath("pkg")
     project_create(pkg)
     venv = venv_maker.get_venv(setuptools=setuptools, pip="9.0", python="3.6")
 
     # monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG", raising=False)
 
-    def run_and_output(cmd):
+    def run_and_output(cmd: "List[str | pathlib.Path]") -> bytes:
         res = subprocess.run(cmd, cwd=str(pkg), stdout=subprocess.PIPE)
         if not res.returncode:
             return res.stdout.strip()

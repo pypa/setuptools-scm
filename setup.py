@@ -11,20 +11,22 @@ pip usage is recommended
 """
 import os
 import sys
+from typing import NoReturn
+from typing import Optional
 
 import setuptools
 from setuptools.command.bdist_egg import bdist_egg as original_bdist_egg
 
 
 class bdist_egg(original_bdist_egg):
-    def run(self):
+    def run(self) -> NoReturn:
         raise SystemExit(
             "%s is forbidden, "
             "please update to setuptools>=45 which uses pip" % type(self).__name__
         )
 
 
-def scm_version():
+def scm_version() -> str:
 
     if sys.version_info < (3, 6):
         raise RuntimeError(
@@ -40,8 +42,11 @@ def scm_version():
     from setuptools_scm import git
     from setuptools_scm import hg
     from setuptools_scm.version import guess_next_dev_version, get_local_node_and_date
+    from setuptools_scm.config import Configuration
 
-    def parse(root, config):
+    from setuptools_scm.version import ScmVersion
+
+    def parse(root: str, config: Configuration) -> Optional[ScmVersion]:
         try:
             return parse_pkginfo(root, config)
         except OSError:

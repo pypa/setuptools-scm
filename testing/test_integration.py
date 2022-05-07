@@ -1,9 +1,11 @@
 import os
 import sys
 import textwrap
+from pathlib import Path
 
 import pytest
 
+from .wd_wrapper import WorkDir
 from setuptools_scm import PRETEND_KEY
 from setuptools_scm import PRETEND_KEY_NAMED
 from setuptools_scm.integration import _warn_on_old_setuptools
@@ -11,7 +13,7 @@ from setuptools_scm.utils import do
 
 
 @pytest.fixture
-def wd(wd):
+def wd(wd: WorkDir) -> WorkDir:
     wd("git init")
     wd("git config user.email test@example.com")
     wd('git config user.name "a test"')
@@ -20,11 +22,12 @@ def wd(wd):
     return wd
 
 
-def test_pyproject_support(tmpdir, monkeypatch):
+def test_pyproject_support(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     pytest.importorskip("tomli")
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
-    pkg = tmpdir.ensure("package", dir=42)
-    pkg.join("pyproject.toml").write_text(
+    pkg = tmp_path / "package"
+    pkg.mkdir()
+    pkg.joinpath("pyproject.toml").write_text(
         textwrap.dedent(
             """
             [tool.setuptools_scm]
@@ -38,8 +41,8 @@ def test_pyproject_support(tmpdir, monkeypatch):
         ),
         encoding="utf-8",
     )
-    pkg.join("setup.py").write("__import__('setuptools').setup()")
-    res = do((sys.executable, "setup.py", "--version"), pkg)
+    pkg.joinpath("setup.py").write_text("__import__('setuptools').setup()")
+    res = do([sys.executable, "setup.py", "--version"], pkg)
     assert res == "12.34"
 
 
@@ -78,16 +81,16 @@ with_metadata_in = pytest.mark.parametrize(
 
 
 @with_metadata_in
-def test_pyproject_support_with_git(wd, metadata_in):
+def test_pyproject_support_with_git(wd: WorkDir, metadata_in: str) -> None:
     pytest.importorskip("tomli")
     wd.write("pyproject.toml", PYPROJECT_FILES[metadata_in])
     wd.write("setup.py", SETUP_PY_FILES[metadata_in])
     wd.write("setup.cfg", SETUP_CFG_FILES[metadata_in])
-    res = wd((sys.executable, "setup.py", "--version"))
+    res = wd([sys.executable, "setup.py", "--version"])
     assert res.endswith("0.1.dev0")
 
 
-def test_pretend_version(monkeypatch, wd):
+def test_pretend_version(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> None:
     monkeypatch.setenv(PRETEND_KEY, "1.0.0")
 
     assert wd.get_version() == "1.0.0"
@@ -95,36 +98,42 @@ def test_pretend_version(monkeypatch, wd):
 
 
 @with_metadata_in
-def test_pretend_version_named_pyproject_integration(monkeypatch, wd, metadata_in):
+def test_pretend_version_named_pyproject_integration(
+    monkeypatch: pytest.MonkeyPatch, wd: WorkDir, metadata_in: str
+) -> None:
     test_pyproject_support_with_git(wd, metadata_in)
     monkeypatch.setenv(
         PRETEND_KEY_NAMED.format(name="setuptools_scm_example".upper()), "3.2.1"
     )
-    res = wd((sys.executable, "setup.py", "--version"))
+    res = wd([sys.executable, "setup.py", "--version"])
     assert res.endswith("3.2.1")
 
 
-def test_pretend_version_named(tmpdir, monkeypatch, wd):
+def test_pretend_version_named(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> None:
     monkeypatch.setenv(PRETEND_KEY_NAMED.format(name="test".upper()), "1.0.0")
     monkeypatch.setenv(PRETEND_KEY_NAMED.format(name="test2".upper()), "2.0.0")
     assert wd.get_version(dist_name="test") == "1.0.0"
     assert wd.get_version(dist_name="test2") == "2.0.0"
 
 
-def test_pretend_version_name_takes_precedence(tmpdir, monkeypatch, wd):
+def test_pretend_version_name_takes_precedence(
+    monkeypatch: pytest.MonkeyPatch, wd: WorkDir
+) -> None:
     monkeypatch.setenv(PRETEND_KEY_NAMED.format(name="test".upper()), "1.0.0")
     monkeypatch.setenv(PRETEND_KEY, "2.0.0")
     assert wd.get_version(dist_name="test") == "1.0.0"
 
 
-def test_pretend_version_accepts_bad_string(monkeypatch, wd):
+def test_pretend_version_accepts_bad_string(
+    monkeypatch: pytest.MonkeyPatch, wd: WorkDir
+) -> None:
     monkeypatch.setenv(PRETEND_KEY, "dummy")
     wd.write("setup.py", SETUP_PY_PLAIN)
     assert wd.get_version(write_to="test.py") == "dummy"
     assert wd("python setup.py --version") == "0.0.0"
 
 
-def test_own_setup_fails_on_old_python(monkeypatch):
+def test_own_setup_fails_on_old_python(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("sys.version_info", (3, 5))
     monkeypatch.syspath_prepend(os.path.dirname(os.path.dirname(__file__)))
 
@@ -137,18 +146,18 @@ def test_own_setup_fails_on_old_python(monkeypatch):
         setup.scm_version()
 
 
-def testwarn_on_broken_setuptools():
+def testwarn_on_broken_setuptools() -> None:
     _warn_on_old_setuptools("45")
     with pytest.warns(RuntimeWarning, match="ERROR: setuptools==44"):
         _warn_on_old_setuptools("44")
 
 
 @pytest.mark.issue(611)
-def test_distribution_procides_extras():
+def test_distribution_procides_extras() -> None:
     try:
-        from importlib.metadata import distribution
+        from importlib.metadata import distribution  # type: ignore
     except ImportError:
-        from importlib_metadata import distribution
+        from importlib_metadata import distribution  # type: ignore
 
     dist = distribution("setuptools_scm")
     assert sorted(dist.metadata.get_all("Provides-Extra")) == ["test", "toml"]

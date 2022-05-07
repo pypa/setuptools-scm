@@ -1,14 +1,37 @@
 import warnings
+from typing import Any
+from typing import Iterator
 from typing import Optional
+from typing import overload
+from typing import Protocol
+from typing import TYPE_CHECKING
 
-from .config import Configuration
-from .discover import iter_matching_entrypoints
+from . import _types as _t
 from .utils import function_has_arg
 from .utils import trace
-from setuptools_scm.version import ScmVersion
+from .version import ScmVersion
+
+if TYPE_CHECKING:
+    from .config import Configuration
+else:
+    Configuration = Any
 
 
-def _call_entrypoint_fn(root, config, fn):
+class MaybeConfigFunction(Protocol):
+    __name__: str
+
+    @overload
+    def __call__(self, root: _t.PathT, config: Configuration) -> Optional[ScmVersion]:
+        pass
+
+    @overload
+    def __call__(self, root: _t.PathT) -> Optional[ScmVersion]:
+        pass
+
+
+def _call_entrypoint_fn(
+    root: _t.PathT, config: Configuration, fn: MaybeConfigFunction
+) -> Optional[ScmVersion]:
     if function_has_arg(fn, "config"):
         return fn(root, config=config)
     else:
@@ -32,6 +55,8 @@ def _version_from_entrypoints(
         entrypoint = "setuptools_scm.parse_scm"
         root = config.absolute_root
 
+    from .discover import iter_matching_entrypoints
+
     trace("version_from_ep", entrypoint, root)
     for ep in iter_matching_entrypoints(root, entrypoint, config):
         version: Optional[ScmVersion] = _call_entrypoint_fn(root, config, ep.load())
@@ -44,15 +69,17 @@ def _version_from_entrypoints(
 try:
     from importlib.metadata import entry_points  # type: ignore
 except ImportError:
-    from pkg_resources import iter_entry_points
-else:
+    from importlib_metadata import entry_points  # type: ignore
 
-    def iter_entry_points(group: str, name: Optional[str] = None):
-        all_eps = entry_points()
-        if hasattr(all_eps, "select"):
-            eps = all_eps.select(group=group)
-        else:
-            eps = all_eps[group]
-        if name is None:
-            return iter(eps)
-        return (ep for ep in eps if ep.name == name)
+
+def iter_entry_points(
+    group: str, name: Optional[str] = None
+) -> Iterator[_t.EntrypointProtocol]:
+    all_eps = entry_points()
+    if hasattr(all_eps, "select"):
+        eps = all_eps.select(group=group)
+    else:
+        eps = all_eps[group]
+    if name is None:
+        return iter(eps)
+    return (ep for ep in eps if ep.name == name)
