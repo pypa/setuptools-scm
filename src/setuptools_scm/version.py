@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 from . import _types as _t
 from ._version_cls import Version as PkgVersion
 from .config import Configuration
-from .config import VersionT
+from .config import _VersionT
 from .utils import trace
 
 SEMVER_MINOR = 2
@@ -67,8 +67,8 @@ def callable_or_entrypoint(group: str, callable_or_name: str | Any) -> Any:
 
 
 def tag_to_version(
-    tag: VersionT | str, config: Configuration | None = None
-) -> VersionT | None:
+    tag: _VersionT | str, config: Configuration | None = None
+) -> _VersionT | None:
     """
     take a tag that might be prefixed with a keyword and return only the version part
     :param config: optional configuration object
@@ -101,13 +101,13 @@ def tag_to_version(
 
 def tags_to_versions(
     tags: list[str], config: Configuration | None = None
-) -> list[VersionT]:
+) -> list[_VersionT]:
     """
     take tags that might be prefixed with a keyword and return only the version part
     :param tags: an iterable of tags
     :param config: optional configuration object
     """
-    result: list[VersionT] = []
+    result: list[_VersionT] = []
     for tag in tags:
         parsed = tag_to_version(tag, config=config)
         if parsed:
@@ -192,8 +192,8 @@ class ScmVersion:
 
 
 def _parse_tag(
-    tag: VersionT | str, preformatted: bool, config: Configuration | None
-) -> VersionT | str:
+    tag: _VersionT | str, preformatted: bool, config: Configuration | None
+) -> _VersionT | str:
     if preformatted:
         return tag
     elif config is None or not isinstance(tag, config.version_cls):
@@ -205,7 +205,7 @@ def _parse_tag(
 
 
 def meta(
-    tag: str | VersionT,
+    tag: str | _VersionT,
     distance: int | None = None,
     dirty: bool = False,
     node: str | None = None,

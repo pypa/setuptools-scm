@@ -3,13 +3,14 @@ utils
 """
 from __future__ import annotations
 
-import inspect
 import os
 import platform
 import shlex
 import subprocess
 import sys
 import warnings
+from types import CodeType
+from types import FunctionType
 from typing import Iterator
 from typing import Mapping
 
@@ -52,11 +53,10 @@ def ensure_stripped_str(str_or_bytes: str | bytes) -> str:
         return str_or_bytes.decode("utf-8", "surrogateescape").strip()
 
 
-def _popen_pipes(cmd: _t.CMD_TYPE, cwd: _t.PathT) -> subprocess.Popen[bytes]:
-    return subprocess.Popen(
+def _run(cmd: _t.CMD_TYPE, cwd: _t.PathT) -> subprocess.CompletedProcess[bytes]:
+    return subprocess.run(
         cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         cwd=str(cwd),
         env=dict(
             no_git_env(os.environ),
@@ -75,16 +75,15 @@ def do_ex(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> _t.CmdResult:
     if os.name == "posix" and not isinstance(cmd, (list, tuple)):
         cmd = shlex.split(cmd)
 
-    p = _popen_pipes(cmd, cwd)
-    out, err = p.communicate()
-    if out:
-        trace("out", repr(out))
-    if err:
-        trace("err", repr(err))
-    if p.returncode:
-        trace("ret", p.returncode)
+    res = _run(cmd, cwd)
+    if res.stdout:
+        trace("out", repr(res.stdout))
+    if res.stderr:
+        trace("err", repr(res.stderr))
+    if res.returncode:
+        trace("ret", res.returncode)
     return _t.CmdResult(
-        ensure_stripped_str(out), ensure_stripped_str(err), p.returncode
+        ensure_stripped_str(res.stdout), ensure_stripped_str(res.stderr), res.returncode
     )
 
 
@@ -105,23 +104,20 @@ def data_from_mime(path: _t.PathT) -> dict[str, str]:
     return data
 
 
-def function_has_arg(fn: object, argname: str) -> bool:
-    assert inspect.isfunction(fn)
-
-    argspec = inspect.signature(fn).parameters
-
-    return argname in argspec
+def function_has_arg(fn: object | FunctionType, argname: str) -> bool:
+    assert isinstance(fn, FunctionType)
+    code: CodeType = fn.__code__
+    return argname in code.co_varnames
 
 
 def has_command(name: str, args: list[str] | None = None, warn: bool = True) -> bool:
     try:
         cmd = [name, "help"] if args is None else [name, *args]
-        p = _popen_pipes(cmd, ".")
+        p = _run(cmd, ".")
     except OSError:
         trace(*sys.exc_info())
         res = False
     else:
-        p.communicate()
         res = not p.returncode
     if not res and warn:
         warnings.warn("%r was not found" % name, category=RuntimeWarning)

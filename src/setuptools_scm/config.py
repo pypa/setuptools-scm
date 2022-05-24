@@ -6,6 +6,7 @@ import re
 import warnings
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import Pattern
 from typing import TYPE_CHECKING
 from typing import Union
@@ -70,7 +71,36 @@ def _lazy_tomli_load(data: str) -> dict[str, Any]:
     return loads(data)
 
 
-VersionT = Union[Version, NonNormalizedVersion]
+_VersionT = Union[Version, NonNormalizedVersion]
+
+
+def _validate_version_cls(
+    version_cls: type[_VersionT] | str | None, normalize: bool
+) -> type[_VersionT]:
+    if not normalize:
+        # `normalize = False` means `version_cls = NonNormalizedVersion`
+        if version_cls is not None:
+            raise ValueError(
+                "Providing a custom `version_cls` is not permitted when "
+                "`normalize=False`"
+            )
+        return NonNormalizedVersion
+    else:
+        # Use `version_cls` if provided, default to packaging or pkg_resources
+        if version_cls is None:
+            return Version
+        elif isinstance(version_cls, str):
+            try:
+                # Not sure this will work in old python
+                import importlib
+
+                pkg, cls_name = version_cls.rsplit(".", 1)
+                version_cls_host = importlib.import_module(pkg)
+                return cast(type[_VersionT], getattr(version_cls_host, cls_name))
+            except:  # noqa
+                raise ValueError(f"Unable to import version_cls='{version_cls}'")
+        else:
+            return version_cls
 
 
 class Configuration:
@@ -79,7 +109,7 @@ class Configuration:
     parent: _t.PathT | None
     _root: str
     _relative_to: str | None
-    version_cls: type[VersionT]
+    version_cls: type[_VersionT]
 
     def __init__(
         self,
@@ -98,11 +128,7 @@ class Configuration:
         parse: Any | None = None,
         git_describe_command: _t.CMD_TYPE | None = None,
         dist_name: str | None = None,
-        version_cls: type[Version]
-        | type[NonNormalizedVersion]
-        | type
-        | str
-        | None = None,
+        version_cls: type[_VersionT] | type | str | None = None,
         normalize: bool = True,
         search_parent_directories: bool = False,
     ):
@@ -125,30 +151,7 @@ class Configuration:
         self.search_parent_directories = search_parent_directories
         self.parent = None
 
-        if not normalize:
-            # `normalize = False` means `version_cls = NonNormalizedVersion`
-            if version_cls is not None:
-                raise ValueError(
-                    "Providing a custom `version_cls` is not permitted when "
-                    "`normalize=False`"
-                )
-            self.version_cls = NonNormalizedVersion
-        else:
-            # Use `version_cls` if provided, default to packaging or pkg_resources
-            if version_cls is None:
-                self.version_cls = Version
-            elif isinstance(version_cls, str):
-                try:
-                    # Not sure this will work in old python
-                    import importlib
-
-                    pkg, cls_name = version_cls.rsplit(".", 1)
-                    version_cls_host = importlib.import_module(pkg)
-                    self.version_cls = getattr(version_cls_host, cls_name)
-                except:  # noqa
-                    raise ValueError(f"Unable to import version_cls='{version_cls}'")
-            else:
-                self.version_cls = version_cls
+        self.version_cls = _validate_version_cls(version_cls, normalize)
 
     @property
     def fallback_root(self) -> str:
