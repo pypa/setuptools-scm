@@ -70,7 +70,7 @@ def _version_from_entrypoints(
 try:
     from importlib.metadata import entry_points  # type: ignore
 except ImportError:
-    from importlib_metadata import entry_points  # type: ignore
+    from importlib_metadata import entry_points
 
 
 def iter_entry_points(
