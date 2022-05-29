@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ['3.7', '3.8', '3.9', '3.10', '3.11', 'pypy-3.8' ]
+        python_version: ['3.7', '3.8', '3.9', '3.10', '3.11.0-alpha - 3.11.0', 'pypy-3.8' ]
         os: [windows-latest, ubuntu-latest] #, macos-latest]
         include:
         - os: windows-latest
@@ -28,9 +28,9 @@ jobs:
 
     name: ${{ matrix.os }} - Python ${{ matrix.python_version }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Setup python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         if: matrix.python_version != 'msys2'
         with:
           python-version: ${{ matrix.python_version }}
@@ -83,7 +83,7 @@ jobs:
       - name: Setup python
         uses: actions/setup-python@v2
         with:
-          python-version: "3.6"
+          python-version: "3.7"
           architecture: x64
       - run: pip install -e .[toml,test] pytest virtualenv
       - run: pytest --test-legacy testing/test_setuptools_support.py || true # ignore fail flaky on ci
@@ -92,11 +92,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: [  '3.6', '3.9', 'pypy-3.6' ]
+        python_version: [  '3.7', '3.9', 'pypy-3.8' ]
         installer: ["pip install"]
     name: check self install - Python ${{ matrix.python_version }} via ${{ matrix.installer }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Setup python
         uses: actions/setup-python@v2
         with:
@@ -105,7 +105,7 @@ jobs:
       # self install testing needs some clarity
       # so its being executed without any other tools running
       # setuptools smaller 52 is needed to do easy_install
-      - run: pip install -U "setuptools<52" tomli packaging
+      - run: pip install -U "setuptools<52" tomli packaging typing_extensions importlib_metadata
       - run: python setup.py egg_info
       - run: python setup.py sdist
       - run: ${{ matrix.installer }} dist/*
