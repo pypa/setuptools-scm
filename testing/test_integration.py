@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import sys
 import textwrap
 from pathlib import Path
@@ -134,19 +133,6 @@ def test_pretend_version_accepts_bad_string(
     assert wd.get_version(write_to="test.py") == "dummy"
     pyver = wd([sys.executable, "setup.py", "--version"])
     assert pyver == "0.0.0"
-
-
-def test_own_setup_fails_on_old_python(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("sys.version_info", (3, 5))
-    monkeypatch.syspath_prepend(os.path.dirname(os.path.dirname(__file__)))
-
-    import setup
-
-    with pytest.raises(
-        RuntimeError,
-        match="support for python < 3.6 has been removed in setuptools_scm>=6.0.0",
-    ):
-        setup.scm_version()
 
 
 def testwarn_on_broken_setuptools() -> None:
