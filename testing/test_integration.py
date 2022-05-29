@@ -132,7 +132,8 @@ def test_pretend_version_accepts_bad_string(
     monkeypatch.setenv(PRETEND_KEY, "dummy")
     wd.write("setup.py", SETUP_PY_PLAIN)
     assert wd.get_version(write_to="test.py") == "dummy"
-    assert wd("python setup.py --version") == "0.0.0"
+    pyver = wd([sys.executable, "setup.py", "--version"])
+    assert pyver == "0.0.0"
 
 
 def test_own_setup_fails_on_old_python(monkeypatch: pytest.MonkeyPatch) -> None:
