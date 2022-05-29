@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import os
-import sys
 from typing import Any
 from typing import Callable
 from typing import List
 from typing import NamedTuple
-from typing import Protocol
 from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
@@ -14,11 +11,9 @@ from typing import Union
 
 if TYPE_CHECKING:
     from setuptools_scm import version
+    import os
 
-if sys.version_info >= (3, 9):
-    from typing import ParamSpec, TypeAlias
-else:
-    from typing_extensions import ParamSpec, TypeAlias
+from typing_extensions import ParamSpec, TypeAlias, Protocol
 
 PathT = Union["os.PathLike[str]", str]
 

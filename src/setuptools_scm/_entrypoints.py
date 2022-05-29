@@ -4,8 +4,9 @@ import warnings
 from typing import Any
 from typing import Iterator
 from typing import overload
-from typing import Protocol
 from typing import TYPE_CHECKING
+
+from typing_extensions import Protocol
 
 from . import _types as _t
 from .utils import function_has_arg
