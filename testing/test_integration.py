@@ -21,7 +21,7 @@ def wd(wd):
 
 
 def test_pyproject_support(tmpdir, monkeypatch):
-    pytest.importorskip("toml")
+    pytest.importorskip("tomli")
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
     pkg = tmpdir.ensure("package", dir=42)
     pkg.join("pyproject.toml").write_text(
@@ -30,8 +30,10 @@ def test_pyproject_support(tmpdir, monkeypatch):
             [tool.setuptools_scm]
             fallback_version = "12.34"
             [project]
+            name = "foo"
             description = "Factory ⸻ A code generator 🏭"
             authors = [{name = "Łukasz Langa"}]
+            dynamic = ["version"]
             """
         ),
         encoding="utf-8",
