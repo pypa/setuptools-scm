@@ -8,6 +8,7 @@ from typing import Any
 from typing import Callable
 from typing import cast
 from typing import Pattern
+from typing import Type
 from typing import TYPE_CHECKING
 from typing import Union
 
@@ -96,7 +97,7 @@ def _validate_version_cls(
 
                 pkg, cls_name = version_cls.rsplit(".", 1)
                 version_cls_host = importlib.import_module(pkg)
-                return cast(type[_VersionT], getattr(version_cls_host, cls_name))
+                return cast(Type[_VersionT], getattr(version_cls_host, cls_name))
             except:  # noqa
                 raise ValueError(f"Unable to import version_cls='{version_cls}'")
         else:
