@@ -74,10 +74,10 @@ class GitWorkdir(Workdir):
         return bool(out)
 
     def get_branch(self) -> str | None:
-        branch, err, ret = self.do_ex("git rev-parse --abbrev-ref HEAD")
+        branch, err, ret = self.do_ex("git rev-parse --abbrev-ref HEAD --")
         if ret:
             trace("branch err", branch, err, ret)
-            branch, err, ret = self.do_ex("git symbolic-ref --short HEAD")
+            branch, err, ret = self.do_ex("git symbolic-ref --short HEAD --")
             if ret:
                 trace("branch err (symbolic-ref)", branch, err, ret)
                 return None

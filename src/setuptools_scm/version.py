@@ -162,7 +162,8 @@ class ScmVersion:
 
     def __repr__(self) -> str:
         return self.format_with(
-            "<ScmVersion {tag} d={distance} n={node} d={dirty} b={branch}>"
+            "<ScmVersion {tag} dist={distance} "
+            "node={node} dirty={dirty} branch={branch}>"
         )
 
     def format_with(self, fmt: str, **kw: object) -> str:

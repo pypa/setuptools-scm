@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import suppress
 from datetime import date
 from datetime import datetime
 
@@ -21,7 +22,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdirHgClient | None:
         require_command(cls.COMMAND)
-        root, _, ret = do_ex("hg root", wd)
+        root, _, ret = do_ex(["hg", "root"], wd)
         if ret:
             return None
         return cls(root)
@@ -58,13 +59,13 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
             return None
 
     def _hg2git(self, hg_node: str) -> str | None:
-        git_node = None
-        with open(os.path.join(self.path, ".hg/git-mapfile")) as file:
-            for line in file:
-                if hg_node in line:
-                    git_node, hg_node = line.split()
-                    break
-        return git_node
+        with suppress(FileNotFoundError):
+            with open(os.path.join(self.path, ".hg/git-mapfile")) as map_items:
+                for item in map_items:
+                    if hg_node in item:
+                        git_node, hg_node = item.split()
+                        return git_node
+        return None
 
     def node(self) -> str | None:
         hg_node = self.get_hg_node()
@@ -90,7 +91,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         return git_node[:7]
 
     def count_all_nodes(self) -> int:
-        revs, _, _ = self.do_ex("hg log -r 'ancestors(.)' -T '.'")
+        revs, _, _ = self.do_ex(["hg", "log", "-r", "ancestors(.)", "-T", "."])
         return len(revs)
 
     def default_describe(self) -> _t.CmdResult:
@@ -105,30 +106,28 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
                 "hg",
                 "log",
                 "-r",
-                "(reverse(ancestors(.)) and tag(r're:[0-9]'))",
+                "(reverse(ancestors(.)) and tag(r're:v?[0-9].*'))",
                 "-T",
                 "{tags}{if(tags, ' ', '')}",
             ]
         )
         if ret:
             return _FAKE_GIT_DESCRIBE_ERROR
-        hg_tags: set[str] = set(hg_tags_str.split())
+        hg_tags: list[str] = hg_tags_str.split()
 
         if not hg_tags:
             return _FAKE_GIT_DESCRIBE_ERROR
 
-        node: str | None = None
-
         with open(os.path.join(self.path, ".hg/git-tags")) as fp:
+            git_tags: dict[str, str] = dict(line.split()[::-1] for line in fp)
 
-            git_tags: dict[str, str] = dict(line.split() for line in fp)
-
-        tag: str | None = next(
-            # find the first hg tag which is also a git tag
-            (tag for tag in hg_tags if tag in git_tags),
-            None,
-        )
-        if tag is None:
+        tag: str
+        for hg_tag in hg_tags:
+            if hg_tag in git_tags:
+                tag = hg_tag
+                break
+        else:
+            trace("tag not found", hg_tags, git_tags)
             return _FAKE_GIT_DESCRIBE_ERROR
 
         out, _, ret = self.do_ex(["hg", "log", "-r", f"'{tag}'::.", "-T", "."])
@@ -142,5 +141,5 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
 
         if self.is_dirty():
             desc += "-dirty"
-
+        trace("desc", desc)
         return _t.CmdResult(desc, "", 0)

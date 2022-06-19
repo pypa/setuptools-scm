@@ -10,10 +10,13 @@ import pytest
 from .wd_wrapper import WorkDir
 
 
-# 2009-02-13T23:31:30+00:00
-os.environ["SOURCE_DATE_EPOCH"] = "1234567890"
-os.environ["SETUPTOOLS_SCM_DEBUG"] = "1"
-VERSION_PKGS = ["setuptools", "setuptools_scm"]
+def pytest_configure() -> None:
+    # 2009-02-13T23:31:30+00:00
+    os.environ["SOURCE_DATE_EPOCH"] = "1234567890"
+    os.environ["SETUPTOOLS_SCM_DEBUG"] = "1"
+
+
+VERSION_PKGS = ["setuptools", "setuptools_scm", "packaging"]
 
 
 def pytest_report_header() -> list[str]:

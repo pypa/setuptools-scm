@@ -30,9 +30,10 @@ def test_base(repositories_hg_git: tuple[WorkDir, WorkDir]) -> None:
     assert wd.version == "0.1.dev0"
 
     wd_git.commit_testfile()
+    version_git = wd_git.version
+
     wd("hg pull -u")
 
-    version_git = wd_git.version
     version = wd.version
 
     assert version_git.startswith("0.1.dev1+g")
