@@ -1,3 +1,8 @@
+v7.0.1
+=======
+
+* fix #718: Avoid `ModuleNotFoundError` by requiring importlib_metadata in python < 3.8
+
 v7.0.0
 =======
 
