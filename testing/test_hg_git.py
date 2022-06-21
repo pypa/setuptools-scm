@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 import pytest
 
 from setuptools_scm.utils import do_ex
 from setuptools_scm.utils import has_command
+from testing.wd_wrapper import WorkDir
 
 
 @pytest.fixture(scope="module", autouse=True)
-def _check_hg_git():
+def _check_hg_git() -> None:
     if not has_command("hg", warn=False):
         pytest.skip("hg executable not found")
 
@@ -20,16 +23,17 @@ def _check_hg_git():
         pytest.skip("hg-git not installed")
 
 
-def test_base(repositories_hg_git):
+def test_base(repositories_hg_git: tuple[WorkDir, WorkDir]) -> None:
     wd, wd_git = repositories_hg_git
 
     assert wd_git.version == "0.1.dev0"
     assert wd.version == "0.1.dev0"
 
     wd_git.commit_testfile()
+    version_git = wd_git.version
+
     wd("hg pull -u")
 
-    version_git = wd_git.version
     version = wd.version
 
     assert version_git.startswith("0.1.dev1+g")

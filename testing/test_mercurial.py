@@ -1,3 +1,8 @@
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
 import pytest
 
 from setuptools_scm import format_version
@@ -6,6 +11,7 @@ from setuptools_scm.config import Configuration
 from setuptools_scm.hg import archival_to_version
 from setuptools_scm.hg import parse
 from setuptools_scm.utils import has_command
+from testing.wd_wrapper import WorkDir
 
 
 pytestmark = pytest.mark.skipif(
@@ -14,7 +20,7 @@ pytestmark = pytest.mark.skipif(
 
 
 @pytest.fixture
-def wd(wd):
+def wd(wd: WorkDir) -> WorkDir:
     wd("hg init")
     wd.add_command = "hg add ."
     wd.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
@@ -35,7 +41,7 @@ archival_mapping = {
 
 
 @pytest.mark.parametrize("expected,data", sorted(archival_mapping.items()))
-def test_archival_to_version(expected, data):
+def test_archival_to_version(expected: str, data: dict[str, str]) -> None:
     config = Configuration()
     version = archival_to_version(data, config=config)
     assert (
@@ -46,13 +52,15 @@ def test_archival_to_version(expected, data):
     )
 
 
-def test_hg_gone(wd, monkeypatch):
+def test_hg_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
     with pytest.raises(EnvironmentError, match="'hg' was not found"):
         parse(str(wd.cwd))
 
 
-def test_find_files_stop_at_root_hg(wd, monkeypatch):
+def test_find_files_stop_at_root_hg(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
     wd.commit_testfile()
     project = wd.cwd / "project"
     project.mkdir()
@@ -66,11 +74,11 @@ def test_find_files_stop_at_root_hg(wd, monkeypatch):
 
 
 # XXX: better tests for tag prefixes
-def test_version_from_hg_id(wd):
+def test_version_from_hg_id(wd: WorkDir) -> None:
     assert wd.version == "0.0"
 
     wd.commit_testfile()
-    assert wd.version.startswith("0.1.dev2+")
+    assert wd.version.startswith("0.1.dev1+")
 
     # tagging commit is considered the tag
     wd('hg tag v0.1 -u test -d "0 0"')
@@ -94,7 +102,7 @@ def test_version_from_hg_id(wd):
     assert wd.version == "0.3"
 
 
-def test_version_from_archival(wd):
+def test_version_from_archival(wd: WorkDir) -> None:
     # entrypoints are unordered,
     # cleaning the wd ensure this test won't break randomly
     wd.cwd.joinpath(".hg").rename(wd.cwd / ".nothg")
@@ -110,7 +118,7 @@ def test_version_from_archival(wd):
 
 
 @pytest.mark.issue("#72")
-def test_version_in_merge(wd):
+def test_version_in_merge(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd.commit_testfile()
     wd("hg up 0")
@@ -120,13 +128,13 @@ def test_version_in_merge(wd):
 
 
 @pytest.mark.issue(128)
-def test_parse_no_worktree(tmpdir):
-    ret = parse(str(tmpdir))
+def test_parse_no_worktree(tmp_path: Path) -> None:
+    ret = parse(os.fspath(tmp_path))
     assert ret is None
 
 
 @pytest.fixture
-def version_1_0(wd):
+def version_1_0(wd: WorkDir) -> WorkDir:
     wd("hg branch default")
     wd.commit_testfile()
     wd('hg tag 1.0.0 -u test -d "0 0"')
@@ -134,7 +142,8 @@ def version_1_0(wd):
 
 
 @pytest.fixture
-def pre_merge_commit_after_tag(wd, version_1_0):
+def pre_merge_commit_after_tag(version_1_0: WorkDir) -> WorkDir:
+    wd = version_1_0
     wd("hg branch testbranch")
     wd.write("branchfile", "branchtext")
     wd(wd.add_command)
@@ -145,19 +154,19 @@ def pre_merge_commit_after_tag(wd, version_1_0):
 
 
 @pytest.mark.usefixtures("pre_merge_commit_after_tag")
-def test_version_bump_before_merge_commit(wd):
+def test_version_bump_before_merge_commit(wd: WorkDir) -> None:
     assert wd.version.startswith("1.0.1.dev1+")
 
 
 @pytest.mark.issue(219)
 @pytest.mark.usefixtures("pre_merge_commit_after_tag")
-def test_version_bump_from_merge_commit(wd):
+def test_version_bump_from_merge_commit(wd: WorkDir) -> None:
     wd.commit()
     assert wd.version.startswith("1.0.1.dev3+")  # issue 219
 
 
 @pytest.mark.usefixtures("version_1_0")
-def test_version_bump_from_commit_including_hgtag_mods(wd):
+def test_version_bump_from_commit_including_hgtag_mods(wd: WorkDir) -> None:
     """Test the case where a commit includes changes to .hgtags and other files"""
     with wd.cwd.joinpath(".hgtags").open("ab") as tagfile:
         tagfile.write(b"0  0\n")
@@ -170,7 +179,7 @@ def test_version_bump_from_commit_including_hgtag_mods(wd):
 
 @pytest.mark.issue(229)
 @pytest.mark.usefixtures("version_1_0")
-def test_latest_tag_detection(wd):
+def test_latest_tag_detection(wd: WorkDir) -> None:
     """Tests that tags not containing a "." are ignored, the same as for git.
     Note that will be superseded by the fix for pypa/setuptools_scm/issues/235
     """
@@ -179,7 +188,7 @@ def test_latest_tag_detection(wd):
 
 
 @pytest.mark.usefixtures("version_1_0")
-def test_feature_branch_increments_major(wd) -> None:
+def test_feature_branch_increments_major(wd: WorkDir) -> None:
 
     wd.commit_testfile()
     assert wd.get_version(version_scheme="python-simplified-semver").startswith("1.0.1")

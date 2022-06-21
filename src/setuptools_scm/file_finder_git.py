@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 import logging
 import os
 import subprocess
 import tarfile
+from typing import IO
 
+from . import _types as _t
 from .file_finder import is_toplevel_acceptable
 from .file_finder import scm_find_files
 from .utils import do_ex
@@ -11,7 +15,7 @@ from .utils import trace
 log = logging.getLogger(__name__)
 
 
-def _git_toplevel(path):
+def _git_toplevel(path: str) -> str | None:
     try:
         cwd = os.path.abspath(path or ".")
         out, err, ret = do_ex(["git", "rev-parse", "HEAD"], cwd=cwd)
@@ -48,7 +52,7 @@ def _git_toplevel(path):
         return None
 
 
-def _git_interpret_archive(fd, toplevel):
+def _git_interpret_archive(fd: IO[bytes], toplevel: str) -> tuple[set[str], set[str]]:
     with tarfile.open(fileobj=fd, mode="r|*") as tf:
         git_files = set()
         git_dirs = {toplevel}
@@ -61,7 +65,7 @@ def _git_interpret_archive(fd, toplevel):
         return git_files, git_dirs
 
 
-def _git_ls_files_and_dirs(toplevel):
+def _git_ls_files_and_dirs(toplevel: str) -> tuple[set[str], set[str]]:
     # use git archive instead of git ls-file to honor
     # export-ignore git attribute
 
@@ -69,6 +73,7 @@ def _git_ls_files_and_dirs(toplevel):
     proc = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, cwd=toplevel, stderr=subprocess.DEVNULL
     )
+    assert proc.stdout is not None
     try:
         try:
             return _git_interpret_archive(proc.stdout, toplevel)
@@ -79,13 +84,14 @@ def _git_ls_files_and_dirs(toplevel):
     except Exception:
         if proc.wait() != 0:
             log.error("listing git files failed - pretending there aren't any")
-        return (), ()
+        return set(), set()
 
 
-def git_find_files(path=""):
-    toplevel = _git_toplevel(path)
+def git_find_files(path: _t.PathT = "") -> list[str]:
+    toplevel = _git_toplevel(os.fspath(path))
     if not is_toplevel_acceptable(toplevel):
         return []
+    assert toplevel is not None  # mypy ignores typeguard
     fullpath = os.path.abspath(os.path.normpath(path))
     if not fullpath.startswith(toplevel):
         trace("toplevel mismatch", toplevel, fullpath)

@@ -1,3 +1,10 @@
+v7.0.0
+=======
+
+* drop python 3.6 support
+* include git archival support
+
+
 v6.4.3
 ======
 
