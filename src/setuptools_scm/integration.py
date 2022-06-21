@@ -1,18 +1,23 @@
+from __future__ import annotations
+
 import os
 import warnings
+from typing import Any
+from typing import Callable
 
 import setuptools
 
 from . import _get_version
+from . import _types as _t
 from . import _version_missing
+from ._entrypoints import iter_entry_points
 from .config import _read_dist_name_from_setup_cfg
 from .config import Configuration
 from .utils import do
-from .utils import iter_entry_points
 from .utils import trace
 
 
-def _warn_on_old_setuptools(_version=setuptools.__version__):
+def _warn_on_old_setuptools(_version: str = setuptools.__version__) -> None:
     if int(_version.split(".")[0]) < 45:
         warnings.warn(
             RuntimeWarning(
@@ -45,7 +50,7 @@ Suggested workarounds if applicable:
 _warn_on_old_setuptools()
 
 
-def _assign_version(dist: setuptools.Distribution, config: Configuration):
+def _assign_version(dist: setuptools.Distribution, config: Configuration) -> None:
     maybe_version = _get_version(config)
 
     if maybe_version is None:
@@ -54,12 +59,16 @@ def _assign_version(dist: setuptools.Distribution, config: Configuration):
         dist.metadata.version = maybe_version
 
 
-def version_keyword(dist: setuptools.Distribution, keyword, value):
+def version_keyword(
+    dist: setuptools.Distribution,
+    keyword: str,
+    value: bool | dict[str, Any] | Callable[[], dict[str, Any]],
+) -> None:
     if not value:
         return
-    if value is True:
+    elif value is True:
         value = {}
-    if getattr(value, "__call__", None):
+    elif callable(value):
         value = value()
     assert (
         "dist_name" not in value
@@ -76,7 +85,7 @@ def version_keyword(dist: setuptools.Distribution, keyword, value):
     _assign_version(dist, config)
 
 
-def find_files(path=""):
+def find_files(path: _t.PathT = "") -> list[str]:
     for ep in iter_entry_points("setuptools_scm.files_command"):
         command = ep.load()
         if isinstance(command, str):
@@ -89,7 +98,7 @@ def find_files(path=""):
     return []
 
 
-def infer_version(dist: setuptools.Distribution):
+def infer_version(dist: setuptools.Distribution) -> None:
     trace(
         "finalize hook",
         vars(dist.metadata),

@@ -1,31 +1,49 @@
-import os
+from __future__ import annotations
+
+from typing import Any
 from typing import Callable
+from typing import List
+from typing import NamedTuple
 from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
 
+
 if TYPE_CHECKING:
+    from setuptools_scm import version
+    import os
 
-    from typing_extensions import ParamSpec
-else:
-
-    class ParamSpec(list):
-        def __init__(self, _) -> None:
-            pass
-
+from typing_extensions import ParamSpec, TypeAlias, Protocol
 
 PathT = Union["os.PathLike[str]", str]
+
+CMD_TYPE: TypeAlias = Union[List[str], str]
+
+VERSION_SCHEME = Union[str, Callable[["version.ScmVersion"], str]]
+
+
+class CmdResult(NamedTuple):
+    out: str
+    err: str
+    returncode: int
+
+
+class EntrypointProtocol(Protocol):
+    name: str
+
+    def load(self) -> Any:
+        pass
 
 
 T = TypeVar("T")
 T2 = TypeVar("T2")
-PARAMS = ParamSpec("PARAMS")
+P = ParamSpec("P")
 
 
 def transfer_input_args(
-    template: "Callable[PARAMS, T]",
-) -> Callable[[Callable[..., T2]], "Callable[PARAMS, T2]"]:
-    def decorate(func: Callable[..., T2]) -> "Callable[PARAMS, T2]":
+    template: Callable[P, T],
+) -> Callable[[Callable[..., T]], Callable[P, T]]:
+    def decorate(func: Callable[..., T2]) -> Callable[P, T2]:
         return func
 
     return decorate

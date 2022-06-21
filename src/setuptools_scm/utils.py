@@ -1,22 +1,26 @@
 """
 utils
 """
-import inspect
+from __future__ import annotations
+
 import os
 import platform
 import shlex
 import subprocess
 import sys
 import warnings
-from typing import List
-from typing import Optional
+from types import CodeType
+from types import FunctionType
+from typing import Iterator
+from typing import Mapping
 
+from . import _types as _t
 
 DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
 IS_WINDOWS = platform.system() == "Windows"
 
 
-def no_git_env(env):
+def no_git_env(env: Mapping[str, str]) -> dict[str, str]:
     # adapted from pre-commit
     # Too many bugs dealing with environment variables and GIT:
     # https://github.com/pre-commit/pre-commit/issues/300
@@ -37,72 +41,60 @@ def no_git_env(env):
     }
 
 
-def trace(*k) -> None:
+def trace(*k: object) -> None:
     if DEBUG:
         print(*k, file=sys.stderr, flush=True)
 
 
-def ensure_stripped_str(str_or_bytes):
+def ensure_stripped_str(str_or_bytes: str | bytes) -> str:
     if isinstance(str_or_bytes, str):
         return str_or_bytes.strip()
     else:
         return str_or_bytes.decode("utf-8", "surrogateescape").strip()
 
 
-def _always_strings(env_dict):
-    """
-    On Windows and Python 2, environment dictionaries must be strings
-    and not unicode.
-    """
-    if IS_WINDOWS:
-        env_dict.update((key, str(value)) for (key, value) in env_dict.items())
-    return env_dict
-
-
-def _popen_pipes(cmd, cwd):
-    return subprocess.Popen(
+def _run(cmd: _t.CMD_TYPE, cwd: _t.PathT) -> subprocess.CompletedProcess[bytes]:
+    return subprocess.run(
         cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         cwd=str(cwd),
-        env=_always_strings(
-            dict(
-                no_git_env(os.environ),
-                # os.environ,
-                # try to disable i18n
-                LC_ALL="C",
-                LANGUAGE="",
-                HGPLAIN="1",
-            )
+        env=dict(
+            no_git_env(os.environ),
+            # os.environ,
+            # try to disable i18n
+            LC_ALL="C",
+            LANGUAGE="",
+            HGPLAIN="1",
         ),
     )
 
 
-def do_ex(cmd, cwd="."):
+def do_ex(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> _t.CmdResult:
     trace("cmd", repr(cmd))
     trace(" in", cwd)
     if os.name == "posix" and not isinstance(cmd, (list, tuple)):
         cmd = shlex.split(cmd)
 
-    p = _popen_pipes(cmd, cwd)
-    out, err = p.communicate()
-    if out:
-        trace("out", repr(out))
-    if err:
-        trace("err", repr(err))
-    if p.returncode:
-        trace("ret", p.returncode)
-    return ensure_stripped_str(out), ensure_stripped_str(err), p.returncode
+    res = _run(cmd, cwd)
+    if res.stdout:
+        trace("out", repr(res.stdout))
+    if res.stderr:
+        trace("err", repr(res.stderr))
+    if res.returncode:
+        trace("ret", res.returncode)
+    return _t.CmdResult(
+        ensure_stripped_str(res.stdout), ensure_stripped_str(res.stderr), res.returncode
+    )
 
 
-def do(cmd, cwd="."):
+def do(cmd: list[str] | str, cwd: str | _t.PathT = ".") -> str:
     out, err, ret = do_ex(cmd, cwd)
     if ret:
         print(err)
     return out
 
 
-def data_from_mime(path):
+def data_from_mime(path: _t.PathT) -> dict[str, str]:
     with open(path, encoding="utf-8") as fp:
         content = fp.read()
     trace("content", repr(content))
@@ -112,36 +104,35 @@ def data_from_mime(path):
     return data
 
 
-def function_has_arg(fn, argname):
-    assert inspect.isfunction(fn)
-
-    argspec = inspect.signature(fn).parameters
-
-    return argname in argspec
+def function_has_arg(fn: object | FunctionType, argname: str) -> bool:
+    assert isinstance(fn, FunctionType)
+    code: CodeType = fn.__code__
+    return argname in code.co_varnames
 
 
-def has_command(name: str, args: Optional[List[str]] = None, warn: bool = True) -> bool:
+def has_command(name: str, args: list[str] | None = None, warn: bool = True) -> bool:
     try:
         cmd = [name, "help"] if args is None else [name, *args]
-        p = _popen_pipes(cmd, ".")
+        p = _run(cmd, ".")
     except OSError:
         trace(*sys.exc_info())
         res = False
     else:
-        p.communicate()
         res = not p.returncode
     if not res and warn:
         warnings.warn("%r was not found" % name, category=RuntimeWarning)
     return res
 
 
-def require_command(name):
+def require_command(name: str) -> None:
     if not has_command(name, warn=False):
         raise OSError("%r was not found" % name)
 
 
-def iter_entry_points(*k, **kw):
+def iter_entry_points(
+    group: str, name: str | None = None
+) -> Iterator[_t.EntrypointProtocol]:
 
     from ._entrypoints import iter_entry_points
 
-    return iter_entry_points(*k, **kw)
+    return iter_entry_points(group, name)

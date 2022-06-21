@@ -1,6 +1,11 @@
+from __future__ import annotations
+
 import os
+from contextlib import suppress
+from datetime import date
 from datetime import datetime
 
+from . import _types as _t
 from .git import GitWorkdir
 from .hg import HgWorkdir
 from .utils import do_ex
@@ -8,59 +13,64 @@ from .utils import require_command
 from .utils import trace
 
 
+_FAKE_GIT_DESCRIBE_ERROR = _t.CmdResult("<>hg git failed", "", 1)
+
+
 class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
     COMMAND = "hg"
 
     @classmethod
-    def from_potential_worktree(cls, wd):
+    def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdirHgClient | None:
         require_command(cls.COMMAND)
-        root, err, ret = do_ex("hg root", wd)
+        root, _, ret = do_ex(["hg", "root"], wd)
         if ret:
-            return
+            return None
         return cls(root)
 
-    def is_dirty(self):
+    def is_dirty(self) -> bool:
         out, _, _ = self.do_ex("hg id -T '{dirty}'")
         return bool(out)
 
-    def get_branch(self):
-        branch, err, ret = self.do_ex("hg id -T {bookmarks}")
-        if ret:
-            trace("branch err", branch, err, ret)
-            return
-        return branch
+    def get_branch(self) -> str | None:
+        res = self.do_ex("hg id -T {bookmarks}")
+        if res.returncode:
+            trace("branch err", res)
+            return None
+        return res.out
 
-    def get_head_date(self):
+    def get_head_date(self) -> date | None:
         date_part, err, ret = self.do_ex("hg log -r . -T {shortdate(date)}")
         if ret:
             trace("head date err", date_part, err, ret)
-            return
+            return None
         return datetime.strptime(date_part, r"%Y-%m-%d").date()
 
-    def is_shallow(self):
+    def is_shallow(self) -> bool:
         return False
 
-    def fetch_shallow(self):
+    def fetch_shallow(self) -> None:
         pass
 
-    def get_hg_node(self):
+    def get_hg_node(self) -> str | None:
         node, _, ret = self.do_ex("hg log -r . -T {node}")
         if not ret:
             return node
+        else:
+            return None
 
-    def _hg2git(self, hg_node):
-        git_node = None
-        with open(os.path.join(self.path, ".hg/git-mapfile")) as file:
-            for line in file:
-                if hg_node in line:
-                    git_node, hg_node = line.split()
-                    break
-        return git_node
+    def _hg2git(self, hg_node: str) -> str | None:
+        with suppress(FileNotFoundError):
+            with open(os.path.join(self.path, ".hg/git-mapfile")) as map_items:
+                for item in map_items:
+                    if hg_node in item:
+                        git_node, hg_node = item.split()
+                        return git_node
+        return None
 
-    def node(self):
+    def node(self) -> str | None:
         hg_node = self.get_hg_node()
         if hg_node is None:
-            return
+            return None
 
         git_node = self._hg2git(hg_node)
 
@@ -80,54 +90,56 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
 
         return git_node[:7]
 
-    def count_all_nodes(self):
-        revs, _, _ = self.do_ex("hg log -r 'ancestors(.)' -T '.'")
+    def count_all_nodes(self) -> int:
+        revs, _, _ = self.do_ex(["hg", "log", "-r", "ancestors(.)", "-T", "."])
         return len(revs)
 
-    def default_describe(self):
+    def default_describe(self) -> _t.CmdResult:
         """
         Tentative to reproduce the output of
 
         `git describe --dirty --tags --long --match *[0-9]*`
 
         """
-        hg_tags, _, ret = self.do_ex(
+        hg_tags_str, _, ret = self.do_ex(
             [
                 "hg",
                 "log",
                 "-r",
-                "(reverse(ancestors(.)) and tag(r're:[0-9]'))",
+                "(reverse(ancestors(.)) and tag(r're:v?[0-9].*'))",
                 "-T",
                 "{tags}{if(tags, ' ', '')}",
             ]
         )
         if ret:
-            return None, None, None
-        hg_tags = hg_tags.split()
+            return _FAKE_GIT_DESCRIBE_ERROR
+        hg_tags: list[str] = hg_tags_str.split()
 
         if not hg_tags:
-            return None, None, None
+            return _FAKE_GIT_DESCRIBE_ERROR
 
-        git_tags = {}
-        with open(os.path.join(self.path, ".hg/git-tags")) as file:
-            for line in file:
-                node, tag = line.split()
-                git_tags[tag] = node
+        with open(os.path.join(self.path, ".hg/git-tags")) as fp:
+            git_tags: dict[str, str] = dict(line.split()[::-1] for line in fp)
 
-        # find the first hg tag which is also a git tag
-        for tag in hg_tags:
-            if tag in git_tags:
+        tag: str
+        for hg_tag in hg_tags:
+            if hg_tag in git_tags:
+                tag = hg_tag
                 break
+        else:
+            trace("tag not found", hg_tags, git_tags)
+            return _FAKE_GIT_DESCRIBE_ERROR
 
         out, _, ret = self.do_ex(["hg", "log", "-r", f"'{tag}'::.", "-T", "."])
         if ret:
-            return None, None, None
+            return _FAKE_GIT_DESCRIBE_ERROR
         distance = len(out) - 1
 
         node = self.node()
+        assert node is not None
         desc = f"{tag}-{distance}-g{node}"
 
         if self.is_dirty():
             desc += "-dirty"
-
-        return desc, None, 0
+        trace("desc", desc)
+        return _t.CmdResult(desc, "", 0)
