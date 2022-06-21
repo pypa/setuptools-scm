@@ -3,7 +3,8 @@ v7.0.0
 
 * drop python 3.6 support
 * include git archival support
-
+* fix #707: support git version detection even when git protects against mistmatched owners
+            (common with misconfigured containers, thanks @chrisburr )
 
 v6.4.3
 ======
