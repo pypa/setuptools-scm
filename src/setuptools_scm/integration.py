@@ -4,17 +4,20 @@ import os
 import warnings
 from typing import Any
 from typing import Callable
+from typing import TYPE_CHECKING
 
 import setuptools
 
 from . import _get_version
-from . import _types as _t
 from . import _version_missing
 from ._entrypoints import iter_entry_points
 from .config import _read_dist_name_from_setup_cfg
 from .config import Configuration
 from .utils import do
 from .utils import trace
+
+if TYPE_CHECKING:
+    from . import _types as _t
 
 
 def _warn_on_old_setuptools(_version: str = setuptools.__version__) -> None:
