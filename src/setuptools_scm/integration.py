@@ -19,6 +19,8 @@ from .utils import trace
 if TYPE_CHECKING:
     from . import _types as _t
 
+_SKIP_PYPROJECT_HACK = False
+
 
 def _warn_on_old_setuptools(_version: str = setuptools.__version__) -> None:
     if int(_version.split(".")[0]) < 45:
@@ -107,7 +109,11 @@ def infer_version(dist: setuptools.Distribution) -> None:
         vars(dist.metadata),
     )
     dist_name = dist.metadata.name
+    if dist_name is None:
+        dist_name = _read_dist_name_from_setup_cfg()
     if not os.path.isfile("pyproject.toml"):
+        return
+    if dist_name == "setuptools_scm":
         return
     try:
         config = Configuration.from_file(dist_name=dist_name)

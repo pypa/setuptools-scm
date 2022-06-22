@@ -5,12 +5,16 @@ import os
 import subprocess
 import tarfile
 from typing import IO
+from typing import TYPE_CHECKING
 
-from . import _types as _t
 from .file_finder import is_toplevel_acceptable
 from .file_finder import scm_find_files
 from .utils import do_ex
 from .utils import trace
+
+if TYPE_CHECKING:
+    from . import _types as _t
+
 
 log = logging.getLogger(__name__)
 
