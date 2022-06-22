@@ -19,8 +19,6 @@ from .utils import trace
 if TYPE_CHECKING:
     from . import _types as _t
 
-_SKIP_PYPROJECT_HACK = False
-
 
 def _warn_on_old_setuptools(_version: str = setuptools.__version__) -> None:
     if int(_version.split(".")[0]) < 45:
