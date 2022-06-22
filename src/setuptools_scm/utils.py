@@ -13,11 +13,21 @@ from types import CodeType
 from types import FunctionType
 from typing import Iterator
 from typing import Mapping
+from typing import NamedTuple
+from typing import TYPE_CHECKING
 
-from . import _types as _t
+if TYPE_CHECKING:
+
+    from . import _types as _t
 
 DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
 IS_WINDOWS = platform.system() == "Windows"
+
+
+class _CmdResult(NamedTuple):
+    out: str
+    err: str
+    returncode: int
 
 
 def no_git_env(env: Mapping[str, str]) -> dict[str, str]:
@@ -69,7 +79,7 @@ def _run(cmd: _t.CMD_TYPE, cwd: _t.PathT) -> subprocess.CompletedProcess[bytes]:
     )
 
 
-def do_ex(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> _t.CmdResult:
+def do_ex(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> _CmdResult:
     trace("cmd", repr(cmd))
     trace(" in", cwd)
     if os.name == "posix" and not isinstance(cmd, (list, tuple)):
@@ -82,7 +92,7 @@ def do_ex(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> _t.CmdResult:
         trace("err", repr(res.stderr))
     if res.returncode:
         trace("ret", res.returncode)
-    return _t.CmdResult(
+    return _CmdResult(
         ensure_stripped_str(res.stdout), ensure_stripped_str(res.stderr), res.returncode
     )
 

@@ -12,13 +12,13 @@ from typing import Type
 from typing import TYPE_CHECKING
 from typing import Union
 
-from . import _types as _t
 from ._version_cls import NonNormalizedVersion
 from ._version_cls import Version
 from .utils import trace
 
 
 if TYPE_CHECKING:
+    from . import _types as _t
     from setuptools_scm.version import ScmVersion
 
 DEFAULT_TAG_REGEX = r"^(?:[\w-]+-)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"

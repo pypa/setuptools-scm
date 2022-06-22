@@ -8,12 +8,13 @@ from datetime import datetime
 from . import _types as _t
 from .git import GitWorkdir
 from .hg import HgWorkdir
+from .utils import _CmdResult
 from .utils import do_ex
 from .utils import require_command
 from .utils import trace
 
 
-_FAKE_GIT_DESCRIBE_ERROR = _t.CmdResult("<>hg git failed", "", 1)
+_FAKE_GIT_DESCRIBE_ERROR = _CmdResult("<>hg git failed", "", 1)
 
 
 class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
@@ -94,7 +95,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         revs, _, _ = self.do_ex(["hg", "log", "-r", "ancestors(.)", "-T", "."])
         return len(revs)
 
-    def default_describe(self) -> _t.CmdResult:
+    def default_describe(self) -> _CmdResult:
         """
         Tentative to reproduce the output of
 
@@ -142,4 +143,4 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         if self.is_dirty():
             desc += "-dirty"
         trace("desc", desc)
-        return _t.CmdResult(desc, "", 0)
+        return _CmdResult(desc, "", 0)

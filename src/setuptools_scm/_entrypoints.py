@@ -6,17 +6,19 @@ from typing import Iterator
 from typing import overload
 from typing import TYPE_CHECKING
 
-from typing_extensions import Protocol
-
-from . import _types as _t
 from .utils import function_has_arg
 from .utils import trace
 from .version import ScmVersion
 
 if TYPE_CHECKING:
     from .config import Configuration
+    from typing_extensions import Protocol
+    from . import _types as _t
 else:
     Configuration = Any
+
+    class Protocol:
+        pass
 
 
 class MaybeConfigFunction(Protocol):
@@ -71,7 +73,17 @@ def _version_from_entrypoints(
 try:
     from importlib.metadata import entry_points  # type: ignore
 except ImportError:
-    from importlib_metadata import entry_points
+    try:
+        from importlib_metadata import entry_points
+    except ImportError:
+        from collections import defaultdict
+
+        def entry_points() -> dict[str, list[_t.EntrypointProtocol]]:
+            warnings.warn(
+                "importlib metadata missing, "
+                "this may happen at build time for python3.7"
+            )
+            return defaultdict(list)
 
 
 def iter_entry_points(

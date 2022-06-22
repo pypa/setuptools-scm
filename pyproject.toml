@@ -1,9 +1,6 @@
 [build-system]
 requires = [
     "setuptools>=45",
-    "tomli>=1.0",
     "packaging>=20.0",
-    "typing_extensions",
-    "importlib_metadata",
 ]
 build-backend = "setuptools.build_meta"

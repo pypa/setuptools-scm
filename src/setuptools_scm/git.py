@@ -11,9 +11,9 @@ from os.path import samefile
 from typing import Callable
 from typing import TYPE_CHECKING
 
-from . import _types as _t
 from .config import Configuration
 from .scm_workdir import Workdir
+from .utils import _CmdResult
 from .utils import data_from_mime
 from .utils import do_ex
 from .utils import require_command
@@ -23,6 +23,8 @@ from .version import ScmVersion
 from .version import tags_to_versions
 
 if TYPE_CHECKING:
+    from . import _types as _t
+
     from setuptools_scm.hg_git import GitWorkdirHgClient
 
 REF_TAG_RE = re.compile(r"(?<=\btag: )([^,]+)\b")
@@ -72,7 +74,7 @@ class GitWorkdir(Workdir):
 
         return cls(real_wd)
 
-    def do_ex_git(self, cmd: list[str]) -> _t.CmdResult:
+    def do_ex_git(self, cmd: list[str]) -> _CmdResult:
         return self.do_ex(["git", "--git-dir", join(self.path, ".git")] + cmd)
 
     def is_dirty(self) -> bool:
@@ -120,7 +122,7 @@ class GitWorkdir(Workdir):
         revs, _, _ = self.do_ex_git(["rev-list", "HEAD"])
         return revs.count("\n") + 1
 
-    def default_describe(self) -> _t.CmdResult:
+    def default_describe(self) -> _CmdResult:
         git_dir = join(self.path, ".git")
         return self.do_ex(
             DEFAULT_DESCRIBE[:1] + ["--git-dir", git_dir] + DEFAULT_DESCRIBE[1:]
