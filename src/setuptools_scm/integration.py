@@ -4,17 +4,20 @@ import os
 import warnings
 from typing import Any
 from typing import Callable
+from typing import TYPE_CHECKING
 
 import setuptools
 
 from . import _get_version
-from . import _types as _t
 from . import _version_missing
 from ._entrypoints import iter_entry_points
 from .config import _read_dist_name_from_setup_cfg
 from .config import Configuration
 from .utils import do
 from .utils import trace
+
+if TYPE_CHECKING:
+    from . import _types as _t
 
 
 def _warn_on_old_setuptools(_version: str = setuptools.__version__) -> None:
@@ -104,7 +107,11 @@ def infer_version(dist: setuptools.Distribution) -> None:
         vars(dist.metadata),
     )
     dist_name = dist.metadata.name
+    if dist_name is None:
+        dist_name = _read_dist_name_from_setup_cfg()
     if not os.path.isfile("pyproject.toml"):
+        return
+    if dist_name == "setuptools_scm":
         return
     try:
         config = Configuration.from_file(dist_name=dist_name)

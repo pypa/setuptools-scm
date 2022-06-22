@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any
 from typing import Callable
 from typing import List
-from typing import NamedTuple
 from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
@@ -20,12 +19,6 @@ PathT = Union["os.PathLike[str]", str]
 CMD_TYPE: TypeAlias = Union[List[str], str]
 
 VERSION_SCHEME = Union[str, Callable[["version.ScmVersion"], str]]
-
-
-class CmdResult(NamedTuple):
-    out: str
-    err: str
-    returncode: int
 
 
 class EntrypointProtocol(Protocol):

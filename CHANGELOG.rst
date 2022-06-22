@@ -1,3 +1,11 @@
+v7.0.2
+======
+
+* fix #723 and #722: remove bootstrap dependencies
+* bugfix: ensure we read the distribution name from setup.cfg
+  if needed even for pyproject
+*
+
 v7.0.1
 =======
 

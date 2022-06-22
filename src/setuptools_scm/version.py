@@ -19,7 +19,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing_extensions import Concatenate
 
-from . import _types as _t
+    from . import _types as _t
+
 from ._version_cls import Version as PkgVersion
 from .config import Configuration
 from .config import _VersionT

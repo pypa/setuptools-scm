@@ -3,8 +3,8 @@ from __future__ import annotations
 import datetime
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from . import _types as _t
 from ._version_cls import Version
 from .config import Configuration
 from .scm_workdir import Workdir
@@ -15,6 +15,9 @@ from .utils import trace
 from .version import meta
 from .version import ScmVersion
 from .version import tag_to_version
+
+if TYPE_CHECKING:
+    from . import _types as _t
 
 
 class HgWorkdir(Workdir):

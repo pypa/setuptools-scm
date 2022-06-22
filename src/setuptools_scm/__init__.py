@@ -10,7 +10,6 @@ from typing import Any
 from typing import Callable
 from typing import TYPE_CHECKING
 
-from . import _types as _t
 from ._entrypoints import _call_entrypoint_fn
 from ._entrypoints import _version_from_entrypoints
 from ._overrides import _read_pretended_version_for
@@ -33,6 +32,7 @@ from .version import ScmVersion
 if TYPE_CHECKING:
     from typing import NoReturn
 
+    from . import _types as _t
 
 TEMPLATES = {
     ".py": """\
