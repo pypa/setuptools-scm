@@ -51,6 +51,27 @@ def no_git_env(env: Mapping[str, str]) -> dict[str, str]:
     }
 
 
+def avoid_pip_isolation(env: Mapping[str, str]) -> dict[str, str]:
+    """
+    pip build isolation can break Mercurial
+    (see https://github.com/pypa/pip/issues/10635)
+
+    pip uses PYTHONNOUSERSITE and a path in PYTHONPATH containing "pip-build-env-".
+    """
+    new_env = {k: v for k, v in env.items() if k != "PYTHONNOUSERSITE"}
+    if "PYTHONPATH" not in new_env:
+        return new_env
+
+    new_env["PYTHONPATH"] = os.pathsep.join(
+        [
+            path
+            for path in new_env["PYTHONPATH"].split(os.pathsep)
+            if "pip-build-env-" not in path
+        ]
+    )
+    return new_env
+
+
 def trace(*k: object) -> None:
     if DEBUG:
         print(*k, file=sys.stderr, flush=True)
@@ -69,7 +90,7 @@ def _run(cmd: _t.CMD_TYPE, cwd: _t.PathT) -> subprocess.CompletedProcess[str]:
         capture_output=True,
         cwd=str(cwd),
         env=dict(
-            no_git_env(os.environ),
+            avoid_pip_isolation(no_git_env(os.environ)),
             # os.environ,
             # try to disable i18n
             LC_ALL="C",
