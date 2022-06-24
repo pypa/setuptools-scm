@@ -63,7 +63,7 @@ def ensure_stripped_str(str_or_bytes: str | bytes) -> str:
         return str_or_bytes.decode("utf-8", "surrogateescape").strip()
 
 
-def _run(cmd: _t.CMD_TYPE, cwd: _t.PathT) -> subprocess.CompletedProcess[bytes]:
+def _run(cmd: _t.CMD_TYPE, cwd: _t.PathT) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         cmd,
         capture_output=True,
@@ -76,22 +76,27 @@ def _run(cmd: _t.CMD_TYPE, cwd: _t.PathT) -> subprocess.CompletedProcess[bytes]:
             LANGUAGE="",
             HGPLAIN="1",
         ),
+        text=True,
     )
 
 
 def do_ex(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> _CmdResult:
-    trace("cmd", repr(cmd))
-    trace(" in", cwd)
+    if isinstance(cmd, list):
+        cmd_4_trace = " ".join(cmd)
+    else:
+        cmd_4_trace = cmd
+    trace("----\ncmd:", repr(cmd_4_trace))
+    trace(" in:", cwd)
     if os.name == "posix" and not isinstance(cmd, (list, tuple)):
         cmd = shlex.split(cmd)
 
     res = _run(cmd, cwd)
     if res.stdout:
-        trace("out", repr(res.stdout))
+        trace("out:\n", res.stdout)
     if res.stderr:
-        trace("err", repr(res.stderr))
+        trace("err:\n", res.stderr)
     if res.returncode:
-        trace("ret", res.returncode)
+        trace("ret:", res.returncode)
     return _CmdResult(
         ensure_stripped_str(res.stdout), ensure_stripped_str(res.stderr), res.returncode
     )
@@ -99,7 +104,7 @@ def do_ex(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> _CmdResult:
 
 def do(cmd: list[str] | str, cwd: str | _t.PathT = ".") -> str:
     out, err, ret = do_ex(cmd, cwd)
-    if ret:
+    if ret and not DEBUG:
         print(err)
     return out
 
