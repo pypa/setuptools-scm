@@ -8,6 +8,7 @@ import platform
 import shlex
 import subprocess
 import sys
+import textwrap
 import warnings
 from types import CodeType
 from types import FunctionType
@@ -72,8 +73,10 @@ def avoid_pip_isolation(env: Mapping[str, str]) -> dict[str, str]:
     return new_env
 
 
-def trace(*k: object) -> None:
+def trace(*k: object, indent: bool = False) -> None:
     if DEBUG:
+        if indent and len(k) > 1:
+            k = (k[0],) + tuple(textwrap.indent(str(s), "    ") for s in k[1:])
         print(*k, file=sys.stderr, flush=True)
 
 
@@ -102,20 +105,23 @@ def _run(cmd: _t.CMD_TYPE, cwd: _t.PathT) -> subprocess.CompletedProcess[str]:
 
 
 def do_ex(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> _CmdResult:
-    if isinstance(cmd, list):
-        cmd_4_trace = " ".join(cmd)
-    else:
+    if not DEBUG or not isinstance(cmd, list):
         cmd_4_trace = cmd
-    trace("----\ncmd:", repr(cmd_4_trace))
+    else:
+        # give better results than shlex.join in our cases
+        cmd_4_trace = " ".join(
+            [s if all(c not in s for c in " {[:") else f'"{s}"' for s in cmd]
+        )
+    trace("----\ncmd:\n", cmd_4_trace, indent=True)
     trace(" in:", cwd)
     if os.name == "posix" and not isinstance(cmd, (list, tuple)):
         cmd = shlex.split(cmd)
 
     res = _run(cmd, cwd)
     if res.stdout:
-        trace("out:\n", res.stdout)
+        trace("out:\n", res.stdout, indent=True)
     if res.stderr:
-        trace("err:\n", res.stderr)
+        trace("err:\n", res.stderr, indent=True)
     if res.returncode:
         trace("ret:", res.returncode)
     return _CmdResult(

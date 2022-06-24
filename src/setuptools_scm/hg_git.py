@@ -29,18 +29,18 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         return cls(root)
 
     def is_dirty(self) -> bool:
-        out, _, _ = self.do_ex("hg id -T '{dirty}'")
+        out, _, _ = self.do_ex('hg id -T "{dirty}"')
         return bool(out)
 
     def get_branch(self) -> str | None:
-        res = self.do_ex("hg id -T {bookmarks}")
+        res = self.do_ex('hg id -T "{bookmarks}"')
         if res.returncode:
             trace("branch err", res)
             return None
         return res.out
 
     def get_head_date(self) -> date | None:
-        date_part, err, ret = self.do_ex("hg log -r . -T {shortdate(date)}")
+        date_part, err, ret = self.do_ex('hg log -r . -T "{shortdate(date)}"')
         if ret:
             trace("head date err", date_part, err, ret)
             return None
@@ -53,7 +53,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         pass
 
     def get_hg_node(self) -> str | None:
-        node, _, ret = self.do_ex("hg log -r . -T {node}")
+        node, _, ret = self.do_ex('hg log -r . -T "{node}"')
         if not ret:
             return node
         else:
