@@ -8,6 +8,7 @@ import platform
 import shlex
 import subprocess
 import sys
+import textwrap
 import warnings
 from types import CodeType
 from types import FunctionType
@@ -51,8 +52,31 @@ def no_git_env(env: Mapping[str, str]) -> dict[str, str]:
     }
 
 
-def trace(*k: object) -> None:
+def avoid_pip_isolation(env: Mapping[str, str]) -> dict[str, str]:
+    """
+    pip build isolation can break Mercurial
+    (see https://github.com/pypa/pip/issues/10635)
+
+    pip uses PYTHONNOUSERSITE and a path in PYTHONPATH containing "pip-build-env-".
+    """
+    new_env = {k: v for k, v in env.items() if k != "PYTHONNOUSERSITE"}
+    if "PYTHONPATH" not in new_env:
+        return new_env
+
+    new_env["PYTHONPATH"] = os.pathsep.join(
+        [
+            path
+            for path in new_env["PYTHONPATH"].split(os.pathsep)
+            if "pip-build-env-" not in path
+        ]
+    )
+    return new_env
+
+
+def trace(*k: object, indent: bool = False) -> None:
     if DEBUG:
+        if indent and len(k) > 1:
+            k = (k[0],) + tuple(textwrap.indent(str(s), "    ") for s in k[1:])
         print(*k, file=sys.stderr, flush=True)
 
 
@@ -63,35 +87,43 @@ def ensure_stripped_str(str_or_bytes: str | bytes) -> str:
         return str_or_bytes.decode("utf-8", "surrogateescape").strip()
 
 
-def _run(cmd: _t.CMD_TYPE, cwd: _t.PathT) -> subprocess.CompletedProcess[bytes]:
+def _run(cmd: _t.CMD_TYPE, cwd: _t.PathT) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         cmd,
         capture_output=True,
         cwd=str(cwd),
         env=dict(
-            no_git_env(os.environ),
+            avoid_pip_isolation(no_git_env(os.environ)),
             # os.environ,
             # try to disable i18n
             LC_ALL="C",
             LANGUAGE="",
             HGPLAIN="1",
         ),
+        text=True,
     )
 
 
 def do_ex(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> _CmdResult:
-    trace("cmd", repr(cmd))
-    trace(" in", cwd)
+    if not DEBUG or not isinstance(cmd, list):
+        cmd_4_trace = cmd
+    else:
+        # give better results than shlex.join in our cases
+        cmd_4_trace = " ".join(
+            [s if all(c not in s for c in " {[:") else f'"{s}"' for s in cmd]
+        )
+    trace("----\ncmd:\n", cmd_4_trace, indent=True)
+    trace(" in:", cwd)
     if os.name == "posix" and not isinstance(cmd, (list, tuple)):
         cmd = shlex.split(cmd)
 
     res = _run(cmd, cwd)
     if res.stdout:
-        trace("out", repr(res.stdout))
+        trace("out:\n", res.stdout, indent=True)
     if res.stderr:
-        trace("err", repr(res.stderr))
+        trace("err:\n", res.stderr, indent=True)
     if res.returncode:
-        trace("ret", res.returncode)
+        trace("ret:", res.returncode)
     return _CmdResult(
         ensure_stripped_str(res.stdout), ensure_stripped_str(res.stderr), res.returncode
     )
@@ -99,7 +131,7 @@ def do_ex(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> _CmdResult:
 
 def do(cmd: list[str] | str, cwd: str | _t.PathT = ".") -> str:
     out, err, ret = do_ex(cmd, cwd)
-    if ret:
+    if ret and not DEBUG:
         print(err)
     return out
 
