@@ -1,5 +1,10 @@
+v7.0.3
+=======
+* fix mercurial usage when pip primes a isolated environment
+* fix regression for branch names on git + add a test
+
 v7.0.2
-======
+=======
 
 * fix #723 and #722: remove bootstrap dependencies
 * bugfix: ensure we read the distribution name from setup.cfg

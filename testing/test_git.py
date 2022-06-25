@@ -378,6 +378,14 @@ def test_git_archive_run_from_subdirectory(
     assert integration.find_files(".") == [opj(".", "test1.txt")]
 
 
+@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/728")
+def test_git_branch_names_correct(wd: WorkDir) -> None:
+    wd.commit_testfile()
+    wd("git checkout -b test/fun")
+    wd_git = git.GitWorkdir(os.fspath(wd.cwd))
+    assert wd_git.get_branch() == "test/fun"
+
+
 def test_git_feature_branch_increments_major(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd("git tag 1.0.0")
