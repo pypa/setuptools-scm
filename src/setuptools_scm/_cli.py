@@ -10,15 +10,15 @@ from setuptools_scm.discover import walk_potential_roots
 from setuptools_scm.integration import find_files
 
 
-def main() -> None:
-    opts = _get_cli_opts()
-    root = opts.root or "."
+def main(args: list[str] | None = None) -> None:
+    opts = _get_cli_opts(args)
+    inferred_root: str = opts.root or "."
 
-    pyproject = opts.config or _find_pyproject(root)
+    pyproject = opts.config or _find_pyproject(inferred_root)
 
     try:
-        root = opts.root or os.path.relpath(os.path.dirname(pyproject))
-        config = Configuration.from_file(pyproject, root=root)
+
+        config = Configuration.from_file(pyproject, root=opts.root)
     except (LookupError, FileNotFoundError) as ex:
         # no pyproject.toml OR no [tool.setuptools_scm]
         print(
@@ -27,10 +27,11 @@ def main() -> None:
             f" Reason: {ex}.",
             file=sys.stderr,
         )
-        config = Configuration(root=root)
+        config = Configuration(inferred_root)
 
     version = _get_version(config)
-    assert version is not None
+    if version is None:
+        raise SystemExit("ERROR: no version found for", opts)
     if opts.strip_dev:
         version = version.partition(".dev")[0]
     print(version)
@@ -40,7 +41,7 @@ def main() -> None:
             print(fname)
 
 
-def _get_cli_opts() -> argparse.Namespace:
+def _get_cli_opts(args: list[str] | None) -> argparse.Namespace:
     prog = "python -m setuptools_scm"
     desc = "Print project version according to SCM metadata"
     parser = argparse.ArgumentParser(prog, description=desc)
@@ -68,7 +69,7 @@ def _get_cli_opts() -> argparse.Namespace:
     # We avoid `metavar` to prevent printing repetitive information
     desc = "List files managed by the SCM"
     sub.add_parser("ls", help=desc[0].lower() + desc[1:], description=desc)
-    return parser.parse_args()
+    return parser.parse_args(args)
 
 
 def _find_pyproject(parent: str) -> str:

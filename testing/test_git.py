@@ -15,6 +15,7 @@ from unittest.mock import patch
 
 import pytest
 
+from .conftest import DebugMode
 from .wd_wrapper import WorkDir
 from setuptools_scm import Configuration
 from setuptools_scm import format_version
@@ -31,14 +32,16 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.fixture
-def wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> WorkDir:
+@pytest.fixture(name="wd")
+def wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch, debug_mode: DebugMode) -> WorkDir:
+    debug_mode.disable()
     monkeypatch.delenv("HOME", raising=False)
     wd("git init")
     wd("git config user.email test@example.com")
     wd('git config user.name "a test"')
     wd.add_command = "git add ."
     wd.commit_command = "git commit -m test-{reason}"
+    debug_mode.enable()
     return wd
 
 

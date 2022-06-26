@@ -3,10 +3,10 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Any
-from typing import Generator
 
 import pytest
 
+import setuptools_scm.utils
 from .wd_wrapper import WorkDir
 
 
@@ -39,13 +39,25 @@ def pytest_addoption(parser: Any) -> None:
     )
 
 
-@pytest.fixture(autouse=True)
-def debug_mode() -> Generator[None, None, None]:
-    from setuptools_scm import utils
+class DebugMode:
+    def __init__(self, monkeypatch: pytest.MonkeyPatch):
+        self.__monkeypatch = monkeypatch
+        self.__module = setuptools_scm.utils
 
-    utils.DEBUG = True
-    yield
-    utils.DEBUG = False
+    __monkeypatch: pytest.MonkeyPatch
+
+    def enable(self) -> None:
+        self.__monkeypatch.setattr(self.__module, "DEBUG", True)
+
+    def disable(self) -> None:
+        self.__monkeypatch.setattr(self.__module, "DEBUG", False)
+
+
+@pytest.fixture(autouse=True)
+def debug_mode(monkeypatch: pytest.MonkeyPatch) -> DebugMode:
+    debug_mode = DebugMode(monkeypatch)
+    debug_mode.enable()
+    return debug_mode
 
 
 @pytest.fixture
