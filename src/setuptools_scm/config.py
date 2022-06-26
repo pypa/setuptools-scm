@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 DEFAULT_TAG_REGEX = r"^(?:[\w-]+-)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"
 DEFAULT_VERSION_SCHEME = "guess-next-dev"
 DEFAULT_LOCAL_SCHEME = "node-and-date"
+_ROOT = "root"
 
 
 def _check_tag_regex(value: str | Pattern[str] | None) -> Pattern[str]:
@@ -213,6 +214,7 @@ class Configuration:
 
         with open(name, encoding="UTF-8") as strm:
             data = strm.read()
+
         defn = _load_toml(data)
         try:
             section = defn.get("tool", {})["setuptools_scm"]
@@ -220,6 +222,21 @@ class Configuration:
             raise LookupError(
                 f"{name} does not contain a tool.setuptools_scm section"
             ) from e
+
+        project = defn.get("project", {})
+        dist_name = cls._cleanup_from_file_args_data(
+            project, dist_name, kwargs, section
+        )
+        return cls(dist_name=dist_name, relative_to=name, **section, **kwargs)
+
+    @staticmethod
+    def _cleanup_from_file_args_data(
+        project: dict[str, Any],
+        dist_name: str | None,
+        kwargs: dict[str, Any],
+        section: dict[str, Any],
+    ) -> str | None:
+        """drops problematic details and figures the distribution name"""
         if "dist_name" in section:
             if dist_name is None:
                 dist_name = section.pop("dist_name")
@@ -227,13 +244,21 @@ class Configuration:
                 assert dist_name == section["dist_name"]
                 del section["dist_name"]
         if dist_name is None:
-            if "project" in defn:
-                # minimal pep 621 support for figuring the pretend keys
-                dist_name = defn["project"].get("name")
+            # minimal pep 621 support for figuring the pretend keys
+            dist_name = project.get("name")
         if dist_name is None:
             dist_name = _read_dist_name_from_setup_cfg()
-
-        return cls(dist_name=dist_name, **section, **kwargs)
+        if _ROOT in kwargs:
+            if kwargs[_ROOT] is None:
+                kwargs.pop(_ROOT, None)
+            elif _ROOT in section:
+                if section[_ROOT] != kwargs[_ROOT]:
+                    warnings.warn(
+                        f"root {section[_ROOT]} is overridden"
+                        f" by the cli arg {kwargs[_ROOT]}"
+                    )
+                section.pop("root", None)
+        return dist_name
 
 
 def _read_dist_name_from_setup_cfg() -> str | None:
