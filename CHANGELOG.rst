@@ -1,3 +1,9 @@
+v7.0.4
+=======
+
+* fix #727: correctly handle incomplete archivals from setuptools_scm_git_archival
+* fix #691: correctly handle specifying root in pyproject.toml
+
 v7.0.3
 =======
 * fix mercurial usage when pip primes a isolated environment
