@@ -255,16 +255,6 @@ To avoid BuildKit and mounting of the .git folder altogether, one can also pass 
 version as a build argument. Note that ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${UPPERCASED_DIST_NAME}``
 is preferred over ``SETUPTOOLS_SCM_PRETEND_VERSION``.
 
-Notable Plugins
----------------
-
-`setuptools_scm_git_archive <https://pypi.python.org/pypi/setuptools_scm_git_archive>`_
-    Provides partial support for obtaining versions from git archives that
-    belong to tagged versions. The only reason for not including it in
-    ``setuptools_scm`` itself is Git/GitHub not supporting sufficient metadata
-    for untagged/followup commits, which is preventing a consistent UX.
-
-
 Default versioning scheme
 -------------------------
 
@@ -313,11 +303,27 @@ Builtin mechanisms for obtaining version numbers
 
 1. the SCM itself (git/hg)
 2. ``.hg_archival`` files (mercurial archives)
-3. ``PKG-INFO``
+3. ``.git_archival.txt`` files (git archives, see subsection below)
+4. ``PKG-INFO``
 
-.. note::
+Git archives
+~~~~~~~~~~~~
 
-    Git archives are not supported due to Git shortcomings
+Git archives are supported, but a few changes to your repository are required.
+
+Create a ``.git_archival.txt`` file in the root directory of your repository,
+and copy-paste this into it::
+
+    ref-names: $Format:%(describe)$
+
+Create the ``.gitattributes`` file in the root directory of your repository
+if it doesn't already exist, and copy-paste this into it::
+
+    .git_archival.txt  export-subst
+
+Finally, don't forget to commit those two files::
+
+    git add .git_archival.txt .gitattributes && git commit
 
 
 File finders hook makes most of MANIFEST.in unnecessary
