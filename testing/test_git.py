@@ -529,9 +529,17 @@ def test_git_getdate_signed_commit(signed_commit_wd: WorkDir) -> None:
 def test_git_archival_to_version(expected: str, from_data: dict[str, str]) -> None:
     config = Configuration()
     version = archival_to_version(from_data, config=config)
+    assert version is not None
     assert (
         format_version(
             version, version_scheme="guess-next-dev", local_scheme="node-and-date"
         )
         == expected
     )
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/727")
+def test_git_archival_node_missing_no_version() -> None:
+    config = Configuration()
+    version = archival_to_version({}, config=config)
+    assert version is None

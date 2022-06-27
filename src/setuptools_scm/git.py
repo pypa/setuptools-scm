@@ -276,7 +276,8 @@ def search_parent(dirname: _t.PathT) -> GitWorkdir | None:
 
 def archival_to_version(
     data: dict[str, str], config: Configuration | None = None
-) -> ScmVersion:
+) -> ScmVersion | None:
+    node: str | None
     trace("data", data)
     archival_describe = data.get("describe-name", DESCRIBE_UNSUPPORTED)
     if DESCRIBE_UNSUPPORTED in archival_describe:
@@ -293,7 +294,11 @@ def archival_to_version(
     if versions:
         return meta(versions[0], config=config)
     else:
-        return meta("0.0", node=data.get("node"), config=config)
+        node = data.get("node")
+        if node is not None:
+            return meta("0.0", node=node, config=config)
+        else:
+            return None
 
 
 def parse_archival(
