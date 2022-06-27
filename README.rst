@@ -314,7 +314,10 @@ Git archives are supported, but a few changes to your repository are required.
 Create a ``.git_archival.txt`` file in the root directory of your repository,
 and copy-paste this into it::
 
-    ref-names: $Format:%(describe)$
+    node: $Format:%H$
+    node-date: $Format:%cI$
+    describe-name: $Format:%(describe)$
+    ref-names: $Format:%D$
 
 Create the ``.gitattributes`` file in the root directory of your repository
 if it doesn't already exist, and copy-paste this into it::
