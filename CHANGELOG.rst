@@ -3,6 +3,8 @@ v7.0.4
 
 * fix #727: correctly handle incomplete archivals from setuptools_scm_git_archival
 * fix #691: correctly handle specifying root in pyproject.toml
+* correct root override check condition (to ensure absolute path matching)
+* allow root by the cli to be considered relative to the cli (using abspath)
 
 v7.0.3
 =======

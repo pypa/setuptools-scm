@@ -23,6 +23,16 @@ def get_output(args: list[str]) -> str:
     return out.getvalue()
 
 
+warns_cli_root_override = pytest.warns(
+    UserWarning, match="root .. is overridden by the cli arg ."
+)
+warns_absolute_root_override = pytest.warns(
+    UserWarning, match="absolute root path '.*' overrides relative_to '.*'"
+)
+
+exits_with_not_found = pytest.raises(SystemExit, match="no version found for")
+
+
 def test_cli_find_pyproject(
     wd: WorkDir, monkeypatch: pytest.MonkeyPatch, debug_mode: DebugMode
 ) -> None:
@@ -34,20 +44,17 @@ def test_cli_find_pyproject(
     out = get_output([])
     assert out.startswith("0.1.dev1+")
 
-    with pytest.warns(
-        UserWarning, match="absolute root path '%s' overrides relative_to '%s'"
-    ):
-        with pytest.raises(SystemExit, match="no version found for"):
-            get_output(["--root=.."])
+    with exits_with_not_found:
+        get_output(["--root=.."])
 
     wd.write(PYPROJECT_TOML, PYPROJECT_ROOT)
-    with pytest.raises(SystemExit, match="no version found for"):
+    with exits_with_not_found:
         print(get_output(["-c", PYPROJECT_TOML]))
 
-    with pytest.raises(SystemExit, match="no version found for"):
+    with exits_with_not_found, warns_absolute_root_override:
 
         get_output(["-c", PYPROJECT_TOML, "--root=.."])
 
-    with pytest.warns(UserWarning, match="root .. is overridden by the cli arg ."):
+    with warns_cli_root_override:
         out = get_output(["-c", PYPROJECT_TOML, "--root=."])
     assert out.startswith("0.1.dev1+")

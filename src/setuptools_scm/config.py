@@ -50,7 +50,8 @@ def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
     if relative_to:
         if (
             os.path.isabs(root)
-            and not os.path.commonpath([root, relative_to]) == relative_to
+            and os.path.isabs(relative_to)
+            and not os.path.commonpath([root, relative_to]) == root
         ):
             warnings.warn(
                 "absolute root path '%s' overrides relative_to '%s'"
