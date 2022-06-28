@@ -316,7 +316,7 @@ and copy-paste this into it::
 
     node: $Format:%H$
     node-date: $Format:%cI$
-    describe-name: $Format:%(describe)$
+    describe-name: $Format:%(describe:tags=true)$
     ref-names: $Format:%D$
 
 Create the ``.gitattributes`` file in the root directory of your repository
