@@ -18,7 +18,10 @@ def main(args: list[str] | None = None) -> None:
 
     try:
 
-        config = Configuration.from_file(pyproject, root=opts.root)
+        config = Configuration.from_file(
+            pyproject,
+            root=(os.path.abspath(opts.root) if opts.root is not None else None),
+        )
     except (LookupError, FileNotFoundError) as ex:
         # no pyproject.toml OR no [tool.setuptools_scm]
         print(
