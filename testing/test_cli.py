@@ -34,8 +34,11 @@ def test_cli_find_pyproject(
     out = get_output([])
     assert out.startswith("0.1.dev1+")
 
-    with pytest.raises(SystemExit, match="no version found for"):
-        get_output(["--root=.."])
+    with pytest.warns(
+        UserWarning, match="absolute root path '%s' overrides relative_to '%s'"
+    ):
+        with pytest.raises(SystemExit, match="no version found for"):
+            get_output(["--root=.."])
 
     wd.write(PYPROJECT_TOML, PYPROJECT_ROOT)
     with pytest.raises(SystemExit, match="no version found for"):

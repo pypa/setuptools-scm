@@ -12,6 +12,10 @@ from typing import Type
 from typing import TYPE_CHECKING
 from typing import Union
 
+from ._integration.pyproject_reading import (
+    get_args_for_pyproject as _get_args_for_pyproject,
+)
+from ._integration.pyproject_reading import read_pyproject as _read_pyproject
 from ._version_cls import NonNormalizedVersion
 from ._version_cls import Version
 from .utils import trace
@@ -24,7 +28,6 @@ if TYPE_CHECKING:
 DEFAULT_TAG_REGEX = r"^(?:[\w-]+-)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"
 DEFAULT_VERSION_SCHEME = "guess-next-dev"
 DEFAULT_LOCAL_SCHEME = "node-and-date"
-_ROOT = "root"
 
 
 def _check_tag_regex(value: str | Pattern[str] | None) -> Pattern[str]:
@@ -65,12 +68,6 @@ def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
             trace("file", relative_to)
             root = os.path.join(os.path.dirname(relative_to), root)
     return os.path.abspath(root)
-
-
-def _lazy_tomli_load(data: str) -> dict[str, Any]:
-    from tomli import loads
-
-    return loads(data)
 
 
 _VersionT = Union[Version, NonNormalizedVersion]
@@ -202,7 +199,7 @@ class Configuration:
         cls,
         name: str = "pyproject.toml",
         dist_name: str | None = None,
-        _load_toml: Callable[[str], dict[str, Any]] = _lazy_tomli_load,
+        _load_toml: Callable[[str], dict[str, Any]] | None = None,
         **kwargs: Any,
     ) -> Configuration:
         """
@@ -212,61 +209,7 @@ class Configuration:
         not contain the [tool.setuptools_scm] section.
         """
 
-        with open(name, encoding="UTF-8") as strm:
-            data = strm.read()
+        pyproject_data = _read_pyproject(name, _load_toml=_load_toml)
+        args = _get_args_for_pyproject(pyproject_data, dist_name, kwargs)
 
-        defn = _load_toml(data)
-        try:
-            section = defn.get("tool", {})["setuptools_scm"]
-        except LookupError as e:
-            raise LookupError(
-                f"{name} does not contain a tool.setuptools_scm section"
-            ) from e
-
-        project = defn.get("project", {})
-        dist_name = cls._cleanup_from_file_args_data(
-            project, dist_name, kwargs, section
-        )
-        return cls(dist_name=dist_name, relative_to=name, **section, **kwargs)
-
-    @staticmethod
-    def _cleanup_from_file_args_data(
-        project: dict[str, Any],
-        dist_name: str | None,
-        kwargs: dict[str, Any],
-        section: dict[str, Any],
-    ) -> str | None:
-        """drops problematic details and figures the distribution name"""
-        if "dist_name" in section:
-            if dist_name is None:
-                dist_name = section.pop("dist_name")
-            else:
-                assert dist_name == section["dist_name"]
-                del section["dist_name"]
-        if dist_name is None:
-            # minimal pep 621 support for figuring the pretend keys
-            dist_name = project.get("name")
-        if dist_name is None:
-            dist_name = _read_dist_name_from_setup_cfg()
-        if _ROOT in kwargs:
-            if kwargs[_ROOT] is None:
-                kwargs.pop(_ROOT, None)
-            elif _ROOT in section:
-                if section[_ROOT] != kwargs[_ROOT]:
-                    warnings.warn(
-                        f"root {section[_ROOT]} is overridden"
-                        f" by the cli arg {kwargs[_ROOT]}"
-                    )
-                section.pop("root", None)
-        return dist_name
-
-
-def _read_dist_name_from_setup_cfg() -> str | None:
-
-    # minimal effort to read dist_name off setup.cfg metadata
-    import configparser
-
-    parser = configparser.ConfigParser()
-    parser.read(["setup.cfg"])
-    dist_name = parser.get("metadata", "name", fallback=None)
-    return dist_name
+        return cls(relative_to=name, **args)

@@ -11,7 +11,9 @@ import setuptools
 from . import _get_version
 from . import _version_missing
 from ._entrypoints import iter_entry_points
-from .config import _read_dist_name_from_setup_cfg
+from ._integration.setuptools import (
+    read_dist_name_from_setup_cfg as _read_dist_name_from_setup_cfg,
+)
 from .config import Configuration
 from .utils import do
 from .utils import trace
