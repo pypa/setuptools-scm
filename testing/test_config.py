@@ -51,3 +51,26 @@ def test_config_regex_init() -> None:
     tag_regex = re.compile(r"v(\d+)")
     conf = Configuration(tag_regex=tag_regex)
     assert conf.tag_regex is tag_regex
+
+
+def test_config_from_file_protects_relative_to(tmp_path: Path) -> None:
+    fn = tmp_path / "pyproject.toml"
+    fn.write_text(
+        textwrap.dedent(
+            """
+            [tool.setuptools_scm]
+            relative_to = "dont_use_me"
+            [project]
+            description = "Factory ⸻ A code generator 🏭"
+            authors = [{name = "Łukasz Langa"}]
+            """
+        ),
+        encoding="utf-8",
+    )
+    with pytest.warns(
+        UserWarning,
+        match=".*pyproject.toml: at \\[tool.setuptools_scm\\]\n"
+        "ignoring value relative_to='dont_use_me'"
+        " as its always relative to the config file",
+    ):
+        assert Configuration.from_file(str(fn))
