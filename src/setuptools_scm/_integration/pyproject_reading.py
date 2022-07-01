@@ -18,6 +18,7 @@ TOML_LOADER: TypeAlias = Callable[[str], TOML_RESULT]
 
 
 class PyProjectData(NamedTuple):
+    name: str
     tool_name: str
     project: TOML_RESULT
     section: TOML_RESULT
@@ -48,7 +49,7 @@ def read_pyproject(
     except LookupError as e:
         raise LookupError(f"{name} does not contain a tool.{tool_name} section") from e
     project = defn.get("project", {})
-    return PyProjectData(tool_name, project, section)
+    return PyProjectData(name, tool_name, project, section)
 
 
 def get_args_for_pyproject(
@@ -59,7 +60,13 @@ def get_args_for_pyproject(
     """drops problematic details and figures the distribution name"""
     section = pyproject.section.copy()
     kwargs = kwargs.copy()
-
+    if "relative_to" in section:
+        relative = section.pop("relative_to")
+        warnings.warn(
+            f"{pyproject.name}: at [tool.{pyproject.tool_name}]\n"
+            f"ignoring value relative_to={relative!r}"
+            " as its always relative to the config file"
+        )
     if "dist_name" in section:
         if dist_name is None:
             dist_name = section.pop("dist_name")
