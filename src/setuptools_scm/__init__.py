@@ -84,7 +84,7 @@ def _get_parse_function(
 ) -> _entrypoints.MaybeConfigFunction:
     if callable(parse):
         return parse
-    eps  = _entrypoints.iter_entry_points("setuptools_scm.parse_scm", parse)
+    eps = _entrypoints.iter_entry_points("setuptools_scm.parse_scm", parse)
     try:
         [parse_ep] = eps
     except ValueError:
