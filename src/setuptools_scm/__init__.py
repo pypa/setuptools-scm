@@ -86,11 +86,11 @@ def _get_parse_function(
         return parse
     eps  = _entrypoints.iter_entry_points("setuptools_scm.parse_scm", parse)
     try:
-        [parse_fn] = eps
+        [parse_ep] = eps
     except ValueError:
         return lambda root, config=None: None
     else:
-        return parse_fn
+        return parse_ep.load()
 
 
 def _do_parse(config: Configuration) -> ScmVersion | None:
