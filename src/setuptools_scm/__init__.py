@@ -79,13 +79,28 @@ def dump_version(
         fp.write(template.format(version=version, version_tuple=version_tuple))
 
 
+def _get_parse_function(
+    parse: Union[_entrypoints.MaybeConfigFunction, str],
+) -> _entrypoints.MaybeConfigFunction:
+    if callable(parse):
+        return parse
+    eps  = _entrypoints.iter_entry_points("setuptools_scm.parse_scm", parse)
+    try:
+        [parse_fn] = eps
+    except ValueError:
+        return lambda root, config=None: None
+    else:
+        return parse_fn
+
+
 def _do_parse(config: Configuration) -> ScmVersion | None:
     pretended = _read_pretended_version_for(config)
     if pretended is not None:
         return pretended
 
     if config.parse:
-        parse_result = _call_entrypoint_fn(config.absolute_root, config, config.parse)
+        parse_fn = _get_parse_function(config.parse)
+        parse_result = _call_entrypoint_fn(config.absolute_root, config, parse_fn)
         if isinstance(parse_result, str):
             raise TypeError(
                 f"version parse result was {str!r}\nplease return a parsed version"
