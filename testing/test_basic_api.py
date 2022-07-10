@@ -57,6 +57,11 @@ def test_root_parameter_creation(monkeypatch: pytest.MonkeyPatch) -> None:
     setuptools_scm.get_version()
 
 
+def test_parse_argument(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert_root(monkeypatch, os.getcwd())
+    setuptools_scm.get_version(parse=".git")
+
+
 def test_version_from_scm(wd: WorkDir) -> None:
     with pytest.warns(DeprecationWarning, match=".*version_from_scm.*"):
         setuptools_scm.version_from_scm(str(wd))
