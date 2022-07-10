@@ -82,7 +82,7 @@ def dump_version(
 
 
 def _get_parse_function(
-    parse: Union[MaybeConfigFunction, str],
+    parse: MaybeConfigFunction | str,
 ) -> MaybeConfigFunction:
     if callable(parse):
         return parse
