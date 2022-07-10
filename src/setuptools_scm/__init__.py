@@ -8,6 +8,7 @@ import os
 import warnings
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import TYPE_CHECKING
 
 from ._entrypoints import _call_entrypoint_fn
@@ -31,7 +32,7 @@ from .version import meta
 from .version import ScmVersion
 
 if TYPE_CHECKING:
-    from typing import NoReturn, Union
+    from typing import NoReturn
 
     from . import _types as _t
     from ._entrypoints import MaybeConfigFunction
@@ -84,15 +85,21 @@ def dump_version(
 def _get_parse_function(
     parse: MaybeConfigFunction | str,
 ) -> MaybeConfigFunction:
+    def no_version_detection(
+        root: str, config: Configuration | None = None
+    ) -> ScmVersion | None:
+        return None
+
     if callable(parse):
         return parse
     eps = iter_entry_points("setuptools_scm.parse_scm", parse)
     try:
         [parse_ep] = eps
     except ValueError:
-        return lambda root, config=None: None
+        ret_value = no_version_detection
     else:
-        return parse_ep.load()
+        ret_value = parse_ep.load()
+    return cast(MaybeConfigFunction, ret_value)
 
 
 def _do_parse(config: Configuration) -> ScmVersion | None:
