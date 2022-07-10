@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 from ._entrypoints import _call_entrypoint_fn
 from ._entrypoints import _version_from_entrypoints
+from ._entrypoints import iter_entry_points
 from ._overrides import _read_pretended_version_for
 from ._overrides import PRETEND_KEY
 from ._overrides import PRETEND_KEY_NAMED
@@ -30,9 +31,10 @@ from .version import meta
 from .version import ScmVersion
 
 if TYPE_CHECKING:
-    from typing import NoReturn
+    from typing import NoReturn, Union
 
     from . import _types as _t
+    from ._entrypoints import MaybeConfigFunction
 
 TEMPLATES = {
     ".py": """\
@@ -80,11 +82,11 @@ def dump_version(
 
 
 def _get_parse_function(
-    parse: Union[_entrypoints.MaybeConfigFunction, str],
-) -> _entrypoints.MaybeConfigFunction:
+    parse: Union[MaybeConfigFunction, str],
+) -> MaybeConfigFunction:
     if callable(parse):
         return parse
-    eps = _entrypoints.iter_entry_points("setuptools_scm.parse_scm", parse)
+    eps = iter_entry_points("setuptools_scm.parse_scm", parse)
     try:
         [parse_ep] = eps
     except ValueError:
