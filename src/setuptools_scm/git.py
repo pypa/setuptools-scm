@@ -295,10 +295,13 @@ def archival_to_version(
         return meta(versions[0], config=config)
     else:
         node = data.get("node")
-        if node is not None:
-            return meta("0.0", node=node, config=config)
-        else:
+        if node is None:
             return None
+        elif "$FORMAT" in node.upper():
+            warnings.warn("unexported git archival found")
+            return None
+        else:
+            return meta("0.0", node=node, config=config)
 
 
 def parse_archival(
