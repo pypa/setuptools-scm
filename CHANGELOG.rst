@@ -1,3 +1,9 @@
+
+v7.0.5
+=======
+
+* fixes #742 , #745: correctly hande accidentally released archival files
+
 v7.0.4
 =======
 
