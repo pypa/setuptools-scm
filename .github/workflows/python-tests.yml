@@ -4,13 +4,16 @@ on:
   pull_request:
   push:
     branches:
-    - main
+    - "*"
     tags:
     - "v*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
+
+env:
+  FORCE_COLOR: 1
 
 jobs:
   test:
@@ -77,9 +80,9 @@ jobs:
   test_legacy_setuptools:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - name: Setup python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: "3.7"
           architecture: x64
@@ -96,7 +99,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Setup python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python_version }}
           architecture: x64
@@ -116,8 +119,8 @@ jobs:
     needs: [test]
     name: Python sdist/wheel
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
       with:
         python-version: "3.8"
     - name: Install dependencies
@@ -127,7 +130,7 @@ jobs:
 
     - name: Build package
       run: python -m build -o dist/
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: dist
         path: dist
@@ -137,12 +140,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: [dist]
     steps:
-    - uses: actions/setup-python@v2
+    - uses: actions/setup-python@v4
       with:
         python-version: "3.8"
     - name: Install dependencies
       run: pip install twine
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v3
       with:
         name: dist
         path: dist
@@ -154,7 +157,7 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
     needs: [dist_check]
     steps:
-    - uses: actions/download-artifact@v2
+    - uses: actions/download-artifact@v3
       with:
         name: dist
         path: dist

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import warnings
 from typing import Any
 from typing import Callable
@@ -28,8 +29,11 @@ class PyProjectData(NamedTuple):
         return self.project.get("name")
 
 
-def lazy_tomli_load(data: str) -> TOML_RESULT:
-    from tomli import loads
+def lazy_toml_load(data: str) -> TOML_RESULT:
+    if sys.version_info >= (3, 11):
+        from tomllib import loads
+    else:
+        from tomli import loads
 
     return loads(data)
 
@@ -40,7 +44,7 @@ def read_pyproject(
     _load_toml: TOML_LOADER | None = None,
 ) -> PyProjectData:
     if _load_toml is None:
-        _load_toml = lazy_tomli_load
+        _load_toml = lazy_toml_load
     with open(name, encoding="UTF-8") as strm:
         data = strm.read()
     defn = _load_toml(data)
