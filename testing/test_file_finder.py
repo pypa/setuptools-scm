@@ -223,5 +223,11 @@ def test_archive(
     (wd.cwd / archive_file).write_text(f"node: {sha}", encoding="utf-8")
     (wd.cwd / "data").mkdir()
     (wd.cwd / "data" / "datafile").touch()
-    (wd.cwd / "data" / "datalink").symlink_to("data/datafile")
+
+    datalink = wd.cwd / "data" / "datalink"
+    if sys.platform != "win32":
+        datalink.symlink_to("data/datafile")
+    else:
+        os.link("data/datafile", datalink)
+
     assert set(find_files()) == _sep({archive_file, "data/datafile", "data/datalink"})
