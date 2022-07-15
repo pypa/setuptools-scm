@@ -117,4 +117,5 @@ def git_archive_find_files(path: _t.PathT = "") -> list[str]:
         # Substitutions have not been performed, so not a reliable archive
         return []
 
+    trace("git archive detected - fallback to listing all files")
     return scm_find_files(path, set(), set(), force_all_files=True)

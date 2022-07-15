@@ -8,6 +8,7 @@ from .file_finder import is_toplevel_acceptable
 from .file_finder import scm_find_files
 from .utils import data_from_mime
 from .utils import do_ex
+from .utils import trace
 
 if TYPE_CHECKING:
     from . import _types as _t
@@ -69,4 +70,5 @@ def hg_archive_find_files(path: _t.PathT = "") -> list[str]:
         # Ensure file is valid
         return []
 
+    trace("hg archive detected - fallback to listing all files")
     return scm_find_files(path, set(), set(), force_all_files=True)
