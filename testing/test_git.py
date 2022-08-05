@@ -24,7 +24,6 @@ from setuptools_scm import integration
 from setuptools_scm import NonNormalizedVersion
 from setuptools_scm.file_finder_git import git_find_files
 from setuptools_scm.git import archival_to_version
-from setuptools_scm.utils import data_from_mime
 from setuptools_scm.utils import do
 from setuptools_scm.utils import has_command
 
@@ -546,12 +545,9 @@ def test_git_archival_node_missing_no_version() -> None:
     assert version is None
 
 
-def test_git_archhival_from_unfiltered() -> None:
+def test_git_archival_from_unfiltered() -> None:
     config = Configuration()
 
-    import setuptools_scm
-
-    data = data_from_mime(Path(setuptools_scm.__file__).parent / ".git_archival.txt")
     with pytest.warns(UserWarning, match="unexported git archival found"):
-        version = archival_to_version(data, config=config)
+        version = archival_to_version({"node": "$Format:%H$"}, config=config)
     assert version is None
