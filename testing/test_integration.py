@@ -156,7 +156,6 @@ def test_distribution_procides_extras() -> None:
 
 
 @pytest.mark.issue(760)
-@pytest.mark.xfail('platform.system() == "Windows"', reason="#760")
 def test_unicode_in_setup_cfg(tmp_path: Path) -> None:
     cfg = tmp_path / "setup.cfg"
     cfg.write_text(
