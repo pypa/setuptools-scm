@@ -11,6 +11,7 @@ from setuptools_scm import PRETEND_KEY
 from setuptools_scm import PRETEND_KEY_NAMED
 from setuptools_scm.integration import _warn_on_old_setuptools
 from setuptools_scm.utils import do
+import setuptools_scm._integration.setuptools
 
 
 @pytest.fixture
@@ -152,3 +153,21 @@ def test_distribution_procides_extras() -> None:
 
     dist = distribution("setuptools_scm")
     assert sorted(dist.metadata.get_all("Provides-Extra")) == ["test", "toml"]
+
+
+@pytest.mark.issue(760)
+@pytest.mark.xfail('platform.system() == "Windows"', reason="#760")
+def test_unicode_in_setup_cfg(tmp_path: Path) -> None:
+    cfg = tmp_path / "setup.cfg"
+    cfg.write_text(
+        textwrap.dedent(
+            """
+            [metadata]
+            name = configparser
+            author = Łukasz Langa
+            """
+        ),
+        encoding="utf-8",
+    )
+    name = setuptools_scm._integration.setuptools.read_dist_name_from_setup_cfg(cfg)
+    assert name == 'configparser'
