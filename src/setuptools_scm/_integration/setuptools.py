@@ -14,7 +14,7 @@ def read_dist_name_from_setup_cfg(
     parser = configparser.ConfigParser()
 
     if isinstance(input, (os.PathLike, str)):
-        parser.read([input])
+        parser.read([input], encoding="utf-8")
     else:
         parser.read_file(input)
 
