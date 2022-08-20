@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 
 from .file_finder import is_toplevel_acceptable
 from .file_finder import scm_find_files
+from .utils import data_from_mime
 from .utils import do_ex
 from .utils import trace
 
@@ -101,3 +102,20 @@ def git_find_files(path: _t.PathT = "") -> list[str]:
         trace("toplevel mismatch", toplevel, fullpath)
     git_files, git_dirs = _git_ls_files_and_dirs(toplevel)
     return scm_find_files(path, git_files, git_dirs)
+
+
+def git_archive_find_files(path: _t.PathT = "") -> list[str]:
+    # This function assumes that ``path`` is obtained from a git archive
+    # and therefore all the files that should be ignored were already removed.
+    archival = os.path.join(path, ".git_archival.txt")
+    if not os.path.exists(archival):
+        return []
+
+    data = data_from_mime(archival)
+
+    if "$Format" in data.get("node", ""):
+        # Substitutions have not been performed, so not a reliable archive
+        return []
+
+    trace("git archive detected - fallback to listing all files")
+    return scm_find_files(path, set(), set(), force_all_files=True)
