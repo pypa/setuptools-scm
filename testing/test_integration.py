@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+import setuptools_scm._integration.setuptools
 from .wd_wrapper import WorkDir
 from setuptools_scm import PRETEND_KEY
 from setuptools_scm import PRETEND_KEY_NAMED
@@ -152,3 +153,20 @@ def test_distribution_procides_extras() -> None:
 
     dist = distribution("setuptools_scm")
     assert sorted(dist.metadata.get_all("Provides-Extra")) == ["test", "toml"]
+
+
+@pytest.mark.issue(760)
+def test_unicode_in_setup_cfg(tmp_path: Path) -> None:
+    cfg = tmp_path / "setup.cfg"
+    cfg.write_text(
+        textwrap.dedent(
+            """
+            [metadata]
+            name = configparser
+            author = Łukasz Langa
+            """
+        ),
+        encoding="utf-8",
+    )
+    name = setuptools_scm._integration.setuptools.read_dist_name_from_setup_cfg(cfg)
+    assert name == "configparser"

@@ -201,3 +201,33 @@ def test_symlink_not_in_scm_while_target_is(inwd: WorkDir) -> None:
 @pytest.mark.skip_commit
 def test_not_commited(inwd: WorkDir) -> None:
     assert find_files() == []
+
+
+def test_unexpanded_git_archival(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
+    # When substitutions in `.git_archival.txt` are not expanded, files should
+    # not be automatically listed.
+    monkeypatch.chdir(wd.cwd)
+    (wd.cwd / ".git_archival.txt").write_text("node: $Format:%H$", encoding="utf-8")
+    (wd.cwd / "file1.txt").touch()
+    assert find_files() == []
+
+
+@pytest.mark.parametrize("archive_file", (".git_archival.txt", ".hg_archival.txt"))
+def test_archive(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch, archive_file: str
+) -> None:
+    # When substitutions in `.git_archival.txt` are not expanded, files should
+    # not be automatically listed.
+    monkeypatch.chdir(wd.cwd)
+    sha = "a1bda3d984d1a40d7b00ae1d0869354d6d503001"
+    (wd.cwd / archive_file).write_text(f"node: {sha}", encoding="utf-8")
+    (wd.cwd / "data").mkdir()
+    (wd.cwd / "data" / "datafile").touch()
+
+    datalink = wd.cwd / "data" / "datalink"
+    if sys.platform != "win32":
+        datalink.symlink_to("data/datafile")
+    else:
+        os.link("data/datafile", datalink)
+
+    assert set(find_files()) == _sep({archive_file, "data/datafile", "data/datalink"})

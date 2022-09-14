@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import os
 import warnings
 from typing import Any
@@ -91,7 +92,10 @@ def version_keyword(
 
 
 def find_files(path: _t.PathT = "") -> list[str]:
-    for ep in iter_entry_points("setuptools_scm.files_command"):
+    for ep in itertools.chain(
+        iter_entry_points("setuptools_scm.files_command"),
+        iter_entry_points("setuptools_scm.files_command_fallback"),
+    ):
         command = ep.load()
         if isinstance(command, str):
             # this technique is deprecated
