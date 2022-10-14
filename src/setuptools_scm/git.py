@@ -232,7 +232,9 @@ def _git_parse_inner(
     )
 
 
-def _git_parse_describe(describe_output: str) -> tuple[str, int | None, str | None, bool]:
+def _git_parse_describe(
+    describe_output: str,
+) -> tuple[str, int | None, str | None, bool]:
     # 'describe_output' looks e.g. like 'v1.5.0-0-g4060507' or
     # 'v1.15.1rc1-37-g9bd1298-dirty'.
     # It may also just be a bare tag name if this is a tagged commit and we are
