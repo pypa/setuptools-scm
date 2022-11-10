@@ -16,6 +16,7 @@ from .scm_workdir import Workdir
 from .utils import _CmdResult
 from .utils import data_from_mime
 from .utils import do_ex
+from .utils import has_command
 from .utils import require_command
 from .utils import trace
 from .version import meta
@@ -175,6 +176,8 @@ def parse(
     """
     if not config:
         config = Configuration(root=root)
+    if config.fallback_version is not None and not has_command("git", warn=False):
+        return None
 
     wd = get_working_directory(config)
     if wd:

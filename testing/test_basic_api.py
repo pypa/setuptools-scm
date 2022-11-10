@@ -98,6 +98,24 @@ setup(use_scm_version={"fallback_version": "12.34"})
     assert res == "12.34"
 
 
+@pytest.mark.parametrize("scm", ["git", "hg"])
+def test_fallback_scm_absent(
+    scm: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
+    p = tmp_path / "sub/package"
+    p.mkdir(parents=True)
+    p.joinpath("setup.py").write_text(
+        """from setuptools import setup
+setup(use_scm_version={"fallback_version": "12.34"})
+"""
+    )
+    monkeypatch.setenv("PATH", "")
+    p.joinpath(f".{scm}").mkdir()
+    res = do([sys.executable, "setup.py", "--version"], p)
+    assert res == "12.34"
+
+
 def test_empty_pretend_version(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
     monkeypatch.setenv("SETUPTOOLS_SCM_PRETEND_VERSION", "")

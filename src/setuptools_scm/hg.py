@@ -10,6 +10,7 @@ from .config import Configuration
 from .scm_workdir import Workdir
 from .utils import data_from_mime
 from .utils import do_ex
+from .utils import has_command
 from .utils import require_command
 from .utils import trace
 from .version import meta
@@ -146,6 +147,8 @@ class HgWorkdir(Workdir):
 def parse(root: _t.PathT, config: Configuration | None = None) -> ScmVersion | None:
     if not config:
         config = Configuration(root=root)
+    if config.fallback_version is not None and not has_command("hg", warn=False):
+        return None
 
     if os.path.exists(os.path.join(root, ".hg/git")):
         paths, _, ret = do_ex("hg path", root)

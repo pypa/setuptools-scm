@@ -1,4 +1,9 @@
 
+next
+====
+
+* fallback_version is also used in repositories if the corresponding SCM command is not available
+
 v7.0.5
 =======
 
