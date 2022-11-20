@@ -76,7 +76,7 @@ def get_args_for_pyproject(
             dist_name = section.pop("dist_name")
         else:
             assert dist_name == section["dist_name"]
-            del section["dist_name"]
+            section.pop("dist_name")
     if dist_name is None:
         # minimal pep 621 support for figuring the pretend keys
         dist_name = pyproject.project_name
