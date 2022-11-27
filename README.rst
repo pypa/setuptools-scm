@@ -1,20 +1,19 @@
 setuptools_scm
 ==============
 
-``setuptools_scm`` extract Python package versions from ``git`` or
+``setuptools_scm`` extracts Python package versions from ``git`` or
 ``hg`` metadata instead of declaring them as the version argument
 or in a SCM managed file.
 
-Additionally ``setuptools_scm`` provides setuptools with a list of files that are managed by the SCM
-(i.e. it automatically adds all of the SCM-managed files to the sdist).
-Unwanted files must be excluded by discarding them via ``MANIFEST.in``.
+Additionally ``setuptools_scm`` provides setuptools with a list of
+files that are managed by the SCM (i.e. it automatically adds all of
+the SCM-managed files to the sdist). Unwanted files must be excluded
+by discarding them via ``MANIFEST.in``.
 
-``setuptools_scm`` support the following scm out of the box:
+``setuptools_scm`` supports the following scm out of the box:
 
 * git
 * mercurial
-
-
 
 .. image:: https://github.com/pypa/setuptools_scm/workflows/python%20tests+artifacts+release/badge.svg
     :target: https://github.com/pypa/setuptools_scm/actions
@@ -43,7 +42,6 @@ built step by specifying it as one of the build requirements.
     [build-system]
     requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 
-
 That will be sufficient to require ``setuptools_scm`` for projects
 that support PEP 518 (`pip <https://pypi.org/project/pip>`_ and
 `pep517 <https://pypi.org/project/pep517/>`_). Many tools,
@@ -52,7 +50,17 @@ continue to rely on ``setup_requires``. For maximum compatibility
 with those uses, consider also including a ``setup_requires`` directive
 (described below in ``setup.py usage`` and ``setup.cfg``).
 
-To enable version inference, add this section to your ``pyproject.toml``:
+To enable version inference, you need to set the version
+dynamically in the ``project`` section of ``pyproject.toml``:
+
+.. code:: toml
+
+    # pyproject.toml
+    [project]
+    # version = "0.0.1"  # Remove any existing version parameter.
+    dynamic = ["version"]
+
+Then add this section to your ``pyproject.toml``:
 
 .. code:: toml
 
@@ -67,10 +75,10 @@ to be supplied to ``get_version()``. For example:
 .. code:: toml
 
     # pyproject.toml
-
     [tool.setuptools_scm]
     write_to = "pkg/_version.py"
-
+    
+Where ``pkg`` is the name of your package.
 
 If you need to confirm which version string is being generated
 or debug the configuration, you can install
@@ -152,6 +160,7 @@ as ``setup_requires`` is deprecated in favour of ``pyproject.toml``
 usage in ``setup.cfg`` is considered deprecated,
 please use ``pyproject.toml`` whenever possible.
 
+
 Programmatic usage
 ------------------
 
@@ -222,6 +231,7 @@ The underlying reason is, that services like *Read the Docs* sometimes change
 the working directory for good reasons and using the installed metadata
 prevents using needless volatile data there.
 
+
 Usage from Docker
 -----------------
 
@@ -255,6 +265,7 @@ To avoid BuildKit and mounting of the .git folder altogether, one can also pass 
 version as a build argument. Note that ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${UPPERCASED_DIST_NAME}``
 is preferred over ``SETUPTOOLS_SCM_PRETEND_VERSION``.
 
+
 Default versioning scheme
 -------------------------
 
@@ -278,9 +289,9 @@ distance and not clean:
 The next version is calculated by adding ``1`` to the last numeric component of
 the tag.
 
-
 For Git projects, the version relies on `git describe <https://git-scm.com/docs/git-describe>`_,
 so you will see an additional ``g`` prepended to the ``{revision hash}``.
+
 
 Semantic Versioning (SemVer)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -306,6 +317,7 @@ Builtin mechanisms for obtaining version numbers
 3. ``.git_archival.txt`` files (git archives, see subsection below)
 4. ``PKG-INFO``
 
+
 Git archives
 ~~~~~~~~~~~~
 
@@ -327,6 +339,9 @@ if it doesn't already exist, and copy-paste this into it::
 Finally, don't forget to commit those two files::
 
     git add .git_archival.txt .gitattributes && git commit
+    
+Note that if you are creating a ``_version.py`` file, note that it should not
+be kept in version control.
 
 
 File finders hook makes most of MANIFEST.in unnecessary
@@ -453,7 +468,6 @@ The currently supported configuration keys are:
     that setuptools will still normalize it to create the final distribution,
     so as to stay compliant with the python packaging standards.
 
-
 To use ``setuptools_scm`` in other Python code you can use the ``get_version``
 function:
 
@@ -479,6 +493,7 @@ Example configuration in ``setup.py`` format:
         }
     )
 
+
 Environment variables
 ---------------------
 
@@ -487,14 +502,12 @@ Environment variables
     its used as the primary source for the version number
     in which case it will be a unparsed string
 
-
 :SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${UPPERCASED_DIST_NAME}:
     when defined and not empty,
     its used as the primary source for the version number
     in which case it will be a unparsed string
 
     it takes precedence over ``SETUPTOOLS_SCM_PRETEND_VERSION``
-
 
 :SETUPTOOLS_SCM_DEBUG:
     when defined and not empty,
@@ -507,16 +520,17 @@ Environment variables
     derived, otherwise the current time is used
     (https://reproducible-builds.org/docs/source-date-epoch/)
 
-
 :SETUPTOOLS_SCM_IGNORE_VCS_ROOTS:
     when defined, a ``os.pathsep`` separated list
     of directory names to ignore for root finding
+
 
 Extending setuptools_scm
 ------------------------
 
 ``setuptools_scm`` ships with a few ``setuptools`` entrypoints based hooks to
 extend its default capabilities.
+
 
 Adding a new SCM
 ~~~~~~~~~~~~~~~~
@@ -538,6 +552,7 @@ Adding a new SCM
   pathname will return that list.
 
   Also use then name of your SCM control directory as name of the entrypoint.
+
 
 Version number construction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -594,7 +609,6 @@ is supported.
 Within that callable, ``setuptools_scm`` is available for import.
 The callable must return the configuration.
 
-
 .. code:: python
 
     # content of setup.py
@@ -641,7 +655,6 @@ its still possible to install a more recent version of setuptools in order to ha
 and/or install the package by using wheels or eggs.
 
 
-
 Code of Conduct
 ---------------
 
@@ -650,6 +663,7 @@ trackers, chat rooms, and mailing lists is expected to follow the
 `PSF Code of Conduct`_.
 
 .. _PSF Code of Conduct: https://github.com/pypa/.github/blob/main/CODE_OF_CONDUCT.md
+
 
 Security Contact
 ================
