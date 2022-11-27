@@ -77,7 +77,7 @@ to be supplied to ``get_version()``. For example:
     # pyproject.toml
     [tool.setuptools_scm]
     write_to = "pkg/_version.py"
-    
+
 Where ``pkg`` is the name of your package.
 
 If you need to confirm which version string is being generated
@@ -339,7 +339,7 @@ if it doesn't already exist, and copy-paste this into it::
 Finally, don't forget to commit those two files::
 
     git add .git_archival.txt .gitattributes && git commit
-    
+
 Note that if you are creating a ``_version.py`` file, note that it should not
 be kept in version control.
 
