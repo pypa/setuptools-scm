@@ -1,3 +1,14 @@
+v7.1.0
+======
+
+* #748: use tomllib from stdlib
+* fix #762: handle non-ascii in setup.cfg
+* #752: implement fallback file finders for archives
+* #765: removed coding header in python template
+* declared Python 3.11 support
+* fix #759: update .git_archival.txt templates match
+  git-describe invocation
+* fix #772: fix handling of .git-archival.txt from tagged commit
 
 v7.0.5
 =======
