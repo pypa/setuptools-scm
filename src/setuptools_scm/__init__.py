@@ -134,6 +134,7 @@ def get_version(
     version_cls: Any | None = None,
     normalize: bool = True,
     search_parent_directories: bool = False,
+    strip_dev: bool = False,
 ) -> str:
     """
     If supplied, relative_to should be a file from which root may
@@ -165,6 +166,9 @@ def _get_version(config: Configuration) -> str | None:
             write_to=config.write_to,
             template=config.write_to_template,
         )
+
+    if config.strip_dev:
+        version_string = version_string.partition(".dev")[0]
 
     return version_string
 

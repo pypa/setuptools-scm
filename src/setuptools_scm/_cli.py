@@ -32,11 +32,10 @@ def main(args: list[str] | None = None) -> None:
         )
         config = Configuration(inferred_root)
 
+    config.strip_dev = opts.strip_dev
     version = _get_version(config)
     if version is None:
         raise SystemExit("ERROR: no version found for", opts)
-    if opts.strip_dev:
-        version = version.partition(".dev")[0]
     print(version)
 
     if opts.command == "ls":
@@ -60,8 +59,10 @@ def _get_cli_opts(args: list[str] | None) -> argparse.Namespace:
         "--config",
         default=None,
         metavar="PATH",
-        help="path to 'pyproject.toml' with setuptools_scm config, "
-        "default: looked up in the current or parent directories",
+        help=(
+            "path to 'pyproject.toml' with setuptools_scm config, "
+            "default: looked up in the current or parent directories"
+        ),
     )
     parser.add_argument(
         "--strip-dev",

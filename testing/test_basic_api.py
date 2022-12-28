@@ -138,6 +138,24 @@ def test_pretended(version: str, monkeypatch: pytest.MonkeyPatch) -> None:
     assert setuptools_scm.get_version() == version
 
 
+@pytest.mark.parametrize(
+    ["version", "striped_version"],
+    [
+        ["1.0", "1.0"],
+        ["1.2.3.dev1+ge871260", "1.2.3"],
+        ["1.2.3.dev15+ge871260.d20180625", "1.2.3"],
+        ["2345", "2345"],
+        ["1.2.3.rc0.dev1+ge871260", "1.2.3.rc0"],
+        ["1.2.3.rc1.dev15+ge871260.d20180625", "1.2.3.rc1"],
+    ],
+)
+def test_strip_dev(
+    version: str, striped_version: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv(setuptools_scm.PRETEND_KEY, version)
+    assert setuptools_scm.get_version(strip_dev=True) == striped_version
+
+
 def test_root_relative_to(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     tmp_path.joinpath("setup.cfg").touch()
     assert_root(monkeypatch, str(tmp_path / "alt"))

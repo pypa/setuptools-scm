@@ -131,6 +131,7 @@ class Configuration:
         version_cls: type[_VersionT] | type | str | None = None,
         normalize: bool = True,
         search_parent_directories: bool = False,
+        strip_dev: bool = False,
     ):
         # TODO:
         self._relative_to = None if relative_to is None else os.fspath(relative_to)
@@ -152,6 +153,8 @@ class Configuration:
         self.parent = None
 
         self.version_cls = _validate_version_cls(version_cls, normalize)
+
+        self.strip_dev = strip_dev
 
     @property
     def fallback_root(self) -> str:
