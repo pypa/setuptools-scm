@@ -82,7 +82,7 @@ class HgWorkdir(Workdir):
 
             if tag_str == "null" or tag_str is None:
                 tag = Version("0.0")
-                dist = int(dist) + 1
+                dist += 1
             else:
                 tag = tag_to_version(tag_str, config=config)
                 assert tag is not None
