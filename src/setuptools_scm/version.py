@@ -186,8 +186,8 @@ class ScmVersion:
         self,
         guess_next: Callable[Concatenate[ScmVersion, _t.P], str],
         fmt: str = "{guessed}.dev{distance}",
-        *k: _t.P.args,  # type: ignore
-        **kw: _t.P.kwargs,  # type: ignore
+        *k: _t.P.args,
+        **kw: _t.P.kwargs,
     ) -> str:
         guessed = guess_next(self, *k, **kw)
         return self.format_with(fmt, guessed=guessed)
