@@ -149,7 +149,7 @@ def test_version_from_git(wd: WorkDir) -> None:
     assert wd.version == "0.1.dev0"
 
     parsed = git.parse(str(wd.cwd), git.DEFAULT_DESCRIBE)
-    assert parsed is not None and parsed.branch == "master"
+    assert parsed is not None and parsed.branch in ("master", "main")
 
     wd.commit_testfile()
     assert wd.version.startswith("0.1.dev1+g")
