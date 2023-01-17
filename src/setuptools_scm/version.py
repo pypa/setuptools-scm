@@ -20,7 +20,9 @@ if TYPE_CHECKING:
 
     from . import _types as _t
 
+
 from ._version_cls import Version as PkgVersion
+from . import _version_cls as _v
 from .config import Configuration
 from .config import _VersionT
 from .utils import trace
@@ -124,7 +126,7 @@ def _source_epoch_or_utc_now() -> datetime:
 
 @dataclasses.dataclass
 class ScmVersion:
-    tag: Any
+    tag: _v.Version | _v.NonNormalizedVersion | str
     config: Configuration
     distance: int | None = None
     node: str | None = None

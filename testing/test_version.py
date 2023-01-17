@@ -183,7 +183,7 @@ def test_tag_regex1(tag: str, expected: str) -> None:
             result = meta(tag, config=c)
     else:
         result = meta(tag, config=c)
-
+    assert not isinstance(result.tag, str)
     assert result.tag.public == expected
 
 
