@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import os
 import re
 import warnings
@@ -70,7 +71,6 @@ def tag_to_version(
 ) -> _VersionT | None:
     """
     take a tag that might be prefixed with a keyword and return only the version part
-    :param config: optional configuration object
     """
     trace("tag", tag)
 
@@ -114,46 +114,31 @@ def tags_to_versions(
     return result
 
 
-class ScmVersion:
-    def __init__(
-        self,
-        tag_version: Any,
-        config: Configuration,
-        distance: int | None = None,
-        node: str | None = None,
-        dirty: bool = False,
-        preformatted: bool = False,
-        branch: str | None = None,
-        node_date: date | None = None,
-        **kw: object,
-    ):
-        if kw:
-            trace("unknown args", kw)
-        self.tag = tag_version
-        if dirty and distance is None:
-            distance = 0
-        self.distance = distance
-        self.node = node
-        self.node_date = node_date
-        if "SOURCE_DATE_EPOCH" in os.environ:
-            date_epoch = int(os.environ["SOURCE_DATE_EPOCH"])
-            self.time = datetime.fromtimestamp(date_epoch, timezone.utc)
-        else:
-            self.time = datetime.now(timezone.utc)
-        self._extra = kw
-        self.dirty = dirty
-        self.preformatted = preformatted
-        self.branch = branch
-        self.config = config
+def _source_epoch_or_utc_now() -> datetime:
+    if "SOURCE_DATE_EPOCH" in os.environ:
+        date_epoch = int(os.environ["SOURCE_DATE_EPOCH"])
+        return datetime.fromtimestamp(date_epoch, timezone.utc)
+    else:
+        return datetime.now(timezone.utc)
 
-    @property
-    def extra(self) -> dict[str, Any]:
-        warnings.warn(
-            "ScmVersion.extra is deprecated and will be removed in future",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-        return self._extra
+
+@dataclasses.dataclass
+class ScmVersion:
+    tag: Any
+    config: Configuration
+    distance: int | None = None
+    node: str | None = None
+    dirty: bool = False
+    preformatted: bool = False
+    branch: str | None = None
+    node_date: date | None = None
+    time: datetime = dataclasses.field(
+        init=False, default_factory=_source_epoch_or_utc_now
+    )
+
+    def __post_init__(self) -> None:
+        if self.dirty and self.distance is None:
+            self.distance = 0
 
     @property
     def exact(self) -> bool:
@@ -213,7 +198,6 @@ def meta(
     branch: str | None = None,
     config: Configuration | None = None,
     node_date: date | None = None,
-    **kw: Any,
 ) -> ScmVersion:
     if not config:
         warnings.warn(
@@ -233,7 +217,6 @@ def meta(
         branch=branch,
         config=config,
         node_date=node_date,
-        **kw,
     )
 
 
