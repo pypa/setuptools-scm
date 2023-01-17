@@ -10,10 +10,8 @@ from typing import Any
 from typing import Callable
 from typing import cast
 from typing import Iterator
-from typing import List
 from typing import Match
 from typing import overload
-from typing import Tuple
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -497,18 +495,14 @@ def _get_ep(group: str, name: str) -> Any | None:
 
 def _iter_version_schemes(
     entrypoint: str,
-    scheme_value: str
-    | list[str]
-    | tuple[str, ...]
-    | Callable[[ScmVersion], str]
-    | None,
+    scheme_value: _t.VERSION_SCHEMES,
     _memo: set[object] | None = None,
 ) -> Iterator[Callable[[ScmVersion], str]]:
     if _memo is None:
         _memo = set()
     if isinstance(scheme_value, str):
         scheme_value = cast(
-            'str|List[str]|Tuple[str, ...]|Callable[["ScmVersion"], str]|None',
+            "_t.VERSION_SCHEMES",
             _get_ep(entrypoint, scheme_value),
         )
 

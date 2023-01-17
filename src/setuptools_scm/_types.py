@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 from typing import Callable
 from typing import List
+from typing import Tuple
 from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
@@ -14,11 +15,12 @@ if TYPE_CHECKING:
 
 from typing_extensions import ParamSpec, TypeAlias, Protocol
 
-PathT = Union["os.PathLike[str]", str]
+PathT: TypeAlias = Union["os.PathLike[str]", str]
 
 CMD_TYPE: TypeAlias = Union[List[str], str]
 
-VERSION_SCHEME = Union[str, Callable[["version.ScmVersion"], str]]
+VERSION_SCHEME: TypeAlias = Union[str, Callable[["version.ScmVersion"], str]]
+VERSION_SCHEMES: TypeAlias = Union[List[str], Tuple[str, ...], VERSION_SCHEME]
 
 
 class EntrypointProtocol(Protocol):
