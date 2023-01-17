@@ -366,15 +366,13 @@ def no_guess_dev_version(version: ScmVersion) -> str:
         return version.format_next_version(_dont_guess_next_version)
 
 
+_DATE_REGEX = re.compile(
+    r"^(?P<date>(?P<year>\d{2}|\d{4})(?:\.\d{1,2}){2})(?:\.(?P<patch>\d*))?$"
+)
+
+
 def date_ver_match(ver: str) -> Match[str] | None:
-    match = re.match(
-        (
-            r"^(?P<date>(?P<year>\d{2}|\d{4})(?:\.\d{1,2}){2})"
-            r"(?:\.(?P<patch>\d*)){0,1}?$"
-        ),
-        ver,
-    )
-    return match
+    return _DATE_REGEX.match(ver)
 
 
 def guess_next_date_ver(
