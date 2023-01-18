@@ -6,24 +6,20 @@ import re
 import warnings
 from typing import Any
 from typing import Callable
-from typing import cast
 from typing import Pattern
-from typing import Type
 from typing import TYPE_CHECKING
-from typing import Union
 
 from ._integration.pyproject_reading import (
     get_args_for_pyproject as _get_args_for_pyproject,
 )
 from ._integration.pyproject_reading import read_pyproject as _read_pyproject
-from ._version_cls import NonNormalizedVersion
-from ._version_cls import Version
+from ._version_cls import _validate_version_cls
+from ._version_cls import _VersionT
 from .utils import trace
 
 
 if TYPE_CHECKING:
     from . import _types as _t
-    from setuptools_scm.version import ScmVersion
 
 DEFAULT_TAG_REGEX = r"^(?:[\w-]+-)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"
 DEFAULT_VERSION_SCHEME = "guess-next-dev"
@@ -71,38 +67,6 @@ def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
     return os.path.abspath(root)
 
 
-_VersionT = Union[Version, NonNormalizedVersion]
-
-
-def _validate_version_cls(
-    version_cls: type[_VersionT] | str | None, normalize: bool
-) -> type[_VersionT]:
-    if not normalize:
-        # `normalize = False` means `version_cls = NonNormalizedVersion`
-        if version_cls is not None:
-            raise ValueError(
-                "Providing a custom `version_cls` is not permitted when "
-                "`normalize=False`"
-            )
-        return NonNormalizedVersion
-    else:
-        # Use `version_cls` if provided, default to packaging or pkg_resources
-        if version_cls is None:
-            return Version
-        elif isinstance(version_cls, str):
-            try:
-                # Not sure this will work in old python
-                import importlib
-
-                pkg, cls_name = version_cls.rsplit(".", 1)
-                version_cls_host = importlib.import_module(pkg)
-                return cast(Type[_VersionT], getattr(version_cls_host, cls_name))
-            except:  # noqa
-                raise ValueError(f"Unable to import version_cls='{version_cls}'")
-        else:
-            return version_cls
-
-
 class Configuration:
     """Global configuration model"""
 
@@ -115,10 +79,8 @@ class Configuration:
         self,
         relative_to: _t.PathT | None = None,
         root: _t.PathT = ".",
-        version_scheme: (
-            str | Callable[[ScmVersion], str | None]
-        ) = DEFAULT_VERSION_SCHEME,
-        local_scheme: (str | Callable[[ScmVersion], str | None]) = DEFAULT_LOCAL_SCHEME,
+        version_scheme: _t.VERSION_SCHEME = DEFAULT_VERSION_SCHEME,
+        local_scheme: _t.VERSION_SCHEME = DEFAULT_LOCAL_SCHEME,
         write_to: _t.PathT | None = None,
         write_to_template: str | None = None,
         tag_regex: str | Pattern[str] = DEFAULT_TAG_REGEX,

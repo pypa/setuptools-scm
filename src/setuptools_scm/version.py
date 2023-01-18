@@ -25,10 +25,9 @@ if TYPE_CHECKING:
     from . import _types as _t
 
 
-from ._version_cls import Version as PkgVersion
+from ._version_cls import Version as PkgVersion, _VersionT
 from . import _version_cls as _v
 from .config import Configuration
-from .config import _VersionT
 from .utils import trace
 
 SEMVER_MINOR = 2
