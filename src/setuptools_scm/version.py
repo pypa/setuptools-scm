@@ -9,13 +9,10 @@ from datetime import datetime
 from datetime import timezone
 from typing import Any
 from typing import Callable
-from typing import cast
-from typing import Iterator
 from typing import Match
-from typing import overload
 from typing import TYPE_CHECKING
 
-from ._entrypoints import _get_ep
+from ._entrypoints import _call_version_scheme
 from ._modify_version import _bump_dev
 from ._modify_version import _bump_regex
 from ._modify_version import _dont_guess_next_version
@@ -415,52 +412,6 @@ def postrelease_version(version: ScmVersion) -> str:
         return version.format_with("{tag}")
     else:
         return version.format_with("{tag}.post{distance}")
-
-
-def _iter_version_schemes(
-    entrypoint: str,
-    scheme_value: _t.VERSION_SCHEMES,
-    _memo: set[object] | None = None,
-) -> Iterator[Callable[[ScmVersion], str]]:
-    if _memo is None:
-        _memo = set()
-    if isinstance(scheme_value, str):
-        scheme_value = cast(
-            "_t.VERSION_SCHEMES",
-            _get_ep(entrypoint, scheme_value),
-        )
-
-    if isinstance(scheme_value, (list, tuple)):
-        for variant in scheme_value:
-            if variant not in _memo:
-                _memo.add(variant)
-                yield from _iter_version_schemes(entrypoint, variant, _memo=_memo)
-    elif callable(scheme_value):
-        yield scheme_value
-
-
-@overload
-def _call_version_scheme(
-    version: ScmVersion, entypoint: str, given_value: str, default: str
-) -> str:
-    ...
-
-
-@overload
-def _call_version_scheme(
-    version: ScmVersion, entypoint: str, given_value: str, default: None
-) -> str | None:
-    ...
-
-
-def _call_version_scheme(
-    version: ScmVersion, entypoint: str, given_value: str, default: str | None
-) -> str | None:
-    for scheme in _iter_version_schemes(entypoint, given_value):
-        result = scheme(version)
-        if result is not None:
-            return result
-    return default
 
 
 def format_version(version: ScmVersion, **config: Any) -> str:
