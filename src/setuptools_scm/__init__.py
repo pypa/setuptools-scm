@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import os
-import warnings
 from typing import Any
 from typing import Callable
 from typing import TYPE_CHECKING
@@ -43,16 +42,6 @@ __version_tuple__ = version_tuple = {version_tuple!r}
 """,
     ".txt": "{version}",
 }
-
-
-def version_from_scm(root: _t.PathT) -> ScmVersion | None:
-    warnings.warn(
-        "version_from_scm is deprecated please use get_version",
-        category=DeprecationWarning,
-        stacklevel=2,
-    )
-    config = Configuration(root=root)
-    return _version_from_entrypoints(config)
 
 
 def dump_version(
@@ -173,7 +162,6 @@ def _get_version(config: Configuration) -> str | None:
 __all__ = [
     "get_version",
     "dump_version",
-    "version_from_scm",
     "Configuration",
     "DEFAULT_VERSION_SCHEME",
     "DEFAULT_LOCAL_SCHEME",

@@ -57,11 +57,6 @@ def test_root_parameter_creation(monkeypatch: pytest.MonkeyPatch) -> None:
     setuptools_scm.get_version()
 
 
-def test_version_from_scm(wd: WorkDir) -> None:
-    with pytest.warns(DeprecationWarning, match=".*version_from_scm.*"):
-        setuptools_scm.version_from_scm(str(wd))
-
-
 def test_root_parameter_pass_by(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
