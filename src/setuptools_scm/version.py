@@ -15,6 +15,13 @@ from typing import Match
 from typing import overload
 from typing import TYPE_CHECKING
 
+from ._entrypoints import _get_ep
+from ._modify_version import _bump_dev
+from ._modify_version import _bump_regex
+from ._modify_version import _dont_guess_next_version
+from ._modify_version import _format_local_with_time
+from ._modify_version import _strip_local
+
 if TYPE_CHECKING:
     from typing_extensions import Concatenate
 
@@ -193,6 +200,7 @@ def _parse_tag(
 
 def meta(
     tag: str | _VersionT,
+    *,
     distance: int | None = None,
     dirty: bool = False,
     node: str | None = None,
@@ -225,51 +233,6 @@ def meta(
 def guess_next_version(tag_version: ScmVersion) -> str:
     version = _strip_local(str(tag_version.tag))
     return _bump_dev(version) or _bump_regex(version)
-
-
-def _dont_guess_next_version(tag_version: ScmVersion) -> str:
-    version = _strip_local(str(tag_version.tag))
-    return _bump_dev(version) or _add_post(version)
-
-
-def _strip_local(version_string: str) -> str:
-    public, sep, local = version_string.partition("+")
-    return public
-
-
-def _add_post(version: str) -> str:
-    if "post" in version:
-        raise ValueError(
-            f"{version} already is a post release, refusing to guess the update"
-        )
-    return f"{version}.post1"
-
-
-def _bump_dev(version: str) -> str | None:
-    if ".dev" not in version:
-        return None
-
-    prefix, tail = version.rsplit(".dev", 1)
-    if tail != "0":
-        raise ValueError(
-            "choosing custom numbers for the `.devX` distance "
-            "is not supported.\n "
-            f"The {version} can't be bumped\n"
-            "Please drop the tag or create a new supported one ending in .dev0"
-        )
-    return prefix
-
-
-def _bump_regex(version: str) -> str:
-    match = re.match(r"(.*?)(\d+)$", version)
-    if match is None:
-        raise ValueError(
-            "{version} does not end with a number to bump, "
-            "please correct or use a custom version scheme".format(version=version)
-        )
-    else:
-        prefix, tail = match.groups()
-        return "%s%d" % (prefix, int(tail) + 1)
 
 
 def guess_next_dev_version(version: ScmVersion) -> str:
@@ -431,18 +394,6 @@ def calver_by_date(version: ScmVersion) -> str:
     )
 
 
-def _format_local_with_time(version: ScmVersion, time_format: str) -> str:
-
-    if version.exact or version.node is None:
-        return version.format_choice(
-            "", "+d{time:{time_format}}", time_format=time_format
-        )
-    else:
-        return version.format_choice(
-            "+{node}", "+{node}.d{time:{time_format}}", time_format=time_format
-        )
-
-
 def get_local_node_and_date(version: ScmVersion) -> str:
     return _format_local_with_time(version, time_format="%Y%m%d")
 
@@ -464,16 +415,6 @@ def postrelease_version(version: ScmVersion) -> str:
         return version.format_with("{tag}")
     else:
         return version.format_with("{tag}.post{distance}")
-
-
-def _get_ep(group: str, name: str) -> Any | None:
-    from ._entrypoints import iter_entry_points
-
-    for ep in iter_entry_points(group, name):
-        trace("ep found:", ep.name)
-        return ep.load()
-    else:
-        return None
 
 
 def _iter_version_schemes(

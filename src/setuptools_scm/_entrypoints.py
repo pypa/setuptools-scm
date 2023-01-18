@@ -97,3 +97,13 @@ def iter_entry_points(
     if name is None:
         return iter(eps)
     return (ep for ep in eps if ep.name == name)
+
+
+def _get_ep(group: str, name: str) -> Any | None:
+    from ._entrypoints import iter_entry_points
+
+    for ep in iter_entry_points(group, name):
+        trace("ep found:", ep.name)
+        return ep.load()
+    else:
+        return None
