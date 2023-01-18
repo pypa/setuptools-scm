@@ -9,8 +9,8 @@ from os.path import isfile
 from os.path import join
 from os.path import samefile
 from typing import Callable
-from typing import TYPE_CHECKING
 
+from . import _types as _t
 from .config import Configuration
 from .scm_workdir import Workdir
 from .utils import _CmdResult
@@ -21,11 +21,7 @@ from .utils import trace
 from .version import meta
 from .version import ScmVersion
 from .version import tags_to_versions
-
-if TYPE_CHECKING:
-    from . import _types as _t
-
-    from setuptools_scm.hg_git import GitWorkdirHgClient
+from setuptools_scm.hg_git import GitWorkdirHgClient
 
 REF_TAG_RE = re.compile(r"(?<=\btag: )([^,]+)\b")
 DESCRIBE_UNSUPPORTED = "%(describe"

@@ -1,19 +1,18 @@
 from __future__ import annotations
 
+import os
 from typing import Any
 from typing import Callable
 from typing import List
 from typing import Tuple
-from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
 
+from typing_extensions import ParamSpec
+from typing_extensions import Protocol
+from typing_extensions import TypeAlias
 
-if TYPE_CHECKING:
-    from setuptools_scm import version
-    import os
-
-from typing_extensions import ParamSpec, TypeAlias, Protocol
+from setuptools_scm import version
 
 PathT: TypeAlias = Union["os.PathLike[str]", str]
 

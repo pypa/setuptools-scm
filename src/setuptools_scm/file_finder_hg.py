@@ -2,16 +2,13 @@ from __future__ import annotations
 
 import os
 import subprocess
-from typing import TYPE_CHECKING
 
+from . import _types as _t
 from .file_finder import is_toplevel_acceptable
 from .file_finder import scm_find_files
 from .utils import data_from_mime
 from .utils import do_ex
 from .utils import trace
-
-if TYPE_CHECKING:
-    from . import _types as _t
 
 
 def _hg_toplevel(path: str) -> str | None:

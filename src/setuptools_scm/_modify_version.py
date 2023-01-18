@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from .version import ScmVersion
+from . import _types as _t
 
 
 def _strip_local(version_string: str) -> str:
@@ -47,7 +45,7 @@ def _bump_regex(version: str) -> str:
         return "%s%d" % (prefix, int(tail) + 1)
 
 
-def _format_local_with_time(version: ScmVersion, time_format: str) -> str:
+def _format_local_with_time(version: _t.SCMVERSION, time_format: str) -> str:
 
     if version.exact or version.node is None:
         return version.format_choice(
@@ -59,6 +57,6 @@ def _format_local_with_time(version: ScmVersion, time_format: str) -> str:
         )
 
 
-def _dont_guess_next_version(tag_version: ScmVersion) -> str:
+def _dont_guess_next_version(tag_version: _t.SCMVERSION) -> str:
     version = _strip_local(str(tag_version.tag))
     return _bump_dev(version) or _add_post(version)

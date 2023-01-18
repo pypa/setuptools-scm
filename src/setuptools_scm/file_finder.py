@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from typing_extensions import TypeGuard
-    from . import _types as _t
+from typing_extensions import TypeGuard
 
+from . import _types as _t
 from .utils import trace
 
 

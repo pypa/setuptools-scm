@@ -8,8 +8,8 @@ import warnings
 from typing import Any
 from typing import Callable
 from typing import Pattern
-from typing import TYPE_CHECKING
 
+from . import _types as _t
 from ._integration.pyproject_reading import (
     get_args_for_pyproject as _get_args_for_pyproject,
 )
@@ -17,10 +17,6 @@ from ._integration.pyproject_reading import read_pyproject as _read_pyproject
 from ._version_cls import _VersionT
 from ._version_cls import Version as _Version
 from .utils import trace
-
-
-if TYPE_CHECKING:
-    from . import _types as _t
 
 DEFAULT_TAG_REGEX = re.compile(
     r"^(?:[\w-]+-)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"
