@@ -286,7 +286,7 @@ def search_parent(dirname: _t.PathT) -> GitWorkdir | None:
 
 
 def archival_to_version(
-    data: dict[str, str], config: Configuration | None = None
+    data: dict[str, str], config: Configuration
 ) -> ScmVersion | None:
     node: str | None
     trace("data", data)
@@ -315,9 +315,7 @@ def archival_to_version(
             return meta("0.0", node=node, config=config)
 
 
-def parse_archival(
-    root: _t.PathT, config: Configuration | None = None
-) -> ScmVersion | None:
+def parse_archival(root: _t.PathT, config: Configuration) -> ScmVersion | None:
     archival = os.path.join(root, ".git_archival.txt")
     data = data_from_mime(archival)
     return archival_to_version(data, config=config)

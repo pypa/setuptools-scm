@@ -9,7 +9,6 @@ from typing import overload
 from typing import TYPE_CHECKING
 
 from . import version
-from .utils import function_has_arg
 from .utils import trace
 
 if TYPE_CHECKING:
@@ -21,36 +20,6 @@ else:
 
     class Protocol:
         pass
-
-
-class MaybeConfigFunction(Protocol):
-    __name__: str
-
-    @overload
-    def __call__(
-        self, root: _t.PathT, config: Configuration
-    ) -> version.ScmVersion | None:
-        pass
-
-    @overload
-    def __call__(self, root: _t.PathT) -> version.ScmVersion | None:
-        pass
-
-
-def _call_entrypoint_fn(
-    root: _t.PathT, config: Configuration, fn: MaybeConfigFunction
-) -> version.ScmVersion | None:
-    if function_has_arg(fn, "config"):
-        return fn(root, config=config)
-    else:
-        warnings.warn(
-            f"parse function {fn.__module__}.{fn.__name__}"
-            " are required to provide a named argument"
-            " 'config', setuptools_scm>=8.0 will remove support.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-        return fn(root)
 
 
 def _version_from_entrypoints(
@@ -67,9 +36,8 @@ def _version_from_entrypoints(
 
     trace("version_from_ep", entrypoint, root)
     for ep in iter_matching_entrypoints(root, entrypoint, config):
-        maybe_version: version.ScmVersion | None = _call_entrypoint_fn(
-            root, config, ep.load()
-        )
+        fn = ep.load()
+        maybe_version: version.ScmVersion | None = fn(root, config=config)
         trace(ep, version)
         if maybe_version is not None:
             return maybe_version

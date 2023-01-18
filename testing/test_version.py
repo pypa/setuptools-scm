@@ -348,7 +348,8 @@ def test_custom_version_cls() -> None:
         def __repr__(self) -> str:
             return "MyVersion<Custom%s>" % self.tag
 
-    scm_version = meta("1.0.0-foo", config=Configuration(version_cls=MyVersion))
+    config = Configuration(version_cls=MyVersion)
+    scm_version = meta("1.0.0-foo", config=config)
 
     assert isinstance(scm_version.tag, MyVersion)
     assert str(scm_version.tag) == "Custom 1.0.0-foo"

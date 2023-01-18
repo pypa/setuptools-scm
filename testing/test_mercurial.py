@@ -54,8 +54,9 @@ def test_archival_to_version(expected: str, data: dict[str, str]) -> None:
 
 def test_hg_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
+    config = Configuration()
     with pytest.raises(EnvironmentError, match="'hg' was not found"):
-        parse(str(wd.cwd))
+        parse(str(wd.cwd), config=config)
 
 
 def test_find_files_stop_at_root_hg(
@@ -129,7 +130,8 @@ def test_version_in_merge(wd: WorkDir) -> None:
 
 @pytest.mark.issue(128)
 def test_parse_no_worktree(tmp_path: Path) -> None:
-    ret = parse(os.fspath(tmp_path))
+    config = Configuration()
+    ret = parse(os.fspath(tmp_path), config)
     assert ret is None
 
 

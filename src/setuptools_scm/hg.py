@@ -143,10 +143,7 @@ class HgWorkdir(Workdir):
         return bool(self.hg_log(revset, "."))
 
 
-def parse(root: _t.PathT, config: Configuration | None = None) -> ScmVersion | None:
-    if not config:
-        config = Configuration(root=root)
-
+def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
     if os.path.exists(os.path.join(root, ".hg/git")):
         paths, _, ret = do_ex("hg path", root)
         if not ret:
@@ -169,9 +166,7 @@ def parse(root: _t.PathT, config: Configuration | None = None) -> ScmVersion | N
     return wd.get_meta(config)
 
 
-def archival_to_version(
-    data: dict[str, str], config: Configuration | None = None
-) -> ScmVersion:
+def archival_to_version(data: dict[str, str], config: Configuration) -> ScmVersion:
     trace("data", data)
     node = data.get("node", "")[:12]
     if node:
@@ -189,7 +184,7 @@ def archival_to_version(
         return meta("0.0", node=node, config=config)
 
 
-def parse_archival(root: _t.PathT, config: Configuration | None = None) -> ScmVersion:
+def parse_archival(root: _t.PathT, config: Configuration) -> ScmVersion:
     archival = os.path.join(root, ".hg_archival.txt")
     data = data_from_mime(archival)
     return archival_to_version(data, config=config)

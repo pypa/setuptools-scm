@@ -9,7 +9,6 @@ from typing import Any
 from typing import Pattern
 from typing import TYPE_CHECKING
 
-from ._entrypoints import _call_entrypoint_fn
 from ._entrypoints import _version_from_entrypoints
 from ._overrides import _read_pretended_version_for
 from ._overrides import PRETEND_KEY
@@ -70,7 +69,7 @@ def _do_parse(config: Configuration) -> _t.SCMVERSION | None:
         return pretended
     parsed_version: ScmVersion | None
     if config.parse:
-        parse_result = _call_entrypoint_fn(config.absolute_root, config, config.parse)
+        parse_result = config.parse(config.absolute_root, config=config)
         if isinstance(parse_result, str):
             raise TypeError(
                 f"version parse result was {str!r}\nplease return a parsed version"

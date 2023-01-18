@@ -15,9 +15,7 @@ from .version import tag_to_version
 _UNKNOWN = "UNKNOWN"
 
 
-def parse_pkginfo(
-    root: _t.PathT, config: Configuration | None = None
-) -> ScmVersion | None:
+def parse_pkginfo(root: _t.PathT, config: Configuration) -> ScmVersion | None:
 
     pkginfo = os.path.join(root, "PKG-INFO")
     trace("pkginfo", pkginfo)
@@ -29,9 +27,7 @@ def parse_pkginfo(
         return None
 
 
-def parse_pip_egg_info(
-    root: _t.PathT, config: Configuration | None = None
-) -> ScmVersion | None:
+def parse_pip_egg_info(root: _t.PathT, config: Configuration) -> ScmVersion | None:
     pipdir = os.path.join(root, "pip-egg-info")
     if not os.path.isdir(pipdir):
         return None

@@ -202,15 +202,10 @@ def meta(
     node: str | None = None,
     preformatted: bool = False,
     branch: str | None = None,
-    config: Configuration | None = None,
+    config: Configuration,
     node_date: date | None = None,
 ) -> ScmVersion:
-    if not config:
-        warnings.warn(
-            "meta invoked without explicit configuration,"
-            " will use defaults where required."
-        )
-        config = Configuration()
+
     parsed_version = _parse_tag(tag, preformatted, config)
     trace("version", tag, "->", parsed_version)
     assert parsed_version is not None, "Can't parse version %s" % tag
