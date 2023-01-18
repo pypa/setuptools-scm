@@ -204,7 +204,7 @@ def test_version_bump_bad() -> None:
         def __str__(self) -> str:
             return self.val
 
-    config = Configuration(version_cls=YikesVersion)
+    config = Configuration(version_cls=YikesVersion)  # type: ignore[arg-type]
     with pytest.raises(
         ValueError,
         match=".*does not end with a number to bump, "
@@ -348,7 +348,7 @@ def test_custom_version_cls() -> None:
         def __repr__(self) -> str:
             return "MyVersion<Custom%s>" % self.tag
 
-    config = Configuration(version_cls=MyVersion)
+    config = Configuration(version_cls=MyVersion)  # type: ignore[arg-type]
     scm_version = meta("1.0.0-foo", config=config)
 
     assert isinstance(scm_version.tag, MyVersion)

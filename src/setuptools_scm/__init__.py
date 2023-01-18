@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import os
+import re
 from typing import Any
 from typing import Pattern
 from typing import TYPE_CHECKING
@@ -13,6 +14,7 @@ from ._entrypoints import _version_from_entrypoints
 from ._overrides import _read_pretended_version_for
 from ._overrides import PRETEND_KEY
 from ._overrides import PRETEND_KEY_NAMED
+from ._version_cls import _validate_version_cls
 from ._version_cls import _version_as_tuple
 from ._version_cls import NonNormalizedVersion
 from ._version_cls import Version
@@ -126,9 +128,13 @@ def get_version(
     in the root of the repository to direct setuptools_scm to the
     root of the repository by supplying ``__file__``.
     """
-
+    version_cls = _validate_version_cls(version_cls, normalize)
+    del normalize
+    if isinstance((tag_regex), str):
+        tag_regex = re.compile(tag_regex)
     config = Configuration(**locals())
     maybe_version = _get_version(config)
+
     if maybe_version is None:
         _version_missing(config)
     return maybe_version

@@ -1,6 +1,7 @@
 """ configuration """
 from __future__ import annotations
 
+import dataclasses
 import os
 import re
 import warnings
@@ -13,23 +14,26 @@ from ._integration.pyproject_reading import (
     get_args_for_pyproject as _get_args_for_pyproject,
 )
 from ._integration.pyproject_reading import read_pyproject as _read_pyproject
-from ._version_cls import _validate_version_cls
 from ._version_cls import _VersionT
+from ._version_cls import Version as _Version
 from .utils import trace
 
 
 if TYPE_CHECKING:
     from . import _types as _t
 
-DEFAULT_TAG_REGEX = r"^(?:[\w-]+-)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"
+DEFAULT_TAG_REGEX = re.compile(
+    r"^(?:[\w-]+-)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"
+)
 DEFAULT_VERSION_SCHEME = "guess-next-dev"
 DEFAULT_LOCAL_SCHEME = "node-and-date"
 
 
 def _check_tag_regex(value: str | Pattern[str] | None) -> Pattern[str]:
     if not value:
-        value = DEFAULT_TAG_REGEX
-    regex = re.compile(value)
+        regex = DEFAULT_TAG_REGEX
+    else:
+        regex = re.compile(value)
 
     group_names = regex.groupindex.keys()
     if regex.groups == 0 or (regex.groups > 1 and "version" not in group_names):
@@ -67,95 +71,31 @@ def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
     return os.path.abspath(root)
 
 
+@dataclasses.dataclass
 class Configuration:
     """Global configuration model"""
 
-    parent: _t.PathT | None
-    _root: str
-    _relative_to: str | None
-    version_cls: type[_VersionT]
+    relative_to: _t.PathT | None = None
+    root: _t.PathT = "."
+    version_scheme: _t.VERSION_SCHEME = DEFAULT_VERSION_SCHEME
+    local_scheme: _t.VERSION_SCHEME = DEFAULT_LOCAL_SCHEME
+    tag_regex: Pattern[str] = DEFAULT_TAG_REGEX
+    parentdir_prefix_version: str | None = None
+    fallback_version: str | None = None
+    fallback_root: _t.PathT = "."
+    write_to: _t.PathT | None = None
+    write_to_template: str | None = None
+    parse: Any | None = None
+    git_describe_command: _t.CMD_TYPE | None = None
+    dist_name: str | None = None
+    version_cls: type[_VersionT] = _Version
+    search_parent_directories: bool = False
 
-    def __init__(
-        self,
-        relative_to: _t.PathT | None = None,
-        root: _t.PathT = ".",
-        version_scheme: _t.VERSION_SCHEME = DEFAULT_VERSION_SCHEME,
-        local_scheme: _t.VERSION_SCHEME = DEFAULT_LOCAL_SCHEME,
-        write_to: _t.PathT | None = None,
-        write_to_template: str | None = None,
-        tag_regex: str | Pattern[str] = DEFAULT_TAG_REGEX,
-        parentdir_prefix_version: str | None = None,
-        fallback_version: str | None = None,
-        fallback_root: _t.PathT = ".",
-        parse: Any | None = None,
-        git_describe_command: _t.CMD_TYPE | None = None,
-        dist_name: str | None = None,
-        version_cls: type[_VersionT] | type | str | None = None,
-        normalize: bool = True,
-        search_parent_directories: bool = False,
-    ):
-        # TODO:
-        self._relative_to = None if relative_to is None else os.fspath(relative_to)
-        self._root = "."
-
-        self.root = os.fspath(root)
-        self.version_scheme = version_scheme
-        self.local_scheme = local_scheme
-        self.write_to = write_to
-        self.write_to_template = write_to_template
-        self.parentdir_prefix_version = parentdir_prefix_version
-        self.fallback_version = fallback_version
-        self.fallback_root = fallback_root  # type: ignore
-        self.parse = parse
-        self.tag_regex = tag_regex  # type: ignore
-        self.git_describe_command = git_describe_command
-        self.dist_name = dist_name
-        self.search_parent_directories = search_parent_directories
-        self.parent = None
-
-        self.version_cls = _validate_version_cls(version_cls, normalize)
-
-    @property
-    def fallback_root(self) -> str:
-        return self._fallback_root
-
-    @fallback_root.setter
-    def fallback_root(self, value: _t.PathT) -> None:
-        self._fallback_root = os.path.abspath(value)
+    parent: _t.PathT | None = None
 
     @property
     def absolute_root(self) -> str:
-        return self._absolute_root
-
-    @property
-    def relative_to(self) -> str | None:
-        return self._relative_to
-
-    @relative_to.setter
-    def relative_to(self, value: _t.PathT) -> None:
-        self._absolute_root = _check_absolute_root(self._root, value)
-        self._relative_to = os.fspath(value)
-        trace("root", repr(self._absolute_root))
-        trace("relative_to", repr(value))
-
-    @property
-    def root(self) -> str:
-        return self._root
-
-    @root.setter
-    def root(self, value: _t.PathT) -> None:
-        self._absolute_root = _check_absolute_root(value, self._relative_to)
-        self._root = os.fspath(value)
-        trace("root", repr(self._absolute_root))
-        trace("relative_to", repr(self._relative_to))
-
-    @property
-    def tag_regex(self) -> Pattern[str]:
-        return self._tag_regex
-
-    @tag_regex.setter
-    def tag_regex(self, value: str | Pattern[str]) -> None:
-        self._tag_regex = _check_tag_regex(value)
+        return _check_absolute_root(self.root, self.relative_to)
 
     @classmethod
     def from_file(
