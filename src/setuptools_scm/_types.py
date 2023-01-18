@@ -21,6 +21,7 @@ CMD_TYPE: TypeAlias = Union[List[str], str]
 
 VERSION_SCHEME: TypeAlias = Union[str, Callable[["version.ScmVersion"], str]]
 VERSION_SCHEMES: TypeAlias = Union[List[str], Tuple[str, ...], VERSION_SCHEME]
+SCMVERSION: TypeAlias = "version.ScmVersion"
 
 
 class EntrypointProtocol(Protocol):
