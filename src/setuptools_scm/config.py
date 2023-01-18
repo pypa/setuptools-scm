@@ -14,6 +14,8 @@ from ._integration.pyproject_reading import (
     get_args_for_pyproject as _get_args_for_pyproject,
 )
 from ._integration.pyproject_reading import read_pyproject as _read_pyproject
+from ._overrides import read_toml_overrides
+from ._version_cls import _validate_version_cls
 from ._version_cls import _VersionT
 from ._version_cls import Version as _Version
 from .utils import trace
@@ -96,7 +98,7 @@ class Configuration:
     @classmethod
     def from_file(
         cls,
-        name: str = "pyproject.toml",
+        name: str | os.PathLike[str] = "pyproject.toml",
         dist_name: str | None = None,
         _load_toml: Callable[[str], dict[str, Any]] | None = None,
         **kwargs: Any,
@@ -111,4 +113,16 @@ class Configuration:
         pyproject_data = _read_pyproject(name, _load_toml=_load_toml)
         args = _get_args_for_pyproject(pyproject_data, dist_name, kwargs)
 
-        return cls(relative_to=name, **args)
+        args.update(read_toml_overrides(args["dist_name"]))
+        return cls.from_data(relative_to=name, data=args)
+
+    @classmethod
+    def from_data(
+        cls, relative_to: str | os.PathLike[str], data: dict[str, Any]
+    ) -> Configuration:
+        if "tag_regex" in data:
+            data["tag_regex"] = _check_tag_regex(data["tag_regex"])
+        version_cls = _validate_version_cls(
+            data.pop("version_cls", None), data.pop("normalize", True)
+        )
+        return cls(relative_to, version_cls=version_cls, **data)

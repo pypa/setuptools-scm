@@ -9,6 +9,7 @@ from os.path import isfile
 from os.path import join
 from os.path import samefile
 from typing import Callable
+from typing import TYPE_CHECKING
 
 from . import _types as _t
 from .config import Configuration
@@ -21,7 +22,10 @@ from .utils import trace
 from .version import meta
 from .version import ScmVersion
 from .version import tags_to_versions
-from setuptools_scm.hg_git import GitWorkdirHgClient
+
+if TYPE_CHECKING:
+    from . import hg_git
+
 
 REF_TAG_RE = re.compile(r"(?<=\btag: )([^,]+)\b")
 DESCRIBE_UNSUPPORTED = "%(describe"
@@ -183,8 +187,8 @@ def parse(
 
 def _git_parse_inner(
     config: Configuration,
-    wd: GitWorkdir | GitWorkdirHgClient,
-    pre_parse: None | (Callable[[GitWorkdir | GitWorkdirHgClient], None]) = None,
+    wd: GitWorkdir | hg_git.GitWorkdirHgClient,
+    pre_parse: None | (Callable[[GitWorkdir | hg_git.GitWorkdirHgClient], None]) = None,
     describe_command: _t.CMD_TYPE | None = None,
 ) -> ScmVersion:
     if pre_parse:
