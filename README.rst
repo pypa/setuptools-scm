@@ -237,7 +237,7 @@ Usage from Docker
 
 By default, docker will not copy the ``.git``  folder into your container.
 Therefore, builds with version inference might fail.
-Consequently, you can use the following snipped to infer the version from
+Consequently, you can use the following snippet to infer the version from
 the host os without copying the entire ``.git`` folder to your Dockerfile.
 
 .. code:: dockerfile
