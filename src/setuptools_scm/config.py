@@ -120,9 +120,13 @@ class Configuration:
     def from_data(
         cls, relative_to: str | os.PathLike[str], data: dict[str, Any]
     ) -> Configuration:
-        if "tag_regex" in data:
-            data["tag_regex"] = _check_tag_regex(data["tag_regex"])
+        tag_regex = _check_tag_regex(data.pop("tag_regex", None))
         version_cls = _validate_version_cls(
             data.pop("version_cls", None), data.pop("normalize", True)
         )
-        return cls(relative_to, version_cls=version_cls, **data)
+        return cls(
+            relative_to,
+            version_cls=version_cls,
+            tag_regex=tag_regex,
+            **data,
+        )
