@@ -15,7 +15,6 @@ from setuptools_scm.version import no_guess_dev_version
 from setuptools_scm.version import release_branch_semver_version
 from setuptools_scm.version import ScmVersion
 from setuptools_scm.version import simplified_semver_version
-from setuptools_scm.version import tags_to_versions
 
 
 c = Configuration()
@@ -185,12 +184,6 @@ def test_tag_regex1(tag: str, expected: str) -> None:
         result = meta(tag, config=c)
     assert not isinstance(result.tag, str)
     assert result.tag.public == expected
-
-
-@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/286")
-def test_tags_to_versions() -> None:
-    versions = tags_to_versions(["1.0", "2.0", "3.0"], config=c)
-    assert isinstance(versions, list)  # enable subscription
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/471")

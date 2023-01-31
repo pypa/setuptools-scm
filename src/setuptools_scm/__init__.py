@@ -50,7 +50,9 @@ def dump_version(
     target = os.path.normpath(os.path.join(root, write_to))
     ext = os.path.splitext(target)[1]
     template = template or TEMPLATES.get(ext)
+    from .utils import trace
 
+    trace("dump", write_to, version)
     if template is None:
         raise ValueError(
             "bad file format: '{}' (of {}) \nonly *.txt and *.py are supported".format(

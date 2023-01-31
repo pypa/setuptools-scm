@@ -63,6 +63,7 @@ def _assign_version(dist: setuptools.Distribution, config: Configuration) -> Non
     if maybe_version is None:
         _version_missing(config)
     else:
+        assert dist.metadata.version is None
         dist.metadata.version = maybe_version
 
 
@@ -80,12 +81,16 @@ def version_keyword(
     assert (
         "dist_name" not in value
     ), "dist_name may not be specified in the setup keyword "
-
+    dist_name: str | None = dist.metadata.name
+    if dist.metadata.version is not None:
+        warnings.warn(f"version of {dist_name} already set")
+        return
     trace(
         "version keyword",
         vars(dist.metadata),
     )
-    dist_name = dist.metadata.name  # type: str | None
+    trace("dist", id(dist), id(dist.metadata))
+
     if dist_name is None:
         dist_name = _read_dist_name_from_setup_cfg()
     version_cls = value.pop("version_cls", None)
@@ -116,6 +121,9 @@ def infer_version(dist: setuptools.Distribution) -> None:
         "finalize hook",
         vars(dist.metadata),
     )
+    trace("dist", id(dist), id(dist.metadata))
+    if dist.metadata.version is not None:
+        return  # metadata already added by hook
     dist_name = dist.metadata.name
     if dist_name is None:
         dist_name = _read_dist_name_from_setup_cfg()

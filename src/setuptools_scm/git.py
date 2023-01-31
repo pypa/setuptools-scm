@@ -21,7 +21,7 @@ from .utils import require_command
 from .utils import trace
 from .version import meta
 from .version import ScmVersion
-from .version import tags_to_versions
+from .version import tag_to_version
 
 if TYPE_CHECKING:
     from . import hg_git
@@ -150,33 +150,30 @@ def fail_on_shallow(wd: GitWorkdir) -> None:
         )
 
 
-def get_working_directory(config: Configuration) -> GitWorkdir | None:
+def get_working_directory(config: Configuration, root: str) -> GitWorkdir | None:
     """
     Return the working directory (``GitWorkdir``).
     """
 
-    if config.parent:
+    if config.parent:  # todo broken
         return GitWorkdir.from_potential_worktree(config.parent)
 
     if config.search_parent_directories:
-        return search_parent(config.absolute_root)
+        return search_parent(root)
 
-    return GitWorkdir.from_potential_worktree(config.absolute_root)
+    return GitWorkdir.from_potential_worktree(root)
 
 
 def parse(
     root: str,
+    config: Configuration,
     describe_command: str | list[str] | None = None,
     pre_parse: Callable[[GitWorkdir], None] = warn_on_shallow,
-    config: Configuration | None = None,
 ) -> ScmVersion | None:
     """
     :param pre_parse: experimental pre_parse action, may change at any time
     """
-    if not config:
-        config = Configuration(root=root)
-
-    wd = get_working_directory(config)
+    wd = get_working_directory(config, root)
     if wd:
         return _git_parse_inner(
             config, wd, describe_command=describe_command, pre_parse=pre_parse
@@ -301,11 +298,11 @@ def archival_to_version(
             distance=None if number == 0 else number,
             node=node,
         )
-    versions = tags_to_versions(
-        REF_TAG_RE.findall(data.get("ref-names", "")), config=config
-    )
-    if versions:
-        return meta(versions[0], config=config)
+
+    for ref in REF_TAG_RE.findall(data.get("ref-names", "")):
+        version = tag_to_version(ref, config)
+        if version is not None:
+            return meta(version, config=config)
     else:
         node = data.get("node")
         if node is None:

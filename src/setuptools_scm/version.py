@@ -100,20 +100,6 @@ def tag_to_version(
     return version
 
 
-def tags_to_versions(tags: list[str], config: _config.Configuration) -> list[_VersionT]:
-    """
-    take tags that might be prefixed with a keyword and return only the version part
-    :param tags: an iterable of tags
-    :param config: optional configuration object
-    """
-    result: list[_VersionT] = []
-    for tag in tags:
-        parsed = tag_to_version(tag, config=config)
-        if parsed:
-            result.append(parsed)
-    return result
-
-
 def _source_epoch_or_utc_now() -> datetime:
     if "SOURCE_DATE_EPOCH" in os.environ:
         date_epoch = int(os.environ["SOURCE_DATE_EPOCH"])

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from setuptools_scm import Configuration
 from setuptools_scm import get_version
 from setuptools_scm.git import parse
 from setuptools_scm.utils import do
@@ -100,5 +101,5 @@ def test_case_mismatch_on_windows_git(tmp_path: Path) -> None:
     camel_case_path = tmp_path / "CapitalizedDir"
     camel_case_path.mkdir()
     do("git init", camel_case_path)
-    res = parse(str(camel_case_path).lower())
+    res = parse(str(camel_case_path).lower(), Configuration())
     assert res is not None
