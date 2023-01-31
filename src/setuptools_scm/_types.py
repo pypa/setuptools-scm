@@ -12,7 +12,7 @@ from typing_extensions import ParamSpec
 from typing_extensions import Protocol
 from typing_extensions import TypeAlias
 
-from setuptools_scm import version
+from . import version
 
 PathT: TypeAlias = Union["os.PathLike[str]", str]
 

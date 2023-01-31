@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
+from setuptools_scm import Configuration
 from setuptools_scm import format_version
 from setuptools_scm import integration
-from setuptools_scm.config import Configuration
 from setuptools_scm.hg import archival_to_version
 from setuptools_scm.hg import parse
 from setuptools_scm.utils import has_command

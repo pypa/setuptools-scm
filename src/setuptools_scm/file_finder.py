@@ -76,7 +76,9 @@ def is_toplevel_acceptable(toplevel: str | None) -> TypeGuard[str]:
     if toplevel is None:
         return False
 
-    ignored = os.environ.get("SETUPTOOLS_SCM_IGNORE_VCS_ROOTS", "").split(os.pathsep)
+    ignored: list[str] = os.environ.get("SETUPTOOLS_SCM_IGNORE_VCS_ROOTS", "").split(
+        os.pathsep
+    )
     ignored = [os.path.normcase(p) for p in ignored]
 
     trace(toplevel, ignored)

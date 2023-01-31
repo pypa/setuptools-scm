@@ -5,8 +5,8 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from . import Configuration
 from ._version_cls import Version
-from .config import Configuration
 from .scm_workdir import Workdir
 from .utils import data_from_mime
 from .utils import do_ex
@@ -69,7 +69,7 @@ class HgWorkdir(Workdir):
             tags.remove("tip")
 
         if tags:
-            tag = tag_to_version(tags[0])
+            tag = tag_to_version(tags[0], config)
             if tag:
                 return meta(tag, dirty=dirty, branch=branch, config=config)
 

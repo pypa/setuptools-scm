@@ -10,6 +10,10 @@ from typing import Any
 from typing import Pattern
 from typing import TYPE_CHECKING
 
+from ._config import Configuration
+from ._config import DEFAULT_LOCAL_SCHEME
+from ._config import DEFAULT_TAG_REGEX
+from ._config import DEFAULT_VERSION_SCHEME
 from ._entrypoints import _version_from_entrypoints
 from ._overrides import _read_pretended_version_for
 from ._overrides import PRETEND_KEY
@@ -18,10 +22,6 @@ from ._version_cls import _validate_version_cls
 from ._version_cls import _version_as_tuple
 from ._version_cls import NonNormalizedVersion
 from ._version_cls import Version
-from .config import Configuration
-from .config import DEFAULT_LOCAL_SCHEME
-from .config import DEFAULT_TAG_REGEX
-from .config import DEFAULT_VERSION_SCHEME
 from .discover import iter_matching_entrypoints
 from .version import format_version
 

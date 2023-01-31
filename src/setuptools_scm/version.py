@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 from ._version_cls import Version as PkgVersion, _VersionT
 from . import _version_cls as _v
-from .config import Configuration
+from . import _config
 from .utils import trace
 
 SEMVER_MINOR = 2
@@ -36,7 +36,7 @@ SEMVER_LEN = 3
 
 
 def _parse_version_tag(
-    tag: str | object, config: Configuration
+    tag: str | object, config: _config.Configuration
 ) -> dict[str, str] | None:
     tagstring = tag if isinstance(tag, str) else str(tag)
     match = config.tag_regex.match(tagstring)
@@ -72,15 +72,12 @@ def callable_or_entrypoint(group: str, callable_or_name: str | Any) -> Any:
 
 
 def tag_to_version(
-    tag: _VersionT | str, config: Configuration | None = None
+    tag: _VersionT | str, config: _config.Configuration
 ) -> _VersionT | None:
     """
     take a tag that might be prefixed with a keyword and return only the version part
     """
     trace("tag", tag)
-
-    if not config:
-        config = Configuration()
 
     tagdict = _parse_version_tag(tag, config)
     if not isinstance(tagdict, dict) or not tagdict.get("version", None):
@@ -97,15 +94,13 @@ def tag_to_version(
             )
         )
 
-    version = config.version_cls(version_str)
+    version: _VersionT = config.version_cls(version_str)
     trace("version", repr(version))
 
     return version
 
 
-def tags_to_versions(
-    tags: list[str], config: Configuration | None = None
-) -> list[_VersionT]:
+def tags_to_versions(tags: list[str], config: _config.Configuration) -> list[_VersionT]:
     """
     take tags that might be prefixed with a keyword and return only the version part
     :param tags: an iterable of tags
@@ -130,7 +125,7 @@ def _source_epoch_or_utc_now() -> datetime:
 @dataclasses.dataclass
 class ScmVersion:
     tag: _v.Version | _v.NonNormalizedVersion | str
-    config: Configuration
+    config: _config.Configuration
     distance: int | None = None
     node: str | None = None
     dirty: bool = False
@@ -182,11 +177,11 @@ class ScmVersion:
 
 
 def _parse_tag(
-    tag: _VersionT | str, preformatted: bool, config: Configuration | None
+    tag: _VersionT | str, preformatted: bool, config: _config.Configuration
 ) -> _VersionT | str:
     if preformatted:
         return tag
-    elif config is None or not isinstance(tag, config.version_cls):
+    elif not isinstance(tag, config.version_cls):
         version = tag_to_version(tag, config)
         assert version is not None
         return version
@@ -202,7 +197,7 @@ def meta(
     node: str | None = None,
     preformatted: bool = False,
     branch: str | None = None,
-    config: Configuration,
+    config: _config.Configuration,
     node_date: date | None = None,
 ) -> ScmVersion:
 

@@ -5,7 +5,7 @@ from typing import Iterable
 from typing import Iterator
 
 from . import _types as _t
-from .config import Configuration
+from ._config import Configuration
 from .utils import trace
 
 

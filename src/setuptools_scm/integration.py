@@ -11,12 +11,12 @@ import setuptools
 
 from . import _get_version
 from . import _version_missing
+from . import Configuration
 from ._entrypoints import iter_entry_points
 from ._integration.setuptools import (
     read_dist_name_from_setup_cfg as _read_dist_name_from_setup_cfg,
 )
 from ._version_cls import _validate_version_cls
-from .config import Configuration
 from .utils import do
 from .utils import trace
 

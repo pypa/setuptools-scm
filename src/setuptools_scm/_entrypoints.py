@@ -12,7 +12,7 @@ from . import version
 from .utils import trace
 
 if TYPE_CHECKING:
-    from .config import Configuration
+    from ._config import Configuration
     from typing_extensions import Protocol
     from . import _types as _t
 else:

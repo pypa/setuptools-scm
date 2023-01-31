@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from setuptools_scm.config import Configuration
+from setuptools_scm import Configuration
 
 
 @pytest.mark.parametrize(

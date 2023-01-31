@@ -12,7 +12,7 @@ from typing import Callable
 from typing import TYPE_CHECKING
 
 from . import _types as _t
-from .config import Configuration
+from . import Configuration
 from .scm_workdir import Workdir
 from .utils import _CmdResult
 from .utils import data_from_mime
@@ -301,7 +301,9 @@ def archival_to_version(
             distance=None if number == 0 else number,
             node=node,
         )
-    versions = tags_to_versions(REF_TAG_RE.findall(data.get("ref-names", "")))
+    versions = tags_to_versions(
+        REF_TAG_RE.findall(data.get("ref-names", "")), config=config
+    )
     if versions:
         return meta(versions[0], config=config)
     else:

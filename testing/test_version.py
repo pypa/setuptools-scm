@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from setuptools_scm.config import Configuration
+from setuptools_scm import Configuration
 from setuptools_scm.version import calver_by_date
 from setuptools_scm.version import format_version
 from setuptools_scm.version import guess_next_version

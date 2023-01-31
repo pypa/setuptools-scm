@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from . import config
+from . import _config
 from . import version
 from ._integration.pyproject_reading import lazy_toml_load
 from .utils import trace
@@ -24,7 +24,7 @@ def read_named_env(
 
 
 def _read_pretended_version_for(
-    config: config.Configuration,
+    config: _config.Configuration,
 ) -> version.ScmVersion | None:
     """read a a overridden version from the environment
 

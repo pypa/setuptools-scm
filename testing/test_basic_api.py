@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 
 import setuptools_scm
+from setuptools_scm import Configuration
 from setuptools_scm import dump_version
-from setuptools_scm.config import Configuration
 from setuptools_scm.utils import data_from_mime
 from setuptools_scm.utils import do
 from setuptools_scm.version import ScmVersion
