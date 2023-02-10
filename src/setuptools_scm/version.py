@@ -519,7 +519,7 @@ def _iter_version_schemes(
                 pass
         scheme_value = cast(
             'str|List[str]|Tuple[str, ...]|Callable[["ScmVersion"], str]|None',
-            tscheme_val
+            tscheme_val,
         )
 
     if isinstance(scheme_value, (list, tuple)):
