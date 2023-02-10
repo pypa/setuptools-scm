@@ -507,9 +507,19 @@ def _iter_version_schemes(
     if _memo is None:
         _memo = set()
     if isinstance(scheme_value, str):
+        tscheme_val = _get_ep(entrypoint, scheme_value)
+        if tscheme_val is None:
+            try:
+                from importlib.metadata import EntryPoint
+            except ImportError:
+                from importlib_metadata import EntryPoint
+            try:
+                tscheme_val = EntryPoint(scheme_value, scheme_value, entrypoint).load()
+            except (AttributeError, ModuleNotFoundError):
+                pass
         scheme_value = cast(
             'str|List[str]|Tuple[str, ...]|Callable[["ScmVersion"], str]|None',
-            _get_ep(entrypoint, scheme_value),
+            tscheme_val
         )
 
     if isinstance(scheme_value, (list, tuple)):
