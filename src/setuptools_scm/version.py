@@ -494,6 +494,16 @@ def _get_ep(group: str, name: str) -> Any | None:
     else:
         return None
 
+def _get_from_object_reference_str(path: str) -> Any | None:
+    try:
+        from importlib.metadata import EntryPoint
+    except ImportError:
+        from importlib_metadata import EntryPoint
+    try:
+        return EntryPoint(path, path, None).load()
+    except (AttributeError, ModuleNotFoundError):
+        return None
+
 
 def _iter_version_schemes(
     entrypoint: str,
@@ -507,19 +517,9 @@ def _iter_version_schemes(
     if _memo is None:
         _memo = set()
     if isinstance(scheme_value, str):
-        tscheme_val = _get_ep(entrypoint, scheme_value)
-        if tscheme_val is None:
-            try:
-                from importlib.metadata import EntryPoint
-            except ImportError:
-                from importlib_metadata import EntryPoint
-            try:
-                tscheme_val = EntryPoint(scheme_value, scheme_value, entrypoint).load()
-            except (AttributeError, ModuleNotFoundError):
-                pass
         scheme_value = cast(
             'str|List[str]|Tuple[str, ...]|Callable[["ScmVersion"], str]|None',
-            tscheme_val
+            _get_ep(entrypoint, scheme_value) or _get_from_object_reference_str(scheme_value),
         )
 
     if isinstance(scheme_value, (list, tuple)):
