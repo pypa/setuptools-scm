@@ -494,6 +494,7 @@ def _get_ep(group: str, name: str) -> Any | None:
     else:
         return None
 
+
 def _get_from_object_reference_str(path: str) -> Any | None:
     try:
         from importlib.metadata import EntryPoint
@@ -519,7 +520,8 @@ def _iter_version_schemes(
     if isinstance(scheme_value, str):
         scheme_value = cast(
             'str|List[str]|Tuple[str, ...]|Callable[["ScmVersion"], str]|None',
-            _get_ep(entrypoint, scheme_value) or _get_from_object_reference_str(scheme_value),
+            _get_ep(entrypoint, scheme_value)
+            or _get_from_object_reference_str(scheme_value),
         )
 
     if isinstance(scheme_value, (list, tuple)):
