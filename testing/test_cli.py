@@ -17,7 +17,6 @@ PYPROJECT_ROOT = '[tool.setuptools_scm]\nroot=".."'
 
 
 def get_output(args: list[str]) -> str:
-
     with redirect_stdout(io.StringIO()) as out:
         main(args)
     return out.getvalue()
@@ -52,7 +51,6 @@ def test_cli_find_pyproject(
         print(get_output(["-c", PYPROJECT_TOML]))
 
     with exits_with_not_found, warns_absolute_root_override:
-
         get_output(["-c", PYPROJECT_TOML, "--root=.."])
 
     with warns_cli_root_override:

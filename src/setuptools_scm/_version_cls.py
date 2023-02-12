@@ -38,7 +38,6 @@ def _version_as_tuple(version_str: str) -> tuple[int | str, ...]:
     try:
         parsed_version = Version(version_str)
     except InvalidVersion:
-
         log = getLogger("setuptools_scm")
         log.exception("failed to parse version %s", version_str)
         return (version_str,)

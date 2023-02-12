@@ -46,7 +46,6 @@ def _bump_regex(version: str) -> str:
 
 
 def _format_local_with_time(version: _t.SCMVERSION, time_format: str) -> str:
-
     if version.exact or version.node is None:
         return version.format_choice(
             "", "+d{time:{time_format}}", time_format=time_format

@@ -16,7 +16,6 @@ _UNKNOWN = "UNKNOWN"
 
 
 def parse_pkginfo(root: _t.PathT, config: Configuration) -> ScmVersion | None:
-
     pkginfo = os.path.join(root, "PKG-INFO")
     trace("pkginfo", pkginfo)
     data = data_from_mime(pkginfo)

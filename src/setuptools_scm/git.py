@@ -266,7 +266,6 @@ def search_parent(dirname: _t.PathT) -> GitWorkdir | None:
     curpath = os.path.abspath(dirname)
 
     while curpath:
-
         try:
             wd = GitWorkdir.from_potential_worktree(curpath)
         except Exception:

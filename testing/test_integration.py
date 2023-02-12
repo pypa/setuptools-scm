@@ -149,7 +149,7 @@ def test_distribution_procides_extras() -> None:
     try:
         from importlib.metadata import distribution  # type: ignore
     except ImportError:
-        from importlib_metadata import distribution  # type: ignore
+        from importlib_metadata import distribution
 
     dist = distribution("setuptools_scm")
     assert sorted(dist.metadata.get_all("Provides-Extra")) == ["test", "toml"]

@@ -152,7 +152,6 @@ def test_root_relative_to(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> No
 
 
 def test_dump_version(tmp_path: Path) -> None:
-
     dump_version(tmp_path, "1.0", "first.txt")
 
     def read(name: str) -> str:

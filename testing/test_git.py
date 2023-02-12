@@ -18,7 +18,6 @@ import pytest
 from .conftest import DebugMode
 from .wd_wrapper import WorkDir
 from setuptools_scm import Configuration
-from setuptools_scm import format_version
 from setuptools_scm import git
 from setuptools_scm import integration
 from setuptools_scm import NonNormalizedVersion
@@ -26,6 +25,7 @@ from setuptools_scm.file_finder_git import git_find_files
 from setuptools_scm.git import archival_to_version
 from setuptools_scm.utils import do
 from setuptools_scm.utils import has_command
+from setuptools_scm.version import format_version
 
 pytestmark = pytest.mark.skipif(
     not has_command("git", warn=False), reason="git executable not found"

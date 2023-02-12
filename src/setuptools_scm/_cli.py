@@ -17,7 +17,6 @@ def main(args: list[str] | None = None) -> None:
     pyproject = opts.config or _find_pyproject(inferred_root)
 
     try:
-
         config = Configuration.from_file(
             pyproject,
             root=(os.path.abspath(opts.root) if opts.root is not None else None),

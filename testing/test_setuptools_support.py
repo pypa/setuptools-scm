@@ -101,7 +101,6 @@ main()
 
 
 def check(venv: Venv, expected_version: str, **env: str) -> None:
-
     subprocess.check_call(
         [venv.python, "-c", SCRIPT, expected_version],
         env=dict(os.environ, **env),

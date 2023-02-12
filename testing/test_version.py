@@ -58,7 +58,6 @@ def test_next_semver(version: ScmVersion, expected_next: str) -> None:
 
 
 def test_next_semver_bad_tag() -> None:
-
     version = meta("1.0.0-foo", preformatted=True, config=c)
     with pytest.raises(
         ValueError, match=r"1\.0\.0-foo.* can't be parsed as numeric version"
@@ -203,7 +202,6 @@ def test_version_bump_bad() -> None:
         match=".*does not end with a number to bump, "
         "please correct or use a custom version scheme",
     ):
-
         guess_next_version(tag_version=meta("2.0.0-alpha.5-PMC", config=config))
 
 

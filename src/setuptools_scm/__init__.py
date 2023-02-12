@@ -22,8 +22,7 @@ from ._version_cls import _validate_version_cls
 from ._version_cls import _version_as_tuple
 from ._version_cls import NonNormalizedVersion
 from ._version_cls import Version
-from .discover import iter_matching_entrypoints
-from .version import format_version
+from .version import format_version as _format_version
 
 if TYPE_CHECKING:
     from typing import NoReturn
@@ -132,7 +131,7 @@ def get_version(
     """
     version_cls = _validate_version_cls(version_cls, normalize)
     del normalize
-    if isinstance((tag_regex), str):
+    if isinstance(tag_regex, str):
         tag_regex = re.compile(tag_regex)
     config = Configuration(**locals())
     maybe_version = _get_version(config)
@@ -146,7 +145,7 @@ def _get_version(config: Configuration) -> str | None:
     parsed_version = _do_parse(config)
     if parsed_version is None:
         return None
-    version_string = format_version(
+    version_string = _format_version(
         parsed_version,
         version_scheme=config.version_scheme,
         local_scheme=config.local_scheme,
@@ -174,7 +173,4 @@ __all__ = [
     "PRETEND_KEY_NAMED",
     "Version",
     "NonNormalizedVersion",
-    # TODO: are the symbols below part of public API ?
-    "format_version",
-    "iter_matching_entrypoints",
 ]

@@ -21,7 +21,6 @@ if TYPE_CHECKING:
 
 
 class HgWorkdir(Workdir):
-
     COMMAND = "hg"
 
     @classmethod
@@ -33,7 +32,6 @@ class HgWorkdir(Workdir):
         return cls(root)
 
     def get_meta(self, config: Configuration) -> ScmVersion | None:
-
         node: str
         tags_str: str
         bookmark: str
@@ -122,13 +120,11 @@ class HgWorkdir(Workdir):
         return tag
 
     def get_distance_revs(self, rev1: str, rev2: str = ".") -> int:
-
         revset = f"({rev1}::{rev2})"
         out = self.hg_log(revset, ".")
         return len(out) - 1
 
     def check_changes_since_tag(self, tag: str | None) -> bool:
-
         if tag == "0.0" or tag is None:
             return True
 

@@ -186,7 +186,6 @@ def meta(
     config: _config.Configuration,
     node_date: date | None = None,
 ) -> ScmVersion:
-
     parsed_version = _parse_tag(tag, preformatted, config)
     trace("version", tag, "->", parsed_version)
     assert parsed_version is not None, "Can't parse version %s" % tag

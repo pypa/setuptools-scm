@@ -15,7 +15,6 @@ PRETEND_KEY_NAMED = PRETEND_KEY + "_FOR_{name}"
 def read_named_env(
     *, tool: str = "SETUPTOOLS_SCM", name: str, dist_name: str | None
 ) -> str | None:
-
     if dist_name is not None:
         val = os.environ.get(f"{tool}_{name}_FOR_{dist_name.upper()}")
         if val is not None:
