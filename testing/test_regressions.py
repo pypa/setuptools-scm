@@ -1,8 +1,16 @@
 from __future__ import annotations
 
 import os
+import pprint
 import subprocess
 import sys
+from typing import Callable
+
+if sys.version_info >= (3, 8):
+    distribution: Callable[[str], EntryPoint]
+    from importlib.metadata import distribution, EntryPoint
+else:
+    from importlib_metadata import distribution, EntryPoint
 from pathlib import Path
 
 import pytest
@@ -103,3 +111,17 @@ def test_case_mismatch_on_windows_git(tmp_path: Path) -> None:
     do("git init", camel_case_path)
     res = parse(str(camel_case_path).lower(), Configuration())
     assert res is not None
+
+
+def test_entrypoints_load() -> None:
+    d = distribution("setuptools-scm")  # type: ignore [no-untyped-call]
+
+    eps = d.entry_points
+    failed: list[tuple[EntryPoint, Exception]] = []
+    for ep in eps:
+        try:
+            ep.load()
+        except Exception as e:
+            failed.append((ep, e))
+    if failed:
+        pytest.fail(pprint.pformat(failed))
