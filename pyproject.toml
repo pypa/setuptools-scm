@@ -7,7 +7,6 @@ requires = [
 ]
 
 [project]
-dynamic = ["version"]
 name = "setuptools-scm"
 description = "the blessed package to manage your versions by scm tags"
 readme = "README.rst"
@@ -32,6 +31,9 @@ classifiers = [
     "Topic :: Software Development :: Version Control",
     "Topic :: System :: Software Distribution",
     "Topic :: Utilities",
+]
+dynamic = [
+  "version",
 ]
 dependencies = [
   'importlib-metadata; python_version < "3.8"',

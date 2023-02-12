@@ -1,17 +1,20 @@
 [build-system]
-requires = ["hatchling"]
 build-backend = "hatchling.build"
+requires = [
+  "hatchling",
+]
 
 [project]
 name = "vcs-versioning"
-description = 'the blessed package to manage your versions by vcs metadata'
+description = "the blessed package to manage your versions by vcs metadata"
 readme = "README.md"
-requires-python = ">=3.8"
+keywords = [
+]
 license = "MIT"
-keywords = []
 authors = [
   { name = "Ronny Pfannschmidt", email = "opensource@ronnypfannschmidt.de" },
 ]
+requires-python = ">=3.8"
 classifiers = [
   "Development Status :: 1 - Planning",
   "Programming Language :: Python",
@@ -20,13 +23,16 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
 ]
-dependencies = []
-dynamic = ["version"]
-
+dynamic = [
+  "version",
+]
+dependencies = [
+]
 [project.urls]
 Documentation = "https://github.com/unknown/vcs-versioning#readme"
 Issues = "https://github.com/unknown/vcs-versioning/issues"
 Source = "https://github.com/unknown/vcs-versioning"
+
 
 [tool.hatch.version]
 path = "vcs_versioning/__about__.py"
