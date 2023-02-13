@@ -23,7 +23,7 @@ def pytest_report_header() -> list[str]:
     try:
         from importlib.metadata import version  # type: ignore
     except ImportError:
-        from importlib_metadata import version  # type: ignore
+        from importlib_metadata import version
     res = []
     for pkg in VERSION_PKGS:
         pkg_version = version(pkg)

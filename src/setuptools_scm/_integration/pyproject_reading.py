@@ -1,17 +1,16 @@
 from __future__ import annotations
 
+import os
 import sys
 import warnings
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import NamedTuple
-from typing import TYPE_CHECKING
+
+from typing_extensions import TypeAlias
 
 from .setuptools import read_dist_name_from_setup_cfg
-
-if TYPE_CHECKING:
-    from typing_extensions import TypeAlias
 
 _ROOT = "root"
 TOML_RESULT: TypeAlias = Dict[str, Any]
@@ -19,7 +18,7 @@ TOML_LOADER: TypeAlias = Callable[[str], TOML_RESULT]
 
 
 class PyProjectData(NamedTuple):
-    name: str
+    name: str | os.PathLike[str]
     tool_name: str
     project: TOML_RESULT
     section: TOML_RESULT
@@ -39,7 +38,7 @@ def lazy_toml_load(data: str) -> TOML_RESULT:
 
 
 def read_pyproject(
-    name: str = "pyproject.toml",
+    name: str | os.PathLike[str] = "pyproject.toml",
     tool_name: str = "setuptools_scm",
     _load_toml: TOML_LOADER | None = None,
 ) -> PyProjectData:

@@ -1,24 +1,26 @@
 from __future__ import annotations
 
+import os
 from typing import Any
 from typing import Callable
 from typing import List
-from typing import TYPE_CHECKING
+from typing import Tuple
 from typing import TypeVar
 from typing import Union
 
+from typing_extensions import ParamSpec
+from typing_extensions import Protocol
+from typing_extensions import TypeAlias
 
-if TYPE_CHECKING:
-    from setuptools_scm import version
-    import os
+from . import version
 
-from typing_extensions import ParamSpec, TypeAlias, Protocol
-
-PathT = Union["os.PathLike[str]", str]
+PathT: TypeAlias = Union["os.PathLike[str]", str]
 
 CMD_TYPE: TypeAlias = Union[List[str], str]
 
-VERSION_SCHEME = Union[str, Callable[["version.ScmVersion"], str]]
+VERSION_SCHEME: TypeAlias = Union[str, Callable[["version.ScmVersion"], str]]
+VERSION_SCHEMES: TypeAlias = Union[List[str], Tuple[str, ...], VERSION_SCHEME]
+SCMVERSION: TypeAlias = "version.ScmVersion"
 
 
 class EntrypointProtocol(Protocol):

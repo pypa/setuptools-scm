@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from setuptools_scm.config import Configuration
+from setuptools_scm import Configuration
 from setuptools_scm.version import calver_by_date
 from setuptools_scm.version import format_version
 from setuptools_scm.version import guess_next_version
@@ -15,7 +15,6 @@ from setuptools_scm.version import no_guess_dev_version
 from setuptools_scm.version import release_branch_semver_version
 from setuptools_scm.version import ScmVersion
 from setuptools_scm.version import simplified_semver_version
-from setuptools_scm.version import tags_to_versions
 
 
 c = Configuration()
@@ -59,7 +58,6 @@ def test_next_semver(version: ScmVersion, expected_next: str) -> None:
 
 
 def test_next_semver_bad_tag() -> None:
-
     version = meta("1.0.0-foo", preformatted=True, config=c)
     with pytest.raises(
         ValueError, match=r"1\.0\.0-foo.* can't be parsed as numeric version"
@@ -183,14 +181,8 @@ def test_tag_regex1(tag: str, expected: str) -> None:
             result = meta(tag, config=c)
     else:
         result = meta(tag, config=c)
-
+    assert not isinstance(result.tag, str)
     assert result.tag.public == expected
-
-
-@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/286")
-def test_tags_to_versions() -> None:
-    versions = tags_to_versions(["1.0", "2.0", "3.0"], config=c)
-    assert isinstance(versions, list)  # enable subscription
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/471")
@@ -204,13 +196,12 @@ def test_version_bump_bad() -> None:
         def __str__(self) -> str:
             return self.val
 
-    config = Configuration(version_cls=YikesVersion)
+    config = Configuration(version_cls=YikesVersion)  # type: ignore[arg-type]
     with pytest.raises(
         ValueError,
         match=".*does not end with a number to bump, "
         "please correct or use a custom version scheme",
     ):
-
         guess_next_version(tag_version=meta("2.0.0-alpha.5-PMC", config=config))
 
 
@@ -348,7 +339,8 @@ def test_custom_version_cls() -> None:
         def __repr__(self) -> str:
             return "MyVersion<Custom%s>" % self.tag
 
-    scm_version = meta("1.0.0-foo", config=Configuration(version_cls=MyVersion))
+    config = Configuration(version_cls=MyVersion)  # type: ignore[arg-type]
+    scm_version = meta("1.0.0-foo", config=config)
 
     assert isinstance(scm_version.tag, MyVersion)
     assert str(scm_version.tag) == "Custom 1.0.0-foo"

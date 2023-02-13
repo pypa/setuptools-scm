@@ -28,7 +28,7 @@ def scm_version() -> str:
     from setuptools_scm import git
     from setuptools_scm import hg
     from setuptools_scm.version import guess_next_dev_version, get_local_node_and_date
-    from setuptools_scm.config import Configuration
+    from setuptools_scm import Configuration
 
     from setuptools_scm.version import ScmVersion
 

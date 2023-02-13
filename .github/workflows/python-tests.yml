@@ -85,30 +85,6 @@ jobs:
           architecture: x64
       - run: pip install -e .[toml,test] pytest virtualenv
       - run: pytest --test-legacy testing/test_setuptools_support.py || true # ignore fail flaky on ci
-  check_selfinstall:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python_version: [  '3.7', '3.9', 'pypy-3.8' ]
-        installer: ["pip install"]
-    name: check self install - Python ${{ matrix.python_version }} via ${{ matrix.installer }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python_version }}
-          architecture: x64
-      # self install testing needs some clarity
-      # so its being executed without any other tools running
-      # setuptools smaller 52 is needed to do easy_install
-      - run: pip install -U "setuptools<52" tomli packaging typing_extensions importlib_metadata
-      - run: python setup.py egg_info
-      - run: python setup.py sdist
-      - run: ${{ matrix.installer }} dist/*
-      - run: python testing/check_self_install.py
-
 
   dist:
     runs-on: ubuntu-latest

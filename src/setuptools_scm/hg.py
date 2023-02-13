@@ -5,8 +5,8 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from . import Configuration
 from ._version_cls import Version
-from .config import Configuration
 from .scm_workdir import Workdir
 from .utils import data_from_mime
 from .utils import do_ex
@@ -21,7 +21,6 @@ if TYPE_CHECKING:
 
 
 class HgWorkdir(Workdir):
-
     COMMAND = "hg"
 
     @classmethod
@@ -33,7 +32,6 @@ class HgWorkdir(Workdir):
         return cls(root)
 
     def get_meta(self, config: Configuration) -> ScmVersion | None:
-
         node: str
         tags_str: str
         bookmark: str
@@ -69,7 +67,7 @@ class HgWorkdir(Workdir):
             tags.remove("tip")
 
         if tags:
-            tag = tag_to_version(tags[0])
+            tag = tag_to_version(tags[0], config)
             if tag:
                 return meta(tag, dirty=dirty, branch=branch, config=config)
 
@@ -122,13 +120,11 @@ class HgWorkdir(Workdir):
         return tag
 
     def get_distance_revs(self, rev1: str, rev2: str = ".") -> int:
-
         revset = f"({rev1}::{rev2})"
         out = self.hg_log(revset, ".")
         return len(out) - 1
 
     def check_changes_since_tag(self, tag: str | None) -> bool:
-
         if tag == "0.0" or tag is None:
             return True
 
@@ -143,10 +139,7 @@ class HgWorkdir(Workdir):
         return bool(self.hg_log(revset, "."))
 
 
-def parse(root: _t.PathT, config: Configuration | None = None) -> ScmVersion | None:
-    if not config:
-        config = Configuration(root=root)
-
+def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
     if os.path.exists(os.path.join(root, ".hg/git")):
         paths, _, ret = do_ex("hg path", root)
         if not ret:
@@ -169,9 +162,7 @@ def parse(root: _t.PathT, config: Configuration | None = None) -> ScmVersion | N
     return wd.get_meta(config)
 
 
-def archival_to_version(
-    data: dict[str, str], config: Configuration | None = None
-) -> ScmVersion:
+def archival_to_version(data: dict[str, str], config: Configuration) -> ScmVersion:
     trace("data", data)
     node = data.get("node", "")[:12]
     if node:
@@ -189,7 +180,7 @@ def archival_to_version(
         return meta("0.0", node=node, config=config)
 
 
-def parse_archival(root: _t.PathT, config: Configuration | None = None) -> ScmVersion:
+def parse_archival(root: _t.PathT, config: Configuration) -> ScmVersion:
     archival = os.path.join(root, ".hg_archival.txt")
     data = data_from_mime(archival)
     return archival_to_version(data, config=config)

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from setuptools_scm.config import Configuration
+from setuptools_scm import Configuration
 
 
 @pytest.mark.parametrize(
@@ -74,3 +74,26 @@ def test_config_from_file_protects_relative_to(tmp_path: Path) -> None:
         " as its always relative to the config file",
     ):
         assert Configuration.from_file(str(fn))
+
+
+def test_config_overrides(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fn = tmp_path / "pyproject.toml"
+    fn.write_text(
+        textwrap.dedent(
+            """
+            [tool.setuptools_scm]
+            root = "."
+            [project]
+            name = "test_a"
+            """
+        ),
+        encoding="utf-8",
+    )
+    pristine = Configuration.from_file(fn)
+    monkeypatch.setenv(
+        "SETUPTOOLS_SCM_OVERRIDES_FOR_TEST_A", '{root="..", fallback_root=".."}'
+    )
+    overriden = Configuration.from_file(fn)
+
+    assert pristine.root != overriden.root
+    assert pristine.fallback_root != overriden.fallback_root

@@ -18,7 +18,6 @@ from typing import NamedTuple
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-
     from . import _types as _t
 
 DEBUG = bool(os.environ.get("SETUPTOOLS_SCM_DEBUG"))
@@ -174,7 +173,6 @@ def require_command(name: str) -> None:
 def iter_entry_points(
     group: str, name: str | None = None
 ) -> Iterator[_t.EntrypointProtocol]:
-
     from ._entrypoints import iter_entry_points
 
     return iter_entry_points(group, name)
