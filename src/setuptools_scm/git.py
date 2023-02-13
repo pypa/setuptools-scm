@@ -11,7 +11,8 @@ from os.path import samefile
 from typing import Callable
 from typing import TYPE_CHECKING
 
-from .config import Configuration
+from . import _types as _t
+from . import Configuration
 from .scm_workdir import Workdir
 from .utils import _CmdResult
 from .utils import data_from_mime
@@ -20,12 +21,11 @@ from .utils import require_command
 from .utils import trace
 from .version import meta
 from .version import ScmVersion
-from .version import tags_to_versions
+from .version import tag_to_version
 
 if TYPE_CHECKING:
-    from . import _types as _t
+    from . import hg_git
 
-    from setuptools_scm.hg_git import GitWorkdirHgClient
 
 REF_TAG_RE = re.compile(r"(?<=\btag: )([^,]+)\b")
 DESCRIBE_UNSUPPORTED = "%(describe"
@@ -150,33 +150,30 @@ def fail_on_shallow(wd: GitWorkdir) -> None:
         )
 
 
-def get_working_directory(config: Configuration) -> GitWorkdir | None:
+def get_working_directory(config: Configuration, root: str) -> GitWorkdir | None:
     """
     Return the working directory (``GitWorkdir``).
     """
 
-    if config.parent:
+    if config.parent:  # todo broken
         return GitWorkdir.from_potential_worktree(config.parent)
 
     if config.search_parent_directories:
-        return search_parent(config.absolute_root)
+        return search_parent(root)
 
-    return GitWorkdir.from_potential_worktree(config.absolute_root)
+    return GitWorkdir.from_potential_worktree(root)
 
 
 def parse(
     root: str,
+    config: Configuration,
     describe_command: str | list[str] | None = None,
     pre_parse: Callable[[GitWorkdir], None] = warn_on_shallow,
-    config: Configuration | None = None,
 ) -> ScmVersion | None:
     """
     :param pre_parse: experimental pre_parse action, may change at any time
     """
-    if not config:
-        config = Configuration(root=root)
-
-    wd = get_working_directory(config)
+    wd = get_working_directory(config, root)
     if wd:
         return _git_parse_inner(
             config, wd, describe_command=describe_command, pre_parse=pre_parse
@@ -187,8 +184,8 @@ def parse(
 
 def _git_parse_inner(
     config: Configuration,
-    wd: GitWorkdir | GitWorkdirHgClient,
-    pre_parse: None | (Callable[[GitWorkdir | GitWorkdirHgClient], None]) = None,
+    wd: GitWorkdir | hg_git.GitWorkdirHgClient,
+    pre_parse: None | (Callable[[GitWorkdir | hg_git.GitWorkdirHgClient], None]) = None,
     describe_command: _t.CMD_TYPE | None = None,
 ) -> ScmVersion:
     if pre_parse:
@@ -269,7 +266,6 @@ def search_parent(dirname: _t.PathT) -> GitWorkdir | None:
     curpath = os.path.abspath(dirname)
 
     while curpath:
-
         try:
             wd = GitWorkdir.from_potential_worktree(curpath)
         except Exception:
@@ -286,7 +282,7 @@ def search_parent(dirname: _t.PathT) -> GitWorkdir | None:
 
 
 def archival_to_version(
-    data: dict[str, str], config: Configuration | None = None
+    data: dict[str, str], config: Configuration
 ) -> ScmVersion | None:
     node: str | None
     trace("data", data)
@@ -301,9 +297,11 @@ def archival_to_version(
             distance=None if number == 0 else number,
             node=node,
         )
-    versions = tags_to_versions(REF_TAG_RE.findall(data.get("ref-names", "")))
-    if versions:
-        return meta(versions[0], config=config)
+
+    for ref in REF_TAG_RE.findall(data.get("ref-names", "")):
+        version = tag_to_version(ref, config)
+        if version is not None:
+            return meta(version, config=config)
     else:
         node = data.get("node")
         if node is None:
@@ -315,9 +313,7 @@ def archival_to_version(
             return meta("0.0", node=node, config=config)
 
 
-def parse_archival(
-    root: _t.PathT, config: Configuration | None = None
-) -> ScmVersion | None:
+def parse_archival(root: _t.PathT, config: Configuration) -> ScmVersion | None:
     archival = os.path.join(root, ".git_archival.txt")
     data = data_from_mime(archival)
     return archival_to_version(data, config=config)

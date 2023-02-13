@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import os
 import re
 import warnings
@@ -8,22 +9,25 @@ from datetime import datetime
 from datetime import timezone
 from typing import Any
 from typing import Callable
-from typing import cast
-from typing import Iterator
-from typing import List
 from typing import Match
-from typing import overload
-from typing import Tuple
 from typing import TYPE_CHECKING
+
+from . import _entrypoints
+from ._modify_version import _bump_dev
+from ._modify_version import _bump_regex
+from ._modify_version import _dont_guess_next_version
+from ._modify_version import _format_local_with_time
+from ._modify_version import _strip_local
 
 if TYPE_CHECKING:
     from typing_extensions import Concatenate
 
     from . import _types as _t
 
-from ._version_cls import Version as PkgVersion
-from .config import Configuration
-from .config import _VersionT
+
+from ._version_cls import Version as PkgVersion, _VersionT
+from . import _version_cls as _v
+from . import _config
 from .utils import trace
 
 SEMVER_MINOR = 2
@@ -32,7 +36,7 @@ SEMVER_LEN = 3
 
 
 def _parse_version_tag(
-    tag: str | object, config: Configuration
+    tag: str | object, config: _config.Configuration
 ) -> dict[str, str] | None:
     tagstring = tag if isinstance(tag, str) else str(tag)
     match = config.tag_regex.match(tagstring)
@@ -68,16 +72,12 @@ def callable_or_entrypoint(group: str, callable_or_name: str | Any) -> Any:
 
 
 def tag_to_version(
-    tag: _VersionT | str, config: Configuration | None = None
+    tag: _VersionT | str, config: _config.Configuration
 ) -> _VersionT | None:
     """
     take a tag that might be prefixed with a keyword and return only the version part
-    :param config: optional configuration object
     """
     trace("tag", tag)
-
-    if not config:
-        config = Configuration()
 
     tagdict = _parse_version_tag(tag, config)
     if not isinstance(tagdict, dict) or not tagdict.get("version", None):
@@ -94,68 +94,37 @@ def tag_to_version(
             )
         )
 
-    version = config.version_cls(version_str)
+    version: _VersionT = config.version_cls(version_str)
     trace("version", repr(version))
 
     return version
 
 
-def tags_to_versions(
-    tags: list[str], config: Configuration | None = None
-) -> list[_VersionT]:
-    """
-    take tags that might be prefixed with a keyword and return only the version part
-    :param tags: an iterable of tags
-    :param config: optional configuration object
-    """
-    result: list[_VersionT] = []
-    for tag in tags:
-        parsed = tag_to_version(tag, config=config)
-        if parsed:
-            result.append(parsed)
-    return result
+def _source_epoch_or_utc_now() -> datetime:
+    if "SOURCE_DATE_EPOCH" in os.environ:
+        date_epoch = int(os.environ["SOURCE_DATE_EPOCH"])
+        return datetime.fromtimestamp(date_epoch, timezone.utc)
+    else:
+        return datetime.now(timezone.utc)
 
 
+@dataclasses.dataclass
 class ScmVersion:
-    def __init__(
-        self,
-        tag_version: Any,
-        config: Configuration,
-        distance: int | None = None,
-        node: str | None = None,
-        dirty: bool = False,
-        preformatted: bool = False,
-        branch: str | None = None,
-        node_date: date | None = None,
-        **kw: object,
-    ):
-        if kw:
-            trace("unknown args", kw)
-        self.tag = tag_version
-        if dirty and distance is None:
-            distance = 0
-        self.distance = distance
-        self.node = node
-        self.node_date = node_date
-        if "SOURCE_DATE_EPOCH" in os.environ:
-            date_epoch = int(os.environ["SOURCE_DATE_EPOCH"])
-            self.time = datetime.fromtimestamp(date_epoch, timezone.utc)
-        else:
-            self.time = datetime.now(timezone.utc)
-        self._extra = kw
-        self.dirty = dirty
-        self.preformatted = preformatted
-        self.branch = branch
-        self.config = config
+    tag: _v.Version | _v.NonNormalizedVersion | str
+    config: _config.Configuration
+    distance: int | None = None
+    node: str | None = None
+    dirty: bool = False
+    preformatted: bool = False
+    branch: str | None = None
+    node_date: date | None = None
+    time: datetime = dataclasses.field(
+        init=False, default_factory=_source_epoch_or_utc_now
+    )
 
-    @property
-    def extra(self) -> dict[str, Any]:
-        warnings.warn(
-            "ScmVersion.extra is deprecated and will be removed in future",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-        return self._extra
+    def __post_init__(self) -> None:
+        if self.dirty and self.distance is None:
+            self.distance = 0
 
     @property
     def exact(self) -> bool:
@@ -194,11 +163,11 @@ class ScmVersion:
 
 
 def _parse_tag(
-    tag: _VersionT | str, preformatted: bool, config: Configuration | None
+    tag: _VersionT | str, preformatted: bool, config: _config.Configuration
 ) -> _VersionT | str:
     if preformatted:
         return tag
-    elif config is None or not isinstance(tag, config.version_cls):
+    elif not isinstance(tag, config.version_cls):
         version = tag_to_version(tag, config)
         assert version is not None
         return version
@@ -208,21 +177,15 @@ def _parse_tag(
 
 def meta(
     tag: str | _VersionT,
+    *,
     distance: int | None = None,
     dirty: bool = False,
     node: str | None = None,
     preformatted: bool = False,
     branch: str | None = None,
-    config: Configuration | None = None,
+    config: _config.Configuration,
     node_date: date | None = None,
-    **kw: Any,
 ) -> ScmVersion:
-    if not config:
-        warnings.warn(
-            "meta invoked without explicit configuration,"
-            " will use defaults where required."
-        )
-        config = Configuration()
     parsed_version = _parse_tag(tag, preformatted, config)
     trace("version", tag, "->", parsed_version)
     assert parsed_version is not None, "Can't parse version %s" % tag
@@ -235,58 +198,12 @@ def meta(
         branch=branch,
         config=config,
         node_date=node_date,
-        **kw,
     )
 
 
 def guess_next_version(tag_version: ScmVersion) -> str:
     version = _strip_local(str(tag_version.tag))
     return _bump_dev(version) or _bump_regex(version)
-
-
-def _dont_guess_next_version(tag_version: ScmVersion) -> str:
-    version = _strip_local(str(tag_version.tag))
-    return _bump_dev(version) or _add_post(version)
-
-
-def _strip_local(version_string: str) -> str:
-    public, sep, local = version_string.partition("+")
-    return public
-
-
-def _add_post(version: str) -> str:
-    if "post" in version:
-        raise ValueError(
-            f"{version} already is a post release, refusing to guess the update"
-        )
-    return f"{version}.post1"
-
-
-def _bump_dev(version: str) -> str | None:
-    if ".dev" not in version:
-        return None
-
-    prefix, tail = version.rsplit(".dev", 1)
-    if tail != "0":
-        raise ValueError(
-            "choosing custom numbers for the `.devX` distance "
-            "is not supported.\n "
-            f"The {version} can't be bumped\n"
-            "Please drop the tag or create a new supported one ending in .dev0"
-        )
-    return prefix
-
-
-def _bump_regex(version: str) -> str:
-    match = re.match(r"(.*?)(\d+)$", version)
-    if match is None:
-        raise ValueError(
-            "{version} does not end with a number to bump, "
-            "please correct or use a custom version scheme".format(version=version)
-        )
-    else:
-        prefix, tail = match.groups()
-        return "%s%d" % (prefix, int(tail) + 1)
 
 
 def guess_next_dev_version(version: ScmVersion) -> str:
@@ -368,15 +285,13 @@ def no_guess_dev_version(version: ScmVersion) -> str:
         return version.format_next_version(_dont_guess_next_version)
 
 
+_DATE_REGEX = re.compile(
+    r"^(?P<date>(?P<year>\d{2}|\d{4})(?:\.\d{1,2}){2})(?:\.(?P<patch>\d*))?$"
+)
+
+
 def date_ver_match(ver: str) -> Match[str] | None:
-    match = re.match(
-        (
-            r"^(?P<date>(?P<year>\d{2}|\d{4})(?:\.\d{1,2}){2})"
-            r"(?:\.(?P<patch>\d*)){0,1}?$"
-        ),
-        ver,
-    )
-    return match
+    return _DATE_REGEX.match(ver)
 
 
 def guess_next_date_ver(
@@ -450,18 +365,6 @@ def calver_by_date(version: ScmVersion) -> str:
     )
 
 
-def _format_local_with_time(version: ScmVersion, time_format: str) -> str:
-
-    if version.exact or version.node is None:
-        return version.format_choice(
-            "", "+d{time:{time_format}}", time_format=time_format
-        )
-    else:
-        return version.format_choice(
-            "+{node}", "+{node}.d{time:{time_format}}", time_format=time_format
-        )
-
-
 def get_local_node_and_date(version: ScmVersion) -> str:
     return _format_local_with_time(version, time_format="%Y%m%d")
 
@@ -485,90 +388,18 @@ def postrelease_version(version: ScmVersion) -> str:
         return version.format_with("{tag}.post{distance}")
 
 
-def _get_ep(group: str, name: str) -> Any | None:
-    from ._entrypoints import iter_entry_points
-
-    for ep in iter_entry_points(group, name):
-        trace("ep found:", ep.name)
-        return ep.load()
-    else:
-        return None
-
-
-def _get_from_object_reference_str(path: str) -> Any | None:
-    try:
-        from importlib.metadata import EntryPoint
-    except ImportError:
-        from importlib_metadata import EntryPoint
-    try:
-        return EntryPoint(path, path, None).load()
-    except (AttributeError, ModuleNotFoundError):
-        return None
-
-
-def _iter_version_schemes(
-    entrypoint: str,
-    scheme_value: str
-    | list[str]
-    | tuple[str, ...]
-    | Callable[[ScmVersion], str]
-    | None,
-    _memo: set[object] | None = None,
-) -> Iterator[Callable[[ScmVersion], str]]:
-    if _memo is None:
-        _memo = set()
-    if isinstance(scheme_value, str):
-        scheme_value = cast(
-            'str|List[str]|Tuple[str, ...]|Callable[["ScmVersion"], str]|None',
-            _get_ep(entrypoint, scheme_value)
-            or _get_from_object_reference_str(scheme_value),
-        )
-
-    if isinstance(scheme_value, (list, tuple)):
-        for variant in scheme_value:
-            if variant not in _memo:
-                _memo.add(variant)
-                yield from _iter_version_schemes(entrypoint, variant, _memo=_memo)
-    elif callable(scheme_value):
-        yield scheme_value
-
-
-@overload
-def _call_version_scheme(
-    version: ScmVersion, entypoint: str, given_value: str, default: str
-) -> str:
-    ...
-
-
-@overload
-def _call_version_scheme(
-    version: ScmVersion, entypoint: str, given_value: str, default: None
-) -> str | None:
-    ...
-
-
-def _call_version_scheme(
-    version: ScmVersion, entypoint: str, given_value: str, default: str | None
-) -> str | None:
-    for scheme in _iter_version_schemes(entypoint, given_value):
-        result = scheme(version)
-        if result is not None:
-            return result
-    return default
-
-
 def format_version(version: ScmVersion, **config: Any) -> str:
     trace("scm version", version)
     trace("config", config)
     if version.preformatted:
         assert isinstance(version.tag, str)
         return version.tag
-    main_version = _call_version_scheme(
+    main_version = _entrypoints._call_version_scheme(
         version, "setuptools_scm.version_scheme", config["version_scheme"], None
     )
     trace("version", main_version)
     assert main_version is not None
-    local_version = _call_version_scheme(
+    local_version = _entrypoints._call_version_scheme(
         version, "setuptools_scm.local_scheme", config["local_scheme"], "+unknown"
     )
     trace("local_version", local_version)

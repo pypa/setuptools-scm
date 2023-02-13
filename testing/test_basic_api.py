@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 
 import setuptools_scm
+from setuptools_scm import Configuration
 from setuptools_scm import dump_version
-from setuptools_scm.config import Configuration
 from setuptools_scm.utils import data_from_mime
 from setuptools_scm.utils import do
 from setuptools_scm.version import ScmVersion
@@ -55,11 +55,6 @@ def assert_root(monkeypatch: pytest.MonkeyPatch, expected_root: str) -> None:
 def test_root_parameter_creation(monkeypatch: pytest.MonkeyPatch) -> None:
     assert_root(monkeypatch, os.getcwd())
     setuptools_scm.get_version()
-
-
-def test_version_from_scm(wd: WorkDir) -> None:
-    with pytest.warns(DeprecationWarning, match=".*version_from_scm.*"):
-        setuptools_scm.version_from_scm(str(wd))
 
 
 def test_root_parameter_pass_by(
@@ -157,7 +152,6 @@ def test_root_relative_to(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> No
 
 
 def test_dump_version(tmp_path: Path) -> None:
-
     dump_version(tmp_path, "1.0", "first.txt")
 
     def read(name: str) -> str:

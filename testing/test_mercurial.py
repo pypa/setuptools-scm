@@ -5,12 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from setuptools_scm import format_version
+from setuptools_scm import Configuration
 from setuptools_scm import integration
-from setuptools_scm.config import Configuration
 from setuptools_scm.hg import archival_to_version
 from setuptools_scm.hg import parse
 from setuptools_scm.utils import has_command
+from setuptools_scm.version import format_version
 from testing.wd_wrapper import WorkDir
 
 
@@ -54,8 +54,9 @@ def test_archival_to_version(expected: str, data: dict[str, str]) -> None:
 
 def test_hg_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
+    config = Configuration()
     with pytest.raises(EnvironmentError, match="'hg' was not found"):
-        parse(str(wd.cwd))
+        parse(str(wd.cwd), config=config)
 
 
 def test_find_files_stop_at_root_hg(
@@ -129,7 +130,8 @@ def test_version_in_merge(wd: WorkDir) -> None:
 
 @pytest.mark.issue(128)
 def test_parse_no_worktree(tmp_path: Path) -> None:
-    ret = parse(os.fspath(tmp_path))
+    config = Configuration()
+    ret = parse(os.fspath(tmp_path), config)
     assert ret is None
 
 
@@ -189,7 +191,6 @@ def test_latest_tag_detection(wd: WorkDir) -> None:
 
 @pytest.mark.usefixtures("version_1_0")
 def test_feature_branch_increments_major(wd: WorkDir) -> None:
-
     wd.commit_testfile()
     assert wd.get_version(version_scheme="python-simplified-semver").startswith("1.0.1")
     wd("hg branch feature/fun")

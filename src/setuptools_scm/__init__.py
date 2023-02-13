@@ -5,33 +5,27 @@
 from __future__ import annotations
 
 import os
-import warnings
+import re
 from typing import Any
-from typing import Callable
+from typing import Pattern
 from typing import TYPE_CHECKING
 
-from ._entrypoints import _call_entrypoint_fn
+from ._config import Configuration
+from ._config import DEFAULT_LOCAL_SCHEME
+from ._config import DEFAULT_TAG_REGEX
+from ._config import DEFAULT_VERSION_SCHEME
 from ._entrypoints import _version_from_entrypoints
 from ._overrides import _read_pretended_version_for
 from ._overrides import PRETEND_KEY
 from ._overrides import PRETEND_KEY_NAMED
+from ._version_cls import _validate_version_cls
 from ._version_cls import _version_as_tuple
 from ._version_cls import NonNormalizedVersion
 from ._version_cls import Version
-from .config import Configuration
-from .config import DEFAULT_LOCAL_SCHEME
-from .config import DEFAULT_TAG_REGEX
-from .config import DEFAULT_VERSION_SCHEME
-from .discover import iter_matching_entrypoints
-from .utils import function_has_arg
-from .utils import trace
-from .version import format_version
-from .version import meta
-from .version import ScmVersion
+from .version import format_version as _format_version
 
 if TYPE_CHECKING:
     from typing import NoReturn
-
     from . import _types as _t
 
 TEMPLATES = {
@@ -45,16 +39,6 @@ __version_tuple__ = version_tuple = {version_tuple!r}
 }
 
 
-def version_from_scm(root: _t.PathT) -> ScmVersion | None:
-    warnings.warn(
-        "version_from_scm is deprecated please use get_version",
-        category=DeprecationWarning,
-        stacklevel=2,
-    )
-    config = Configuration(root=root)
-    return _version_from_entrypoints(config)
-
-
 def dump_version(
     root: _t.PathT,
     version: str,
@@ -65,7 +49,9 @@ def dump_version(
     target = os.path.normpath(os.path.join(root, write_to))
     ext = os.path.splitext(target)[1]
     template = template or TEMPLATES.get(ext)
+    from .utils import trace
 
+    trace("dump", write_to, version)
     if template is None:
         raise ValueError(
             "bad file format: '{}' (of {}) \nonly *.txt and *.py are supported".format(
@@ -78,30 +64,32 @@ def dump_version(
         fp.write(template.format(version=version, version_tuple=version_tuple))
 
 
-def _do_parse(config: Configuration) -> ScmVersion | None:
+def _do_parse(config: Configuration) -> _t.SCMVERSION | None:
+    from .version import ScmVersion
+
     pretended = _read_pretended_version_for(config)
     if pretended is not None:
         return pretended
-
+    parsed_version: ScmVersion | None
     if config.parse:
-        parse_result = _call_entrypoint_fn(config.absolute_root, config, config.parse)
+        parse_result = config.parse(config.absolute_root, config=config)
         if isinstance(parse_result, str):
             raise TypeError(
                 f"version parse result was {str!r}\nplease return a parsed version"
             )
-        version: ScmVersion | None
+
         if parse_result:
             assert isinstance(parse_result, ScmVersion)
-            version = parse_result
+            parsed_version = parse_result
         else:
-            version = _version_from_entrypoints(config, fallback=True)
+            parsed_version = _version_from_entrypoints(config, fallback=True)
     else:
         # include fallbacks after dropping them from the main entrypoint
-        version = _version_from_entrypoints(config) or _version_from_entrypoints(
+        parsed_version = _version_from_entrypoints(config) or _version_from_entrypoints(
             config, fallback=True
         )
 
-    return version
+    return parsed_version
 
 
 def _version_missing(config: Configuration) -> NoReturn:
@@ -119,17 +107,17 @@ def _version_missing(config: Configuration) -> NoReturn:
 
 def get_version(
     root: str = ".",
-    version_scheme: Callable[[ScmVersion], str] | str = DEFAULT_VERSION_SCHEME,
-    local_scheme: Callable[[ScmVersion], str] | str = DEFAULT_LOCAL_SCHEME,
+    version_scheme: _t.VERSION_SCHEME = DEFAULT_VERSION_SCHEME,
+    local_scheme: _t.VERSION_SCHEME = DEFAULT_LOCAL_SCHEME,
     write_to: _t.PathT | None = None,
     write_to_template: str | None = None,
     relative_to: str | None = None,
-    tag_regex: str = DEFAULT_TAG_REGEX,
+    tag_regex: str | Pattern[str] = DEFAULT_TAG_REGEX,
     parentdir_prefix_version: str | None = None,
     fallback_version: str | None = None,
     fallback_root: _t.PathT = ".",
     parse: Any | None = None,
-    git_describe_command: Any | None = None,
+    git_describe_command: _t.CMD_TYPE | None = None,
     dist_name: str | None = None,
     version_cls: Any | None = None,
     normalize: bool = True,
@@ -141,9 +129,13 @@ def get_version(
     in the root of the repository to direct setuptools_scm to the
     root of the repository by supplying ``__file__``.
     """
-
+    version_cls = _validate_version_cls(version_cls, normalize)
+    del normalize
+    if isinstance(tag_regex, str):
+        tag_regex = re.compile(tag_regex)
     config = Configuration(**locals())
     maybe_version = _get_version(config)
+
     if maybe_version is None:
         _version_missing(config)
     return maybe_version
@@ -153,7 +145,7 @@ def _get_version(config: Configuration) -> str | None:
     parsed_version = _do_parse(config)
     if parsed_version is None:
         return None
-    version_string = format_version(
+    version_string = _format_version(
         parsed_version,
         version_scheme=config.version_scheme,
         local_scheme=config.local_scheme,
@@ -173,7 +165,6 @@ def _get_version(config: Configuration) -> str | None:
 __all__ = [
     "get_version",
     "dump_version",
-    "version_from_scm",
     "Configuration",
     "DEFAULT_VERSION_SCHEME",
     "DEFAULT_LOCAL_SCHEME",
@@ -182,10 +173,4 @@ __all__ = [
     "PRETEND_KEY_NAMED",
     "Version",
     "NonNormalizedVersion",
-    # TODO: are the symbols below part of public API ?
-    "function_has_arg",
-    "trace",
-    "format_version",
-    "meta",
-    "iter_matching_entrypoints",
 ]

@@ -18,7 +18,6 @@ import pytest
 from .conftest import DebugMode
 from .wd_wrapper import WorkDir
 from setuptools_scm import Configuration
-from setuptools_scm import format_version
 from setuptools_scm import git
 from setuptools_scm import integration
 from setuptools_scm import NonNormalizedVersion
@@ -26,6 +25,7 @@ from setuptools_scm.file_finder_git import git_find_files
 from setuptools_scm.git import archival_to_version
 from setuptools_scm.utils import do
 from setuptools_scm.utils import has_command
+from setuptools_scm.version import format_version
 
 pytestmark = pytest.mark.skipif(
     not has_command("git", warn=False), reason="git executable not found"
@@ -91,7 +91,7 @@ setup(use_scm_version={"search_parent_directories": True})
 def test_git_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
     with pytest.raises(EnvironmentError, match="'git' was not found"):
-        git.parse(str(wd.cwd), git.DEFAULT_DESCRIBE)
+        git.parse(str(wd.cwd), Configuration(), git.DEFAULT_DESCRIBE)
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/298")
@@ -105,7 +105,7 @@ def test_file_finder_no_history(wd: WorkDir, caplog: pytest.LogCaptureFixture) -
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/281")
 def test_parse_call_order(wd: WorkDir) -> None:
-    git.parse(str(wd.cwd), git.DEFAULT_DESCRIBE)
+    git.parse(str(wd.cwd), Configuration(), git.DEFAULT_DESCRIBE)
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/707")
@@ -130,7 +130,7 @@ def test_not_owner(wd: WorkDir) -> None:
             stdin=subprocess.DEVNULL,
             check=True,
         )
-        assert git.parse(str(wd.cwd))
+        assert git.parse(str(wd.cwd), Configuration())
     finally:
         # Restore the ownership
         subprocess.run(
@@ -148,8 +148,8 @@ def test_not_owner(wd: WorkDir) -> None:
 def test_version_from_git(wd: WorkDir) -> None:
     assert wd.version == "0.1.dev0"
 
-    parsed = git.parse(str(wd.cwd), git.DEFAULT_DESCRIBE)
-    assert parsed is not None and parsed.branch == "master"
+    parsed = git.parse(str(wd.cwd), Configuration(), git.DEFAULT_DESCRIBE)
+    assert parsed is not None and parsed.branch in ("master", "main")
 
     wd.commit_testfile()
     assert wd.version.startswith("0.1.dev1+g")
@@ -226,8 +226,8 @@ def test_git_version_unnormalized_setuptools(
     the version is not normalized in write_to files,
     but still normalized by setuptools for the final dist metadata.
     """
-    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
-
+    # monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
+    monkeypatch.chdir(wd.cwd)
     wd.write("setup.py", dedent(setup_py_txt))
 
     # do git operations and tag
@@ -303,23 +303,23 @@ def shallow_wd(wd: WorkDir, tmp_path: Path) -> Path:
 def test_git_parse_shallow_warns(
     shallow_wd: Path, recwarn: pytest.WarningsRecorder
 ) -> None:
-    git.parse(str(shallow_wd))
+    git.parse(str(shallow_wd), Configuration())
     msg = recwarn.pop()
     assert "is shallow and may cause errors" in str(msg.message)
 
 
 def test_git_parse_shallow_fail(shallow_wd: Path) -> None:
     with pytest.raises(ValueError, match="git fetch"):
-        git.parse(str(shallow_wd), pre_parse=git.fail_on_shallow)
+        git.parse(str(shallow_wd), Configuration(), pre_parse=git.fail_on_shallow)
 
 
 def test_git_shallow_autocorrect(
     shallow_wd: Path, recwarn: pytest.WarningsRecorder
 ) -> None:
-    git.parse(str(shallow_wd), pre_parse=git.fetch_on_shallow)
+    git.parse(str(shallow_wd), Configuration(), pre_parse=git.fetch_on_shallow)
     msg = recwarn.pop()
     assert "git fetch was used to rectify" in str(msg.message)
-    git.parse(str(shallow_wd), pre_parse=git.fail_on_shallow)
+    git.parse(str(shallow_wd), Configuration(), pre_parse=git.fail_on_shallow)
 
 
 def test_find_files_stop_at_root_git(wd: WorkDir) -> None:
@@ -332,7 +332,7 @@ def test_find_files_stop_at_root_git(wd: WorkDir) -> None:
 
 @pytest.mark.issue(128)
 def test_parse_no_worktree(tmp_path: Path) -> None:
-    ret = git.parse(str(tmp_path))
+    ret = git.parse(str(tmp_path), Configuration(root=str(tmp_path)))
     assert ret is None
 
 
@@ -452,7 +452,7 @@ def test_git_getdate(wd: WorkDir) -> None:
     today = date.today()
 
     def parse_date() -> date:
-        parsed = git.parse(os.fspath(wd.cwd))
+        parsed = git.parse(os.fspath(wd.cwd), Configuration())
         assert parsed is not None
         assert parsed.node_date is not None
         return parsed.node_date

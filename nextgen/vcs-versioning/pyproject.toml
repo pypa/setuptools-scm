@@ -1,0 +1,64 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = [
+  "hatchling",
+]
+
+[project]
+name = "vcs-versioning"
+description = "the blessed package to manage your versions by vcs metadata"
+readme = "README.md"
+keywords = [
+]
+license = "MIT"
+authors = [
+  { name = "Ronny Pfannschmidt", email = "opensource@ronnypfannschmidt.de" },
+]
+requires-python = ">=3.8"
+classifiers = [
+  "Development Status :: 1 - Planning",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+]
+dynamic = [
+  "version",
+]
+dependencies = [
+]
+[project.urls]
+Documentation = "https://github.com/unknown/vcs-versioning#readme"
+Issues = "https://github.com/unknown/vcs-versioning/issues"
+Source = "https://github.com/unknown/vcs-versioning"
+
+
+[tool.hatch.version]
+path = "vcs_versioning/__about__.py"
+
+[tool.hatch.envs.default]
+dependencies = [
+  "pytest",
+  "pytest-cov",
+]
+[tool.hatch.envs.default.scripts]
+cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=vcs_versioning --cov=tests {args}"
+no-cov = "cov --no-cov {args}"
+
+[[tool.hatch.envs.test.matrix]]
+python = ["38", "39", "310", "311"]
+
+[tool.coverage.run]
+branch = true
+parallel = true
+omit = [
+  "vcs_versioning/__about__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]

@@ -8,5 +8,6 @@ include *.rst
 include LICENSE
 include *.toml
 include mypy.ini
-include testing/Dockerfile.busted-buster
+include testing/Dockerfile.*
+include src/setuptools_scm/.git_archival.txt
 recursive-include testing *.bash

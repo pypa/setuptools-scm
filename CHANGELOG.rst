@@ -1,3 +1,29 @@
+v8.0.0
+======
+
+
+breaking
+--------
+* remove legacy version parser api - config arg always required
+* turn Configuration into a dataclass
+* require confiuration to always pass into helpers
+
+features
+--------
+
+* git: expect main as possible default branch
+* drop version_from_scm helper
+* trim down exposed public api
+* no longer self-call twice in setuptools
+* chores
+
+  * migrate own metadata to pyproject.toml
+  * consolidate version schemes
+  * stricter tag typing
+  * pre-compiled regex
+  * move helpers to private modules
+
+
 v7.1.0
 ======
 
@@ -45,7 +71,7 @@ v7.0.0
 
 * drop python 3.6 support
 * include git archival support
-* fix #707: support git version detection even when git protects against mistmatched owners
+* fix #707: support git version detection even when git protects against mismatched owners
             (common with misconfigured containers, thanks @chrisburr )
 
 v6.4.3
@@ -410,7 +436,7 @@ v1.16.0
 * avoid shlex.split on windows
 * fix #218 - better handling of mercurial edge-cases with tag commits
   being considered as the tagged commit
-* fix #223 - remove the dependency on the interal SetupttoolsVersion
+* fix #223 - remove the dependency on the internal ``SetuptoolsVersion``
   as it was removed after long-standing deprecation
 
 v1.15.7
@@ -612,20 +638,20 @@ v1.5.0
 
 * moved setuptools integration related code to own file
 * support storing version strings into a module/text file
-  using the :code:`write_to` coniguration parameter
+  using the :code:`write_to` configuration parameter
 
 v1.4.0
 ======
 
 * proper handling for sdist
 * fix file-finder failure from windows
-* resuffle docs
+* reshuffle docs
 
 v1.3.0
 ======
 
 * support setuptools easy_install egg creation details
-  by hardwireing the version in the sdist
+  by hardwire-ing the version in the sdist
 
 v1.2.0
 ======
