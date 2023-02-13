@@ -46,9 +46,11 @@ def _version_from_entrypoints(
 
 try:
     from importlib.metadata import entry_points  # type: ignore
+    from importlib.metadata import EntryPoint
 except ImportError:
     try:
         from importlib_metadata import entry_points
+        from importlib_metadata import EntryPoint
     except ImportError:
         from collections import defaultdict
 
@@ -58,6 +60,11 @@ except ImportError:
                 "this may happen at build time for python3.7"
             )
             return defaultdict(list)
+
+
+        class EntryPoint:
+            def __init__(self, *args, **kwargs):
+                pass  # entry_points() already provides the warning
 
 
 def iter_entry_points(
@@ -84,10 +91,6 @@ def _get_ep(group: str, name: str) -> Any | None:
 
 
 def _get_from_object_reference_str(path: str) -> Any | None:
-    try:
-        from importlib.metadata import EntryPoint
-    except ImportError:
-        from importlib_metadata import EntryPoint
     try:
         return EntryPoint(path, path, None).load()
     except (AttributeError, ModuleNotFoundError):
