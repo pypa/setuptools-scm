@@ -61,8 +61,8 @@ except ImportError:
             )
             return defaultdict(list)
 
-        class EntryPoint:
-            def __init__(self, *args, **kwargs):
+        class EntryPoint:  # type: ignore
+            def __init__(self, *args: Any, **kwargs: Any):
                 pass  # entry_points() already provides the warning
 
 
