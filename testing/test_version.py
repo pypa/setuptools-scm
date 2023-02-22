@@ -214,6 +214,15 @@ def test_format_version_schemes() -> None:
     )
 
 
+def test_custom_version_schemes() -> None:
+    version = meta("1.0", config=c)
+    format_version(
+        version,
+        local_scheme="no-local-version",
+        version_scheme="setuptools_scm.version:guess_next_dev_version",
+    )
+
+
 def date_to_str(
     date_: date | None = None,
     days_offset: int = 0,
