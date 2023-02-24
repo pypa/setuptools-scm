@@ -1,9 +1,13 @@
 [build-system]
-build-backend = "setuptools.build_meta"
+build-backend = "scm_hack_build_backend"
 requires = [
   "packaging>=20",
   "setuptools>=55",
+  'tomli; python_version < "3.11"',
   "typing_extensions",
+]
+backend-path = [
+  ".",
 ]
 
 [project]
@@ -42,6 +46,14 @@ dependencies = [
   'tomli>=1; python_version < "3.11"',
   "typing-extensions",
 ]
+[project.optional-dependencies]
+test = [
+  "pytest",
+  "virtualenv>20",
+]
+toml = [
+]
+
 [project.urls]
 repository = "https://github.com/pypa/setuptools_scm/"
 
@@ -89,6 +101,9 @@ pip-egg-info = "setuptools_scm.hacks:parse_pip_egg_info"
 "release-branch-semver" = "setuptools_scm.version:release_branch_semver_version"
 
 
+
+[tool.setuptools.dynamic]
+version = {attr = "scm_hack_build_backend.dynamic_version"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
