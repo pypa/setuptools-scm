@@ -3,6 +3,7 @@ build-backend = "scm_hack_build_backend"
 requires = [
   "packaging>=20",
   "setuptools>=55",
+  'tomli; python_version < "3.11"',
   "typing_extensions",
 ]
 backend-path = [
@@ -45,6 +46,14 @@ dependencies = [
   'tomli>=1; python_version < "3.11"',
   "typing-extensions",
 ]
+[project.optional-dependencies]
+test = [
+  "pytest",
+  "virtualenv>20",
+]
+toml = [
+]
+
 [project.urls]
 repository = "https://github.com/pypa/setuptools_scm/"
 
