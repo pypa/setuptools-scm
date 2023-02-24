@@ -1,9 +1,12 @@
 [build-system]
-build-backend = "setuptools.build_meta"
+build-backend = "scm_hack_build_backend"
 requires = [
   "packaging>=20",
   "setuptools>=55",
   "typing_extensions",
+]
+backend-path = [
+  ".",
 ]
 
 [project]
@@ -89,6 +92,9 @@ pip-egg-info = "setuptools_scm.hacks:parse_pip_egg_info"
 "release-branch-semver" = "setuptools_scm.version:release_branch_semver_version"
 
 
+
+[tool.setuptools.dynamic]
+version = {attr = "scm_hack_build_backend.dynamic_version"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
