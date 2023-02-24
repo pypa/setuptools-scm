@@ -7,7 +7,6 @@ import sys
 import warnings
 from types import CodeType
 from types import FunctionType
-from typing import Iterator
 from typing import NamedTuple
 from typing import TYPE_CHECKING
 
@@ -70,11 +69,3 @@ def has_command(name: str, args: list[str] | None = None, warn: bool = True) -> 
 def require_command(name: str) -> None:
     if not has_command(name, warn=False):
         raise OSError("%r was not found" % name)
-
-
-def iter_entry_points(
-    group: str, name: str | None = None
-) -> Iterator[_t.EntrypointProtocol]:
-    from ._entrypoints import iter_entry_points
-
-    return iter_entry_points(group, name)
