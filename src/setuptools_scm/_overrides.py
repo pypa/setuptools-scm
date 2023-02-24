@@ -6,7 +6,7 @@ from typing import Any
 from . import _config
 from . import version
 from ._integration.pyproject_reading import lazy_toml_load
-from .utils import trace
+from ._trace import trace
 
 PRETEND_KEY = "SETUPTOOLS_SCM_PRETEND_VERSION"
 PRETEND_KEY_NAMED = PRETEND_KEY + "_FOR_{name}"

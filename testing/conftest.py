@@ -42,7 +42,7 @@ def pytest_addoption(parser: Any) -> None:
 class DebugMode:
     def __init__(self, monkeypatch: pytest.MonkeyPatch):
         self.__monkeypatch = monkeypatch
-        self.__module = setuptools_scm.utils
+        self.__module = setuptools_scm._trace
 
     __monkeypatch: pytest.MonkeyPatch
 

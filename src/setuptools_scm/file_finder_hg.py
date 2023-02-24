@@ -4,11 +4,11 @@ import os
 import subprocess
 
 from . import _types as _t
+from ._trace import trace
 from .file_finder import is_toplevel_acceptable
 from .file_finder import scm_find_files
 from .utils import data_from_mime
 from .utils import do_ex
-from .utils import trace
 
 
 def _hg_toplevel(path: str) -> str | None:

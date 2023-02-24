@@ -9,7 +9,7 @@ from typing import overload
 from typing import TYPE_CHECKING
 
 from . import version
-from .utils import trace
+from ._trace import trace
 
 if TYPE_CHECKING:
     from ._config import Configuration

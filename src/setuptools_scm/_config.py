@@ -15,10 +15,10 @@ from ._integration.pyproject_reading import (
 )
 from ._integration.pyproject_reading import read_pyproject as _read_pyproject
 from ._overrides import read_toml_overrides
+from ._trace import trace
 from ._version_cls import _validate_version_cls
 from ._version_cls import _VersionT
 from ._version_cls import Version as _Version
-from .utils import trace
 
 DEFAULT_TAG_REGEX = re.compile(
     r"^(?:[\w-]+-)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"
