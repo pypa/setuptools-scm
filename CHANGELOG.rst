@@ -6,7 +6,7 @@ breaking
 --------
 * remove legacy version parser api - config arg always required
 * turn Configuration into a dataclass
-* require confiuration to always pass into helpers
+* require configuration to always pass into helpers
 
 features
 --------
@@ -27,7 +27,7 @@ features
 v7.1.0
 ======
 
-* #748: use tomllib from stdlib
+* #748: use ``tomllib`` from stdlib
 * fix #762: handle non-ascii in setup.cfg
 * #752: implement fallback file finders for archives
 * #765: removed coding header in python template
@@ -44,7 +44,7 @@ v7.0.5
 v7.0.4
 =======
 
-* fix #727: correctly handle incomplete archivals from setuptools_scm_git_archival
+* fix #727: correctly handle incomplete archival from setuptools_scm_git_archival
 * fix #691: correctly handle specifying root in pyproject.toml
 * correct root override check condition (to ensure absolute path matching)
 * allow root by the cli to be considered relative to the cli (using abspath)
@@ -79,7 +79,7 @@ v7.0.0
 v6.4.2
 ======
 
-* fix #671 : NoReturn is not avaliable in painfully dead python 3.6
+* fix #671 : NoReturn is not available in painfully dead python 3.6
 
 
 v6.4.1
@@ -87,7 +87,7 @@ v6.4.1
 
 
 * fix regression #669: restore get_version signature
-* fix #668: harden the selftest for distribution extras
+* fix #668: harden the self-test for distribution extras
 
 6.4.0
 ======
@@ -198,7 +198,7 @@ v5.0.0
 
 Breaking changes:
 
-* fix #339: strict errors on missing scms when  parsing a scm dir to avoid false version lookups
+* fix #339: strict errors on missing scm when  parsing a scm dir to avoid false version lookups
 * fix #337: if relative_to is a directory instead of a file,
   consider it as direct target instead  of the containing folder and print a warning
 
@@ -282,7 +282,7 @@ v3.4.1
 ======
 
 * pull in #377 to fix #374: correctly set up the default version scheme for pyproject usage.
-  this bugfix got missed when ruushing the  release.
+  this bugfix got missed when rushing the  release.
 
 v3.4.0
 ======
@@ -290,7 +290,7 @@ v3.4.0
 * fix #181 - add support for projects built under setuptools declarative config
   by way of the setuptools.finalize_distribution_options hook in Setuptools 42.
 
-* fix #305 - ensure the git file finder closes filedescriptors even when errors happen
+* fix #305 - ensure the git file finder closes file descriptors even when errors happen
 
 * fix #381 - clean out env vars from the git hook system to ensure correct function from within
 
@@ -338,7 +338,7 @@ v3.1.0
 
 v3.0.6
 ======
-* fix #295 - correctly handle selfinstall from tarballs
+* fix #295 - correctly handle self install from tarballs
 
 v3.0.5
 ======
@@ -350,12 +350,12 @@ v3.0.5
 v3.0.4
 =======
 
-* rerelease of 3.0.3 after fixing the release process
+* re-release of 3.0.3 after fixing the release process
 
 v3.0.3  (pulled from pypi due to a packaging issue)
 ======
 
-* fix #286 - duo an oversight a helper functio nwas returning a generator instead of a list
+* fix #286 - duo an oversight a helper function was returning a generator instead of a list
 
 
 v3.0.2
@@ -404,7 +404,7 @@ v2.0.0
 v1.17.0
 ========
 
-* fix regression in git support - use a function to ensure it works in egg isntalled mode
+* fix regression in git support - use a function to ensure it works in egg installed mode
 * actually fail if file finding fails in order to see broken setups instead of generating broken dists
 
   (thanks Mehdi ABAAKOUK for both)
@@ -427,7 +427,7 @@ v1.16.0
 =======
 
 * drop support for eol python versions
-* #214 - fix misuse in surogate-escape api
+* #214 - fix misuse in surrogate-escape api
 * add the node-and-timestamp local version scheme
 * respect git export ignores
 * avoid shlex.split on windows

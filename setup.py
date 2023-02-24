@@ -4,7 +4,7 @@ important note:
 the setup of setuptools_scm is self-using,
 the first execution of `python setup.py egg_info`
 will generate partial data
-its critical to run `python setup.py egg_info`
+It's critical to run `python setup.py egg_info`
 once before running sdist or easy_install on a fresh checkouts
 
 pip usage is recommended

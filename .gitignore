@@ -8,7 +8,7 @@
 
 ### Other editors
 .*.swp
-
+.vscode/
 
 ### Python template
 # Byte-compiled / optimized
@@ -41,6 +41,7 @@ htmlcov/
 .coverage.*
 .cache
 .pytest_cache
+.mypy_cache/
 nosetests.xml
 coverage.xml
 *,cover
