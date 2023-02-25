@@ -61,8 +61,10 @@ def ensure_stripped_str(str_or_bytes: str | bytes) -> str:
 def run(
     cmd: _t.CMD_TYPE,
     cwd: _t.PathT,
+    *,
     strip: bool = True,
     trace: bool = True,
+    timeout: int = 20,
 ) -> subprocess.CompletedProcess[str]:
     if isinstance(cmd, str):
         cmd = shlex.split(cmd)
@@ -81,6 +83,7 @@ def run(
             HGPLAIN="1",
         ),
         text=True,
+        timeout=timeout,
     )
     if strip:
         if res.stdout:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import sys
 import textwrap
+from typing import Sequence
 
 from . import _types as _t
 
@@ -16,11 +17,14 @@ def trace(*k: object, indent: bool = False) -> None:
         print(*k, file=sys.stderr, flush=True)
 
 
-def trace_command(cmd: _t.CMD_TYPE, cwd: _t.PathT) -> None:
+def _unsafe_quote_for_display(item: _t.PathT) -> str:
+    # give better results than shlex.join in our cases
+    text = os.fspath(item)
+    return text if all(c not in text for c in " {[:") else f'"{text}"'
+
+
+def trace_command(cmd: Sequence[_t.PathT], cwd: _t.PathT) -> None:
     if not DEBUG:
         return
-    # give better results than shlex.join in our cases
-    cmd_4_trace = " ".join(
-        [s if all(c not in s for c in " {[:") else f'"{s}"' for s in cmd]
-    )
+    cmd_4_trace = " ".join(map(_unsafe_quote_for_display, cmd))
     trace(f"---\n > {cwd}\\$ ", cmd_4_trace, indent=True)

@@ -4,6 +4,7 @@ import os
 import subprocess
 
 from . import _types as _t
+from ._run_cmd import run as _run
 from ._trace import trace
 from .file_finder import is_toplevel_acceptable
 from .file_finder import scm_find_files
@@ -13,13 +14,12 @@ from .utils import do_ex
 
 def _hg_toplevel(path: str) -> str | None:
     try:
-        out: str = subprocess.check_output(
+        res = _run(
             ["hg", "root"],
             cwd=(path or "."),
-            text=True,
-            stderr=subprocess.DEVNULL,
         )
-        return os.path.normcase(os.path.realpath(out.strip()))
+        res.check_returncode()
+        return os.path.normcase(os.path.realpath(res.stdout))
     except subprocess.CalledProcessError:
         # hg returned error, we are not in a mercurial repo
         return None

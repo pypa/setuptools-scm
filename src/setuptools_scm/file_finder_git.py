@@ -7,11 +7,11 @@ import tarfile
 from typing import IO
 
 from . import _types as _t
+from ._run_cmd import run as _run
 from ._trace import trace
 from .file_finder import is_toplevel_acceptable
 from .file_finder import scm_find_files
 from .utils import data_from_mime
-from .utils import do_ex
 
 log = logging.getLogger(__name__)
 
@@ -19,18 +19,18 @@ log = logging.getLogger(__name__)
 def _git_toplevel(path: str) -> str | None:
     try:
         cwd = os.path.abspath(path or ".")
-        out, err, ret = do_ex(["git", "rev-parse", "HEAD"], cwd=cwd)
-        if ret != 0:
+        res = _run(["git", "rev-parse", "HEAD"], cwd=cwd)
+        if res.returncode:
             # BAIL if there is no commit
             log.error("listing git files failed - pretending there aren't any")
             return None
-        out, err, ret = do_ex(
+        res = _run(
             ["git", "rev-parse", "--show-prefix"],
             cwd=cwd,
         )
-        if ret != 0:
+        if res.returncode:
             return None
-        out = out.strip()[:-1]  # remove the trailing pathsep
+        out = res.stdout[:-1]  # remove the trailing pathsep
         if not out:
             out = cwd
         else:
@@ -92,7 +92,6 @@ def git_find_files(path: _t.PathT = "") -> list[str]:
     toplevel = _git_toplevel(os.fspath(path))
     if not is_toplevel_acceptable(toplevel):
         return []
-    assert toplevel is not None  # mypy ignores typeguard
     fullpath = os.path.abspath(os.path.normpath(path))
     if not fullpath.startswith(toplevel):
         trace("toplevel mismatch", toplevel, fullpath)

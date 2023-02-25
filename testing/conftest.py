@@ -8,6 +8,7 @@ import pytest
 
 import setuptools_scm.utils
 from .wd_wrapper import WorkDir
+from setuptools_scm._run_cmd import run
 
 
 def pytest_configure() -> None:
@@ -69,8 +70,6 @@ def wd(tmp_path: Path) -> WorkDir:
 
 @pytest.fixture
 def repositories_hg_git(tmp_path: Path) -> tuple[WorkDir, WorkDir]:
-    from setuptools_scm.utils import do
-
     tmp_path = tmp_path.resolve()
     path_git = tmp_path / "repo_git"
     path_git.mkdir()
@@ -83,7 +82,7 @@ def repositories_hg_git(tmp_path: Path) -> tuple[WorkDir, WorkDir]:
     wd.commit_command = "git commit -m test-{reason}"
 
     path_hg = tmp_path / "repo_hg"
-    do(f"hg clone {path_git} {path_hg} --config extensions.hggit=")
+    run(["hg", "clone", path_git, path_hg, "--config", "extensions.hggit="], tmp_path)
     assert path_hg.exists()
 
     with open(path_hg / ".hg/hgrc", "a") as file:

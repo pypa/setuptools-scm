@@ -11,4 +11,4 @@ include mypy.ini
 include testing/Dockerfile.*
 include src/setuptools_scm/.git_archival.txt
 recursive-include testing *.bash
-exclude nextgen
+prune nextgen

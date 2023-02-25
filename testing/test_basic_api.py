@@ -10,6 +10,7 @@ import pytest
 import setuptools_scm
 from setuptools_scm import Configuration
 from setuptools_scm import dump_version
+from setuptools_scm._run_cmd import run
 from setuptools_scm.utils import data_from_mime
 from setuptools_scm.utils import do
 from setuptools_scm.version import ScmVersion
@@ -76,8 +77,8 @@ def test_parentdir_prefix(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
 setup(use_scm_version={"parentdir_prefix_version": "projectname-"})
 """
     )
-    res = do([sys.executable, "setup.py", "--version"], p)
-    assert res == "12.34"
+    res = run([sys.executable, "setup.py", "--version"], p)
+    assert res.stdout == "12.34"
 
 
 def test_fallback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -103,8 +104,8 @@ def test_empty_pretend_version(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
 setup(use_scm_version={"fallback_version": "12.34"})
 """
     )
-    res = do([sys.executable, "setup.py", "--version"], p)
-    assert res == "12.34"
+    res = run([sys.executable, "setup.py", "--version"], p)
+    assert res.stdout == "12.34"
 
 
 def test_empty_pretend_version_named(
@@ -121,8 +122,8 @@ def test_empty_pretend_version_named(
 setup(name="myscm", use_scm_version={"fallback_version": "12.34"})
 """
     )
-    res = do([sys.executable, "setup.py", "--version"], p)
-    assert res == "12.34"
+    res = run([sys.executable, "setup.py", "--version"], p)
+    assert res.stdout == "12.34"
 
 
 @pytest.mark.parametrize(

@@ -18,8 +18,7 @@ import pytest
 from setuptools_scm import Configuration
 from setuptools_scm import get_version
 from setuptools_scm.git import parse
-from setuptools_scm.utils import do
-from setuptools_scm.utils import do_ex
+from setuptools_scm._run_cmd import run
 
 
 def test_pkginfo_noscmroot(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -35,21 +34,21 @@ def test_pkginfo_noscmroot(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> N
         "from setuptools import setup;" 'setup(use_scm_version={"root": ".."})'
     )
 
-    _, stderr, ret = do_ex([sys.executable, "setup.py", "--version"], p)
-    assert "setuptools-scm was unable to detect version for" in stderr
-    assert ret == 1
+    res = run([sys.executable, "setup.py", "--version"], p)
+    assert "setuptools-scm was unable to detect version for" in res.stderr
+    assert res.returncode == 1
 
     p.joinpath("PKG-INFO").write_text("Version: 1.0")
-    res = do([sys.executable, "setup.py", "--version"], p)
-    assert res == "1.0"
+    res = run([sys.executable, "setup.py", "--version"], p)
+    assert res.stdout == "1.0"
 
     try:
-        do("git init", p.parent)
+        run("git init", p.parent)
     except OSError:
         pass
     else:
-        res = do([sys.executable, "setup.py", "--version"], p)
-        assert res == "0.1.dev0"
+        res = run([sys.executable, "setup.py", "--version"], p)
+        assert res.stdout == "0.1.dev0"
 
 
 def test_pip_egg_info(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -99,8 +98,8 @@ setup(use_scm_version=vcfg)
     )
     p.joinpath("PKG-INFO").write_text("Version: 1.0")
 
-    res = do([sys.executable, "setup.py", "--version"], p)
-    assert res == "1.0"
+    res = run([sys.executable, "setup.py", "--version"], p)
+    assert res.stdout == "1.0"
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="this bug is only valid on windows")
@@ -108,7 +107,7 @@ def test_case_mismatch_on_windows_git(tmp_path: Path) -> None:
     """Case insensitive path checks on Windows"""
     camel_case_path = tmp_path / "CapitalizedDir"
     camel_case_path.mkdir()
-    do("git init", camel_case_path)
+    run("git init", camel_case_path)
     res = parse(str(camel_case_path).lower(), Configuration())
     assert res is not None
 

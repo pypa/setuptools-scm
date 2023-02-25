@@ -25,11 +25,10 @@ class _CmdResult(NamedTuple):
 
 def do_ex(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> _CmdResult:
     res = _run_cmd.run(cmd, cwd)
-
     return _CmdResult(res.stdout, res.stderr, res.returncode)
 
 
-def do(cmd: list[str] | str, cwd: str | _t.PathT = ".") -> str:
+def do(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> str:
     out, err, ret = do_ex(cmd, cwd)
     if ret and not _trace.DEBUG:
         print(err)
@@ -68,4 +67,4 @@ def has_command(name: str, args: list[str] | None = None, warn: bool = True) -> 
 
 def require_command(name: str) -> None:
     if not has_command(name, warn=False):
-        raise OSError("%r was not found" % name)
+        raise OSError(f"{name!r} was not found")
