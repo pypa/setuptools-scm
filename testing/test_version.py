@@ -216,11 +216,12 @@ def test_format_version_schemes() -> None:
 
 def test_custom_version_schemes() -> None:
     version = meta("1.0", config=c)
-    format_version(
+    custom_computed = format_version(
         version,
         local_scheme="no-local-version",
-        version_scheme="setuptools_scm.version:guess_next_dev_version",
+        version_scheme="setuptools_scm.version:no_guess_dev_version",
     )
+    assert custom_computed == no_guess_dev_version(version)
 
 
 def date_to_str(
