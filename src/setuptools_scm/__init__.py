@@ -101,7 +101,7 @@ def _version_missing(config: Configuration) -> NoReturn:
         "metadata and will not work.\n\n"
         "For example, if you're using pip, instead of "
         "https://github.com/user/proj/archive/master.zip "
-        "use git+https://github.com/user/proj.git#egg=proj"
+        "use git+https://github.com/user/proj.git@master#egg=proj"
     )
 
 
