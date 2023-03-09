@@ -106,7 +106,7 @@ def _version_missing(config: Configuration) -> NoReturn:
 
 
 def get_version(
-    root: str = ".",
+    root: _t.PathT = ".",
     version_scheme: _t.VERSION_SCHEME = DEFAULT_VERSION_SCHEME,
     local_scheme: _t.VERSION_SCHEME = DEFAULT_LOCAL_SCHEME,
     write_to: _t.PathT | None = None,

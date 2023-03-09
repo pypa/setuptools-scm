@@ -67,7 +67,7 @@ class WorkDir:
         __tracebackhide__ = True
         from setuptools_scm import get_version
 
-        version = get_version(root=str(self.cwd), fallback_root=str(self.cwd), **kw)
+        version = get_version(root=self.cwd, fallback_root=self.cwd, **kw)
         print(version)
         return version
 

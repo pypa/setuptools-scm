@@ -65,6 +65,7 @@ def run(
     strip: bool = True,
     trace: bool = True,
     timeout: int = 20,
+    check: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     if isinstance(cmd, str):
         cmd = shlex.split(cmd)
@@ -96,4 +97,6 @@ def run(
             _trace.trace("err:\n", res.stderr, indent=True)
         if res.returncode:
             _trace.trace("ret:", res.returncode)
+    if check:
+        res.check_returncode()
     return res

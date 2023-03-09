@@ -21,9 +21,9 @@ from setuptools_scm import Configuration
 from setuptools_scm import git
 from setuptools_scm import integration
 from setuptools_scm import NonNormalizedVersion
+from setuptools_scm._run_cmd import run
 from setuptools_scm.file_finder_git import git_find_files
 from setuptools_scm.git import archival_to_version
-from setuptools_scm.utils import do
 from setuptools_scm.utils import has_command
 from setuptools_scm.version import format_version
 
@@ -69,8 +69,8 @@ setup(use_scm_version={"root": "../..",
                        "relative_to": __file__})
 """
     )
-    res = do([sys.executable, "setup.py", "--version"], p)
-    assert res == "0.1.dev0"
+    res = run([sys.executable, "setup.py", "--version"], p)
+    assert res.stdout == "0.1.dev0"
 
 
 def test_root_search_parent_directories(
@@ -84,8 +84,8 @@ def test_root_search_parent_directories(
 setup(use_scm_version={"search_parent_directories": True})
 """
     )
-    res = do([sys.executable, "setup.py", "--version"], p)
-    assert res == "0.1.dev0"
+    res = run([sys.executable, "setup.py", "--version"], p)
+    assert res.stdout == "0.1.dev0"
 
 
 def test_git_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -285,9 +285,9 @@ def test_git_worktree_support(wd: WorkDir, tmp_path: Path) -> None:
     worktree = tmp_path / "work_tree"
     wd("git worktree add -b work-tree %s" % worktree)
 
-    res = do([sys.executable, "-m", "setuptools_scm", "ls"], cwd=worktree)
-    assert "test.txt" in res
-    assert str(worktree) in res
+    res = run([sys.executable, "-m", "setuptools_scm", "ls"], cwd=worktree)
+    assert "test.txt" in res.stdout
+    assert str(worktree) in res.stdout
 
 
 @pytest.fixture
@@ -296,7 +296,7 @@ def shallow_wd(wd: WorkDir, tmp_path: Path) -> Path:
     wd.commit_testfile()
     wd.commit_testfile()
     target = tmp_path / "wd_shallow"
-    do(["git", "clone", "file://%s" % wd.cwd, str(target), "--depth=1"])
+    run(["git", "clone", f"file://{wd.cwd}", target, "--depth=1"], tmp_path, check=True)
     return target
 
 

@@ -90,8 +90,8 @@ def test_fallback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 setup(use_scm_version={"fallback_version": "12.34"})
 """
     )
-    res = do([sys.executable, "setup.py", "--version"], p)
-    assert res == "12.34"
+    res = run([sys.executable, "setup.py", "--version"], p)
+    assert res.stdout == "12.34"
 
 
 def test_empty_pretend_version(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
