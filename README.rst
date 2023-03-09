@@ -411,7 +411,7 @@ The currently supported configuration keys are:
     named ``version``, that captures the actual version information.
 
     Defaults to the value of ``setuptools_scm.config.DEFAULT_TAG_REGEX``
-    (see `config.py <src/setuptools_scm/config.py>`_).
+    (see `_config.py <src/setuptools_scm/_config.py>`_).
 
 :parentdir_prefix_version:
     If the normal methods for detecting the version (SCM version,
