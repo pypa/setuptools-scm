@@ -10,6 +10,6 @@ def read_dist_name_from_setup_cfg(
     import configparser
 
     parser = configparser.ConfigParser()
-    parser.read([input])
+    parser.read([input], encoding="utf-8")
     dist_name = parser.get("metadata", "name", fallback=None)
     return dist_name
