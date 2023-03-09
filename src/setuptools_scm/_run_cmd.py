@@ -69,6 +69,8 @@ def run(
 ) -> subprocess.CompletedProcess[str]:
     if isinstance(cmd, str):
         cmd = shlex.split(cmd)
+    else:
+        cmd = [os.fspath(x) for x in cmd]
     if trace:
         _trace.trace_command(cmd, cwd)
     res = subprocess.run(
