@@ -46,9 +46,11 @@ def _version_from_entrypoints(
 
 try:
     from importlib.metadata import entry_points  # type: ignore
+    from importlib.metadata import EntryPoint
 except ImportError:
     try:
         from importlib_metadata import entry_points
+        from importlib_metadata import EntryPoint
     except ImportError:
         from collections import defaultdict
 
@@ -58,6 +60,10 @@ except ImportError:
                 "this may happen at build time for python3.7"
             )
             return defaultdict(list)
+
+        class EntryPoint:  # type: ignore
+            def __init__(self, *args: Any, **kwargs: Any):
+                pass  # entry_points() already provides the warning
 
 
 def iter_entry_points(
@@ -83,6 +89,13 @@ def _get_ep(group: str, name: str) -> Any | None:
         return None
 
 
+def _get_from_object_reference_str(path: str) -> Any | None:
+    try:
+        return EntryPoint(path, path, None).load()
+    except (AttributeError, ModuleNotFoundError):
+        return None
+
+
 def _iter_version_schemes(
     entrypoint: str,
     scheme_value: _t.VERSION_SCHEMES,
@@ -93,7 +106,8 @@ def _iter_version_schemes(
     if isinstance(scheme_value, str):
         scheme_value = cast(
             "_t.VERSION_SCHEMES",
-            _get_ep(entrypoint, scheme_value),
+            _get_ep(entrypoint, scheme_value)
+            or _get_from_object_reference_str(scheme_value),
         )
 
     if isinstance(scheme_value, (list, tuple)):
