@@ -13,12 +13,12 @@ from typing import TYPE_CHECKING
 
 from . import _types as _t
 from . import Configuration
+from ._trace import trace
 from .scm_workdir import Workdir
 from .utils import _CmdResult
 from .utils import data_from_mime
 from .utils import do_ex
 from .utils import require_command
-from .utils import trace
 from .version import meta
 from .version import ScmVersion
 from .version import tag_to_version

@@ -5,7 +5,7 @@ import os
 from typing_extensions import TypeGuard
 
 from . import _types as _t
-from .utils import trace
+from ._trace import trace
 
 
 def scm_find_files(

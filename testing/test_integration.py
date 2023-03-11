@@ -10,8 +10,8 @@ import setuptools_scm._integration.setuptools
 from .wd_wrapper import WorkDir
 from setuptools_scm import PRETEND_KEY
 from setuptools_scm import PRETEND_KEY_NAMED
+from setuptools_scm._run_cmd import run
 from setuptools_scm.integration import _warn_on_old_setuptools
-from setuptools_scm.utils import do
 
 
 @pytest.fixture
@@ -45,8 +45,8 @@ def test_pyproject_support(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> N
         encoding="utf-8",
     )
     pkg.joinpath("setup.py").write_text("__import__('setuptools').setup()")
-    res = do([sys.executable, "setup.py", "--version"], pkg)
-    assert res == "12.34"
+    res = run([sys.executable, "setup.py", "--version"], pkg)
+    assert res.stdout == "12.34"
 
 
 PYPROJECT_FILES = {
@@ -145,7 +145,7 @@ def testwarn_on_broken_setuptools() -> None:
 
 
 @pytest.mark.issue(611)
-def test_distribution_procides_extras() -> None:
+def test_distribution_provides_extras() -> None:
     try:
         from importlib.metadata import distribution  # type: ignore
     except ImportError:

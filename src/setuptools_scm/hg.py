@@ -6,18 +6,19 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from . import Configuration
+from ._trace import trace
 from ._version_cls import Version
 from .scm_workdir import Workdir
 from .utils import data_from_mime
-from .utils import do_ex
 from .utils import require_command
-from .utils import trace
 from .version import meta
 from .version import ScmVersion
 from .version import tag_to_version
 
 if TYPE_CHECKING:
     from . import _types as _t
+
+from ._run_cmd import run as _run
 
 
 class HgWorkdir(Workdir):
@@ -26,10 +27,10 @@ class HgWorkdir(Workdir):
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> HgWorkdir | None:
         require_command(cls.COMMAND)
-        root, err, ret = do_ex("hg root", wd)
-        if ret:
+        res = _run("hg root", wd)
+        if res.returncode:
             return None
-        return cls(root)
+        return cls(res.stdout)
 
     def get_meta(self, config: Configuration) -> ScmVersion | None:
         node: str
@@ -48,10 +49,7 @@ class HgWorkdir(Workdir):
             ["hg", "id", "-T", "{branch}\n{if(dirty, 1, 0)}\n{date|shortdate}"]
         ).split("\n")
         dirty = bool(int(dirty_str))
-        # todo: fromiso
-        node_date = datetime.date(
-            *map(int, (dirty_date if dirty else node_date_str).split("-"))
-        )
+        node_date = datetime.date.fromisoformat(dirty_date if dirty else node_date_str)
 
         if node.count("0") == len(node):
             trace("initial node", self.path)
@@ -106,7 +104,8 @@ class HgWorkdir(Workdir):
 
     def hg_log(self, revset: str, template: str) -> str:
         cmd = ["hg", "log", "-r", revset, "-T", template]
-        return self.do(cmd)
+
+        return _run(cmd, cwd=self.path, check=True).stdout
 
     def get_latest_normalizable_tag(self) -> str | None:
         # Gets all tags containing a '.' (see #229) from oldest to newest
@@ -141,9 +140,9 @@ class HgWorkdir(Workdir):
 
 def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
     if os.path.exists(os.path.join(root, ".hg/git")):
-        paths, _, ret = do_ex("hg path", root)
-        if not ret:
-            for line in paths.split("\n"):
+        res = _run(["hg", "path"], root)
+        if not res.returncode:
+            for line in res.stdout.split("\n"):
                 if line.startswith("default ="):
                     path = Path(line.split()[2])
                     if path.name.endswith(".git") or (path / ".git").exists():

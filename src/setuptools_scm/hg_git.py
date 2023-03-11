@@ -6,13 +6,12 @@ from datetime import date
 from datetime import datetime
 
 from . import _types as _t
+from ._trace import trace
 from .git import GitWorkdir
 from .hg import HgWorkdir
 from .utils import _CmdResult
 from .utils import do_ex
 from .utils import require_command
-from .utils import trace
-
 
 _FAKE_GIT_DESCRIBE_ERROR = _CmdResult("<>hg git failed", "", 1)
 

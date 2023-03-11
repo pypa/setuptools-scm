@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 from ._version_cls import Version as PkgVersion, _VersionT
 from . import _version_cls as _v
 from . import _config
-from .utils import trace
+from ._trace import trace
 
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3

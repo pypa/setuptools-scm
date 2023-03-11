@@ -16,9 +16,8 @@ from ._entrypoints import iter_entry_points
 from ._integration.setuptools import (
     read_dist_name_from_setup_cfg as _read_dist_name_from_setup_cfg,
 )
+from ._trace import trace
 from ._version_cls import _validate_version_cls
-from .utils import do
-from .utils import trace
 
 if TYPE_CHECKING:
     from . import _types as _t
@@ -106,11 +105,7 @@ def find_files(path: _t.PathT = "") -> list[str]:
         iter_entry_points("setuptools_scm.files_command_fallback"),
     ):
         command = ep.load()
-        if isinstance(command, str):
-            # this technique is deprecated
-            res = do(ep.load(), path or ".").splitlines()
-        else:
-            res = command(path)
+        res: list[str] = command(path)
         if res:
             return res
     return []

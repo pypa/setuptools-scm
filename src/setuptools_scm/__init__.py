@@ -49,7 +49,7 @@ def dump_version(
     target = os.path.normpath(os.path.join(root, write_to))
     ext = os.path.splitext(target)[1]
     template = template or TEMPLATES.get(ext)
-    from .utils import trace
+    from ._trace import trace
 
     trace("dump", write_to, version)
     if template is None:
@@ -106,7 +106,7 @@ def _version_missing(config: Configuration) -> NoReturn:
 
 
 def get_version(
-    root: str = ".",
+    root: _t.PathT = ".",
     version_scheme: _t.VERSION_SCHEME = DEFAULT_VERSION_SCHEME,
     local_scheme: _t.VERSION_SCHEME = DEFAULT_LOCAL_SCHEME,
     write_to: _t.PathT | None = None,

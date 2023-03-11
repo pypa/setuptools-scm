@@ -34,7 +34,7 @@ repos:
     - id: pyproject-fmt
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v1.0.0'
+    rev: 'v1.0.1'
     hooks:
     -   id: mypy
         args: [--strict]
@@ -44,3 +44,4 @@ repos:
             - tokenize-rt==3.2.0
             - pytest == 7.1
             - importlib_metadata
+            - typing-extensions>=4.5

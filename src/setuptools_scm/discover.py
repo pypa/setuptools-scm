@@ -6,7 +6,7 @@ from typing import Iterator
 
 from . import _types as _t
 from ._config import Configuration
-from .utils import trace
+from ._trace import trace
 
 
 def walk_potential_roots(
