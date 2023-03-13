@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import itertools
 import os
+from typing import Callable
 
 from typing_extensions import TypeGuard
 
-from . import _types as _t
-from ._trace import trace
+from setuptools_scm import _types as _t
+from setuptools_scm._entrypoints import iter_entry_points
+from setuptools_scm._trace import trace
 
 
 def scm_find_files(
@@ -84,3 +87,15 @@ def is_toplevel_acceptable(toplevel: str | None) -> TypeGuard[str]:
     trace(toplevel, ignored)
 
     return toplevel not in ignored
+
+
+def find_files(path: _t.PathT = "") -> list[str]:
+    for ep in itertools.chain(
+        iter_entry_points("setuptools_scm.files_command"),
+        iter_entry_points("setuptools_scm.files_command_fallback"),
+    ):
+        command: Callable[[_t.PathT], list[str]] = ep.load()
+        res: list[str] = command(path)
+        if res:
+            return res
+    return []

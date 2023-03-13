@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 import os
 import warnings
 from typing import Any
@@ -12,7 +11,6 @@ import setuptools
 from . import _get_version
 from . import _version_missing
 from . import Configuration
-from ._entrypoints import iter_entry_points
 from ._integration.setuptools import (
     read_dist_name_from_setup_cfg as _read_dist_name_from_setup_cfg,
 )
@@ -20,7 +18,7 @@ from ._trace import trace
 from ._version_cls import _validate_version_cls
 
 if TYPE_CHECKING:
-    from . import _types as _t
+    pass
 
 
 def _warn_on_old_setuptools(_version: str = setuptools.__version__) -> None:
@@ -97,18 +95,6 @@ def version_keyword(
     final_version = _validate_version_cls(version_cls, normalize)
     config = Configuration(dist_name=dist_name, version_cls=final_version, **value)
     _assign_version(dist, config)
-
-
-def find_files(path: _t.PathT = "") -> list[str]:
-    for ep in itertools.chain(
-        iter_entry_points("setuptools_scm.files_command"),
-        iter_entry_points("setuptools_scm.files_command_fallback"),
-    ):
-        command = ep.load()
-        res: list[str] = command(path)
-        if res:
-            return res
-    return []
 
 
 def infer_version(dist: setuptools.Distribution) -> None:

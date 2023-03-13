@@ -3,13 +3,12 @@ from __future__ import annotations
 import os
 import subprocess
 
-from . import _types as _t
-from ._run_cmd import run as _run
-from ._trace import trace
-from .file_finder import is_toplevel_acceptable
-from .file_finder import scm_find_files
-from .utils import data_from_mime
-from .utils import do_ex
+from .. import _types as _t
+from .._file_finders import is_toplevel_acceptable
+from .._file_finders import scm_find_files
+from .._run_cmd import run as _run
+from .._trace import trace
+from ..utils import data_from_mime
 
 
 def _hg_toplevel(path: str) -> str | None:
@@ -31,10 +30,10 @@ def _hg_toplevel(path: str) -> str | None:
 def _hg_ls_files_and_dirs(toplevel: str) -> tuple[set[str], set[str]]:
     hg_files: set[str] = set()
     hg_dirs = {toplevel}
-    out, err, ret = do_ex(["hg", "files"], cwd=toplevel)
-    if ret:
+    res = _run(["hg", "files"], cwd=toplevel)
+    if res.returncode:
         (), ()
-    for name in out.splitlines():
+    for name in res.stdout.splitlines():
         name = os.path.normcase(name).replace("/", os.path.sep)
         fullname = os.path.join(toplevel, name)
         hg_files.add(fullname)
