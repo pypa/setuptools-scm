@@ -3,6 +3,8 @@ utils
 """
 from __future__ import annotations
 
+import logging
+import subprocess
 import sys
 import warnings
 from types import CodeType
@@ -15,6 +17,8 @@ from . import _trace
 
 if TYPE_CHECKING:
     from . import _types as _t
+
+log = logging.getLogger(__name__)
 
 
 class _CmdResult(NamedTuple):
@@ -54,10 +58,15 @@ def function_has_arg(fn: object | FunctionType, argname: str) -> bool:
 def has_command(name: str, args: list[str] | None = None, warn: bool = True) -> bool:
     try:
         cmd = [name, "help"] if args is None else [name, *args]
-        p = _run_cmd.run(cmd, ".")
+        p = _run_cmd.run(cmd, cwd=".", timeout=5)
     except OSError:
         _trace.trace(*sys.exc_info())
         res = False
+    except subprocess.TimeoutExpired as e:
+        log.info(e)
+        _trace.trace(e)
+        res = False
+
     else:
         res = not p.returncode
     if not res and warn:
