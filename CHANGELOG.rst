@@ -7,14 +7,18 @@ breaking
 * remove legacy version parser api - config arg always required
 * turn Configuration into a dataclass
 * require configuration to always pass into helpers
+* hide file-finders implementation in private module
+* define own build backend to have setuptools work
 
 features
 --------
 
+* created a directory for the vcs-versioning package and added it to pypi
 * git: expect main as possible default branch
 * drop version_from_scm helper
 * trim down exposed public api
 * no longer self-call twice in setuptools
+* add support for version schemes by import
 * chores
 
   * migrate own metadata to pyproject.toml

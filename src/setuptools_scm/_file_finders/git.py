@@ -6,12 +6,12 @@ import subprocess
 import tarfile
 from typing import IO
 
-from . import _types as _t
-from ._run_cmd import run as _run
-from ._trace import trace
-from .file_finder import is_toplevel_acceptable
-from .file_finder import scm_find_files
-from .utils import data_from_mime
+from . import is_toplevel_acceptable
+from . import scm_find_files
+from .. import _types as _t
+from .._run_cmd import run as _run
+from .._trace import trace
+from ..utils import data_from_mime
 
 log = logging.getLogger(__name__)
 

@@ -6,8 +6,8 @@ import sys
 
 from setuptools_scm import _get_version
 from setuptools_scm import Configuration
+from setuptools_scm._file_finders import find_files
 from setuptools_scm.discover import walk_potential_roots
-from setuptools_scm.integration import find_files
 
 
 def main(args: list[str] | None = None) -> None:

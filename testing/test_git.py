@@ -15,14 +15,14 @@ from unittest.mock import patch
 
 import pytest
 
+import setuptools_scm._file_finders
 from .conftest import DebugMode
 from .wd_wrapper import WorkDir
 from setuptools_scm import Configuration
 from setuptools_scm import git
-from setuptools_scm import integration
 from setuptools_scm import NonNormalizedVersion
+from setuptools_scm._file_finders.git import git_find_files
 from setuptools_scm._run_cmd import run
-from setuptools_scm.file_finder_git import git_find_files
 from setuptools_scm.git import archival_to_version
 from setuptools_scm.utils import has_command
 from setuptools_scm.version import format_version
@@ -327,7 +327,7 @@ def test_find_files_stop_at_root_git(wd: WorkDir) -> None:
     project = wd.cwd / "project"
     project.mkdir()
     project.joinpath("setup.cfg").touch()
-    assert integration.find_files(str(project)) == []
+    assert setuptools_scm._file_finders.find_files(str(project)) == []
 
 
 @pytest.mark.issue(128)
@@ -356,7 +356,7 @@ def test_git_archive_export_ignore(
     wd("git add test1.txt test2.txt")
     wd.commit()
     monkeypatch.chdir(wd.cwd)
-    assert integration.find_files(".") == [opj(".", "test1.txt")]
+    assert setuptools_scm._file_finders.find_files(".") == [opj(".", "test1.txt")]
 
 
 @pytest.mark.issue(228)
@@ -366,7 +366,9 @@ def test_git_archive_subdirectory(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) 
     wd("git add foobar")
     wd.commit()
     monkeypatch.chdir(wd.cwd)
-    assert integration.find_files(".") == [opj(".", "foobar", "test1.txt")]
+    assert setuptools_scm._file_finders.find_files(".") == [
+        opj(".", "foobar", "test1.txt")
+    ]
 
 
 @pytest.mark.issue(251)
@@ -378,7 +380,7 @@ def test_git_archive_run_from_subdirectory(
     wd("git add foobar")
     wd.commit()
     monkeypatch.chdir(wd.cwd / "foobar")
-    assert integration.find_files(".") == [opj(".", "test1.txt")]
+    assert setuptools_scm._file_finders.find_files(".") == [opj(".", "test1.txt")]
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/728")

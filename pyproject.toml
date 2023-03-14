@@ -61,18 +61,18 @@ repository = "https://github.com/pypa/setuptools_scm/"
 use_scm_version = "setuptools_scm.integration:version_keyword"
 
 [project.entry-points."setuptools.file_finders"]
-setuptools_scm = "setuptools_scm.integration:find_files"
+setuptools_scm = "setuptools_scm._file_finders:find_files"
 
 [project.entry-points."setuptools.finalize_distribution_options"]
 setuptools_scm = "setuptools_scm.integration:infer_version"
 
 [project.entry-points."setuptools_scm.files_command"]
-".git" = "setuptools_scm.file_finder_git:git_find_files"
-".hg" = "setuptools_scm.file_finder_hg:hg_find_files"
+".git" = "setuptools_scm._file_finders.git:git_find_files"
+".hg" = "setuptools_scm._file_finders.hg:hg_find_files"
 
 [project.entry-points."setuptools_scm.files_command_fallback"]
-".git_archival.txt" = "setuptools_scm.file_finder_git:git_archive_find_files"
-".hg_archival.txt" = "setuptools_scm.file_finder_hg:hg_archive_find_files"
+".git_archival.txt" = "setuptools_scm._file_finders.git:git_archive_find_files"
+".hg_archival.txt" = "setuptools_scm._file_finders.hg:hg_archive_find_files"
 
 [project.entry-points."setuptools_scm.local_scheme"]
 dirty-tag = "setuptools_scm.version:get_local_dirty_tag"
