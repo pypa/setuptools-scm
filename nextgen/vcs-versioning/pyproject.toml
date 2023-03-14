@@ -33,7 +33,6 @@ Documentation = "https://github.com/unknown/vcs-versioning#readme"
 Issues = "https://github.com/unknown/vcs-versioning/issues"
 Source = "https://github.com/unknown/vcs-versioning"
 
-
 [tool.hatch.version]
 path = "vcs_versioning/__about__.py"
 
