@@ -63,7 +63,11 @@ def dump_version(
 
     if ext == ".py":
         with target.open("w") as fp:
-            fp.write(template.format(version=version, version_tuple=version_tuple).replace("'", '"'))
+            fp.write(
+                template.format(version=version, version_tuple=version_tuple).replace(
+                    "'", '"'
+                )
+            )
     else:
         with target.open("w") as fp:
             fp.write(template.format(version=version, version_tuple=version_tuple))
@@ -79,7 +83,9 @@ def _do_parse(config: Configuration) -> _t.SCMVERSION | None:
     if config.parse:
         parse_result = config.parse(config.absolute_root, config=config)
         if isinstance(parse_result, str):
-            raise TypeError(f"version parse result was {str!r}\nplease return a parsed version")
+            raise TypeError(
+                f"version parse result was {str!r}\nplease return a parsed version"
+            )
 
         if parse_result:
             assert isinstance(parse_result, ScmVersion)
@@ -88,7 +94,9 @@ def _do_parse(config: Configuration) -> _t.SCMVERSION | None:
             parsed_version = _version_from_entrypoints(config, fallback=True)
     else:
         # include fallbacks after dropping them from the main entrypoint
-        parsed_version = _version_from_entrypoints(config) or _version_from_entrypoints(config, fallback=True)
+        parsed_version = _version_from_entrypoints(config) or _version_from_entrypoints(
+            config, fallback=True
+        )
 
     return parsed_version
 

@@ -27,7 +27,9 @@ from setuptools_scm.git import archival_to_version
 from setuptools_scm.utils import has_command
 from setuptools_scm.version import format_version
 
-pytestmark = pytest.mark.skipif(not has_command("git", warn=False), reason="git executable not found")
+pytestmark = pytest.mark.skipif(
+    not has_command("git", warn=False), reason="git executable not found"
+)
 
 
 @pytest.fixture(name="wd")
@@ -50,7 +52,9 @@ def wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch, debug_mode: DebugMode) -> W
         ("17.33.0-rc-17-g38c3047c0", "17.33.0-rc", 17, "g38c3047c0", False),
     ],
 )
-def test_parse_describe_output(given: str, tag: str, number: int, node: str, dirty: bool) -> None:
+def test_parse_describe_output(
+    given: str, tag: str, number: int, node: str, dirty: bool
+) -> None:
     parsed = git._git_parse_describe(given)
     assert parsed == (tag, number, node, dirty)
 
@@ -69,7 +73,9 @@ setup(use_scm_version={"root": "../..",
     assert res.stdout == "0.1.dev0"
 
 
-def test_root_search_parent_directories(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_root_search_parent_directories(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
     p = wd.cwd.joinpath("sub/package")
     p.mkdir(parents=True)
@@ -110,11 +116,15 @@ def test_not_owner(wd: WorkDir) -> None:
     if not shutil.which("sudo"):
         pytest.skip("sudo executable not found")
 
-    proc = subprocess.run(["sudo", "chown", "-R", "12345", git_dir], stdin=subprocess.DEVNULL)
+    proc = subprocess.run(
+        ["sudo", "chown", "-R", "12345", git_dir], stdin=subprocess.DEVNULL
+    )
     if proc.returncode != 0:
         pytest.skip("Failed to change ownership, is passwordless sudo available?")
     try:
-        subprocess.run(["sudo", "chmod", "a+r", git_dir], stdin=subprocess.DEVNULL, check=True)
+        subprocess.run(
+            ["sudo", "chmod", "a+r", git_dir], stdin=subprocess.DEVNULL, check=True
+        )
         subprocess.run(
             ["sudo", "chgrp", "-R", "12345", git_dir],
             stdin=subprocess.DEVNULL,
@@ -159,7 +169,9 @@ def test_version_from_git(wd: WorkDir) -> None:
 
     wd.commit_testfile()
     wd("git tag version-0.2.post210+gbe48adfpost3+g0cc25f2")
-    with pytest.warns(UserWarning, match="tag '.*' will be stripped of its suffix '.*'"):
+    with pytest.warns(
+        UserWarning, match="tag '.*' will be stripped of its suffix '.*'"
+    ):
         assert wd.version.startswith("0.2")
 
     wd.commit_testfile()
@@ -169,7 +181,10 @@ def test_version_from_git(wd: WorkDir) -> None:
     # custom normalization
     assert wd.get_version(normalize=False) == "17.33.0-rc"
     assert wd.get_version(version_cls=NonNormalizedVersion) == "17.33.0-rc"
-    assert wd.get_version(version_cls="setuptools_scm.NonNormalizedVersion") == "17.33.0-rc"
+    assert (
+        wd.get_version(version_cls="setuptools_scm.NonNormalizedVersion")
+        == "17.33.0-rc"
+    )
 
 
 setup_py_with_normalize: dict[str, str] = {
@@ -203,7 +218,9 @@ setup_py_with_normalize: dict[str, str] = {
     "setup_py_txt",
     [pytest.param(text, id=key) for key, text in setup_py_with_normalize.items()],
 )
-def test_git_version_unnormalized_setuptools(setup_py_txt: str, wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_git_version_unnormalized_setuptools(
+    setup_py_txt: str, wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """
     Test that when integrating with setuptools without normalization,
     the version is not normalized in write_to files,
@@ -244,7 +261,9 @@ def test_git_worktree(wd: WorkDir) -> None:
 
 @pytest.mark.issue(86)
 @pytest.mark.parametrize("today", [False, True])
-def test_git_dirty_notag(today: bool, wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_git_dirty_notag(
+    today: bool, wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
     if today:
         monkeypatch.delenv("SOURCE_DATE_EPOCH", raising=False)
     wd.commit_testfile()
@@ -282,7 +301,9 @@ def shallow_wd(wd: WorkDir, tmp_path: Path) -> Path:
     return target
 
 
-def test_git_parse_shallow_warns(shallow_wd: Path, recwarn: pytest.WarningsRecorder) -> None:
+def test_git_parse_shallow_warns(
+    shallow_wd: Path, recwarn: pytest.WarningsRecorder
+) -> None:
     git.parse(str(shallow_wd), Configuration())
     msg = recwarn.pop()
     assert "is shallow and may cause errors" in str(msg.message)
@@ -293,7 +314,9 @@ def test_git_parse_shallow_fail(shallow_wd: Path) -> None:
         git.parse(str(shallow_wd), Configuration(), pre_parse=git.fail_on_shallow)
 
 
-def test_git_shallow_autocorrect(shallow_wd: Path, recwarn: pytest.WarningsRecorder) -> None:
+def test_git_shallow_autocorrect(
+    shallow_wd: Path, recwarn: pytest.WarningsRecorder
+) -> None:
     git.parse(str(shallow_wd), Configuration(), pre_parse=git.fetch_on_shallow)
     msg = recwarn.pop()
     assert "git fetch was used to rectify" in str(msg.message)
@@ -320,7 +343,9 @@ def test_alphanumeric_tags_match(wd: WorkDir) -> None:
     assert wd.version.startswith("0.1.dev1+g")
 
 
-def test_git_archive_export_ignore(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_git_archive_export_ignore(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
     wd.write("test1.txt", "test")
     wd.write("test2.txt", "test")
     wd.write(
@@ -342,11 +367,15 @@ def test_git_archive_subdirectory(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) 
     wd("git add foobar")
     wd.commit()
     monkeypatch.chdir(wd.cwd)
-    assert setuptools_scm._file_finders.find_files(".") == [opj(".", "foobar", "test1.txt")]
+    assert setuptools_scm._file_finders.find_files(".") == [
+        opj(".", "foobar", "test1.txt")
+    ]
 
 
 @pytest.mark.issue(251)
-def test_git_archive_run_from_subdirectory(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_git_archive_run_from_subdirectory(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
     os.mkdir(wd.cwd / "foobar")
     wd.write("foobar/test1.txt", "test")
     wd("git add foobar")
@@ -505,7 +534,12 @@ def test_git_archival_to_version(expected: str, from_data: dict[str, str]) -> No
     config = Configuration()
     version = archival_to_version(from_data, config=config)
     assert version is not None
-    assert format_version(version, version_scheme="guess-next-dev", local_scheme="node-and-date") == expected
+    assert (
+        format_version(
+            version, version_scheme="guess-next-dev", local_scheme="node-and-date"
+        )
+        == expected
+    )
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/727")
