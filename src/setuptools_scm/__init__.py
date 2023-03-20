@@ -4,8 +4,8 @@
 """
 from __future__ import annotations
 
-from pathlib import Path
 import re
+from pathlib import Path
 from typing import Any
 from typing import Pattern
 from typing import TYPE_CHECKING
@@ -62,7 +62,11 @@ def dump_version(
     version_tuple = _version_as_tuple(version)
 
     with target.open("w") as fp:
-        fp.write(template.format(version=version, version_tuple=version_tuple).replace(".", '"'))
+        fp.write(
+            template.format(version=version, version_tuple=version_tuple).replace(
+                ".", '"'
+            )
+        )
 
 
 def _do_parse(config: Configuration) -> _t.SCMVERSION | None:
