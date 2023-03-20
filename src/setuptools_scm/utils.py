@@ -10,6 +10,7 @@ import warnings
 from types import CodeType
 from types import FunctionType
 from typing import NamedTuple
+from typing import Sequence
 from typing import TYPE_CHECKING
 
 from . import _run_cmd
@@ -55,10 +56,9 @@ def function_has_arg(fn: object | FunctionType, argname: str) -> bool:
     return argname in code.co_varnames
 
 
-def has_command(name: str, args: list[str] | None = None, warn: bool = True) -> bool:
+def has_command(name: str, args: Sequence[str] = ["help"], warn: bool = True) -> bool:
     try:
-        cmd = [name, "help"] if args is None else [name, *args]
-        p = _run_cmd.run(cmd, cwd=".", timeout=5)
+        p = _run_cmd.run([name, *args], cwd=".", timeout=5)
     except OSError:
         _trace.trace(*sys.exc_info())
         res = False
