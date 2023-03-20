@@ -58,9 +58,7 @@ def test_root_parameter_creation(monkeypatch: pytest.MonkeyPatch) -> None:
     setuptools_scm.get_version()
 
 
-def test_root_parameter_pass_by(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_root_parameter_pass_by(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     assert_root(monkeypatch, os.fspath(tmp_path))
     setuptools_scm.get_version(root=os.fspath(tmp_path))
     setuptools_scm.get_version(
@@ -108,9 +106,7 @@ setup(use_scm_version={"fallback_version": "12.34"})
     assert res.stdout == "12.34"
 
 
-def test_empty_pretend_version_named(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_empty_pretend_version_named(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
     monkeypatch.setenv("SETUPTOOLS_SCM_PRETEND_VERSION", "1.23")
     monkeypatch.setenv("SETUPTOOLS_SCM_PRETEND_VERSION_FOR_MYSCM", "")
@@ -126,9 +122,7 @@ setup(name="myscm", use_scm_version={"fallback_version": "12.34"})
     assert res.stdout == "12.34"
 
 
-@pytest.mark.parametrize(
-    "version", ["1.0", "1.2.3.dev1+ge871260", "1.2.3.dev15+ge871260.d20180625", "2345"]
-)
+@pytest.mark.parametrize("version", ["1.0", "1.2.3.dev1+ge871260", "1.2.3.dev15+ge871260.d20180625", "2345"])
 def test_pretended(version: str, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(setuptools_scm.PRETEND_KEY, version)
     assert setuptools_scm.get_version() == version
@@ -162,21 +156,18 @@ def test_dump_version(tmp_path: Path) -> None:
 
     dump_version(tmp_path, "1.0.dev42", "first.py")
     lines = read("first.py").splitlines()
-    assert "__version__ = version = '1.0.dev42'" in lines
-    assert "__version_tuple__ = version_tuple = (1, 0, 'dev42')" in lines
+    assert '__version__ = version = "1.0.dev42"' in lines
+    assert '__version_tuple__ = version_tuple = (1, 0, "dev42")' in lines
 
     dump_version(tmp_path, "1.0.1+g4ac9d2c", "second.py")
     lines = read("second.py").splitlines()
-    assert "__version__ = version = '1.0.1+g4ac9d2c'" in lines
-    assert "__version_tuple__ = version_tuple = (1, 0, 1, 'g4ac9d2c')" in lines
+    assert '__version__ = version = "1.0.1+g4ac9d2c"' in lines
+    assert '__version_tuple__ = version_tuple = (1, 0, 1, "g4ac9d2c")' in lines
 
     dump_version(tmp_path, "1.2.3.dev18+gb366d8b.d20210415", "third.py")
     lines = read("third.py").splitlines()
-    assert "__version__ = version = '1.2.3.dev18+gb366d8b.d20210415'" in lines
-    assert (
-        "__version_tuple__ = version_tuple = (1, 2, 3, 'dev18', 'gb366d8b.d20210415')"
-        in lines
-    )
+    assert '__version__ = version = "1.2.3.dev18+gb366d8b.d20210415"' in lines
+    assert '__version_tuple__ = version_tuple = (1, 2, 3, "dev18", "gb366d8b.d20210415")' in lines
 
     import ast
 
