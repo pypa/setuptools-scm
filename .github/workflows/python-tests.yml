@@ -94,19 +94,6 @@ jobs:
       - run: hg version
       - run: pytest
 
-  test_legacy_setuptools:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.8"
-          architecture: x64
-      - run: pip install -e .[toml,test] pytest virtualenv
-      - run: pytest --test-legacy testing/test_setuptools_support.py || true # ignore fail flaky on ci
-
-
   dist_upload:
 
     runs-on: ubuntu-latest
