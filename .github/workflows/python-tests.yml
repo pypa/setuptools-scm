@@ -90,6 +90,8 @@ jobs:
       - run: |
           $(hg debuginstall --template "{pythonexe}") -m pip install hg-git --user
         if: matrix.os == 'ubuntu-latest'
+      # this hopefull helps with os caches, hg init sometimes gets 20s timeouts
+      - run: hg version
       - run: pytest
 
   test_legacy_setuptools:
