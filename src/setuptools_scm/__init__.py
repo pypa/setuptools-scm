@@ -4,7 +4,7 @@
 """
 from __future__ import annotations
 
-import os
+from pathlib import Path
 import re
 from typing import Any
 from typing import Pattern
@@ -46,8 +46,8 @@ def dump_version(
     template: str | None = None,
 ) -> None:
     assert isinstance(version, str)
-    target = os.path.normpath(os.path.join(root, write_to))
-    ext = os.path.splitext(target)[1]
+    target = Path(root) / Path(write_to)
+    ext = target.suffix
     template = template or TEMPLATES.get(ext)
     from ._trace import trace
 
@@ -55,13 +55,14 @@ def dump_version(
     if template is None:
         raise ValueError(
             "bad file format: '{}' (of {}) \nonly *.txt and *.py are supported".format(
-                os.path.splitext(target)[1], target
+                ext,
+                target,
             )
         )
     version_tuple = _version_as_tuple(version)
 
-    with open(target, "w") as fp:
-        fp.write(template.format(version=version, version_tuple=version_tuple))
+    with target.open("w") as fp:
+        fp.write(template.format(version=version, version_tuple=version_tuple).replace(".", '"'))
 
 
 def _do_parse(config: Configuration) -> _t.SCMVERSION | None:
