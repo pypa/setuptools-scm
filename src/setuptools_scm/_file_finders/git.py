@@ -10,7 +10,6 @@ from . import is_toplevel_acceptable
 from . import scm_find_files
 from .. import _types as _t
 from .._run_cmd import run as _run
-from .._trace import trace
 from ..utils import data_from_mime
 
 log = logging.getLogger(__name__)
@@ -43,7 +42,7 @@ def _git_toplevel(path: str) -> str | None:
             # for this assertion to work. Length of string isn't changed by replace
             # ``\\`` is just and escape for `\`
             out = cwd[: -len(out)]
-        trace("find files toplevel", out)
+        log.debug("find files toplevel %s", out)
         return os.path.normcase(os.path.realpath(out.strip()))
     except subprocess.CalledProcessError:
         # git returned error, we are not in a git repo
@@ -94,7 +93,7 @@ def git_find_files(path: _t.PathT = "") -> list[str]:
         return []
     fullpath = os.path.abspath(os.path.normpath(path))
     if not fullpath.startswith(toplevel):
-        trace("toplevel mismatch", toplevel, fullpath)
+        log.warning("toplevel mismatch computed %s vs resolved %s ", toplevel, fullpath)
     git_files, git_dirs = _git_ls_files_and_dirs(toplevel)
     return scm_find_files(path, git_files, git_dirs)
 
@@ -112,5 +111,5 @@ def git_archive_find_files(path: _t.PathT = "") -> list[str]:
         # Substitutions have not been performed, so not a reliable archive
         return []
 
-    trace("git archive detected - fallback to listing all files")
+    log.warning("git archive detected - fallback to listing all files")
     return scm_find_files(path, set(), set(), force_all_files=True)

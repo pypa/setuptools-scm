@@ -3,10 +3,13 @@ from __future__ import annotations
 import os
 import shlex
 import subprocess
+import textwrap
 from typing import Mapping
 
-from . import _trace
+from . import _log
 from . import _types as _t
+
+log = _log.log.getChild("run_cmd")
 
 
 def no_git_env(env: Mapping[str, str]) -> dict[str, str]:
@@ -21,7 +24,7 @@ def no_git_env(env: Mapping[str, str]) -> dict[str, str]:
     # GIT_INDEX_FILE: Causes 'error invalid object ...' during commit
     for k, v in env.items():
         if k.startswith("GIT_"):
-            _trace.trace(k, v)
+            log.debug("%s: %s", k, v)
     return {
         k: v
         for k, v in env.items()
@@ -71,12 +74,12 @@ def run(
         cmd = shlex.split(cmd)
     else:
         cmd = [os.fspath(x) for x in cmd]
-    if trace:
-        _trace.trace_command(cmd, cwd)
+    cmd_4_trace = " ".join(map(_unsafe_quote_for_display, cmd))
+    log.debug("at %s\n    $ %s ", cwd, cmd_4_trace)
     res = subprocess.run(
         cmd,
         capture_output=True,
-        cwd=str(cwd),
+        cwd=os.fspath(cwd),
         env=dict(
             avoid_pip_isolation(no_git_env(os.environ)),
             # os.environ,
@@ -94,11 +97,17 @@ def run(
             res.stderr = ensure_stripped_str(res.stderr)
     if trace:
         if res.stdout:
-            _trace.trace("out:\n", res.stdout, indent=True)
+            log.debug("out:\n%s", textwrap.indent(res.stdout, "    "))
         if res.stderr:
-            _trace.trace("err:\n", res.stderr, indent=True)
+            log.debug("err:\n%s", textwrap.indent(res.stderr, "    "))
         if res.returncode:
-            _trace.trace("ret:", res.returncode)
+            log.debug("ret: %s", res.returncode)
     if check:
         res.check_returncode()
     return res
+
+
+def _unsafe_quote_for_display(item: _t.PathT) -> str:
+    # give better results than shlex.join in our cases
+    text = os.fspath(item)
+    return text if all(c not in text for c in " {[:") else f'"{text}"'

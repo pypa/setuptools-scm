@@ -4,9 +4,11 @@ import os
 from typing import Iterable
 from typing import Iterator
 
+from . import _log
 from . import _types as _t
 from ._config import Configuration
-from ._trace import trace
+
+log = _log.log.getChild("discover")
 
 
 def walk_potential_roots(
@@ -40,7 +42,7 @@ def match_entrypoint(root: _t.PathT, name: str) -> bool:
     if os.path.exists(os.path.join(root, name)):
         if not os.path.isabs(name):
             return True
-        trace("ignoring bad ep", name)
+        log.debug("ignoring bad ep %s", name)
 
     return False
 
@@ -56,12 +58,12 @@ def iter_matching_entrypoints(
         read ``search_parent_directories``, write found parent to ``parent``.
     """
 
-    trace("looking for ep", entrypoint, root)
+    log.debug("looking for ep %s in %s", entrypoint, root)
     from ._entrypoints import iter_entry_points
 
     for wd in walk_potential_roots(root, config.search_parent_directories):
         for ep in iter_entry_points(entrypoint):
             if match_entrypoint(wd, ep.name):
-                trace("found ep", ep, "in", wd)
+                log.debug("found ep %s in %s", ep, wd)
                 config.parent = wd
                 yield ep

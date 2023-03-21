@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import datetime
+import logging
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from . import Configuration
-from ._trace import trace
 from ._version_cls import Version
 from .scm_workdir import Workdir
 from .utils import data_from_mime
@@ -19,6 +19,8 @@ if TYPE_CHECKING:
     from . import _types as _t
 
 from ._run_cmd import run as _run
+
+log = logging.getLogger(__name__)
 
 
 class HgWorkdir(Workdir):
@@ -52,7 +54,7 @@ class HgWorkdir(Workdir):
         node_date = datetime.date.fromisoformat(dirty_date if dirty else node_date_str)
 
         if node.count("0") == len(node):
-            trace("initial node", self.path)
+            log.debug("initial node %s", self.path)
             return meta(
                 "0.0", config=config, dirty=dirty, branch=branch, node_date=node_date
             )
@@ -97,7 +99,7 @@ class HgWorkdir(Workdir):
                 return meta(tag, config=config, node_date=node_date)
 
         except ValueError as e:
-            trace("error", e)
+            log.exception("error %s", e)
             pass  # unpacking failed, old hg
 
         return None
@@ -162,7 +164,7 @@ def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
 
 
 def archival_to_version(data: dict[str, str], config: Configuration) -> ScmVersion:
-    trace("data", data)
+    log.debug("data %s", data)
     node = data.get("node", "")[:12]
     if node:
         node = "h" + node

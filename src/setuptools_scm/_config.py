@@ -9,16 +9,18 @@ from typing import Any
 from typing import Callable
 from typing import Pattern
 
+from . import _log
 from . import _types as _t
 from ._integration.pyproject_reading import (
     get_args_for_pyproject as _get_args_for_pyproject,
 )
 from ._integration.pyproject_reading import read_pyproject as _read_pyproject
 from ._overrides import read_toml_overrides
-from ._trace import trace
 from ._version_cls import _validate_version_cls
 from ._version_cls import _VersionT
 from ._version_cls import Version as _Version
+
+log = _log.log.getChild("config")
 
 DEFAULT_TAG_REGEX = re.compile(
     r"^(?:[\w-]+-)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"
@@ -44,7 +46,7 @@ def _check_tag_regex(value: str | Pattern[str] | None) -> Pattern[str]:
 
 
 def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
-    trace("abs root", repr(locals()))
+    log.debug("check absolute root=%s relative_to=%s", root, relative_to)
     if relative_to:
         if (
             os.path.isabs(root)
@@ -61,10 +63,10 @@ def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
                 " its the directory %r\n"
                 "assuming the parent directory was passed" % (relative_to,)
             )
-            trace("dir", relative_to)
+            log.debug("dir %s", relative_to)
             root = os.path.join(relative_to, root)
         else:
-            trace("file", relative_to)
+            log.debug("file %s", relative_to)
             root = os.path.join(os.path.dirname(relative_to), root)
     return os.path.abspath(root)
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import subprocess
 
@@ -7,8 +8,9 @@ from .. import _types as _t
 from .._file_finders import is_toplevel_acceptable
 from .._file_finders import scm_find_files
 from .._run_cmd import run as _run
-from .._trace import trace
 from ..utils import data_from_mime
+
+log = logging.getLogger(__name__)
 
 
 def _hg_toplevel(path: str) -> str | None:
@@ -66,5 +68,5 @@ def hg_archive_find_files(path: _t.PathT = "") -> list[str]:
         # Ensure file is valid
         return []
 
-    trace("hg archive detected - fallback to listing all files")
+    log.warning("hg archive detected - fallback to listing all files")
     return scm_find_files(path, set(), set(), force_all_files=True)

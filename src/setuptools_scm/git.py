@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import re
 import warnings
@@ -13,7 +14,6 @@ from typing import TYPE_CHECKING
 
 from . import _types as _t
 from . import Configuration
-from ._trace import trace
 from .scm_workdir import Workdir
 from .utils import _CmdResult
 from .utils import data_from_mime
@@ -25,7 +25,7 @@ from .version import tag_to_version
 
 if TYPE_CHECKING:
     from . import hg_git
-
+log = logging.getLogger(__name__)
 
 REF_TAG_RE = re.compile(r"(?<=\btag: )([^,]+)\b")
 DESCRIBE_UNSUPPORTED = "%(describe"
@@ -68,7 +68,7 @@ class GitWorkdir(Workdir):
             # for this assertion to work.  Length of string isn't changed by replace
             # ``\\`` is just and escape for `\`
             real_wd = wd[: -len(real_wd)]
-        trace("real root", real_wd)
+        log.debug("real root %s", real_wd)
         if not samefile(real_wd, wd):
             return None
 
@@ -84,10 +84,10 @@ class GitWorkdir(Workdir):
     def get_branch(self) -> str | None:
         branch, err, ret = self.do_ex_git(["rev-parse", "--abbrev-ref", "HEAD"])
         if ret:
-            trace("branch err", branch, err, ret)
+            log.info("branch= err %s %s %s", branch, err, ret)
             branch, err, ret = self.do_ex_git(["symbolic-ref", "--short", "HEAD"])
             if ret:
-                trace("branch err (symbolic-ref)", branch, err, ret)
+                log.warning("branch err (symbolic-ref): %s %s %s", branch, err, ret)
                 return None
         return branch
 
@@ -96,12 +96,12 @@ class GitWorkdir(Workdir):
             ["-c", "log.showSignature=false", "log", "-n", "1", "HEAD", "--format=%cI"]
         )
         if ret:
-            trace("timestamp err", timestamp, err, ret)
+            log.warning("timestamp err %s %s %s", timestamp, err, ret)
             return None
         # TODO, when dropping python3.6 use fromiso
         date_part = timestamp.split("T")[0]
         if "%c" in date_part:
-            trace("git too old -> timestamp is ", timestamp)
+            log.warning("git too old -> timestamp is %s", timestamp)
             return None
         return datetime.strptime(date_part, r"%Y-%m-%d").date()
 
@@ -285,7 +285,7 @@ def archival_to_version(
     data: dict[str, str], config: Configuration
 ) -> ScmVersion | None:
     node: str | None
-    trace("data", data)
+    log.debug("data %s", data)
     archival_describe = data.get("describe-name", DESCRIBE_UNSUPPORTED)
     if DESCRIBE_UNSUPPORTED in archival_describe:
         warnings.warn("git archive did not support describe output")

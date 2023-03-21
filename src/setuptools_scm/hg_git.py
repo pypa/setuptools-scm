@@ -1,17 +1,19 @@
 from __future__ import annotations
 
+import logging
 import os
 from contextlib import suppress
 from datetime import date
 from datetime import datetime
 
 from . import _types as _t
-from ._trace import trace
 from .git import GitWorkdir
 from .hg import HgWorkdir
 from .utils import _CmdResult
 from .utils import do_ex
 from .utils import require_command
+
+log = logging.getLogger(__name__)
 
 _FAKE_GIT_DESCRIBE_ERROR = _CmdResult("<>hg git failed", "", 1)
 
@@ -34,14 +36,14 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
     def get_branch(self) -> str | None:
         res = self.do_ex('hg id -T "{bookmarks}"')
         if res.returncode:
-            trace("branch err", res)
+            log.info("branch err %s", res)
             return None
         return res.out
 
     def get_head_date(self) -> date | None:
         date_part, err, ret = self.do_ex('hg log -r . -T "{shortdate(date)}"')
         if ret:
-            trace("head date err", date_part, err, ret)
+            log.info("head date err %s %s %s", date_part, err, ret)
             return None
         return datetime.strptime(date_part, r"%Y-%m-%d").date()
 
@@ -80,7 +82,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
             git_node = self._hg2git(hg_node)
 
             if git_node is None:
-                trace("Cannot get git node so we use hg node", hg_node)
+                log.debug("Cannot get git node so we use hg node %s", hg_node)
 
                 if hg_node == "0" * len(hg_node):
                     # mimic Git behavior
@@ -127,7 +129,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
                 tag = hg_tag
                 break
         else:
-            trace("tag not found", hg_tags, git_tags)
+            logging.warning("tag not found hg=%s git=%s", hg_tags, git_tags)
             return _FAKE_GIT_DESCRIBE_ERROR
 
         out, _, ret = self.do_ex(["hg", "log", "-r", f"'{tag}'::.", "-T", "."])
@@ -141,5 +143,5 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
 
         if self.is_dirty():
             desc += "-dirty"
-        trace("desc", desc)
+        log.debug("faked describe %r", desc)
         return _CmdResult(desc, "", 0)

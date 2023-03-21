@@ -10,6 +10,7 @@ breaking
 * hide file-finders implementation in private module
 * migrate to hatchling
 * renamed setuptools_scm.hacks to setuptools_scm.fallbacks and drop support for pip-egg-info
+* remove trace function and use logging instead
 
 features
 --------
@@ -27,6 +28,9 @@ features
   * stricter tag typing
   * pre-compiled regex
   * move helpers to private modules
+
+* support passing log levels to SETUPTOOLS_SCM_DEBUG
+* support using rich.logging as console log handler if installed
 
 
 v7.1.0

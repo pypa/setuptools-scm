@@ -8,8 +8,8 @@ from typing import Iterator
 from typing import overload
 from typing import TYPE_CHECKING
 
+from . import _log
 from . import version
-from ._trace import trace
 
 if TYPE_CHECKING:
     from ._config import Configuration
@@ -20,6 +20,9 @@ else:
 
     class Protocol:
         pass
+
+
+log = _log.log.getChild("entrypoints")
 
 
 def _version_from_entrypoints(
@@ -34,11 +37,11 @@ def _version_from_entrypoints(
 
     from .discover import iter_matching_entrypoints
 
-    trace("version_from_ep", entrypoint, root)
+    log.debug("version_from_ep %s in %s", entrypoint, root)
     for ep in iter_matching_entrypoints(root, entrypoint, config):
         fn = ep.load()
         maybe_version: version.ScmVersion | None = fn(root, config=config)
-        trace(ep, version)
+        log.debug("%s found %r", ep, maybe_version)
         if maybe_version is not None:
             return maybe_version
     return None
@@ -80,10 +83,8 @@ def iter_entry_points(
 
 
 def _get_ep(group: str, name: str) -> Any | None:
-    from ._entrypoints import iter_entry_points
-
     for ep in iter_entry_points(group, name):
-        trace("ep found:", ep.name)
+        log.debug("ep found: %s", ep.name)
         return ep.load()
     else:
         return None

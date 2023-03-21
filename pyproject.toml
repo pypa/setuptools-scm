@@ -47,8 +47,12 @@ dependencies = [
   "typing-extensions",
 ]
 [project.optional-dependencies]
+rich = [
+  "rich",
+]
 test = [
   "pytest",
+  "rich",
   "virtualenv>20",
 ]
 toml = [

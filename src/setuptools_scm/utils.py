@@ -5,8 +5,9 @@ from __future__ import annotations
 
 import logging
 import subprocess
-import sys
+import textwrap
 import warnings
+from pathlib import Path
 from types import CodeType
 from types import FunctionType
 from typing import NamedTuple
@@ -14,7 +15,6 @@ from typing import Sequence
 from typing import TYPE_CHECKING
 
 from . import _run_cmd
-from . import _trace
 
 if TYPE_CHECKING:
     from . import _types as _t
@@ -35,18 +35,18 @@ def do_ex(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> _CmdResult:
 
 def do(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> str:
     out, err, ret = do_ex(cmd, cwd)
-    if ret and not _trace.DEBUG:
+    if ret and log.getEffectiveLevel() > logging.DEBUG:
         print(err)
     return out
 
 
 def data_from_mime(path: _t.PathT) -> dict[str, str]:
-    with open(path, encoding="utf-8") as fp:
-        content = fp.read()
-    _trace.trace("content", repr(content))
+    content = Path(path).read_text(encoding="utf-8")
+    log.debug("mime %s content:\n%s", path, textwrap.indent(content, "    "))
     # the complex conditions come from reading pseudo-mime-messages
     data = dict(x.split(": ", 1) for x in content.splitlines() if ": " in x)
-    _trace.trace("data", data)
+
+    log.debug("mime %s data:\n%s", path, data)
     return data
 
 
@@ -59,12 +59,11 @@ def function_has_arg(fn: object | FunctionType, argname: str) -> bool:
 def has_command(name: str, args: Sequence[str] = ["help"], warn: bool = True) -> bool:
     try:
         p = _run_cmd.run([name, *args], cwd=".", timeout=5)
-    except OSError:
-        _trace.trace(*sys.exc_info())
+    except OSError as e:
+        log.exception("command %s missing: %s", name, e)
         res = False
     except subprocess.TimeoutExpired as e:
-        log.info(e)
-        _trace.trace(e)
+        log.warning("command %s timed out %s", name, e)
         res = False
 
     else:

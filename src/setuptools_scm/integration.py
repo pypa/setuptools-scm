@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import warnings
 from typing import Any
@@ -14,9 +15,9 @@ from . import Configuration
 from ._integration.setuptools import (
     read_dist_name_from_setup_cfg as _read_dist_name_from_setup_cfg,
 )
-from ._trace import trace
 from ._version_cls import _validate_version_cls
 
+log = logging.getLogger(__name__)
 if TYPE_CHECKING:
     pass
 
@@ -82,11 +83,11 @@ def version_keyword(
     if dist.metadata.version is not None:
         warnings.warn(f"version of {dist_name} already set")
         return
-    trace(
-        "version keyword",
+    log.debug(
+        "version keyword %r",
         vars(dist.metadata),
     )
-    trace("dist", id(dist), id(dist.metadata))
+    log.debug("dist %s %s", id(dist), id(dist.metadata))
 
     if dist_name is None:
         dist_name = _read_dist_name_from_setup_cfg()
@@ -98,11 +99,11 @@ def version_keyword(
 
 
 def infer_version(dist: setuptools.Distribution) -> None:
-    trace(
-        "finalize hook",
+    log.debug(
+        "finalize hook %r",
         vars(dist.metadata),
     )
-    trace("dist", id(dist), id(dist.metadata))
+    log.debug("dist %s %s", id(dist), id(dist.metadata))
     if dist.metadata.version is not None:
         return  # metadata already added by hook
     dist_name = dist.metadata.name
@@ -115,6 +116,6 @@ def infer_version(dist: setuptools.Distribution) -> None:
     try:
         config = Configuration.from_file(dist_name=dist_name)
     except LookupError as e:
-        trace(e)
+        log.exception(e)
     else:
         _assign_version(dist, config)

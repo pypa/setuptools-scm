@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import logging
 import os
 import re
 import warnings
@@ -28,7 +29,9 @@ if TYPE_CHECKING:
 from ._version_cls import Version as PkgVersion, _VersionT
 from . import _version_cls as _v
 from . import _config
-from ._trace import trace
+
+log = logging.getLogger(__name__)
+
 
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3
@@ -55,19 +58,19 @@ def _parse_version_tag(
             "suffix": match.group(0)[match.end(key) :],
         }
 
-    trace(f"tag '{tag}' parsed to {result}")
+    log.debug(f"tag '{tag}' parsed to {result}")
     return result
 
 
 def callable_or_entrypoint(group: str, callable_or_name: str | Any) -> Any:
-    trace("ep", (group, callable_or_name))
+    log.debug("ep %r %r", group, callable_or_name)
 
     if callable(callable_or_name):
         return callable_or_name
     from ._entrypoints import iter_entry_points
 
     for ep in iter_entry_points(group, callable_or_name):
-        trace("ep found:", ep.name)
+        log.debug("ep found: %s", ep.name)
         return ep.load()
 
 
@@ -77,7 +80,7 @@ def tag_to_version(
     """
     take a tag that might be prefixed with a keyword and return only the version part
     """
-    trace("tag", tag)
+    log.debug("tag %s", tag)
 
     tagdict = _parse_version_tag(tag, config)
     if not isinstance(tagdict, dict) or not tagdict.get("version", None):
@@ -85,7 +88,7 @@ def tag_to_version(
         return None
 
     version_str = tagdict["version"]
-    trace("version pre parse", version_str)
+    log.debug("version pre parse %s", version_str)
 
     if tagdict.get("suffix", ""):
         warnings.warn(
@@ -95,7 +98,7 @@ def tag_to_version(
         )
 
     version: _VersionT = config.version_cls(version_str)
-    trace("version", repr(version))
+    log.debug("version=%r", version)
 
     return version
 
@@ -187,7 +190,7 @@ def meta(
     node_date: date | None = None,
 ) -> ScmVersion:
     parsed_version = _parse_tag(tag, preformatted, config)
-    trace("version", tag, "->", parsed_version)
+    log.info("version %s -> %s", tag, parsed_version)
     assert parsed_version is not None, "Can't parse version %s" % tag
     return ScmVersion(
         parsed_version,
@@ -389,18 +392,18 @@ def postrelease_version(version: ScmVersion) -> str:
 
 
 def format_version(version: ScmVersion, **config: Any) -> str:
-    trace("scm version", version)
-    trace("config", config)
+    log.debug("scm version %s", version)
+    log.debug("config %s", config)
     if version.preformatted:
         assert isinstance(version.tag, str)
         return version.tag
     main_version = _entrypoints._call_version_scheme(
         version, "setuptools_scm.version_scheme", config["version_scheme"], None
     )
-    trace("version", main_version)
+    log.debug("version %s", main_version)
     assert main_version is not None
     local_version = _entrypoints._call_version_scheme(
         version, "setuptools_scm.local_scheme", config["local_scheme"], "+unknown"
     )
-    trace("local_version", local_version)
+    log.debug("local_version %s", local_version)
     return main_version + local_version
