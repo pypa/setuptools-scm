@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -16,7 +17,7 @@ _UNKNOWN = "UNKNOWN"
 
 
 def parse_pkginfo(root: _t.PathT, config: Configuration) -> ScmVersion | None:
-    pkginfo = os.path.join(root, "PKG-INFO")
+    pkginfo = Path(root) / "PKG-INFO"
     trace("pkginfo", pkginfo)
     data = data_from_mime(pkginfo)
     version = data.get("Version", _UNKNOWN)
@@ -24,17 +25,6 @@ def parse_pkginfo(root: _t.PathT, config: Configuration) -> ScmVersion | None:
         return meta(version, preformatted=True, config=config)
     else:
         return None
-
-
-def parse_pip_egg_info(root: _t.PathT, config: Configuration) -> ScmVersion | None:
-    pipdir = os.path.join(root, "pip-egg-info")
-    if not os.path.isdir(pipdir):
-        return None
-    items = os.listdir(pipdir)
-    trace("pip-egg-info", pipdir, items)
-    if not items:
-        return None
-    return parse_pkginfo(os.path.join(pipdir, items[0]), config=config)
 
 
 def fallback_version(root: _t.PathT, config: Configuration) -> ScmVersion | None:

@@ -8,7 +8,8 @@ breaking
 * turn Configuration into a dataclass
 * require configuration to always pass into helpers
 * hide file-finders implementation in private module
-* define own build backend to have setuptools work
+* migrate to hatchling
+* renamed setuptools_scm.hacks to setuptools_scm.fallbacks and drop support for pip-egg-info
 
 features
 --------

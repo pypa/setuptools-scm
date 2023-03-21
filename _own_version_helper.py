@@ -8,7 +8,7 @@ from setuptools_scm import Configuration
 from setuptools_scm import get_version
 from setuptools_scm import git
 from setuptools_scm import hg
-from setuptools_scm.hacks import parse_pkginfo
+from setuptools_scm.fallbacks import parse_pkginfo
 from setuptools_scm.version import get_local_node_and_date
 from setuptools_scm.version import guess_next_dev_version
 from setuptools_scm.version import ScmVersion

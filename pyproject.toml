@@ -78,10 +78,9 @@ node-and-timestamp = "setuptools_scm.version:get_local_node_and_timestamp"
 [project.entry-points."setuptools_scm.parse_scm_fallback"]
 ".git_archival.txt" = "setuptools_scm.git:parse_archival"
 ".hg_archival.txt" = "setuptools_scm.hg:parse_archival"
-PKG-INFO = "setuptools_scm.hacks:parse_pkginfo"
-pip-egg-info = "setuptools_scm.hacks:parse_pip_egg_info"
-"pyproject.toml" = "setuptools_scm.hacks:fallback_version"
-"setup.py" = "setuptools_scm.hacks:fallback_version"
+PKG-INFO = "setuptools_scm.fallbacks:parse_pkginfo"
+"pyproject.toml" = "setuptools_scm.fallbacks:fallback_version"
+"setup.py" = "setuptools_scm.fallbacks:fallback_version"
 [project.entry-points."setuptools_scm.version_scheme"]
 "calver-by-date" = "setuptools_scm.version:calver_by_date"
 "guess-next-dev" = "setuptools_scm.version:guess_next_dev_version"
