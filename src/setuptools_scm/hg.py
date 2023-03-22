@@ -29,7 +29,7 @@ class HgWorkdir(Workdir):
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> HgWorkdir | None:
         require_command(cls.COMMAND)
-        res = _run("hg root", wd)
+        res = _run(["hg", "root"], wd)
         if res.returncode:
             return None
         return cls(res.stdout)
@@ -47,9 +47,11 @@ class HgWorkdir(Workdir):
         # mainly used to emulate Git branches, which is already supported with
         # the dedicated class GitWorkdirHgClient)
 
-        branch, dirty_str, dirty_date = self.do(
-            ["hg", "id", "-T", "{branch}\n{if(dirty, 1, 0)}\n{date|shortdate}"]
-        ).split("\n")
+        branch, dirty_str, dirty_date = _run(
+            ["hg", "id", "-T", "{branch}\n{if(dirty, 1, 0)}\n{date|shortdate}"],
+            cwd=self.path,
+            check=True,
+        ).stdout.split("\n")
         dirty = bool(int(dirty_str))
         node_date = datetime.date.fromisoformat(dirty_date if dirty else node_date_str)
 

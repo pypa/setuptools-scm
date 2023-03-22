@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from setuptools_scm.utils import do_ex
+from setuptools_scm._run_cmd import run
 from setuptools_scm.utils import has_command
 from testing.wd_wrapper import WorkDir
 
@@ -12,13 +12,13 @@ def _check_hg_git() -> None:
     if not has_command("hg", warn=False):
         pytest.skip("hg executable not found")
 
-    python_hg, err, ret = do_ex("hg debuginstall --template {pythonexe}")
+    res = run("hg debuginstall --template {pythonexe}", cwd=".")
 
-    if ret:
+    if res.returncode:
         skip_no_hggit = True
     else:
-        out, err, ret = do_ex([python_hg.strip(), "-c", "import hggit"])
-    skip_no_hggit = bool(ret)
+        res = run([res.stdout, "-c", "import hggit"], cwd=".")
+        skip_no_hggit = bool(res.returncode)
     if skip_no_hggit:
         pytest.skip("hg-git not installed")
 

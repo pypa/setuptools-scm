@@ -23,9 +23,9 @@ class WorkDir:
         if kw:
             assert isinstance(cmd, str), "formatting the command requires text input"
             cmd = cmd.format(**kw)
-        from setuptools_scm.utils import do
+        from setuptools_scm._run_cmd import run
 
-        return do(cmd, self.cwd)
+        return run(cmd, cwd=self.cwd).stdout
 
     def write(self, name: str, content: str | bytes, **kw: object) -> Path:
         path = self.cwd / name

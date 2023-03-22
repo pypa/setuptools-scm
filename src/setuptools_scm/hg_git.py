@@ -5,17 +5,21 @@ import os
 from contextlib import suppress
 from datetime import date
 from datetime import datetime
+from subprocess import CompletedProcess
 
 from . import _types as _t
+from ._run_cmd import run as _run
 from .git import GitWorkdir
 from .hg import HgWorkdir
-from .utils import _CmdResult
-from .utils import do_ex
 from .utils import require_command
 
 log = logging.getLogger(__name__)
 
-_FAKE_GIT_DESCRIBE_ERROR = _CmdResult("<>hg git failed", "", 1)
+_FAKE_GIT_DESCRIBE_ERROR = CompletedProcess(
+    "fake git describe output for hg",
+    1,
+    "<>hg git failed to describe",
+)
 
 
 class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
@@ -24,28 +28,31 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdirHgClient | None:
         require_command(cls.COMMAND)
-        root, _, ret = do_ex(["hg", "root"], wd)
-        if ret:
+        res = _run(["hg", "root"], cwd=wd)
+        if res.returncode:
             return None
-        return cls(root)
+        return cls(res.stdout)
 
     def is_dirty(self) -> bool:
-        out, _, _ = self.do_ex('hg id -T "{dirty}"')
-        return bool(out)
+        res = _run(["hg", "id", "-T", "{dirty}"], cwd=self.path, check=True)
+        return bool(res.stdout)
 
     def get_branch(self) -> str | None:
-        res = self.do_ex('hg id -T "{bookmarks}"')
+        res = _run(["hg", "id", "-T", "{bookmarks}"], cwd=self.path)
         if res.returncode:
             log.info("branch err %s", res)
             return None
-        return res.out
+        return res.stdout
 
     def get_head_date(self) -> date | None:
-        date_part, err, ret = self.do_ex('hg log -r . -T "{shortdate(date)}"')
-        if ret:
-            log.info("head date err %s %s %s", date_part, err, ret)
+        res = _run('hg log -r . -T "{shortdate(date)}"', cwd=self.path)
+        if res.returncode:
+            log.info(
+                "head date err %s",
+                res,
+            )
             return None
-        return datetime.strptime(date_part, r"%Y-%m-%d").date()
+        return datetime.strptime(res.stdout, r"%Y-%m-%d").date()
 
     def is_shallow(self) -> bool:
         return False
@@ -54,11 +61,11 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         pass
 
     def get_hg_node(self) -> str | None:
-        node, _, ret = self.do_ex('hg log -r . -T "{node}"')
-        if not ret:
-            return node
-        else:
+        res = _run('hg log -r . -T "{node}"', cwd=self.path)
+        if res.returncode:
             return None
+        else:
+            return res.stdout
 
     def _hg2git(self, hg_node: str) -> str | None:
         with suppress(FileNotFoundError):
@@ -78,7 +85,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
 
         if git_node is None:
             # trying again after hg -> git
-            self.do_ex("hg gexport")
+            _run(["hg", "gexport"], cwd=self.path)
             git_node = self._hg2git(hg_node)
 
             if git_node is None:
@@ -93,17 +100,17 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         return git_node[:7]
 
     def count_all_nodes(self) -> int:
-        revs, _, _ = self.do_ex(["hg", "log", "-r", "ancestors(.)", "-T", "."])
-        return len(revs)
+        res = _run(["hg", "log", "-r", "ancestors(.)", "-T", "."], cwd=self.path)
+        return len(res.stdout)
 
-    def default_describe(self) -> _CmdResult:
+    def default_describe(self) -> CompletedProcess[str]:
         """
         Tentative to reproduce the output of
 
         `git describe --dirty --tags --long --match *[0-9]*`
 
         """
-        hg_tags_str, _, ret = self.do_ex(
+        res = _run(
             [
                 "hg",
                 "log",
@@ -111,11 +118,12 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
                 "(reverse(ancestors(.)) and tag(r're:v?[0-9].*'))",
                 "-T",
                 "{tags}{if(tags, ' ', '')}",
-            ]
+            ],
+            cwd=self.path,
         )
-        if ret:
+        if res.returncode:
             return _FAKE_GIT_DESCRIBE_ERROR
-        hg_tags: list[str] = hg_tags_str.split()
+        hg_tags: list[str] = res.stdout.split()
 
         if not hg_tags:
             return _FAKE_GIT_DESCRIBE_ERROR
@@ -132,10 +140,10 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
             logging.warning("tag not found hg=%s git=%s", hg_tags, git_tags)
             return _FAKE_GIT_DESCRIBE_ERROR
 
-        out, _, ret = self.do_ex(["hg", "log", "-r", f"'{tag}'::.", "-T", "."])
-        if ret:
+        res = _run(["hg", "log", "-r", f"'{tag}'::.", "-T", "."], cwd=self.path)
+        if res.returncode:
             return _FAKE_GIT_DESCRIBE_ERROR
-        distance = len(out) - 1
+        distance = len(res.stdout) - 1
 
         node = self.node()
         assert node is not None
@@ -144,4 +152,9 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         if self.is_dirty():
             desc += "-dirty"
         log.debug("faked describe %r", desc)
-        return _CmdResult(desc, "", 0)
+        return CompletedProcess(
+            ["setuptools-scm", "faked", "describe"],
+            returncode=0,
+            stdout=desc,
+            stderr="",
+        )

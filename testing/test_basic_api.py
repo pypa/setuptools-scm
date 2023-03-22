@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import shutil
 import sys
 from pathlib import Path
 
@@ -12,16 +11,12 @@ from setuptools_scm import Configuration
 from setuptools_scm import dump_version
 from setuptools_scm._run_cmd import run
 from setuptools_scm.utils import data_from_mime
-from setuptools_scm.utils import do
 from setuptools_scm.version import ScmVersion
 from testing.wd_wrapper import WorkDir
 
 
-@pytest.mark.parametrize("cmd", ["ls", "dir"])
-def test_do(cmd: str, tmp_path: Path) -> None:
-    if not shutil.which(cmd):
-        pytest.skip(f"{cmd} not found")
-    do(cmd, cwd=tmp_path)
+def test_run(cmd: str, tmp_path: Path) -> None:
+    run([sys.executable, "-h"], cwd=tmp_path)
 
 
 def test_data_from_mime(tmp_path: Path) -> None:

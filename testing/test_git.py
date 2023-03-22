@@ -303,7 +303,8 @@ def shallow_wd(wd: WorkDir, tmp_path: Path) -> Path:
 def test_git_parse_shallow_warns(
     shallow_wd: Path, recwarn: pytest.WarningsRecorder
 ) -> None:
-    git.parse(str(shallow_wd), Configuration())
+    git.parse(shallow_wd, Configuration())
+    print(list(recwarn))
     msg = recwarn.pop()
     assert "is shallow and may cause errors" in str(msg.message)
 
@@ -468,10 +469,19 @@ def test_git_getdate(wd: WorkDir) -> None:
     assert parse_date() == today
 
 
-def test_git_getdate_badgit(wd: WorkDir) -> None:
+def test_git_getdate_badgit(
+    wd: WorkDir, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
     wd.commit_testfile()
     git_wd = git.GitWorkdir(os.fspath(wd.cwd))
-    with patch.object(git_wd, "do_ex", Mock(return_value=("%cI", "", 0))):
+    fake_date_result = subprocess.CompletedProcess(
+        args=[], stdout="%cI", stderr="", returncode=0
+    )
+    with patch.object(
+        git,
+        "run_git",
+        Mock(return_value=fake_date_result),
+    ):
         assert git_wd.get_head_date() is None
 
 

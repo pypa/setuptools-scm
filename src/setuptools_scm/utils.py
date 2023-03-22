@@ -10,7 +10,6 @@ import warnings
 from pathlib import Path
 from types import CodeType
 from types import FunctionType
-from typing import NamedTuple
 from typing import Sequence
 from typing import TYPE_CHECKING
 
@@ -20,24 +19,6 @@ if TYPE_CHECKING:
     from . import _types as _t
 
 log = logging.getLogger(__name__)
-
-
-class _CmdResult(NamedTuple):
-    out: str
-    err: str
-    returncode: int
-
-
-def do_ex(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> _CmdResult:
-    res = _run_cmd.run(cmd, cwd)
-    return _CmdResult(res.stdout, res.stderr, res.returncode)
-
-
-def do(cmd: _t.CMD_TYPE, cwd: _t.PathT = ".") -> str:
-    out, err, ret = do_ex(cmd, cwd)
-    if ret and log.getEffectiveLevel() > logging.DEBUG:
-        print(err)
-    return out
 
 
 def data_from_mime(path: _t.PathT) -> dict[str, str]:
@@ -60,7 +41,7 @@ def has_command(name: str, args: Sequence[str] = ["help"], warn: bool = True) ->
     try:
         p = _run_cmd.run([name, *args], cwd=".", timeout=5)
     except OSError as e:
-        log.exception("command %s missing: %s", name, e)
+        log.warning("command %s missing: %s", name, e)
         res = False
     except subprocess.TimeoutExpired as e:
         log.warning("command %s timed out %s", name, e)

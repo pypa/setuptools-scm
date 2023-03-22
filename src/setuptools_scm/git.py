@@ -1,23 +1,25 @@
 from __future__ import annotations
 
+import dataclasses
 import logging
 import os
 import re
+import shlex
 import warnings
 from datetime import date
 from datetime import datetime
-from os.path import isfile
-from os.path import join
 from os.path import samefile
+from pathlib import Path
+from subprocess import CompletedProcess
 from typing import Callable
+from typing import Sequence
 from typing import TYPE_CHECKING
 
 from . import _types as _t
 from . import Configuration
+from ._run_cmd import run
 from .scm_workdir import Workdir
-from .utils import _CmdResult
 from .utils import data_from_mime
-from .utils import do_ex
 from .utils import require_command
 from .version import meta
 from .version import ScmVersion
@@ -44,6 +46,12 @@ DEFAULT_DESCRIBE = [
 ]
 
 
+def run_git(
+    args: Sequence[str | os.PathLike[str]], rootdir: Path, *, check: bool = False
+) -> CompletedProcess[str]:
+    return run(["git", "--git-dir", rootdir / ".git", *args], cwd=rootdir, check=check)
+
+
 class GitWorkdir(Workdir):
     """experimental, may change at any time"""
 
@@ -53,12 +61,10 @@ class GitWorkdir(Workdir):
     def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdir | None:
         require_command(cls.COMMAND)
         wd = os.path.abspath(wd)
-        git_dir = join(wd, ".git")
-        real_wd, _, ret = do_ex(
-            ["git", "--git-dir", git_dir, "rev-parse", "--show-prefix"], wd
-        )
-        real_wd = real_wd[:-1]  # remove the trailing pathsep
-        if ret:
+        res = run_git(["rev-parse", "--show-prefix"], Path(wd))
+
+        real_wd = res.stdout[:-1]  # remove the trailing pathsep
+        if res.returncode:
             return None
         if not real_wd:
             real_wd = wd
@@ -74,59 +80,52 @@ class GitWorkdir(Workdir):
 
         return cls(real_wd)
 
-    def do_ex_git(self, cmd: list[str]) -> _CmdResult:
-        return self.do_ex(["git", "--git-dir", join(self.path, ".git")] + cmd)
-
     def is_dirty(self) -> bool:
-        out, _, _ = self.do_ex_git(["status", "--porcelain", "--untracked-files=no"])
-        return bool(out)
+        res = run_git(["status", "--porcelain", "--untracked-files=no"], self.path)
+        return bool(res.stdout)
 
     def get_branch(self) -> str | None:
-        branch, err, ret = self.do_ex_git(["rev-parse", "--abbrev-ref", "HEAD"])
-        if ret:
-            log.info("branch= err %s %s %s", branch, err, ret)
-            branch, err, ret = self.do_ex_git(["symbolic-ref", "--short", "HEAD"])
-            if ret:
-                log.warning("branch err (symbolic-ref): %s %s %s", branch, err, ret)
-                return None
-        return branch
+        res = run_git(["rev-parse", "--abbrev-ref", "HEAD"], self.path)
+        if res.returncode:
+            log.info("branch err (abbrev-err) %s", res)
+            res = run_git(["symbolic-ref", "--short", "HEAD"], self.path)
+        if res.returncode:
+            log.warning("branch err (symbolic-ref): %s", res)
+            return None
+        return res.stdout
 
     def get_head_date(self) -> date | None:
-        timestamp, err, ret = self.do_ex_git(
-            ["-c", "log.showSignature=false", "log", "-n", "1", "HEAD", "--format=%cI"]
+        res = run_git(
+            ["-c", "log.showSignature=false", "log", "-n", "1", "HEAD", "--format=%cI"],
+            self.path,
         )
-        if ret:
-            log.warning("timestamp err %s %s %s", timestamp, err, ret)
+        if res.returncode:
+            log.warning("timestamp err %s", res)
             return None
-        # TODO, when dropping python3.6 use fromiso
-        date_part = timestamp.split("T")[0]
-        if "%c" in date_part:
-            log.warning("git too old -> timestamp is %s", timestamp)
+        if "%c" in res.stdout:
+            log.warning("git too old -> timestamp is %s", res.stdout)
             return None
-        return datetime.strptime(date_part, r"%Y-%m-%d").date()
+        return datetime.fromisoformat(res.stdout).date()
 
     def is_shallow(self) -> bool:
-        return isfile(join(self.path, ".git/shallow"))
+        return self.path.joinpath(".git/shallow").is_file()
 
     def fetch_shallow(self) -> None:
-        self.do_ex_git(["fetch", "--unshallow"])
+        run_git(["fetch", "--unshallow"], self.path, check=True)
 
     def node(self) -> str | None:
-        node, _, ret = self.do_ex_git(["rev-parse", "--verify", "--quiet", "HEAD"])
-        if not ret:
-            return node[:7]
+        res = run_git(["rev-parse", "--verify", "--quiet", "HEAD"], self.path)
+        if not res.returncode:
+            return res.stdout[:7]
         else:
             return None
 
     def count_all_nodes(self) -> int:
-        revs, _, _ = self.do_ex_git(["rev-list", "HEAD"])
-        return revs.count("\n") + 1
+        res = run_git(["rev-list", "HEAD"], self.path)
+        return res.stdout.count("\n") + 1
 
-    def default_describe(self) -> _CmdResult:
-        git_dir = join(self.path, ".git")
-        return self.do_ex(
-            DEFAULT_DESCRIBE[:1] + ["--git-dir", git_dir] + DEFAULT_DESCRIBE[1:]
-        )
+    def default_describe(self) -> CompletedProcess[str]:
+        return run_git(DEFAULT_DESCRIBE[1:], self.path)
 
 
 def warn_on_shallow(wd: GitWorkdir) -> None:
@@ -150,7 +149,7 @@ def fail_on_shallow(wd: GitWorkdir) -> None:
         )
 
 
-def get_working_directory(config: Configuration, root: str) -> GitWorkdir | None:
+def get_working_directory(config: Configuration, root: _t.PathT) -> GitWorkdir | None:
     """
     Return the working directory (``GitWorkdir``).
     """
@@ -165,7 +164,7 @@ def get_working_directory(config: Configuration, root: str) -> GitWorkdir | None
 
 
 def parse(
-    root: str,
+    root: _t.PathT,
     config: Configuration,
     describe_command: str | list[str] | None = None,
     pre_parse: Callable[[GitWorkdir], None] = warn_on_shallow,
@@ -182,6 +181,35 @@ def parse(
         return None
 
 
+def version_from_describe(
+    wd: GitWorkdir | hg_git.GitWorkdirHgClient,
+    config: Configuration,
+    describe_command: _t.CMD_TYPE | None,
+) -> ScmVersion | None:
+    pass
+
+    if config.git_describe_command is not None:
+        describe_command = config.git_describe_command
+
+    if describe_command is not None:
+        if isinstance(describe_command, str):
+            describe_command = shlex.split(describe_command)
+            # todo: figure how ot ensure git with gitdir gets correctly invoked
+            assert describe_command[0] == "git", describe_command
+        describe_res = run_git(describe_command[1:], wd.path)
+    else:
+        describe_res = wd.default_describe()
+
+    distance: int | None
+    node: str | None
+    if describe_res.returncode == 0:
+        tag, distance, node, dirty = _git_parse_describe(describe_res.stdout)
+        if distance == 0 and not dirty:
+            distance = None
+        return meta(tag=tag, distance=distance, dirty=dirty, node=node, config=config)
+    return None
+
+
 def _git_parse_inner(
     config: Configuration,
     wd: GitWorkdir | hg_git.GitWorkdirHgClient,
@@ -191,22 +219,11 @@ def _git_parse_inner(
     if pre_parse:
         pre_parse(wd)
 
-    if config.git_describe_command is not None:
-        describe_command = config.git_describe_command
+    version = version_from_describe(wd, config, describe_command)
 
-    if describe_command is not None:
-        out, _, ret = wd.do_ex(describe_command)
-    else:
-        out, _, ret = wd.default_describe()
-    distance: int | None
-    node: str | None
-    if ret == 0:
-        tag, distance, node, dirty = _git_parse_describe(out)
-        if distance == 0 and not dirty:
-            distance = None
-    else:
+    if version is None:
         # If 'git git_describe_command' failed, try to get the information otherwise.
-        tag = "0.0"
+        tag = config.version_cls("0.0")
         node = wd.node()
         if node is None:
             distance = 0
@@ -214,19 +231,13 @@ def _git_parse_inner(
             distance = wd.count_all_nodes()
             node = "g" + node
         dirty = wd.is_dirty()
+        version = meta(
+            tag=tag, distance=distance, dirty=dirty, node=node, config=config
+        )
 
     branch = wd.get_branch()
     node_date = wd.get_head_date() or date.today()
-
-    return meta(
-        tag,
-        branch=branch,
-        node=node,
-        node_date=node_date,
-        distance=distance,
-        dirty=dirty,
-        config=config,
-    )
+    return dataclasses.replace(version, branch=branch, node_date=node_date)
 
 
 def _git_parse_describe(
