@@ -8,8 +8,6 @@ import subprocess
 import textwrap
 import warnings
 from pathlib import Path
-from types import CodeType
-from types import FunctionType
 from typing import Sequence
 from typing import TYPE_CHECKING
 
@@ -29,12 +27,6 @@ def data_from_mime(path: _t.PathT) -> dict[str, str]:
 
     log.debug("mime %s data:\n%s", path, data)
     return data
-
-
-def function_has_arg(fn: object | FunctionType, argname: str) -> bool:
-    assert isinstance(fn, FunctionType)
-    code: CodeType = fn.__code__
-    return argname in code.co_varnames
 
 
 def has_command(name: str, args: Sequence[str] = ["help"], warn: bool = True) -> bool:
