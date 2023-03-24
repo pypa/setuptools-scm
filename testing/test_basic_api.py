@@ -16,7 +16,7 @@ from testing.wd_wrapper import WorkDir
 
 
 def test_run_plain(tmp_path: Path) -> None:
-    run([sys.executable, "-h"], cwd=tmp_path)
+    run([sys.executable, "-c", "print(1)"], cwd=tmp_path)
 
 
 def test_data_from_mime(tmp_path: Path) -> None:
