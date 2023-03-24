@@ -31,7 +31,7 @@ class HgWorkdir(Workdir):
         res = _run(["hg", "root"], wd)
         if res.returncode:
             return None
-        return cls(res.stdout)
+        return cls(Path(res.stdout))
 
     def get_meta(self, config: Configuration) -> ScmVersion | None:
         node: str

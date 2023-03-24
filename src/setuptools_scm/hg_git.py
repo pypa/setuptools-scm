@@ -4,7 +4,7 @@ import logging
 import os
 from contextlib import suppress
 from datetime import date
-from datetime import datetime
+from pathlib import Path
 from subprocess import CompletedProcess
 
 from . import _types as _t
@@ -31,7 +31,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         res = _run(["hg", "root"], cwd=wd)
         if res.returncode:
             return None
-        return cls(res.stdout)
+        return cls(Path(res.stdout))
 
     def is_dirty(self) -> bool:
         res = _run(["hg", "id", "-T", "{dirty}"], cwd=self.path, check=True)
@@ -47,12 +47,9 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
     def get_head_date(self) -> date | None:
         res = _run('hg log -r . -T "{shortdate(date)}"', cwd=self.path)
         if res.returncode:
-            log.info(
-                "head date err %s",
-                res,
-            )
+            log.info("head date err %s", res)
             return None
-        return datetime.strptime(res.stdout, r"%Y-%m-%d").date()
+        return date.fromisoformat(res.stdout)
 
     def is_shallow(self) -> bool:
         return False

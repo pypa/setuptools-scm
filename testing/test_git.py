@@ -388,7 +388,7 @@ def test_git_archive_run_from_subdirectory(
 def test_git_branch_names_correct(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd("git checkout -b test/fun")
-    wd_git = git.GitWorkdir(os.fspath(wd.cwd))
+    wd_git = git.GitWorkdir(wd.cwd)
     assert wd_git.get_branch() == "test/fun"
 
 
@@ -460,7 +460,7 @@ def test_git_getdate(wd: WorkDir) -> None:
         assert parsed.node_date is not None
         return parsed.node_date
 
-    git_wd = git.GitWorkdir(os.fspath(wd.cwd))
+    git_wd = git.GitWorkdir(wd.cwd)
     assert git_wd.get_head_date() is None
     assert parse_date() == today
 
@@ -473,7 +473,7 @@ def test_git_getdate_badgit(
     wd: WorkDir, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     wd.commit_testfile()
-    git_wd = git.GitWorkdir(os.fspath(wd.cwd))
+    git_wd = git.GitWorkdir(wd.cwd)
     fake_date_result = subprocess.CompletedProcess(
         args=[], stdout="%cI", stderr="", returncode=0
     )
@@ -514,7 +514,7 @@ Expire-Date: 0
 def test_git_getdate_signed_commit(signed_commit_wd: WorkDir) -> None:
     today = date.today()
     signed_commit_wd.commit_testfile(signed=True)
-    git_wd = git.GitWorkdir(os.fspath(signed_commit_wd.cwd))
+    git_wd = git.GitWorkdir(signed_commit_wd.cwd)
     assert git_wd.get_head_date() == today
 
 

@@ -55,30 +55,29 @@ def run_git(
 class GitWorkdir(Workdir):
     """experimental, may change at any time"""
 
-    COMMAND = "git"
-
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdir | None:
-        require_command(cls.COMMAND)
-        wd = os.path.abspath(wd)
-        res = run_git(["rev-parse", "--show-prefix"], Path(wd))
+        require_command("git")
+        wd = Path(wd).resolve()
+        res = run_git(["rev-parse", "--show-prefix"], wd)
 
         real_wd = res.stdout[:-1]  # remove the trailing pathsep
         if res.returncode:
             return None
         if not real_wd:
-            real_wd = wd
+            real_wd = os.fspath(wd)
         else:
-            assert wd.replace("\\", "/").endswith(real_wd)
+            str_wd = os.fspath(wd)
+            assert str_wd.replace("\\", "/").endswith(real_wd)
             # In windows wd contains ``\`` which should be replaced by ``/``
             # for this assertion to work.  Length of string isn't changed by replace
             # ``\\`` is just and escape for `\`
-            real_wd = wd[: -len(real_wd)]
+            real_wd = str_wd[: -len(real_wd)]
         log.debug("real root %s", real_wd)
         if not samefile(real_wd, wd):
             return None
 
-        return cls(real_wd)
+        return cls(Path(real_wd))
 
     def is_dirty(self) -> bool:
         res = run_git(["status", "--porcelain", "--untracked-files=no"], self.path)

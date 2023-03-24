@@ -7,9 +7,9 @@ import pytest
 
 import setuptools_scm._file_finders
 from setuptools_scm import Configuration
+from setuptools_scm._run_cmd import has_command
 from setuptools_scm.hg import archival_to_version
 from setuptools_scm.hg import parse
-from setuptools_scm.utils import has_command
 from setuptools_scm.version import format_version
 from testing.wd_wrapper import WorkDir
 
