@@ -8,7 +8,7 @@ from setuptools_scm import Configuration
 from setuptools_scm import dump_version
 from setuptools_scm import get_version
 from setuptools_scm import PRETEND_KEY
-from setuptools_scm.utils import has_command
+from setuptools_scm._run_cmd import has_command
 from setuptools_scm.version import format_version
 from setuptools_scm.version import guess_next_version
 from setuptools_scm.version import meta

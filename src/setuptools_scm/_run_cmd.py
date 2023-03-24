@@ -4,7 +4,9 @@ import os
 import shlex
 import subprocess
 import textwrap
+import warnings
 from typing import Mapping
+from typing import Sequence
 
 from . import _log
 from . import _types as _t
@@ -111,3 +113,25 @@ def _unsafe_quote_for_display(item: _t.PathT) -> str:
     # give better results than shlex.join in our cases
     text = os.fspath(item)
     return text if all(c not in text for c in " {[:") else f'"{text}"'
+
+
+def has_command(name: str, args: Sequence[str] = ["help"], warn: bool = True) -> bool:
+    try:
+        p = run([name, *args], cwd=".", timeout=5)
+    except OSError as e:
+        log.warning("command %s missing: %s", name, e)
+        res = False
+    except subprocess.TimeoutExpired as e:
+        log.warning("command %s timed out %s", name, e)
+        res = False
+
+    else:
+        res = not p.returncode
+    if not res and warn:
+        warnings.warn("%r was not found" % name, category=RuntimeWarning)
+    return res
+
+
+def require_command(name: str) -> None:
+    if not has_command(name, warn=False):
+        raise OSError(f"{name!r} was not found")

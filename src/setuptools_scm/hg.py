@@ -8,9 +8,8 @@ from typing import TYPE_CHECKING
 
 from . import Configuration
 from ._version_cls import Version
+from .integration import data_from_mime
 from .scm_workdir import Workdir
-from .utils import data_from_mime
-from .utils import require_command
 from .version import meta
 from .version import ScmVersion
 from .version import tag_to_version
@@ -18,7 +17,7 @@ from .version import tag_to_version
 if TYPE_CHECKING:
     from . import _types as _t
 
-from ._run_cmd import run as _run
+from ._run_cmd import run as _run, require_command
 
 log = logging.getLogger(__name__)
 

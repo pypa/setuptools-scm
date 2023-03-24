@@ -8,10 +8,10 @@ from datetime import datetime
 from subprocess import CompletedProcess
 
 from . import _types as _t
+from ._run_cmd import require_command
 from ._run_cmd import run as _run
 from .git import GitWorkdir
 from .hg import HgWorkdir
-from .utils import require_command
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
 
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdirHgClient | None:
-        require_command(cls.COMMAND)
+        require_command("hg")
         res = _run(["hg", "root"], cwd=wd)
         if res.returncode:
             return None

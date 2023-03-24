@@ -10,12 +10,12 @@ import setuptools_scm
 from setuptools_scm import Configuration
 from setuptools_scm import dump_version
 from setuptools_scm._run_cmd import run
-from setuptools_scm.utils import data_from_mime
+from setuptools_scm.integration import data_from_mime
 from setuptools_scm.version import ScmVersion
 from testing.wd_wrapper import WorkDir
 
 
-def test_run(cmd: str, tmp_path: Path) -> None:
+def test_run_plain(tmp_path: Path) -> None:
     run([sys.executable, "-h"], cwd=tmp_path)
 
 

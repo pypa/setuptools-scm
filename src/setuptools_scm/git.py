@@ -17,10 +17,10 @@ from typing import TYPE_CHECKING
 
 from . import _types as _t
 from . import Configuration
+from ._run_cmd import require_command
 from ._run_cmd import run
+from .integration import data_from_mime
 from .scm_workdir import Workdir
-from .utils import data_from_mime
-from .utils import require_command
 from .version import meta
 from .version import ScmVersion
 from .version import tag_to_version

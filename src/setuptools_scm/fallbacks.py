@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from . import _types as _t
 from . import Configuration
-from .utils import data_from_mime
+from .integration import data_from_mime
 from .version import meta
 from .version import ScmVersion
 from .version import tag_to_version

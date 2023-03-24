@@ -8,7 +8,7 @@ from .. import _types as _t
 from .._file_finders import is_toplevel_acceptable
 from .._file_finders import scm_find_files
 from .._run_cmd import run as _run
-from ..utils import data_from_mime
+from ..integration import data_from_mime
 
 log = logging.getLogger(__name__)
 

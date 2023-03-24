@@ -9,7 +9,6 @@ from typing import Iterator
 
 import pytest
 
-import setuptools_scm.utils
 from .wd_wrapper import WorkDir
 from setuptools_scm._run_cmd import run
 
@@ -44,7 +43,7 @@ def pytest_addoption(parser: Any) -> None:
 
 
 class DebugMode(contextlib.AbstractContextManager):  # type: ignore[type-arg]
-    __module = setuptools_scm._log
+    from setuptools_scm import _log as __module
 
     def __init__(self) -> None:
         self.__stack = contextlib.ExitStack()
