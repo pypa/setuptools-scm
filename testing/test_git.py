@@ -561,6 +561,8 @@ def test_git_archival_node_missing_no_version() -> None:
 def test_git_archival_from_unfiltered() -> None:
     config = Configuration()
 
-    with pytest.warns(UserWarning, match="unexported git archival found"):
+    with pytest.warns(
+        UserWarning, match=r"unprocessed git archival found \(no export subst applied\)"
+    ):
         version = archival_to_version({"node": "$Format:%H$"}, config=config)
     assert version is None

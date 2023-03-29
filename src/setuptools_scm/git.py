@@ -17,8 +17,9 @@ from typing import TYPE_CHECKING
 
 from . import _types as _t
 from . import Configuration
-from ._run_cmd import require_command
-from ._run_cmd import run
+from ._run_cmd import parse_success as _parse_success
+from ._run_cmd import require_command as _require_command
+from ._run_cmd import run as _run
 from .integration import data_from_mime
 from .scm_workdir import Workdir
 from .version import meta
@@ -47,9 +48,9 @@ DEFAULT_DESCRIBE = [
 
 
 def run_git(
-    args: Sequence[str | os.PathLike[str]], rootdir: Path, *, check: bool = False
+    args: Sequence[str | os.PathLike[str]], repo: Path, *, check: bool = False
 ) -> CompletedProcess[str]:
-    return run(["git", "--git-dir", rootdir / ".git", *args], cwd=rootdir, check=check)
+    return _run(["git", "--git-dir", repo / ".git", *args], cwd=repo, check=check)
 
 
 class GitWorkdir(Workdir):
@@ -57,13 +58,14 @@ class GitWorkdir(Workdir):
 
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdir | None:
-        require_command("git")
+        _require_command("git")
         wd = Path(wd).resolve()
-        res = run_git(["rev-parse", "--show-prefix"], wd)
-
-        real_wd = res.stdout[:-1]  # remove the trailing pathsep
-        if res.returncode:
+        real_wd = _parse_success(run_git(["rev-parse", "--show-prefix"], wd), parse=str)
+        if real_wd is None:
             return None
+        else:
+            real_wd = real_wd[:-1]  # remove the trailing pathsep
+
         if not real_wd:
             real_wd = os.fspath(wd)
         else:
@@ -81,30 +83,45 @@ class GitWorkdir(Workdir):
 
     def is_dirty(self) -> bool:
         res = run_git(["status", "--porcelain", "--untracked-files=no"], self.path)
-        return bool(res.stdout)
+
+        return _parse_success(
+            res,
+            parse=bool,
+            default=False,
+        )
 
     def get_branch(self) -> str | None:
-        res = run_git(["rev-parse", "--abbrev-ref", "HEAD"], self.path)
-        if res.returncode:
-            log.info("branch err (abbrev-err) %s", res)
-            res = run_git(["symbolic-ref", "--short", "HEAD"], self.path)
-        if res.returncode:
-            log.warning("branch err (symbolic-ref): %s", res)
-            return None
-        return res.stdout
+        return _parse_success(
+            run_git(["rev-parse", "--abbrev-ref", "HEAD"], self.path),
+            parse=str,
+            error_msg="branch err (abbrev-err)",
+        ) or _parse_success(
+            run_git(["symbolic-ref", "--short", "HEAD"], self.path),
+            parse=str,
+            error_msg="branch err (symbolic-ref)",
+        )
 
     def get_head_date(self) -> date | None:
+        def parse_timestamp(timestamp_text: str) -> date | None:
+            if "%c" in timestamp_text:
+                log.warning("git too old -> timestamp is %r", timestamp_text)
+                return None
+            return datetime.fromisoformat(timestamp_text).date()
+
         res = run_git(
-            ["-c", "log.showSignature=false", "log", "-n", "1", "HEAD", "--format=%cI"],
+            [
+                *("-c", "log.showSignature=false"),
+                *("log", "-n", "1", "HEAD"),
+                "--format=%cI",
+            ],
             self.path,
         )
-        if res.returncode:
-            log.warning("timestamp err %s", res)
-            return None
-        if "%c" in res.stdout:
-            log.warning("git too old -> timestamp is %s", res.stdout)
-            return None
-        return datetime.fromisoformat(res.stdout).date()
+        return _parse_success(
+            res,
+            parse=parse_timestamp,
+            error_msg="logging the iso date for head failed",
+            default=None,
+        )
 
     def is_shallow(self) -> bool:
         return self.path.joinpath(".git/shallow").is_file()
@@ -113,11 +130,13 @@ class GitWorkdir(Workdir):
         run_git(["fetch", "--unshallow"], self.path, check=True)
 
     def node(self) -> str | None:
-        res = run_git(["rev-parse", "--verify", "--quiet", "HEAD"], self.path)
-        if not res.returncode:
-            return res.stdout[:7]
-        else:
-            return None
+        def _unsafe_short_node(node: str) -> str:
+            return node[:7]
+
+        return _parse_success(
+            run_git(["rev-parse", "--verify", "--quiet", "HEAD"], self.path),
+            parse=_unsafe_short_node,
+        )
 
     def count_all_nodes(self) -> int:
         res = run_git(["rev-list", "HEAD"], self.path)
@@ -194,8 +213,10 @@ def version_from_describe(
         if isinstance(describe_command, str):
             describe_command = shlex.split(describe_command)
             # todo: figure how ot ensure git with gitdir gets correctly invoked
-            assert describe_command[0] == "git", describe_command
-        describe_res = run_git(describe_command[1:], wd.path)
+        if describe_command[0] == "git":
+            describe_res = run_git(describe_command[1:], wd.path)
+        else:
+            describe_res = _run(describe_command, wd.path)
     else:
         describe_res = wd.default_describe()
 
@@ -317,7 +338,7 @@ def archival_to_version(
         if node is None:
             return None
         elif "$FORMAT" in node.upper():
-            warnings.warn("unexported git archival found")
+            warnings.warn("unprocessed git archival found (no export subst applied)")
             return None
         else:
             return meta("0.0", node=node, config=config)

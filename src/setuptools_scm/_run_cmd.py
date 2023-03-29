@@ -5,13 +5,19 @@ import shlex
 import subprocess
 import textwrap
 import warnings
+from typing import Callable
 from typing import Mapping
+from typing import overload
 from typing import Sequence
+from typing import TypeVar
 
 from . import _log
 from . import _types as _t
 
 log = _log.log.getChild("run_cmd")
+
+PARSE_RESULT = TypeVar("PARSE_RESULT")
+T = TypeVar("T")
 
 
 def no_git_env(env: Mapping[str, str]) -> dict[str, str]:
@@ -107,6 +113,43 @@ def run(
     if check:
         res.check_returncode()
     return res
+
+
+@overload
+def parse_success(
+    res: subprocess.CompletedProcess[str],
+    *,
+    parse: Callable[[str], PARSE_RESULT],
+    default: None = None,
+    error_msg: str | None = None,
+) -> PARSE_RESULT | None:
+    ...
+
+
+@overload
+def parse_success(
+    res: subprocess.CompletedProcess[str],
+    *,
+    parse: Callable[[str], PARSE_RESULT],
+    default: T,
+    error_msg: str | None = None,
+) -> PARSE_RESULT | T:
+    ...
+
+
+def parse_success(
+    res: subprocess.CompletedProcess[str],
+    *,
+    parse: Callable[[str], PARSE_RESULT],
+    default: T | None = None,
+    error_msg: str | None = None,
+) -> PARSE_RESULT | T | None:
+    if res.returncode:
+        if error_msg:
+            log.warning("%s %s", error_msg, res)
+        return default
+    else:
+        return parse(res.stdout)
 
 
 def _unsafe_quote_for_display(item: _t.PathT) -> str:
