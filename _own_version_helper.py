@@ -18,7 +18,6 @@ from setuptools_scm.version import guess_next_dev_version
 from setuptools_scm.version import ScmVersion
 
 log = logging.getLogger("setuptools_scm")
-
 # todo: take fake entrypoints from pyproject.toml
 try_parse: list[Callable[[_t.PathT, Configuration], ScmVersion | None]] = [
     parse_pkginfo,
