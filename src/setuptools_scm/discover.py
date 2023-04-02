@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Iterable
 from typing import Iterator
 
@@ -11,24 +12,16 @@ from ._config import Configuration
 log = _log.log.getChild("discover")
 
 
-def walk_potential_roots(
-    root: _t.PathT, search_parents: bool = True
-) -> Iterator[_t.PathT]:
+def walk_potential_roots(root: _t.PathT, search_parents: bool = True) -> Iterator[Path]:
     """
     Iterate though a path and each of its parents.
     :param root: File path.
     :param search_parents: If ``False`` the parents are not considered.
     """
-
-    if not search_parents:
-        yield root
-        return
-
-    tail = root
-
-    while tail:
-        yield root
-        root, tail = os.path.split(root)
+    root = Path(root)
+    yield root
+    if search_parents:
+        yield from root.parents
 
 
 def match_entrypoint(root: _t.PathT, name: str) -> bool:
