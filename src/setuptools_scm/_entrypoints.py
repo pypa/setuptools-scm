@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import warnings
 from typing import Any
 from typing import Callable
 from typing import cast
@@ -8,21 +7,24 @@ from typing import Iterator
 from typing import overload
 from typing import TYPE_CHECKING
 
+from typing_extensions import Protocol
+
 from . import _log
 from . import version
 
 if TYPE_CHECKING:
     from ._config import Configuration
-    from typing_extensions import Protocol
     from . import _types as _t
-else:
-    Configuration = Any
-
-    class Protocol:
-        pass
 
 
 log = _log.log.getChild("entrypoints")
+
+
+class EntrypointProtocol(Protocol):
+    name: str
+
+    def load(self) -> Any:
+        pass
 
 
 def _version_from_entrypoints(
@@ -48,38 +50,25 @@ def _version_from_entrypoints(
 
 
 try:
-    from importlib.metadata import entry_points  # type: ignore
-    from importlib.metadata import EntryPoint
+    from importlib_metadata import entry_points
+    from importlib_metadata import EntryPoint
 except ImportError:
-    try:
-        from importlib_metadata import entry_points
-        from importlib_metadata import EntryPoint
-    except ImportError:
-        from collections import defaultdict
-
-        def entry_points() -> dict[str, list[_t.EntrypointProtocol]]:
-            warnings.warn(
-                "importlib metadata missing, "
-                "this may happen at build time for python3.7"
-            )
-            return defaultdict(list)
-
-        class EntryPoint:  # type: ignore
-            def __init__(self, *args: Any, **kwargs: Any):
-                pass  # entry_points() already provides the warning
+    from importlib.metadata import entry_points  # type: ignore [no-redef, import]
+    from importlib.metadata import EntryPoint  # type: ignore [no-redef]
 
 
 def iter_entry_points(
     group: str, name: str | None = None
-) -> Iterator[_t.EntrypointProtocol]:
-    all_eps = entry_points()
-    if hasattr(all_eps, "select"):
-        eps = all_eps.select(group=group)
-    else:
-        eps = all_eps[group]
-    if name is None:
-        return iter(eps)
-    return (ep for ep in eps if ep.name == name)
+) -> Iterator[EntrypointProtocol]:
+    eps = entry_points(group=group)
+    res = (
+        eps
+        if name is None
+        else eps.select(  # type: ignore [no-untyped-call]
+            name=name,
+        )
+    )
+    return cast(Iterator[EntrypointProtocol], iter(res))
 
 
 def _get_ep(group: str, name: str) -> Any | None:
@@ -91,8 +80,11 @@ def _get_ep(group: str, name: str) -> Any | None:
 
 
 def _get_from_object_reference_str(path: str) -> Any | None:
+    ep: EntrypointProtocol = EntryPoint(
+        path, path, None
+    )  # type: ignore [no-untyped-call]
     try:
-        return EntryPoint(path, path, None).load()
+        return ep.load()
     except (AttributeError, ModuleNotFoundError):
         return None
 
@@ -122,22 +114,22 @@ def _iter_version_schemes(
 
 @overload
 def _call_version_scheme(
-    version: version.ScmVersion, entypoint: str, given_value: str, default: str
+    version: version.ScmVersion, entrypoint: str, given_value: str, default: str
 ) -> str:
     ...
 
 
 @overload
 def _call_version_scheme(
-    version: version.ScmVersion, entypoint: str, given_value: str, default: None
+    version: version.ScmVersion, entrypoint: str, given_value: str, default: None
 ) -> str | None:
     ...
 
 
 def _call_version_scheme(
-    version: version.ScmVersion, entypoint: str, given_value: str, default: str | None
+    version: version.ScmVersion, entrypoint: str, given_value: str, default: str | None
 ) -> str | None:
-    for scheme in _iter_version_schemes(entypoint, given_value):
+    for scheme in _iter_version_schemes(entrypoint, given_value):
         result = scheme(version)
         if result is not None:
             return result

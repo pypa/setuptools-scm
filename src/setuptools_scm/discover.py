@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Iterable
 from typing import Iterator
 
+from . import _entrypoints
 from . import _log
 from . import _types as _t
 from ._config import Configuration
@@ -42,7 +43,7 @@ def match_entrypoint(root: _t.PathT, name: str) -> bool:
 
 def iter_matching_entrypoints(
     root: _t.PathT, entrypoint: str, config: Configuration
-) -> Iterable[_t.EntrypointProtocol]:
+) -> Iterable[_entrypoints.EntrypointProtocol]:
     """
     Consider different entry-points in ``root`` and optionally its parents.
     :param root: File path.

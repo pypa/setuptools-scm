@@ -22,8 +22,9 @@ from ._modify_version import _strip_local
 
 if TYPE_CHECKING:
     from typing_extensions import Concatenate
+    from typing_extensions import ParamSpec
 
-    from . import _types as _t
+    _P = ParamSpec("_P")
 
 
 from ._version_cls import Version as PkgVersion, _VersionT
@@ -156,10 +157,10 @@ class ScmVersion:
 
     def format_next_version(
         self,
-        guess_next: Callable[Concatenate[ScmVersion, _t.P], str],
+        guess_next: Callable[Concatenate[ScmVersion, _P], str],
         fmt: str = "{guessed}.dev{distance}",
-        *k: _t.P.args,
-        **kw: _t.P.kwargs,
+        *k: _P.args,
+        **kw: _P.kwargs,
     ) -> str:
         guessed = guess_next(self, *k, **kw)
         return self.format_with(fmt, guessed=guessed)
