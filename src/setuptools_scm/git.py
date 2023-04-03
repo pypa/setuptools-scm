@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 
 from . import _types as _t
 from . import Configuration
+from . import discover
 from ._run_cmd import parse_success as _parse_success
 from ._run_cmd import require_command as _require_command
 from ._run_cmd import run as _run
@@ -58,7 +59,6 @@ class GitWorkdir(Workdir):
 
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdir | None:
-        _require_command("git")
         wd = Path(wd).resolve()
         real_wd = _parse_success(run_git(["rev-parse", "--show-prefix"], wd), parse=str)
         if real_wd is None:
@@ -175,8 +175,12 @@ def get_working_directory(config: Configuration, root: _t.PathT) -> GitWorkdir |
     if config.parent:  # todo broken
         return GitWorkdir.from_potential_worktree(config.parent)
 
-    if config.search_parent_directories:
-        return search_parent(root)
+    for potential_root in discover.walk_potential_roots(
+        root, search_parents=config.search_parent_directories
+    ):
+        potential_wd = GitWorkdir.from_potential_worktree(potential_root)
+        if potential_wd is not None:
+            return potential_wd
 
     return GitWorkdir.from_potential_worktree(root)
 
@@ -190,6 +194,7 @@ def parse(
     """
     :param pre_parse: experimental pre_parse action, may change at any time
     """
+    _require_command("git")
     wd = get_working_directory(config, root)
     if wd:
         return _git_parse_inner(
@@ -280,33 +285,6 @@ def _git_parse_describe(
         tag, number_, node = split
         number = int(number_)
     return tag, number, node, dirty
-
-
-def search_parent(dirname: _t.PathT) -> GitWorkdir | None:
-    """
-    Walk up the path to find the `.git` directory.
-    :param dirname: Directory from which to start searching.
-    """
-
-    # Code based on:
-    # https://github.com/gitpython-developers/GitPython/blob/main/git/repo/base.py
-
-    curpath = os.path.abspath(dirname)
-
-    while curpath:
-        try:
-            wd = GitWorkdir.from_potential_worktree(curpath)
-        except Exception:
-            wd = None
-
-        if wd is not None:
-            return wd
-
-        curpath, tail = os.path.split(curpath)
-
-        if not tail:
-            return None
-    return None
 
 
 def archival_to_version(
