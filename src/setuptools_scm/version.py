@@ -116,7 +116,7 @@ def _source_epoch_or_utc_now() -> datetime:
 class ScmVersion:
     tag: _v.Version | _v.NonNormalizedVersion | str
     config: _config.Configuration
-    distance: int | None = None
+    distance: int = 0
     node: str | None = None
     dirty: bool = False
     preformatted: bool = False
@@ -126,13 +126,9 @@ class ScmVersion:
         init=False, default_factory=_source_epoch_or_utc_now
     )
 
-    def __post_init__(self) -> None:
-        if self.dirty and self.distance is None:
-            self.distance = 0
-
     @property
     def exact(self) -> bool:
-        return self.distance is None
+        return self.distance == 0 and not self.dirty
 
     def __repr__(self) -> str:
         return self.format_with(
@@ -182,7 +178,7 @@ def _parse_tag(
 def meta(
     tag: str | _VersionT,
     *,
-    distance: int | None = None,
+    distance: int = 0,
     dirty: bool = False,
     node: str | None = None,
     preformatted: bool = False,

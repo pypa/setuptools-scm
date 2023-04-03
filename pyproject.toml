@@ -4,6 +4,7 @@
 build-backend = "hatchling.build"
 requires = [
   "hatchling>=1.10",
+  'importlib-metadata>=4.6; python_version < "3.10"',
   "packaging>=20",
   "setuptools>=55",
   'tomli; python_version < "3.11"',
@@ -40,7 +41,7 @@ dynamic = [
   "version",
 ]
 dependencies = [
-  'importlib-metadata; python_version < "3.8"',
+  'importlib-metadata>=4.6; python_version < "3.10"',
   "packaging>=20",
   "setuptools",
   'tomli>=1; python_version < "3.11"',

@@ -46,7 +46,7 @@ def test_pkginfo_noscmroot(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> N
         pass
     else:
         res = run([sys.executable, "setup.py", "--version"], p)
-        assert res.stdout == "0.1.dev0"
+        assert res.stdout == "0.1.dev0+d20090213"
 
 
 @pytest.mark.issue(164)

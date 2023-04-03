@@ -70,7 +70,7 @@ setup(use_scm_version={"root": "../..",
 """
     )
     res = run([sys.executable, "setup.py", "--version"], p)
-    assert res.stdout == "0.1.dev0"
+    assert res.stdout == "0.1.dev0+d20090213"
 
 
 def test_root_search_parent_directories(
@@ -85,7 +85,7 @@ setup(use_scm_version={"search_parent_directories": True})
 """
     )
     res = run([sys.executable, "setup.py", "--version"], p)
-    assert res.stdout == "0.1.dev0"
+    assert res.stdout == "0.1.dev0+d20090213"
 
 
 def test_git_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -146,7 +146,7 @@ def test_not_owner(wd: WorkDir) -> None:
 
 
 def test_version_from_git(wd: WorkDir) -> None:
-    assert wd.version == "0.1.dev0"
+    assert wd.version == "0.1.dev0+d20090213"
 
     parsed = git.parse(str(wd.cwd), Configuration(), git.DEFAULT_DESCRIBE)
     assert parsed is not None and parsed.branch in ("master", "main")
@@ -253,7 +253,8 @@ def test_unicode_version_scheme(wd: WorkDir) -> None:
 def test_git_worktree(wd: WorkDir) -> None:
     wd.write("test.txt", "test2")
     # untracked files dont change the state
-    assert wd.version == "0.1.dev0"
+    assert wd.version == "0.1.dev0+d20090213"
+
     wd("git add test.txt")
     assert wd.version.startswith("0.1.dev0+d")
 

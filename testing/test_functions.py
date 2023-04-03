@@ -38,36 +38,37 @@ def test_next_tag(tag: str, expected: str) -> None:
 
 
 VERSIONS = {
-    "exact": meta("1.1", distance=None, dirty=False, config=c),
-    "zerodistance": meta("1.1", distance=0, dirty=False, config=c),
-    "dirty": meta("1.1", distance=None, dirty=True, config=c),
-    "distance": meta("1.1", distance=3, dirty=False, config=c),
-    "distancedirty": meta("1.1", distance=3, dirty=True, config=c),
+    "exact": meta("1.1", distance=0, dirty=False, config=c),
+    "dirty": meta("1.1", distance=0, dirty=True, config=c),
+    "distance-clean": meta("1.1", distance=3, dirty=False, config=c),
+    "distance-dirty": meta("1.1", distance=3, dirty=True, config=c),
 }
 
 
 @pytest.mark.parametrize(
-    "version,scheme,expected",
+    "version,version_scheme, local_scheme,expected",
     [
-        ("exact", "guess-next-dev node-and-date", "1.1"),
-        ("zerodistance", "guess-next-dev node-and-date", "1.2.dev0"),
-        ("zerodistance", "guess-next-dev no-local-version", "1.2.dev0"),
-        ("dirty", "guess-next-dev node-and-date", "1.2.dev0+d20090213"),
-        ("dirty", "guess-next-dev no-local-version", "1.2.dev0"),
-        ("distance", "guess-next-dev node-and-date", "1.2.dev3"),
-        ("distancedirty", "guess-next-dev node-and-date", "1.2.dev3+d20090213"),
-        ("distancedirty", "guess-next-dev no-local-version", "1.2.dev3"),
-        ("exact", "post-release node-and-date", "1.1"),
-        ("zerodistance", "post-release node-and-date", "1.1.post0"),
-        ("dirty", "post-release node-and-date", "1.1.post0+d20090213"),
-        ("distance", "post-release node-and-date", "1.1.post3"),
-        ("distancedirty", "post-release node-and-date", "1.1.post3+d20090213"),
+        ("exact", "guess-next-dev", "node-and-date", "1.1"),
+        ("dirty", "guess-next-dev", "node-and-date", "1.2.dev0+d20090213"),
+        ("dirty", "guess-next-dev", "no-local-version", "1.2.dev0"),
+        ("distance-clean", "guess-next-dev", "node-and-date", "1.2.dev3"),
+        ("distance-dirty", "guess-next-dev", "node-and-date", "1.2.dev3+d20090213"),
+        ("exact", "post-release", "node-and-date", "1.1"),
+        ("dirty", "post-release", "node-and-date", "1.1.post0+d20090213"),
+        ("distance-clean", "post-release", "node-and-date", "1.1.post3"),
+        ("distance-dirty", "post-release", "node-and-date", "1.1.post3+d20090213"),
     ],
 )
-def test_format_version(version: str, scheme: str, expected: str) -> None:
+def test_format_version(
+    version: str, version_scheme: str, local_scheme: str, expected: str
+) -> None:
     scm_version = VERSIONS[version]
-    vs, ls = scheme.split()
-    assert format_version(scm_version, version_scheme=vs, local_scheme=ls) == expected
+    assert (
+        format_version(
+            scm_version, version_scheme=version_scheme, local_scheme=local_scheme
+        )
+        == expected
+    )
 
 
 def test_dump_version_doesnt_bail_on_value_error(tmp_path: Path) -> None:

@@ -11,6 +11,9 @@ breaking
 * migrate to hatchling
 * renamed setuptools_scm.hacks to setuptools_scm.fallbacks and drop support for pip-egg-info
 * remove trace function and use logging instead
+* unify distance=None and distance=0 they should mean the same
+  and where hiding dirty states that are now explicitly dirty
+* depend on later importlib for the full selectable api
 
 features
 --------

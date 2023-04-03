@@ -220,14 +220,11 @@ def version_from_describe(
     else:
         describe_res = wd.default_describe()
 
-    distance: int | None
-    node: str | None
-    if describe_res.returncode == 0:
-        tag, distance, node, dirty = _git_parse_describe(describe_res.stdout)
-        if distance == 0 and not dirty:
-            distance = None
+    def parse_describe(output: str) -> ScmVersion:
+        tag, distance, node, dirty = _git_parse_describe(output)
         return meta(tag=tag, distance=distance, dirty=dirty, node=node, config=config)
-    return None
+
+    return _parse_success(describe_res, parse=parse_describe)
 
 
 def _git_parse_inner(
@@ -247,14 +244,14 @@ def _git_parse_inner(
         node = wd.node()
         if node is None:
             distance = 0
+            dirty = True
         else:
             distance = wd.count_all_nodes()
             node = "g" + node
-        dirty = wd.is_dirty()
+            dirty = wd.is_dirty()
         version = meta(
             tag=tag, distance=distance, dirty=dirty, node=node, config=config
         )
-
     branch = wd.get_branch()
     node_date = wd.get_head_date() or date.today()
     return dataclasses.replace(version, branch=branch, node_date=node_date)
@@ -262,7 +259,7 @@ def _git_parse_inner(
 
 def _git_parse_describe(
     describe_output: str,
-) -> tuple[str, int | None, str | None, bool]:
+) -> tuple[str, int, str | None, bool]:
     # 'describe_output' looks e.g. like 'v1.5.0-0-g4060507' or
     # 'v1.15.1rc1-37-g9bd1298-dirty'.
     # It may also just be a bare tag name if this is a tagged commit and we are
@@ -277,7 +274,7 @@ def _git_parse_describe(
     split = describe_output.rsplit("-", 2)
     if len(split) < 3:  # probably a tagged commit
         tag = describe_output
-        number = None
+        number = 0
         node = None
     else:
         tag, number_, node = split
@@ -325,7 +322,7 @@ def archival_to_version(
         return meta(
             tag,
             config=config,
-            distance=None if number == 0 else number,
+            distance=number,
             node=node,
         )
 
