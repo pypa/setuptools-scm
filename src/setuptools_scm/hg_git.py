@@ -5,9 +5,9 @@ import os
 from contextlib import suppress
 from datetime import date
 from pathlib import Path
-from subprocess import CompletedProcess
 
 from . import _types as _t
+from ._run_cmd import CompletedProcess as _CompletedProcess
 from ._run_cmd import require_command
 from ._run_cmd import run as _run
 from .git import GitWorkdir
@@ -15,7 +15,7 @@ from .hg import HgWorkdir
 
 log = logging.getLogger(__name__)
 
-_FAKE_GIT_DESCRIBE_ERROR = CompletedProcess(
+_FAKE_GIT_DESCRIBE_ERROR = _CompletedProcess(
     "fake git describe output for hg",
     1,
     "<>hg git failed to describe",
@@ -28,10 +28,10 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdirHgClient | None:
         require_command("hg")
-        res = _run(["hg", "root"], cwd=wd)
-        if res.returncode:
+        res = _run(["hg", "root"], cwd=wd).parse_success(parse=Path)
+        if res is None:
             return None
-        return cls(Path(res.stdout))
+        return cls(res)
 
     def is_dirty(self) -> bool:
         res = _run(["hg", "id", "-T", "{dirty}"], cwd=self.path, check=True)
@@ -45,11 +45,9 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         return res.stdout
 
     def get_head_date(self) -> date | None:
-        res = _run('hg log -r . -T "{shortdate(date)}"', cwd=self.path)
-        if res.returncode:
-            log.info("head date err %s", res)
-            return None
-        return date.fromisoformat(res.stdout)
+        return _run('hg log -r . -T "{shortdate(date)}"', cwd=self.path).parse_success(
+            parse=date.fromisoformat, error_msg="head date err"
+        )
 
     def is_shallow(self) -> bool:
         return False
@@ -100,7 +98,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         res = _run(["hg", "log", "-r", "ancestors(.)", "-T", "."], cwd=self.path)
         return len(res.stdout)
 
-    def default_describe(self) -> CompletedProcess[str]:
+    def default_describe(self) -> _CompletedProcess:
         """
         Tentative to reproduce the output of
 
@@ -149,7 +147,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         if self.is_dirty():
             desc += "-dirty"
         log.debug("faked describe %r", desc)
-        return CompletedProcess(
+        return _CompletedProcess(
             ["setuptools-scm", "faked", "describe"],
             returncode=0,
             stdout=desc,

@@ -17,17 +17,14 @@ from .version import tag_to_version
 if TYPE_CHECKING:
     from . import _types as _t
 
-from ._run_cmd import run as _run, require_command
+from ._run_cmd import run as _run, require_command as _require_command
 
 log = logging.getLogger(__name__)
 
 
 class HgWorkdir(Workdir):
-    COMMAND = "hg"
-
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> HgWorkdir | None:
-        require_command(cls.COMMAND)
         res = _run(["hg", "root"], wd)
         if res.returncode:
             return None
@@ -142,6 +139,7 @@ class HgWorkdir(Workdir):
 
 
 def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
+    _require_command("hg")
     if os.path.exists(os.path.join(root, ".hg/git")):
         res = _run(["hg", "path"], root)
         if not res.returncode:

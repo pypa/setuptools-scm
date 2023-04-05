@@ -10,7 +10,6 @@ from datetime import date
 from datetime import datetime
 from os.path import samefile
 from pathlib import Path
-from subprocess import CompletedProcess
 from typing import Callable
 from typing import Sequence
 from typing import TYPE_CHECKING
@@ -18,7 +17,7 @@ from typing import TYPE_CHECKING
 from . import _types as _t
 from . import Configuration
 from . import discover
-from ._run_cmd import parse_success as _parse_success
+from ._run_cmd import CompletedProcess as _CompletedProcess
 from ._run_cmd import require_command as _require_command
 from ._run_cmd import run as _run
 from .integration import data_from_mime
@@ -50,7 +49,7 @@ DEFAULT_DESCRIBE = [
 
 def run_git(
     args: Sequence[str | os.PathLike[str]], repo: Path, *, check: bool = False
-) -> CompletedProcess[str]:
+) -> _CompletedProcess:
     return _run(["git", "--git-dir", repo / ".git", *args], cwd=repo, check=check)
 
 
@@ -60,7 +59,7 @@ class GitWorkdir(Workdir):
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdir | None:
         wd = Path(wd).resolve()
-        real_wd = _parse_success(run_git(["rev-parse", "--show-prefix"], wd), parse=str)
+        real_wd = run_git(["rev-parse", "--show-prefix"], wd).parse_success(parse=str)
         if real_wd is None:
             return None
         else:
@@ -82,21 +81,24 @@ class GitWorkdir(Workdir):
         return cls(Path(real_wd))
 
     def is_dirty(self) -> bool:
-        res = run_git(["status", "--porcelain", "--untracked-files=no"], self.path)
-
-        return _parse_success(
-            res,
+        return run_git(
+            ["status", "--porcelain", "--untracked-files=no"], self.path
+        ).parse_success(
             parse=bool,
             default=False,
         )
 
     def get_branch(self) -> str | None:
-        return _parse_success(
-            run_git(["rev-parse", "--abbrev-ref", "HEAD"], self.path),
+        return run_git(
+            ["rev-parse", "--abbrev-ref", "HEAD"],
+            self.path,
+        ).parse_success(
             parse=str,
             error_msg="branch err (abbrev-err)",
-        ) or _parse_success(
-            run_git(["symbolic-ref", "--short", "HEAD"], self.path),
+        ) or run_git(
+            ["symbolic-ref", "--short", "HEAD"],
+            self.path,
+        ).parse_success(
             parse=str,
             error_msg="branch err (symbolic-ref)",
         )
@@ -116,8 +118,7 @@ class GitWorkdir(Workdir):
             ],
             self.path,
         )
-        return _parse_success(
-            res,
+        return res.parse_success(
             parse=parse_timestamp,
             error_msg="logging the iso date for head failed",
             default=None,
@@ -133,8 +134,9 @@ class GitWorkdir(Workdir):
         def _unsafe_short_node(node: str) -> str:
             return node[:7]
 
-        return _parse_success(
-            run_git(["rev-parse", "--verify", "--quiet", "HEAD"], self.path),
+        return run_git(
+            ["rev-parse", "--verify", "--quiet", "HEAD"], self.path
+        ).parse_success(
             parse=_unsafe_short_node,
         )
 
@@ -142,7 +144,7 @@ class GitWorkdir(Workdir):
         res = run_git(["rev-list", "HEAD"], self.path)
         return res.stdout.count("\n") + 1
 
-    def default_describe(self) -> CompletedProcess[str]:
+    def default_describe(self) -> _CompletedProcess:
         return run_git(DEFAULT_DESCRIBE[1:], self.path)
 
 
@@ -229,7 +231,7 @@ def version_from_describe(
         tag, distance, node, dirty = _git_parse_describe(output)
         return meta(tag=tag, distance=distance, dirty=dirty, node=node, config=config)
 
-    return _parse_success(describe_res, parse=parse_describe)
+    return describe_res.parse_success(parse=parse_describe)
 
 
 def _git_parse_inner(

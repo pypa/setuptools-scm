@@ -22,6 +22,7 @@ from setuptools_scm import Configuration
 from setuptools_scm import git
 from setuptools_scm import NonNormalizedVersion
 from setuptools_scm._file_finders.git import git_find_files
+from setuptools_scm._run_cmd import CompletedProcess
 from setuptools_scm._run_cmd import has_command
 from setuptools_scm._run_cmd import run
 from setuptools_scm.git import archival_to_version
@@ -475,9 +476,7 @@ def test_git_getdate_badgit(
 ) -> None:
     wd.commit_testfile()
     git_wd = git.GitWorkdir(wd.cwd)
-    fake_date_result = subprocess.CompletedProcess(
-        args=[], stdout="%cI", stderr="", returncode=0
-    )
+    fake_date_result = CompletedProcess(args=[], stdout="%cI", stderr="", returncode=0)
     with patch.object(
         git,
         "run_git",

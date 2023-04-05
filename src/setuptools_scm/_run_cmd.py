@@ -9,15 +9,66 @@ from typing import Callable
 from typing import Mapping
 from typing import overload
 from typing import Sequence
+from typing import TYPE_CHECKING
 from typing import TypeVar
 
 from . import _log
 from . import _types as _t
 
+if TYPE_CHECKING:
+    BaseCompletedProcess = subprocess.CompletedProcess[str]
+else:
+    BaseCompletedProcess = subprocess.CompletedProcess
+
+
 log = _log.log.getChild("run_cmd")
 
 PARSE_RESULT = TypeVar("PARSE_RESULT")
 T = TypeVar("T")
+
+
+class CompletedProcess(BaseCompletedProcess):
+    @classmethod
+    def from_raw(
+        cls, input: BaseCompletedProcess, strip: bool = True
+    ) -> CompletedProcess:
+        return cls(
+            args=input.args,
+            returncode=input.returncode,
+            stdout=input.stdout.strip() if strip and input.stdout else input.stdout,
+            stderr=input.stderr.strip() if strip and input.stderr else input.stderr,
+        )
+
+    @overload
+    def parse_success(
+        self,
+        parse: Callable[[str], PARSE_RESULT],
+        default: None = None,
+        error_msg: str | None = None,
+    ) -> PARSE_RESULT | None:
+        ...
+
+    @overload
+    def parse_success(
+        self,
+        parse: Callable[[str], PARSE_RESULT],
+        default: T,
+        error_msg: str | None = None,
+    ) -> PARSE_RESULT | T:
+        ...
+
+    def parse_success(
+        self,
+        parse: Callable[[str], PARSE_RESULT],
+        default: T | None = None,
+        error_msg: str | None = None,
+    ) -> PARSE_RESULT | T | None:
+        if self.returncode:
+            if error_msg:
+                log.warning("%s %s", error_msg, self)
+            return default
+        else:
+            return parse(self.stdout)
 
 
 def no_git_env(env: Mapping[str, str]) -> dict[str, str]:
@@ -77,7 +128,7 @@ def run(
     trace: bool = True,
     timeout: int = 20,
     check: bool = False,
-) -> subprocess.CompletedProcess[str]:
+) -> CompletedProcess:
     if isinstance(cmd, str):
         cmd = shlex.split(cmd)
     else:
@@ -99,10 +150,8 @@ def run(
         text=True,
         timeout=timeout,
     )
-    if strip:
-        if res.stdout:
-            res.stdout = ensure_stripped_str(res.stdout)
-            res.stderr = ensure_stripped_str(res.stderr)
+
+    res = CompletedProcess.from_raw(res, strip=strip)
     if trace:
         if res.stdout:
             log.debug("out:\n%s", textwrap.indent(res.stdout, "    "))
@@ -113,43 +162,6 @@ def run(
     if check:
         res.check_returncode()
     return res
-
-
-@overload
-def parse_success(
-    res: subprocess.CompletedProcess[str],
-    *,
-    parse: Callable[[str], PARSE_RESULT],
-    default: None = None,
-    error_msg: str | None = None,
-) -> PARSE_RESULT | None:
-    ...
-
-
-@overload
-def parse_success(
-    res: subprocess.CompletedProcess[str],
-    *,
-    parse: Callable[[str], PARSE_RESULT],
-    default: T,
-    error_msg: str | None = None,
-) -> PARSE_RESULT | T:
-    ...
-
-
-def parse_success(
-    res: subprocess.CompletedProcess[str],
-    *,
-    parse: Callable[[str], PARSE_RESULT],
-    default: T | None = None,
-    error_msg: str | None = None,
-) -> PARSE_RESULT | T | None:
-    if res.returncode:
-        if error_msg:
-            log.warning("%s %s", error_msg, res)
-        return default
-    else:
-        return parse(res.stdout)
 
 
 def _unsafe_quote_for_display(item: _t.PathT) -> str:
