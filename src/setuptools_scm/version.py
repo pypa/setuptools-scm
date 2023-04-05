@@ -14,11 +14,7 @@ from typing import Match
 from typing import TYPE_CHECKING
 
 from . import _entrypoints
-from ._modify_version import _bump_dev
-from ._modify_version import _bump_regex
-from ._modify_version import _dont_guess_next_version
-from ._modify_version import _format_local_with_time
-from ._modify_version import _strip_local
+from . import _modify_version
 
 if TYPE_CHECKING:
     from typing_extensions import Concatenate
@@ -202,8 +198,8 @@ def meta(
 
 
 def guess_next_version(tag_version: ScmVersion) -> str:
-    version = _strip_local(str(tag_version.tag))
-    return _bump_dev(version) or _bump_regex(version)
+    version = _modify_version._strip_local(str(tag_version.tag))
+    return _modify_version._bump_dev(version) or _modify_version._bump_regex(version)
 
 
 def guess_next_dev_version(version: ScmVersion) -> str:
@@ -282,7 +278,7 @@ def no_guess_dev_version(version: ScmVersion) -> str:
     if version.exact:
         return version.format_with("{tag}")
     else:
-        return version.format_next_version(_dont_guess_next_version)
+        return version.format_next_version(_modify_version._dont_guess_next_version)
 
 
 _DATE_REGEX = re.compile(
@@ -366,11 +362,11 @@ def calver_by_date(version: ScmVersion) -> str:
 
 
 def get_local_node_and_date(version: ScmVersion) -> str:
-    return _format_local_with_time(version, time_format="%Y%m%d")
+    return _modify_version._format_local_with_time(version, time_format="%Y%m%d")
 
 
 def get_local_node_and_timestamp(version: ScmVersion, fmt: str = "%Y%m%d%H%M%S") -> str:
-    return _format_local_with_time(version, time_format=fmt)
+    return _modify_version._format_local_with_time(version, time_format=fmt)
 
 
 def get_local_dirty_tag(version: ScmVersion) -> str:
