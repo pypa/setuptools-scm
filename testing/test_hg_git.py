@@ -26,8 +26,8 @@ def _check_hg_git() -> None:
 def test_base(repositories_hg_git: tuple[WorkDir, WorkDir]) -> None:
     wd, wd_git = repositories_hg_git
 
-    assert wd_git.version == "0.1.dev0"
-    assert wd.version == "0.1.dev0"
+    assert wd_git.version == "0.1.dev0+d20090213"
+    assert wd.version == "0.1.dev0+d20090213"
 
     wd_git.commit_testfile()
     version_git = wd_git.version
