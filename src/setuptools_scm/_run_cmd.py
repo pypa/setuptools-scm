@@ -170,7 +170,9 @@ def _unsafe_quote_for_display(item: _t.PathT) -> str:
     return text if all(c not in text for c in " {[:") else f'"{text}"'
 
 
-def has_command(name: str, args: Sequence[str] = ["help"], warn: bool = True) -> bool:
+def has_command(
+    name: str, args: Sequence[str] = ["version"], warn: bool = True
+) -> bool:
     try:
         p = run([name, *args], cwd=".", timeout=5)
     except OSError as e:
