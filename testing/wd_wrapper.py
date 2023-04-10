@@ -27,11 +27,8 @@ class WorkDir:
 
         return run(cmd, cwd=self.cwd).stdout
 
-    def write(self, name: str, content: str | bytes, **kw: object) -> Path:
+    def write(self, name: str, content: str | bytes) -> Path:
         path = self.cwd / name
-        if kw:
-            assert isinstance(content, str)
-            content = content.format(**kw)
         if isinstance(content, bytes):
             path.write_bytes(content)
         else:
@@ -59,7 +56,7 @@ class WorkDir:
 
     def commit_testfile(self, reason: str | None = None, signed: bool = False) -> None:
         reason = self._reason(reason)
-        self.write("test.txt", "test {reason}", reason=reason)
+        self.write("test.txt", f"test {reason}")
         self(self.add_command)
         self.commit(reason=reason, signed=signed)
 
