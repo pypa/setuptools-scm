@@ -30,7 +30,7 @@ def test_data_from_mime(tmp_path: Path) -> None:
 def test_version_from_pkginfo(wd: WorkDir) -> None:
     wd.write("PKG-INFO", "Version: 0.1")
 
-    assert wd.version == "0.1"
+    assert wd.get_version() == "0.1"
 
     # replicate issue 167
     assert wd.get_version(version_scheme="1.{0.distance}.0".format) == "0.1"

@@ -147,37 +147,37 @@ def test_not_owner(wd: WorkDir) -> None:
 
 
 def test_version_from_git(wd: WorkDir) -> None:
-    assert wd.version == "0.1.dev0+d20090213"
+    assert wd.get_version() == "0.1.dev0+d20090213"
 
     parsed = git.parse(str(wd.cwd), Configuration(), git.DEFAULT_DESCRIBE)
     assert parsed is not None and parsed.branch in ("master", "main")
 
     wd.commit_testfile()
-    assert wd.version.startswith("0.1.dev1+g")
-    assert not wd.version.endswith("1-")
+    assert wd.get_version().startswith("0.1.dev1+g")
+    assert not wd.get_version().endswith("1-")
 
     wd("git tag v0.1")
-    assert wd.version == "0.1"
+    assert wd.get_version() == "0.1"
 
     wd.write("test.txt", "test2")
-    assert wd.version.startswith("0.2.dev0+g")
+    assert wd.get_version().startswith("0.2.dev0+g")
 
     wd.commit_testfile()
-    assert wd.version.startswith("0.2.dev1+g")
+    assert wd.get_version().startswith("0.2.dev1+g")
 
     wd("git tag version-0.2")
-    assert wd.version.startswith("0.2")
+    assert wd.get_version().startswith("0.2")
 
     wd.commit_testfile()
     wd("git tag version-0.2.post210+gbe48adfpost3+g0cc25f2")
     with pytest.warns(
         UserWarning, match="tag '.*' will be stripped of its suffix '.*'"
     ):
-        assert wd.version.startswith("0.2")
+        assert wd.get_version().startswith("0.2")
 
     wd.commit_testfile()
     wd("git tag 17.33.0-rc")
-    assert wd.version == "17.33.0rc0"
+    assert wd.get_version() == "17.33.0rc0"
 
     # custom normalization
     assert wd.get_version(normalize=False) == "17.33.0-rc"
@@ -254,10 +254,10 @@ def test_unicode_version_scheme(wd: WorkDir) -> None:
 def test_git_worktree(wd: WorkDir) -> None:
     wd.write("test.txt", "test2")
     # untracked files dont change the state
-    assert wd.version == "0.1.dev0+d20090213"
+    assert wd.get_version() == "0.1.dev0+d20090213"
 
     wd("git add test.txt")
-    assert wd.version.startswith("0.1.dev0+d")
+    assert wd.get_version().startswith("0.1.dev0+d")
 
 
 @pytest.mark.issue(86)
@@ -270,14 +270,14 @@ def test_git_dirty_notag(
     wd.commit_testfile()
     wd.write("test.txt", "test2")
     wd("git add test.txt")
-    assert wd.version.startswith("0.1.dev1")
+    version = wd.get_version()
+
     if today:
         # the date on the tag is in UTC
         tag = datetime.now(timezone.utc).date().strftime(".d%Y%m%d")
     else:
         tag = ".d20090213"
-    # we are dirty, check for the tag
-    assert tag in wd.version
+    assert version.startswith("0.1.dev1+g") and version.endswith(tag)
 
 
 @pytest.mark.issue(193)
@@ -342,7 +342,7 @@ def test_parse_no_worktree(tmp_path: Path) -> None:
 def test_alphanumeric_tags_match(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd("git tag newstyle-development-started")
-    assert wd.version.startswith("0.1.dev1+g")
+    assert wd.get_version().startswith("0.1.dev1+g")
 
 
 def test_git_archive_export_ignore(
@@ -446,10 +446,10 @@ def test_non_dotted_tag_no_version_match(wd: WorkDir) -> None:
 def test_gitdir(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> None:
     """ """
     wd.commit_testfile()
-    normal = wd.version
+    normal = wd.get_version()
     # git hooks set this and break subsequent setuptools_scm unless we clean
     monkeypatch.setenv("GIT_DIR", __file__)
-    assert wd.version == normal
+    assert wd.get_version() == normal
 
 
 def test_git_getdate(wd: WorkDir) -> None:
