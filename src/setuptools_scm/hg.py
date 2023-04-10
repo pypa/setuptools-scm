@@ -51,10 +51,14 @@ class HgWorkdir(Workdir):
         dirty = bool(int(dirty_str))
         node_date = datetime.date.fromisoformat(dirty_date if dirty else node_date_str)
 
-        if node.count("0") == len(node):
+        if node == "0" * len(node):
             log.debug("initial node %s", self.path)
             return meta(
-                "0.0", config=config, dirty=dirty, branch=branch, node_date=node_date
+                Version("0.0"),
+                config=config,
+                dirty=dirty,
+                branch=branch,
+                node_date=node_date,
             )
 
         node = "h" + node[:7]
@@ -177,7 +181,7 @@ def archival_to_version(data: dict[str, str], config: Configuration) -> ScmVersi
             config=config,
         )
     else:
-        return meta("0.0", node=node, config=config)
+        return meta(config.version_cls("0.0"), node=node, config=config)
 
 
 def parse_archival(root: _t.PathT, config: Configuration) -> ScmVersion:
