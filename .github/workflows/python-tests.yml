@@ -105,10 +105,11 @@ jobs:
       - run: pytest --test-legacy testing/test_setuptools_support.py || true # ignore fail flaky on ci
 
 
-  dist_upload:
-
+  pypi-upload:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+    permissions:
+      id-token: write
     needs: [test]
     steps:
     - uses: actions/download-artifact@v3
@@ -117,5 +118,19 @@ jobs:
         path: dist
     - name: Publish package to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
+      
+  test-pypi-upload:
+    runs-on: ubuntu-latest
+    needs: [test]
+    permissions:
+      id-token: write
+    steps:
+    - uses: actions/download-artifact@v3
       with:
-        password: ${{ secrets.pypi_token }}
+        name: Packages
+        path: dist
+    - name: Publish package to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+
