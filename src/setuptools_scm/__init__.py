@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 from typing import Any
 from typing import Pattern
 from typing import TYPE_CHECKING
@@ -143,6 +144,7 @@ def get_version(
 
 def _get_version(config: Configuration) -> str | None:
     parsed_version = _do_parse(config)
+    sys.path.insert(0, config.absolute_root)
     if parsed_version is None:
         return None
     version_string = _format_version(
