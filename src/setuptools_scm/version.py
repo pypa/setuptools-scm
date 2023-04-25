@@ -395,12 +395,20 @@ def format_version(version: ScmVersion, **config: Any) -> str:
         assert isinstance(version.tag, str)
         return version.tag
     main_version = _entrypoints._call_version_scheme(
-        version, "setuptools_scm.version_scheme", config["version_scheme"], config["absolute_root"], None
+        version,
+        "setuptools_scm.version_scheme",
+        config["version_scheme"],
+        config["absolute_root"],
+        None,
     )
     trace("version", main_version)
     assert main_version is not None
     local_version = _entrypoints._call_version_scheme(
-        version, "setuptools_scm.local_scheme", config["local_scheme"], config["absolute_root"], "+unknown"
+        version,
+        "setuptools_scm.local_scheme",
+        config["local_scheme"],
+        config["absolute_root"],
+        "+unknown",
     )
     trace("local_version", local_version)
     return main_version + local_version

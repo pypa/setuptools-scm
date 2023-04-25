@@ -98,7 +98,9 @@ def _get_from_object_reference_str(path: str, absolute_root) -> Any | None:
             from importlib.util import spec_from_file_location, module_from_spec
 
             filename, func = path.rsplit(":", 1)
-            spec = spec_from_file_location(func, os.path.join(absolute_root, filename + ".py"))
+            spec = spec_from_file_location(
+                func, os.path.join(absolute_root, filename + ".py")
+            )
             module = module_from_spec(spec)
             spec.loader.exec_module(module)
             return getattr(module, func)
@@ -147,7 +149,11 @@ def _call_version_scheme(
 
 
 def _call_version_scheme(
-    version: version.ScmVersion, entypoint: str, given_value: str, absolute_root: str, default: str | None
+    version: version.ScmVersion,
+    entypoint: str,
+    given_value: str,
+    absolute_root: str,
+    default: str | None,
 ) -> str | None:
     for scheme in _iter_version_schemes(entypoint, given_value, absolute_root):
         result = scheme(version)
