@@ -149,6 +149,7 @@ def _get_version(config: Configuration) -> str | None:
         parsed_version,
         version_scheme=config.version_scheme,
         local_scheme=config.local_scheme,
+        absolute_root=config.absolute_root,
     )
     if config.write_to is not None:
         dump_version(

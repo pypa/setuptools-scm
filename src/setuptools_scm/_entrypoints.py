@@ -89,16 +89,29 @@ def _get_ep(group: str, name: str) -> Any | None:
         return None
 
 
-def _get_from_object_reference_str(path: str) -> Any | None:
+def _get_from_object_reference_str(path: str, absolute_root) -> Any | None:
     try:
         return EntryPoint(path, path, None).load()
-    except (AttributeError, ModuleNotFoundError):
+    except ModuleNotFoundError:
+        try:
+            import os
+            from importlib.util import spec_from_file_location, module_from_spec
+
+            filename, func = path.rsplit(":", 1)
+            spec = spec_from_file_location(func, os.path.join(absolute_root, filename + ".py"))
+            module = module_from_spec(spec)
+            spec.loader.exec_module(module)
+            return getattr(module, func)
+        except (ValueError, ModuleNotFoundError, AttributeError):
+            return None
+    except AttributeError:
         return None
 
 
 def _iter_version_schemes(
     entrypoint: str,
     scheme_value: _t.VERSION_SCHEMES,
+    absolute_root: str,
     _memo: set[object] | None = None,
 ) -> Iterator[Callable[[version.ScmVersion], str]]:
     if _memo is None:
@@ -107,7 +120,7 @@ def _iter_version_schemes(
         scheme_value = cast(
             "_t.VERSION_SCHEMES",
             _get_ep(entrypoint, scheme_value)
-            or _get_from_object_reference_str(scheme_value),
+            or _get_from_object_reference_str(scheme_value, absolute_root),
         )
 
     if isinstance(scheme_value, (list, tuple)):
@@ -134,9 +147,9 @@ def _call_version_scheme(
 
 
 def _call_version_scheme(
-    version: version.ScmVersion, entypoint: str, given_value: str, default: str | None
+    version: version.ScmVersion, entypoint: str, given_value: str, absolute_root: str, default: str | None
 ) -> str | None:
-    for scheme in _iter_version_schemes(entypoint, given_value):
+    for scheme in _iter_version_schemes(entypoint, given_value, absolute_root):
         result = scheme(version)
         if result is not None:
             return result
