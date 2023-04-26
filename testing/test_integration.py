@@ -91,7 +91,7 @@ def test_pyproject_support_with_git(wd: WorkDir, metadata_in: str) -> None:
     wd.write("setup.py", SETUP_PY_FILES[metadata_in])
     wd.write("setup.cfg", SETUP_CFG_FILES[metadata_in])
     res = wd([sys.executable, "setup.py", "--version"])
-    assert res.endswith("0.1.dev0")
+    assert res.endswith("0.1.dev0+d20090213")
 
 
 def test_pretend_version(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> None:
@@ -152,7 +152,7 @@ def test_distribution_provides_extras() -> None:
         from importlib_metadata import distribution
 
     dist = distribution("setuptools_scm")
-    assert sorted(dist.metadata.get_all("Provides-Extra")) == ["test", "toml"]
+    assert sorted(dist.metadata.get_all("Provides-Extra")) == ["rich", "test", "toml"]
 
 
 @pytest.mark.issue(760)

@@ -44,3 +44,4 @@ repos:
             - pytest == 7.1
             - importlib_metadata
             - typing-extensions>=4.5
+            - rich

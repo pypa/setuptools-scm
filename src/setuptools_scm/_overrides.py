@@ -4,9 +4,11 @@ import os
 from typing import Any
 
 from . import _config
+from . import _log
 from . import version
 from ._integration.pyproject_reading import lazy_toml_load
-from ._trace import trace
+
+log = _log.log.getChild("overrides")
 
 PRETEND_KEY = "SETUPTOOLS_SCM_PRETEND_VERSION"
 PRETEND_KEY_NAMED = PRETEND_KEY + "_FOR_{name}"
@@ -30,7 +32,7 @@ def _read_pretended_version_for(
     tries ``SETUPTOOLS_SCM_PRETEND_VERSION``
     and ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_$UPPERCASE_DIST_NAME``
     """
-    trace("dist name:", config.dist_name)
+    log.debug("dist name: %s", config.dist_name)
 
     pretended = read_named_env(name="PRETEND_VERSION", dist_name=config.dist_name)
 

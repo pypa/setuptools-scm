@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import contextlib
 import os
 from pathlib import Path
+from types import TracebackType
 from typing import Any
+from typing import Iterator
 
 import pytest
 
-import setuptools_scm.utils
 from .wd_wrapper import WorkDir
 from setuptools_scm._run_cmd import run
 
@@ -40,25 +42,35 @@ def pytest_addoption(parser: Any) -> None:
     )
 
 
-class DebugMode:
-    def __init__(self, monkeypatch: pytest.MonkeyPatch):
-        self.__monkeypatch = monkeypatch
-        self.__module = setuptools_scm._trace
+class DebugMode(contextlib.AbstractContextManager):  # type: ignore[type-arg]
+    from setuptools_scm import _log as __module
 
-    __monkeypatch: pytest.MonkeyPatch
+    def __init__(self) -> None:
+        self.__stack = contextlib.ExitStack()
+
+    def __enter__(self) -> DebugMode:
+        self.enable()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        self.disable()
 
     def enable(self) -> None:
-        self.__monkeypatch.setattr(self.__module, "DEBUG", True)
+        self.__stack.enter_context(self.__module.defer_to_pytest())
 
     def disable(self) -> None:
-        self.__monkeypatch.setattr(self.__module, "DEBUG", False)
+        self.__stack.close()
 
 
 @pytest.fixture(autouse=True)
-def debug_mode(monkeypatch: pytest.MonkeyPatch) -> DebugMode:
-    debug_mode = DebugMode(monkeypatch)
-    debug_mode.enable()
-    return debug_mode
+def debug_mode() -> Iterator[DebugMode]:
+    with DebugMode() as debug_mode:
+        yield debug_mode
 
 
 @pytest.fixture

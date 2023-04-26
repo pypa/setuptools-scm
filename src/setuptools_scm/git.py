@@ -1,31 +1,34 @@
 from __future__ import annotations
 
+import dataclasses
+import logging
 import os
 import re
+import shlex
 import warnings
 from datetime import date
 from datetime import datetime
-from os.path import isfile
-from os.path import join
 from os.path import samefile
+from pathlib import Path
 from typing import Callable
+from typing import Sequence
 from typing import TYPE_CHECKING
 
 from . import _types as _t
 from . import Configuration
-from ._trace import trace
+from . import discover
+from ._run_cmd import CompletedProcess as _CompletedProcess
+from ._run_cmd import require_command as _require_command
+from ._run_cmd import run as _run
+from .integration import data_from_mime
 from .scm_workdir import Workdir
-from .utils import _CmdResult
-from .utils import data_from_mime
-from .utils import do_ex
-from .utils import require_command
 from .version import meta
 from .version import ScmVersion
 from .version import tag_to_version
 
 if TYPE_CHECKING:
     from . import hg_git
-
+log = logging.getLogger(__name__)
 
 REF_TAG_RE = re.compile(r"(?<=\btag: )([^,]+)\b")
 DESCRIBE_UNSUPPORTED = "%(describe"
@@ -44,89 +47,105 @@ DEFAULT_DESCRIBE = [
 ]
 
 
+def run_git(
+    args: Sequence[str | os.PathLike[str]], repo: Path, *, check: bool = False
+) -> _CompletedProcess:
+    return _run(["git", "--git-dir", repo / ".git", *args], cwd=repo, check=check)
+
+
 class GitWorkdir(Workdir):
     """experimental, may change at any time"""
 
-    COMMAND = "git"
-
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdir | None:
-        require_command(cls.COMMAND)
-        wd = os.path.abspath(wd)
-        git_dir = join(wd, ".git")
-        real_wd, _, ret = do_ex(
-            ["git", "--git-dir", git_dir, "rev-parse", "--show-prefix"], wd
-        )
-        real_wd = real_wd[:-1]  # remove the trailing pathsep
-        if ret:
+        wd = Path(wd).resolve()
+        real_wd = run_git(["rev-parse", "--show-prefix"], wd).parse_success(parse=str)
+        if real_wd is None:
             return None
-        if not real_wd:
-            real_wd = wd
         else:
-            assert wd.replace("\\", "/").endswith(real_wd)
+            real_wd = real_wd[:-1]  # remove the trailing pathsep
+
+        if not real_wd:
+            real_wd = os.fspath(wd)
+        else:
+            str_wd = os.fspath(wd)
+            assert str_wd.replace("\\", "/").endswith(real_wd)
             # In windows wd contains ``\`` which should be replaced by ``/``
             # for this assertion to work.  Length of string isn't changed by replace
             # ``\\`` is just and escape for `\`
-            real_wd = wd[: -len(real_wd)]
-        trace("real root", real_wd)
+            real_wd = str_wd[: -len(real_wd)]
+        log.debug("real root %s", real_wd)
         if not samefile(real_wd, wd):
             return None
 
-        return cls(real_wd)
-
-    def do_ex_git(self, cmd: list[str]) -> _CmdResult:
-        return self.do_ex(["git", "--git-dir", join(self.path, ".git")] + cmd)
+        return cls(Path(real_wd))
 
     def is_dirty(self) -> bool:
-        out, _, _ = self.do_ex_git(["status", "--porcelain", "--untracked-files=no"])
-        return bool(out)
+        return run_git(
+            ["status", "--porcelain", "--untracked-files=no"], self.path
+        ).parse_success(
+            parse=bool,
+            default=False,
+        )
 
     def get_branch(self) -> str | None:
-        branch, err, ret = self.do_ex_git(["rev-parse", "--abbrev-ref", "HEAD"])
-        if ret:
-            trace("branch err", branch, err, ret)
-            branch, err, ret = self.do_ex_git(["symbolic-ref", "--short", "HEAD"])
-            if ret:
-                trace("branch err (symbolic-ref)", branch, err, ret)
-                return None
-        return branch
+        return run_git(
+            ["rev-parse", "--abbrev-ref", "HEAD"],
+            self.path,
+        ).parse_success(
+            parse=str,
+            error_msg="branch err (abbrev-err)",
+        ) or run_git(
+            ["symbolic-ref", "--short", "HEAD"],
+            self.path,
+        ).parse_success(
+            parse=str,
+            error_msg="branch err (symbolic-ref)",
+        )
 
     def get_head_date(self) -> date | None:
-        timestamp, err, ret = self.do_ex_git(
-            ["-c", "log.showSignature=false", "log", "-n", "1", "HEAD", "--format=%cI"]
+        def parse_timestamp(timestamp_text: str) -> date | None:
+            if "%c" in timestamp_text:
+                log.warning("git too old -> timestamp is %r", timestamp_text)
+                return None
+            return datetime.fromisoformat(timestamp_text).date()
+
+        res = run_git(
+            [
+                *("-c", "log.showSignature=false"),
+                *("log", "-n", "1", "HEAD"),
+                "--format=%cI",
+            ],
+            self.path,
         )
-        if ret:
-            trace("timestamp err", timestamp, err, ret)
-            return None
-        # TODO, when dropping python3.6 use fromiso
-        date_part = timestamp.split("T")[0]
-        if "%c" in date_part:
-            trace("git too old -> timestamp is ", timestamp)
-            return None
-        return datetime.strptime(date_part, r"%Y-%m-%d").date()
+        return res.parse_success(
+            parse=parse_timestamp,
+            error_msg="logging the iso date for head failed",
+            default=None,
+        )
 
     def is_shallow(self) -> bool:
-        return isfile(join(self.path, ".git/shallow"))
+        return self.path.joinpath(".git/shallow").is_file()
 
     def fetch_shallow(self) -> None:
-        self.do_ex_git(["fetch", "--unshallow"])
+        run_git(["fetch", "--unshallow"], self.path, check=True)
 
     def node(self) -> str | None:
-        node, _, ret = self.do_ex_git(["rev-parse", "--verify", "--quiet", "HEAD"])
-        if not ret:
+        def _unsafe_short_node(node: str) -> str:
             return node[:7]
-        else:
-            return None
+
+        return run_git(
+            ["rev-parse", "--verify", "--quiet", "HEAD"], self.path
+        ).parse_success(
+            parse=_unsafe_short_node,
+        )
 
     def count_all_nodes(self) -> int:
-        revs, _, _ = self.do_ex_git(["rev-list", "HEAD"])
-        return revs.count("\n") + 1
+        res = run_git(["rev-list", "HEAD"], self.path)
+        return res.stdout.count("\n") + 1
 
-    def default_describe(self) -> _CmdResult:
-        git_dir = join(self.path, ".git")
-        return self.do_ex(
-            DEFAULT_DESCRIBE[:1] + ["--git-dir", git_dir] + DEFAULT_DESCRIBE[1:]
-        )
+    def default_describe(self) -> _CompletedProcess:
+        return run_git(DEFAULT_DESCRIBE[1:], self.path)
 
 
 def warn_on_shallow(wd: GitWorkdir) -> None:
@@ -150,7 +169,7 @@ def fail_on_shallow(wd: GitWorkdir) -> None:
         )
 
 
-def get_working_directory(config: Configuration, root: str) -> GitWorkdir | None:
+def get_working_directory(config: Configuration, root: _t.PathT) -> GitWorkdir | None:
     """
     Return the working directory (``GitWorkdir``).
     """
@@ -158,14 +177,18 @@ def get_working_directory(config: Configuration, root: str) -> GitWorkdir | None
     if config.parent:  # todo broken
         return GitWorkdir.from_potential_worktree(config.parent)
 
-    if config.search_parent_directories:
-        return search_parent(root)
+    for potential_root in discover.walk_potential_roots(
+        root, search_parents=config.search_parent_directories
+    ):
+        potential_wd = GitWorkdir.from_potential_worktree(potential_root)
+        if potential_wd is not None:
+            return potential_wd
 
     return GitWorkdir.from_potential_worktree(root)
 
 
 def parse(
-    root: str,
+    root: _t.PathT,
     config: Configuration,
     describe_command: str | list[str] | None = None,
     pre_parse: Callable[[GitWorkdir], None] = warn_on_shallow,
@@ -173,6 +196,7 @@ def parse(
     """
     :param pre_parse: experimental pre_parse action, may change at any time
     """
+    _require_command("git")
     wd = get_working_directory(config, root)
     if wd:
         return _git_parse_inner(
@@ -180,6 +204,34 @@ def parse(
         )
     else:
         return None
+
+
+def version_from_describe(
+    wd: GitWorkdir | hg_git.GitWorkdirHgClient,
+    config: Configuration,
+    describe_command: _t.CMD_TYPE | None,
+) -> ScmVersion | None:
+    pass
+
+    if config.git_describe_command is not None:
+        describe_command = config.git_describe_command
+
+    if describe_command is not None:
+        if isinstance(describe_command, str):
+            describe_command = shlex.split(describe_command)
+            # todo: figure how ot ensure git with gitdir gets correctly invoked
+        if describe_command[0] == "git":
+            describe_res = run_git(describe_command[1:], wd.path)
+        else:
+            describe_res = _run(describe_command, wd.path)
+    else:
+        describe_res = wd.default_describe()
+
+    def parse_describe(output: str) -> ScmVersion:
+        tag, distance, node, dirty = _git_parse_describe(output)
+        return meta(tag=tag, distance=distance, dirty=dirty, node=node, config=config)
+
+    return describe_res.parse_success(parse=parse_describe)
 
 
 def _git_parse_inner(
@@ -191,47 +243,30 @@ def _git_parse_inner(
     if pre_parse:
         pre_parse(wd)
 
-    if config.git_describe_command is not None:
-        describe_command = config.git_describe_command
+    version = version_from_describe(wd, config, describe_command)
 
-    if describe_command is not None:
-        out, _, ret = wd.do_ex(describe_command)
-    else:
-        out, _, ret = wd.default_describe()
-    distance: int | None
-    node: str | None
-    if ret == 0:
-        tag, distance, node, dirty = _git_parse_describe(out)
-        if distance == 0 and not dirty:
-            distance = None
-    else:
+    if version is None:
         # If 'git git_describe_command' failed, try to get the information otherwise.
-        tag = "0.0"
+        tag = config.version_cls("0.0")
         node = wd.node()
         if node is None:
             distance = 0
+            dirty = True
         else:
             distance = wd.count_all_nodes()
             node = "g" + node
-        dirty = wd.is_dirty()
-
+            dirty = wd.is_dirty()
+        version = meta(
+            tag=tag, distance=distance, dirty=dirty, node=node, config=config
+        )
     branch = wd.get_branch()
     node_date = wd.get_head_date() or date.today()
-
-    return meta(
-        tag,
-        branch=branch,
-        node=node,
-        node_date=node_date,
-        distance=distance,
-        dirty=dirty,
-        config=config,
-    )
+    return dataclasses.replace(version, branch=branch, node_date=node_date)
 
 
 def _git_parse_describe(
     describe_output: str,
-) -> tuple[str, int | None, str | None, bool]:
+) -> tuple[str, int, str | None, bool]:
     # 'describe_output' looks e.g. like 'v1.5.0-0-g4060507' or
     # 'v1.15.1rc1-37-g9bd1298-dirty'.
     # It may also just be a bare tag name if this is a tagged commit and we are
@@ -246,7 +281,7 @@ def _git_parse_describe(
     split = describe_output.rsplit("-", 2)
     if len(split) < 3:  # probably a tagged commit
         tag = describe_output
-        number = None
+        number = 0
         node = None
     else:
         tag, number_, node = split
@@ -254,38 +289,11 @@ def _git_parse_describe(
     return tag, number, node, dirty
 
 
-def search_parent(dirname: _t.PathT) -> GitWorkdir | None:
-    """
-    Walk up the path to find the `.git` directory.
-    :param dirname: Directory from which to start searching.
-    """
-
-    # Code based on:
-    # https://github.com/gitpython-developers/GitPython/blob/main/git/repo/base.py
-
-    curpath = os.path.abspath(dirname)
-
-    while curpath:
-        try:
-            wd = GitWorkdir.from_potential_worktree(curpath)
-        except Exception:
-            wd = None
-
-        if wd is not None:
-            return wd
-
-        curpath, tail = os.path.split(curpath)
-
-        if not tail:
-            return None
-    return None
-
-
 def archival_to_version(
     data: dict[str, str], config: Configuration
 ) -> ScmVersion | None:
     node: str | None
-    trace("data", data)
+    log.debug("data %s", data)
     archival_describe = data.get("describe-name", DESCRIBE_UNSUPPORTED)
     if DESCRIBE_UNSUPPORTED in archival_describe:
         warnings.warn("git archive did not support describe output")
@@ -294,7 +302,7 @@ def archival_to_version(
         return meta(
             tag,
             config=config,
-            distance=None if number == 0 else number,
+            distance=number,
             node=node,
         )
 
@@ -307,7 +315,7 @@ def archival_to_version(
         if node is None:
             return None
         elif "$FORMAT" in node.upper():
-            warnings.warn("unexported git archival found")
+            warnings.warn("unprocessed git archival found (no export subst applied)")
             return None
         else:
             return meta("0.0", node=node, config=config)

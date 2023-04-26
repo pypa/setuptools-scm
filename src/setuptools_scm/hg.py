@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 import datetime
+import logging
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from . import Configuration
-from ._trace import trace
 from ._version_cls import Version
+from .integration import data_from_mime
 from .scm_workdir import Workdir
-from .utils import data_from_mime
-from .utils import require_command
 from .version import meta
 from .version import ScmVersion
 from .version import tag_to_version
@@ -18,19 +17,18 @@ from .version import tag_to_version
 if TYPE_CHECKING:
     from . import _types as _t
 
-from ._run_cmd import run as _run
+from ._run_cmd import run as _run, require_command as _require_command
+
+log = logging.getLogger(__name__)
 
 
 class HgWorkdir(Workdir):
-    COMMAND = "hg"
-
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> HgWorkdir | None:
-        require_command(cls.COMMAND)
-        res = _run("hg root", wd)
+        res = _run(["hg", "root"], wd)
         if res.returncode:
             return None
-        return cls(res.stdout)
+        return cls(Path(res.stdout))
 
     def get_meta(self, config: Configuration) -> ScmVersion | None:
         node: str
@@ -45,16 +43,22 @@ class HgWorkdir(Workdir):
         # mainly used to emulate Git branches, which is already supported with
         # the dedicated class GitWorkdirHgClient)
 
-        branch, dirty_str, dirty_date = self.do(
-            ["hg", "id", "-T", "{branch}\n{if(dirty, 1, 0)}\n{date|shortdate}"]
-        ).split("\n")
+        branch, dirty_str, dirty_date = _run(
+            ["hg", "id", "-T", "{branch}\n{if(dirty, 1, 0)}\n{date|shortdate}"],
+            cwd=self.path,
+            check=True,
+        ).stdout.split("\n")
         dirty = bool(int(dirty_str))
         node_date = datetime.date.fromisoformat(dirty_date if dirty else node_date_str)
 
-        if node.count("0") == len(node):
-            trace("initial node", self.path)
+        if node == "0" * len(node):
+            log.debug("initial node %s", self.path)
             return meta(
-                "0.0", config=config, dirty=dirty, branch=branch, node_date=node_date
+                Version("0.0"),
+                config=config,
+                dirty=dirty,
+                branch=branch,
+                node_date=node_date,
             )
 
         node = "h" + node[:7]
@@ -97,7 +101,7 @@ class HgWorkdir(Workdir):
                 return meta(tag, config=config, node_date=node_date)
 
         except ValueError as e:
-            trace("error", e)
+            log.exception("error %s", e)
             pass  # unpacking failed, old hg
 
         return None
@@ -139,6 +143,7 @@ class HgWorkdir(Workdir):
 
 
 def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
+    _require_command("hg")
     if os.path.exists(os.path.join(root, ".hg/git")):
         res = _run(["hg", "path"], root)
         if not res.returncode:
@@ -162,7 +167,7 @@ def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
 
 
 def archival_to_version(data: dict[str, str], config: Configuration) -> ScmVersion:
-    trace("data", data)
+    log.debug("data %s", data)
     node = data.get("node", "")[:12]
     if node:
         node = "h" + node
@@ -176,7 +181,7 @@ def archival_to_version(data: dict[str, str], config: Configuration) -> ScmVersi
             config=config,
         )
     else:
-        return meta("0.0", node=node, config=config)
+        return meta(config.version_cls("0.0"), node=node, config=config)
 
 
 def parse_archival(root: _t.PathT, config: Configuration) -> ScmVersion:

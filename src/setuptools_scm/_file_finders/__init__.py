@@ -6,9 +6,11 @@ from typing import Callable
 
 from typing_extensions import TypeGuard
 
-from setuptools_scm import _types as _t
-from setuptools_scm._entrypoints import iter_entry_points
-from setuptools_scm._trace import trace
+from .. import _log
+from .. import _types as _t
+from .._entrypoints import iter_entry_points
+
+log = _log.log.getChild("file_finder")
 
 
 def scm_find_files(
@@ -84,7 +86,7 @@ def is_toplevel_acceptable(toplevel: str | None) -> TypeGuard[str]:
     )
     ignored = [os.path.normcase(p) for p in ignored]
 
-    trace(toplevel, ignored)
+    log.debug("toplevel: %r\n    ignored %s", toplevel, ignored)
 
     return toplevel not in ignored
 
