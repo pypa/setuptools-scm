@@ -143,23 +143,26 @@ def get_version(
 
 
 def _get_version(config: Configuration) -> str | None:
-    parsed_version = _do_parse(config)
-    if parsed_version is None:
-        return None
-    version_string = _format_version(
-        parsed_version,
-        version_scheme=config.version_scheme,
-        local_scheme=config.local_scheme,
-    )
-    if config.write_to is not None:
-        dump_version(
-            root=config.root,
-            version=version_string,
-            write_to=config.write_to,
-            template=config.write_to_template,
-        )
+    from ._log import magic_debug
 
-    return version_string
+    with magic_debug():
+        parsed_version = _do_parse(config)
+        if parsed_version is None:
+            return None
+        version_string = _format_version(
+            parsed_version,
+            version_scheme=config.version_scheme,
+            local_scheme=config.local_scheme,
+        )
+        if config.write_to is not None:
+            dump_version(
+                root=config.root,
+                version=version_string,
+                write_to=config.write_to,
+                template=config.write_to_template,
+            )
+
+        return version_string
 
 
 # Public API
