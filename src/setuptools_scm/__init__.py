@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import re
+import warnings
 from typing import Any
 from typing import Pattern
 from typing import TYPE_CHECKING
@@ -133,7 +134,15 @@ def get_version(
     version_cls = _validate_version_cls(version_cls, normalize)
     del normalize
     if isinstance(tag_regex, str):
-        tag_regex = re.compile(tag_regex)
+        if tag_regex == "":
+            warnings.warn(
+                DeprecationWarning(
+                    "empty regex for tag regex is invalid, using default"
+                )
+            )
+            tag_regex = DEFAULT_TAG_REGEX
+        else:
+            tag_regex = re.compile(tag_regex)
     config = Configuration(**locals())
     maybe_version = _get_version(config)
 
