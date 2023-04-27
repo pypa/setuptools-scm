@@ -26,27 +26,16 @@ if TYPE_CHECKING:
 
 
 def _warn_on_old_setuptools(_version: str = setuptools.__version__) -> None:
-    if int(_version.split(".")[0]) < 45:
+    if int(_version.split(".")[0]) < 61:
         warnings.warn(
             RuntimeWarning(
                 f"""
-ERROR: setuptools=={_version} is used in combination with setuptools_scm>=6.x
+ERROR: setuptools=={_version} is used in combination with setuptools_scm>=8.x
 
 Your build configuration is incomplete and previously worked by accident!
-setuptools_scm requires setuptools>=45
+setuptools_scm requires setuptools>=61
 
-
-This happens as setuptools is unable to replace itself when a activated build dependency
-requires a more recent setuptools version
-(it does not respect "setuptools>X" in setup_requires).
-
-
-setuptools>=31 is required for setup.cfg metadata support
-setuptools>=42 is required for pyproject.toml configuration support
-
-Suggested workarounds if applicable:
- - preinstalling build dependencies like setuptools_scm before running setup.py
- - installing setuptools_scm using the system package manager to ensure consistency
+Suggested workaround if applicable:
  - migrating from the deprecated setup_requires mechanism to pep517/518
    and using a pyproject.toml to declare build dependencies
    which are reliably pre-installed before running the build tools

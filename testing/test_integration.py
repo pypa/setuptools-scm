@@ -139,9 +139,9 @@ def test_pretend_version_accepts_bad_string(
 
 
 def testwarn_on_broken_setuptools() -> None:
-    _warn_on_old_setuptools("45")
-    with pytest.warns(RuntimeWarning, match="ERROR: setuptools==44"):
-        _warn_on_old_setuptools("44")
+    _warn_on_old_setuptools("61")
+    with pytest.warns(RuntimeWarning, match="ERROR: setuptools==60"):
+        _warn_on_old_setuptools("60")
 
 
 @pytest.mark.issue(611)
