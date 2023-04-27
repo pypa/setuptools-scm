@@ -9,6 +9,7 @@ import os
 import sys
 from typing import IO
 from typing import Iterator
+from typing import Mapping
 
 log = logging.getLogger(__name__.rsplit(".", 1)[0])
 log.propagate = False
@@ -46,19 +47,9 @@ _default_handler = make_default_handler()
 log.addHandler(_default_handler)
 
 
-def _default_log_level() -> str | int:
-    val: str = os.environ.get("SETUPTOOLS_SCM_DEBUG", "")
-    level: str | int
-    if val:
-        level = logging.DEBUG
-        levelname: str | int = logging.getLevelName(val)
-        if isinstance(levelname, int):
-            level = val
-        else:
-            level = logging.WARNING
-    else:
-        level = logging.WARNING
-    return level
+def _default_log_level(_env: Mapping[str, str] = os.environ) -> int:
+    val: str | None = _env.get("SETUPTOOLS_SCM_DEBUG")
+    return logging.WARN if val is None else logging.DEBUG
 
 
 log.setLevel(_default_log_level())
@@ -92,9 +83,3 @@ def enable_debug(handler: logging.Handler = _default_handler) -> Iterator[None]:
         handler.setLevel(old_handler_level)
         if handler is not _default_handler:
             log.removeHandler(handler)
-
-
-@contextlib.contextmanager
-def magic_debug() -> Iterator[None]:
-    with enable_debug():
-        yield
