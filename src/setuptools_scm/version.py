@@ -38,10 +38,8 @@ SEMVER_LEN = 3
 def _parse_version_tag(
     tag: str | object, config: _config.Configuration
 ) -> dict[str, str] | None:
-    tagstring = tag if isinstance(tag, str) else str(tag)
-    match = config.tag_regex.match(tagstring)
+    match = config.tag_regex.match(str(tag))
 
-    result = None
     if match:
         key: str | int
         if len(match.groups()) == 1:
@@ -49,14 +47,23 @@ def _parse_version_tag(
         else:
             key = "version"
 
+        full = match.group(0)
+        log.debug("%r %r %s", tag, config.tag_regex, match)
+        log.debug(
+            "key %s data %s, %s, %r", key, match.groupdict(), match.groups(), full
+        )
         result = {
             "version": match.group(key),
-            "prefix": match.group(0)[: match.start(key)],
-            "suffix": match.group(0)[match.end(key) :],
+            "prefix": full[: match.start(key)],
+            "suffix": full[match.end(key) :],
         }
 
-    log.debug(f"tag '{tag}' parsed to {result}")
-    return result
+        log.debug("tag %r parsed to %r", tag, result)
+        return result
+    else:
+        log.debug("tag %r did not parse", tag)
+
+        return None
 
 
 def callable_or_entrypoint(group: str, callable_or_name: str | Any) -> Any:

@@ -121,6 +121,13 @@ setup(name="myscm", use_scm_version={"fallback_version": "12.34"})
     assert res.stdout == "12.34"
 
 
+def test_get_version_blank_tag_regex() -> None:
+    with pytest.warns(
+        DeprecationWarning, match="empty regex for tag regex is invalid, using default"
+    ):
+        setuptools_scm.get_version(tag_regex="")
+
+
 @pytest.mark.parametrize(
     "version", ["1.0", "1.2.3.dev1+ge871260", "1.2.3.dev15+ge871260.d20180625", "2345"]
 )

@@ -92,3 +92,9 @@ def enable_debug(handler: logging.Handler = _default_handler) -> Iterator[None]:
         handler.setLevel(old_handler_level)
         if handler is not _default_handler:
             log.removeHandler(handler)
+
+
+@contextlib.contextmanager
+def magic_debug() -> Iterator[None]:
+    with enable_debug():
+        yield
