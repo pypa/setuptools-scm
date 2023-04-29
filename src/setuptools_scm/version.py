@@ -134,9 +134,9 @@ class ScmVersion:
         return self.distance == 0 and not self.dirty
 
     def __repr__(self) -> str:
-        return self.format_with(
-            "<ScmVersion {tag} dist={distance} "
-            "node={node} dirty={dirty} branch={branch}>"
+        return (
+            f"<ScmVersion {self.tag} dist={self.distance} "
+            f"node={self.node} dirty={self.dirty} branch={self.branch}>"
         )
 
     def format_with(self, fmt: str, **kw: object) -> str:
