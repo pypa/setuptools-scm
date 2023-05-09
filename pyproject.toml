@@ -61,11 +61,11 @@ toml = [
 [project.urls]
 repository = "https://github.com/pypa/setuptools_scm/"
 [project.entry-points."distutils.setup_keywords"]
-use_scm_version = "setuptools_scm.integration:version_keyword"
+use_scm_version = "setuptools_scm._integration.setuptools:version_keyword"
 [project.entry-points."setuptools.file_finders"]
 setuptools_scm = "setuptools_scm._file_finders:find_files"
 [project.entry-points."setuptools.finalize_distribution_options"]
-setuptools_scm = "setuptools_scm.integration:infer_version"
+setuptools_scm = "setuptools_scm._integration.setuptools:infer_version"
 [project.entry-points."setuptools_scm.files_command"]
 ".git" = "setuptools_scm._file_finders.git:git_find_files"
 ".hg" = "setuptools_scm._file_finders.hg:hg_find_files"

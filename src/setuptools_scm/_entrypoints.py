@@ -79,10 +79,9 @@ def _get_ep(group: str, name: str) -> Any | None:
         return None
 
 
-def _get_from_object_reference_str(path: str) -> Any | None:
-    ep: EntrypointProtocol = EntryPoint(
-        path, path, None
-    )  # type: ignore [no-untyped-call]
+def _get_from_object_reference_str(path: str, group: str) -> Any | None:
+    # todo: remove for importlib native spelling
+    ep: EntrypointProtocol = EntryPoint(path, path, group)
     try:
         return ep.load()
     except (AttributeError, ModuleNotFoundError):
@@ -100,7 +99,7 @@ def _iter_version_schemes(
         scheme_value = cast(
             "_t.VERSION_SCHEMES",
             _get_ep(entrypoint, scheme_value)
-            or _get_from_object_reference_str(scheme_value),
+            or _get_from_object_reference_str(scheme_value, entrypoint),
         )
 
     if isinstance(scheme_value, (list, tuple)):
