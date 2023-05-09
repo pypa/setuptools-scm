@@ -14,6 +14,7 @@ breaking
 * unify distance=None and distance=0 they should mean the same
   and where hiding dirty states that are now explicitly dirty
 * depend on later importlib for the full selectable api
+* move setuptools integration code to private sub-package
 
 features
 --------
