@@ -90,7 +90,7 @@ def test_case_mismatch_on_windows_git(tmp_path: Path) -> None:
 
 
 def test_entrypoints_load() -> None:
-    d = distribution("setuptools-scm")  # type: ignore [no-untyped-call]
+    d = distribution("setuptools-scm")
 
     eps = d.entry_points
     failed: list[tuple[EntryPoint, Exception]] = []
