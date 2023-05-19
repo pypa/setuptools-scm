@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from typing import Any
 
 from . import _config
@@ -18,7 +19,10 @@ def read_named_env(
     *, tool: str = "SETUPTOOLS_SCM", name: str, dist_name: str | None
 ) -> str | None:
     if dist_name is not None:
-        val = os.environ.get(f"{tool}_{name}_FOR_{dist_name.upper()}")
+        # Normalize the dist name as per PEP 503.
+        normalized_dist_name = re.sub(r"[-_.]+", "-", dist_name)
+        env_var_dist_name = normalized_dist_name.replace("-", "_").upper()
+        val = os.environ.get(f"{tool}_{name}_FOR_{env_var_dist_name}")
         if val is not None:
             return val
     return os.environ.get(f"{tool}_{name}")

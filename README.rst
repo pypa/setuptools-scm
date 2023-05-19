@@ -262,7 +262,7 @@ Note that running this Dockerfile requires docker with BuildKit enabled
 `[docs] <https://github.com/moby/buildkit/blob/v0.8.3/frontend/dockerfile/docs/syntax.md>`_.
 
 To avoid BuildKit and mounting of the .git folder altogether, one can also pass the desired
-version as a build argument. Note that ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${UPPERCASED_DIST_NAME}``
+version as a build argument. Note that ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME}``
 is preferred over ``SETUPTOOLS_SCM_PRETEND_VERSION``.
 
 
@@ -500,12 +500,15 @@ Environment variables
 :SETUPTOOLS_SCM_PRETEND_VERSION:
     when defined and not empty,
     its used as the primary source for the version number
-    in which case it will be a unparsed string
+    in which case it will be an unparsed string
 
-:SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${UPPERCASED_DIST_NAME}:
+:SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME}:
     when defined and not empty,
     its used as the primary source for the version number
-    in which case it will be a unparsed string
+    in which case it will be an unparsed string
+
+    the dist name normalization follows adapted PEP-503 semantics, with one or
+    more of ".-_" being replaced by a single "_", and the name being upper-cased
 
     it takes precedence over ``SETUPTOOLS_SCM_PRETEND_VERSION``
 
