@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from typing import Any
 from typing import Callable
 from typing import cast
@@ -7,7 +8,10 @@ from typing import Iterator
 from typing import overload
 from typing import TYPE_CHECKING
 
-from typing_extensions import Protocol
+if sys.version_info[:2] >= (3, 8):
+    from typing import Protocol
+else:
+    from typing_extensions import Protocol
 
 from . import _log
 from . import version
