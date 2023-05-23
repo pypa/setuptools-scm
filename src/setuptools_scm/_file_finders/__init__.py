@@ -3,12 +3,15 @@ from __future__ import annotations
 import itertools
 import os
 from typing import Callable
-
-from typing_extensions import TypeGuard
+from typing import TYPE_CHECKING
 
 from .. import _log
 from .. import _types as _t
 from .._entrypoints import iter_entry_points
+
+if TYPE_CHECKING:
+    from typing_extensions import TypeGuard
+
 
 log = _log.log.getChild("file_finder")
 
