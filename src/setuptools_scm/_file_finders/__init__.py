@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import itertools
 import os
-from typing import Callable
+from typing import Callable, Optional
 from typing import TYPE_CHECKING
 
+from .. import _config
 from .. import _log
 from .. import _types as _t
 from .._entrypoints import iter_entry_points
+from .._integration.setuptools import read_dist_name_from_setup_cfg
 
 if TYPE_CHECKING:
     from typing_extensions import TypeGuard
@@ -94,13 +96,31 @@ def is_toplevel_acceptable(toplevel: str | None) -> TypeGuard[str]:
     return toplevel not in ignored
 
 
+def _get_config() -> Optional[_config.Configuration]:
+    dist_name: Optional[str] = None
+    config: Optional[_config.Configuration] = None
+    if dist_name is None:
+        dist_name = read_dist_name_from_setup_cfg()
+    if not os.path.isfile("pyproject.toml"):
+        return None
+    if dist_name == "setuptools_scm":
+        return None
+    try:
+        config = _config.Configuration.from_file(dist_name=dist_name)
+    except LookupError as e:
+        log.exception(e)
+    return config
+
+
 def find_files(path: _t.PathT = "") -> list[str]:
-    for ep in itertools.chain(
-        iter_entry_points("setuptools_scm.files_command"),
-        iter_entry_points("setuptools_scm.files_command_fallback"),
-    ):
-        command: Callable[[_t.PathT], list[str]] = ep.load()
-        res: list[str] = command(path)
-        if res:
-            return res
+    config = _get_config()
+    if config is not None and config.enable_find_files:
+        for ep in itertools.chain(
+            iter_entry_points("setuptools_scm.files_command"),
+            iter_entry_points("setuptools_scm.files_command_fallback"),
+        ):
+            command: Callable[[_t.PathT], list[str]] = ep.load()
+            res: list[str] = command(path)
+            if res:
+                return res
     return []
