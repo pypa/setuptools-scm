@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import itertools
 import os
-from typing import Callable, Optional
+from typing import Callable
+from typing import Optional
 from typing import TYPE_CHECKING
 
 from .. import _config
@@ -96,9 +97,9 @@ def is_toplevel_acceptable(toplevel: str | None) -> TypeGuard[str]:
     return toplevel not in ignored
 
 
-def _get_config() -> Optional[_config.Configuration]:
-    dist_name: Optional[str] = None
-    config: Optional[_config.Configuration] = None
+def _get_config() -> _config.Configuration | None:
+    dist_name: str | None = None
+    config: _config.Configuration | None = None
     if dist_name is None:
         dist_name = read_dist_name_from_setup_cfg()
     if not os.path.isfile("pyproject.toml"):

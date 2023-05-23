@@ -13,8 +13,10 @@ from setuptools_scm._file_finders import find_files
 
 
 def _write_pyproject_config(directory: Path, enable_find_files: bool) -> None:
-    with open(directory / "pyproject.toml", "wt") as fh:
-        fh.write(f"[project]\nname = \"test\"\n[tool.setuptools_scm]\nenable_find_files = {str(enable_find_files).lower()}\n")
+    with open(directory / "pyproject.toml", "w") as fh:
+        fh.write(
+            f'[project]\nname = "test"\n[tool.setuptools_scm]\nenable_find_files = {str(enable_find_files).lower()}\n'
+        )
 
 
 @pytest.fixture(params=["git", "hg"])
@@ -188,7 +190,7 @@ def test_double_include_through_symlink(inwd: WorkDir) -> None:
             "adir/filea",
             "bdir/fileb",
             "data/datafile",
-            "pyproject.toml"
+            "pyproject.toml",
         }
     )
 
@@ -208,7 +210,7 @@ def test_symlink_not_in_scm_while_target_is(inwd: WorkDir) -> None:
             # because the symlink_to themselves are not in scm
             "bdir/fileb",
             "data/datafile",
-            "pyproject.toml"
+            "pyproject.toml",
         }
     )
 
@@ -248,4 +250,6 @@ def test_archive(
     else:
         os.link("data/datafile", datalink)
 
-    assert set(find_files()) == _sep({archive_file, "data/datafile", "data/datalink", "pyproject.toml"})
+    assert set(find_files()) == _sep(
+        {archive_file, "data/datafile", "data/datalink", "pyproject.toml"}
+    )
