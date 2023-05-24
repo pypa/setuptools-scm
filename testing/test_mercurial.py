@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 import setuptools_scm._file_finders
+from .conftest import write_pyproject_config
 from setuptools_scm import Configuration
 from setuptools_scm._run_cmd import has_command
 from setuptools_scm.hg import archival_to_version
@@ -17,13 +18,6 @@ from testing.wd_wrapper import WorkDir
 pytestmark = pytest.mark.skipif(
     not has_command("hg", warn=False), reason="hg executable not found"
 )
-
-
-def _write_pyproject_config(directory: Path, enable_find_files: bool) -> None:
-    with open(directory / "pyproject.toml", "w") as fh:
-        fh.write(
-            f'[project]\nname = "test"\n[tool.setuptools_scm]\nenable_find_files = {str(enable_find_files).lower()}\n'
-        )
 
 
 @pytest.fixture
@@ -78,7 +72,7 @@ def test_find_files_stop_at_root_hg(
     # issue 251
     wd.add_and_commit()
     monkeypatch.chdir(project)
-    _write_pyproject_config(project, True)
+    write_pyproject_config(project, True)
     assert setuptools_scm._file_finders.find_files() == ["setup.cfg"]
 
 

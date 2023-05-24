@@ -42,6 +42,16 @@ def pytest_addoption(parser: Any) -> None:
     )
 
 
+def write_pyproject_config(directory: Path, enable_find_files: bool) -> None:
+    with open(directory / "pyproject.toml", "w") as fh:
+        fh.write(
+            f'[project]\n'
+            f'name = "test"\n'
+            f'[tool.setuptools_scm]\n'
+            f'enable_find_files = {str(enable_find_files).lower()}\n'
+        )
+
+
 class DebugMode(contextlib.AbstractContextManager):  # type: ignore[type-arg]
     from setuptools_scm import _log as __module
 

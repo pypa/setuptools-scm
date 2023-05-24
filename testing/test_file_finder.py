@@ -2,21 +2,14 @@ from __future__ import annotations
 
 import os
 import sys
-from pathlib import Path
 from typing import Generator
 from typing import Iterable
 
 import pytest
 
+from .conftest import write_pyproject_config
 from .wd_wrapper import WorkDir
 from setuptools_scm._file_finders import find_files
-
-
-def _write_pyproject_config(directory: Path, enable_find_files: bool) -> None:
-    with open(directory / "pyproject.toml", "w") as fh:
-        fh.write(
-            f'[project]\nname = "test"\n[tool.setuptools_scm]\nenable_find_files = {str(enable_find_files).lower()}\n'
-        )
 
 
 @pytest.fixture(params=["git", "hg"])
@@ -50,7 +43,7 @@ def inwd(
     if request.node.get_closest_marker("skip_commit") is None:
         wd.add_and_commit()
     monkeypatch.chdir(wd.cwd)
-    _write_pyproject_config(wd.cwd, True)
+    write_pyproject_config(wd.cwd, True)
     yield wd
 
 
@@ -65,7 +58,7 @@ def test_basic(inwd: WorkDir) -> None:
 
 
 def test_basic_find_files_disabled(inwd: WorkDir) -> None:
-    _write_pyproject_config(inwd.cwd, False)
+    write_pyproject_config(inwd.cwd, False)
     assert find_files() == []
     assert find_files(".") == []
     assert find_files("adir") == []
@@ -225,7 +218,7 @@ def test_unexpanded_git_archival(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -
     # When substitutions in `.git_archival.txt` are not expanded, files should
     # not be automatically listed.
     monkeypatch.chdir(wd.cwd)
-    _write_pyproject_config(wd.cwd, True)
+    write_pyproject_config(wd.cwd, True)
     (wd.cwd / ".git_archival.txt").write_text("node: $Format:%H$", encoding="utf-8")
     (wd.cwd / "file1.txt").touch()
     assert find_files() == []
@@ -238,7 +231,7 @@ def test_archive(
     # When substitutions in `.git_archival.txt` are not expanded, files should
     # not be automatically listed.
     monkeypatch.chdir(wd.cwd)
-    _write_pyproject_config(wd.cwd, True)
+    write_pyproject_config(wd.cwd, True)
     sha = "a1bda3d984d1a40d7b00ae1d0869354d6d503001"
     (wd.cwd / archive_file).write_text(f"node: {sha}", encoding="utf-8")
     (wd.cwd / "data").mkdir()
