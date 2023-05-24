@@ -16,7 +16,8 @@ from unittest.mock import patch
 import pytest
 
 import setuptools_scm._file_finders
-from .conftest import DebugMode, write_pyproject_config
+from .conftest import DebugMode
+from .conftest import write_pyproject_config
 from .wd_wrapper import WorkDir
 from setuptools_scm import Configuration
 from setuptools_scm import git
