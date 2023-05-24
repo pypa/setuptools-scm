@@ -4,11 +4,6 @@
 build-backend = "hatchling.build"
 requires = [
   "hatchling>=1.10",
-  'importlib-metadata>=4.6; python_version < "3.10"',
-  "packaging>=20",
-  "setuptools>=55",
-  'tomli; python_version < "3.11"',
-  'typing_extensions; python_version < "3.8"',
 ]
 
 [project]
@@ -93,6 +88,10 @@ PKG-INFO = "setuptools_scm.fallbacks:parse_pkginfo"
 "post-release" = "setuptools_scm.version:postrelease_version"
 "python-simplified-semver" = "setuptools_scm.version:simplified_semver_version"
 "release-branch-semver" = "setuptools_scm.version:release_branch_semver_version"
+
+[tool.hatch.build]
+# Needed for _own_version_helper.py
+require-runtime-dependencies = true
 
 [tool.hatch.version]
 source = "code"
