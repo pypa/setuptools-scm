@@ -19,6 +19,11 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def _write_pyproject_config(directory: Path, enable_find_files: bool) -> None:
+    with open(directory / "pyproject.toml", "wt") as fh:
+        fh.write(f"[project]\nname = \"test\"\n[tool.setuptools_scm]\nenable_find_files = {str(enable_find_files).lower()}\n")
+
+
 @pytest.fixture
 def wd(wd: WorkDir) -> WorkDir:
     wd("hg init")
@@ -71,6 +76,7 @@ def test_find_files_stop_at_root_hg(
     # issue 251
     wd.add_and_commit()
     monkeypatch.chdir(project)
+    _write_pyproject_config(project, True)
     assert setuptools_scm._file_finders.find_files() == ["setup.cfg"]
 
 
