@@ -20,8 +20,10 @@ pytestmark = pytest.mark.skipif(
 
 
 def _write_pyproject_config(directory: Path, enable_find_files: bool) -> None:
-    with open(directory / "pyproject.toml", "wt") as fh:
-        fh.write(f"[project]\nname = \"test\"\n[tool.setuptools_scm]\nenable_find_files = {str(enable_find_files).lower()}\n")
+    with open(directory / "pyproject.toml", "w") as fh:
+        fh.write(
+            f'[project]\nname = "test"\n[tool.setuptools_scm]\nenable_find_files = {str(enable_find_files).lower()}\n'
+        )
 
 
 @pytest.fixture
