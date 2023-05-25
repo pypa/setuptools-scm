@@ -64,12 +64,14 @@ def dump_version(
     version_tuple = _version_as_tuple(version_str)
 
     with open(target, "w") as fp:
-        fp.write(template.format(
-            version=version_str,  # for backward compatibility with previous versions
-            version_obj=version,
-            version_str=version_str,
-            version_tuple=version_tuple
-        ))
+        fp.write(
+            template.format(
+                version=version_str,  # for backward compatibility with previous versions
+                version_obj=version,
+                version_str=version_str,
+                version_tuple=version_tuple,
+            )
+        )
 
 
 def _do_parse(config: Configuration) -> _t.SCMVERSION | None:
