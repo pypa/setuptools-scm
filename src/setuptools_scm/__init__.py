@@ -43,6 +43,7 @@ __version_tuple__ = version_tuple = {version_tuple!r}
 
 def dump_version(
     root: _t.PathT,
+    version: Version,
     version_str: str,
     write_to: _t.PathT,
     template: str | None = None,
@@ -65,6 +66,7 @@ def dump_version(
     with open(target, "w") as fp:
         fp.write(template.format(
             version=version_str,  # for backward compatibility with previous versions
+            version_obj=version,
             version_str=version_str,
             version_tuple=version_tuple
         ))
@@ -167,6 +169,7 @@ def _get_version(config: Configuration) -> str | None:
     if config.write_to is not None:
         dump_version(
             root=config.root,
+            version=parsed_version,
             version_str=version_str,
             write_to=config.write_to,
             template=config.write_to_template,
