@@ -184,7 +184,9 @@ def test_dump_version(tmp_path: Path) -> None:
 
     version = "1.0.1+g4ac9d2c"
     scm_version = meta("1.0.1", node="g4ac9d2c", config=c)
-    dump_version(tmp_path, version, "second.py", scm_version=scm_version, template=template)
+    dump_version(
+        tmp_path, version, "second.py", scm_version=scm_version, template=template
+    )
     lines = read("second.py").splitlines()
     assert "__version__ = version = '1.0.1+g4ac9d2c'" in lines
     assert "__version_tuple__ = version_tuple = (1, 0, 1, 'g4ac9d2c')" in lines
@@ -194,7 +196,9 @@ def test_dump_version(tmp_path: Path) -> None:
     scm_version = meta(
         "1.2.3", node="gb366d8b", distance=18, node_date=date(2021, 4, 15), config=c
     )
-    dump_version(tmp_path, version, "third.py", scm_version=scm_version, template=template)
+    dump_version(
+        tmp_path, version, "third.py", scm_version=scm_version, template=template
+    )
     lines = read("third.py").splitlines()
     assert "__version__ = version = '1.2.3.dev18+gb366d8b.d20210415'" in lines
     assert (
