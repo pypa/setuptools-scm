@@ -23,6 +23,7 @@ from ._version_cls import _validate_version_cls
 from ._version_cls import _version_as_tuple
 from ._version_cls import NonNormalizedVersion
 from ._version_cls import Version
+from .version import ScmVersion
 from .version import format_version as _format_version
 
 if TYPE_CHECKING:
@@ -44,7 +45,7 @@ __version_tuple__ = version_tuple = {version_tuple!r}
 def dump_version(
     root: _t.PathT,
     version: str,
-    scm_version: Version,
+    scm_version: ScmVersion,
     write_to: _t.PathT,
     template: str | None = None,
 ) -> None:
