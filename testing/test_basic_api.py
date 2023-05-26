@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import shutil
 import sys
 from pathlib import Path
 
@@ -11,17 +10,13 @@ import setuptools_scm
 from setuptools_scm import Configuration
 from setuptools_scm import dump_version
 from setuptools_scm._run_cmd import run
-from setuptools_scm.utils import data_from_mime
-from setuptools_scm.utils import do
+from setuptools_scm.integration import data_from_mime
 from setuptools_scm.version import ScmVersion
 from testing.wd_wrapper import WorkDir
 
 
-@pytest.mark.parametrize("cmd", ["ls", "dir"])
-def test_do(cmd: str, tmp_path: Path) -> None:
-    if not shutil.which(cmd):
-        pytest.skip(f"{cmd} not found")
-    do(cmd, cwd=tmp_path)
+def test_run_plain(tmp_path: Path) -> None:
+    run([sys.executable, "-c", "print(1)"], cwd=tmp_path)
 
 
 def test_data_from_mime(tmp_path: Path) -> None:
@@ -35,7 +30,7 @@ def test_data_from_mime(tmp_path: Path) -> None:
 def test_version_from_pkginfo(wd: WorkDir) -> None:
     wd.write("PKG-INFO", "Version: 0.1")
 
-    assert wd.version == "0.1"
+    assert wd.get_version() == "0.1"
 
     # replicate issue 167
     assert wd.get_version(version_scheme="1.{0.distance}.0".format) == "0.1"
@@ -124,6 +119,13 @@ setup(name="myscm", use_scm_version={"fallback_version": "12.34"})
     )
     res = run([sys.executable, "setup.py", "--version"], p)
     assert res.stdout == "12.34"
+
+
+def test_get_version_blank_tag_regex() -> None:
+    with pytest.warns(
+        DeprecationWarning, match="empty regex for tag regex is invalid, using default"
+    ):
+        setuptools_scm.get_version(tag_regex="")
 
 
 @pytest.mark.parametrize(

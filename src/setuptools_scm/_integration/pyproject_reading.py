@@ -7,10 +7,12 @@ from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import NamedTuple
-
-from typing_extensions import TypeAlias
+from typing import TYPE_CHECKING
 
 from .setuptools import read_dist_name_from_setup_cfg
+
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias
 
 _ROOT = "root"
 TOML_RESULT: TypeAlias = Dict[str, Any]

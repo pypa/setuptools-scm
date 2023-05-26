@@ -84,7 +84,7 @@ def test_config_overrides(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
             [tool.setuptools_scm]
             root = "."
             [project]
-            name = "test_a"
+            name = "teSt-.a"
             """
         ),
         encoding="utf-8",

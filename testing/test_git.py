@@ -22,9 +22,10 @@ from setuptools_scm import Configuration
 from setuptools_scm import git
 from setuptools_scm import NonNormalizedVersion
 from setuptools_scm._file_finders.git import git_find_files
+from setuptools_scm._run_cmd import CompletedProcess
+from setuptools_scm._run_cmd import has_command
 from setuptools_scm._run_cmd import run
 from setuptools_scm.git import archival_to_version
-from setuptools_scm.utils import has_command
 from setuptools_scm.version import format_version
 
 pytestmark = pytest.mark.skipif(
@@ -70,7 +71,7 @@ setup(use_scm_version={"root": "../..",
 """
     )
     res = run([sys.executable, "setup.py", "--version"], p)
-    assert res.stdout == "0.1.dev0"
+    assert res.stdout == "0.1.dev0+d20090213"
 
 
 def test_root_search_parent_directories(
@@ -85,7 +86,7 @@ setup(use_scm_version={"search_parent_directories": True})
 """
     )
     res = run([sys.executable, "setup.py", "--version"], p)
-    assert res.stdout == "0.1.dev0"
+    assert res.stdout == "0.1.dev0+d20090213"
 
 
 def test_git_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -146,37 +147,37 @@ def test_not_owner(wd: WorkDir) -> None:
 
 
 def test_version_from_git(wd: WorkDir) -> None:
-    assert wd.version == "0.1.dev0"
+    assert wd.get_version() == "0.1.dev0+d20090213"
 
     parsed = git.parse(str(wd.cwd), Configuration(), git.DEFAULT_DESCRIBE)
     assert parsed is not None and parsed.branch in ("master", "main")
 
     wd.commit_testfile()
-    assert wd.version.startswith("0.1.dev1+g")
-    assert not wd.version.endswith("1-")
+    assert wd.get_version().startswith("0.1.dev1+g")
+    assert not wd.get_version().endswith("1-")
 
     wd("git tag v0.1")
-    assert wd.version == "0.1"
+    assert wd.get_version() == "0.1"
 
     wd.write("test.txt", "test2")
-    assert wd.version.startswith("0.2.dev0+g")
+    assert wd.get_version().startswith("0.2.dev0+g")
 
     wd.commit_testfile()
-    assert wd.version.startswith("0.2.dev1+g")
+    assert wd.get_version().startswith("0.2.dev1+g")
 
     wd("git tag version-0.2")
-    assert wd.version.startswith("0.2")
+    assert wd.get_version().startswith("0.2")
 
     wd.commit_testfile()
     wd("git tag version-0.2.post210+gbe48adfpost3+g0cc25f2")
     with pytest.warns(
         UserWarning, match="tag '.*' will be stripped of its suffix '.*'"
     ):
-        assert wd.version.startswith("0.2")
+        assert wd.get_version().startswith("0.2")
 
     wd.commit_testfile()
     wd("git tag 17.33.0-rc")
-    assert wd.version == "17.33.0rc0"
+    assert wd.get_version() == "17.33.0rc0"
 
     # custom normalization
     assert wd.get_version(normalize=False) == "17.33.0-rc"
@@ -253,9 +254,10 @@ def test_unicode_version_scheme(wd: WorkDir) -> None:
 def test_git_worktree(wd: WorkDir) -> None:
     wd.write("test.txt", "test2")
     # untracked files dont change the state
-    assert wd.version == "0.1.dev0"
+    assert wd.get_version() == "0.1.dev0+d20090213"
+
     wd("git add test.txt")
-    assert wd.version.startswith("0.1.dev0+d")
+    assert wd.get_version().startswith("0.1.dev0+d")
 
 
 @pytest.mark.issue(86)
@@ -268,14 +270,14 @@ def test_git_dirty_notag(
     wd.commit_testfile()
     wd.write("test.txt", "test2")
     wd("git add test.txt")
-    assert wd.version.startswith("0.1.dev1")
+    version = wd.get_version()
+
     if today:
         # the date on the tag is in UTC
         tag = datetime.now(timezone.utc).date().strftime(".d%Y%m%d")
     else:
         tag = ".d20090213"
-    # we are dirty, check for the tag
-    assert tag in wd.version
+    assert version.startswith("0.1.dev1+g") and version.endswith(tag)
 
 
 @pytest.mark.issue(193)
@@ -303,7 +305,8 @@ def shallow_wd(wd: WorkDir, tmp_path: Path) -> Path:
 def test_git_parse_shallow_warns(
     shallow_wd: Path, recwarn: pytest.WarningsRecorder
 ) -> None:
-    git.parse(str(shallow_wd), Configuration())
+    git.parse(shallow_wd, Configuration())
+    print(list(recwarn))
     msg = recwarn.pop()
     assert "is shallow and may cause errors" in str(msg.message)
 
@@ -339,7 +342,7 @@ def test_parse_no_worktree(tmp_path: Path) -> None:
 def test_alphanumeric_tags_match(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd("git tag newstyle-development-started")
-    assert wd.version.startswith("0.1.dev1+g")
+    assert wd.get_version().startswith("0.1.dev1+g")
 
 
 def test_git_archive_export_ignore(
@@ -387,7 +390,7 @@ def test_git_archive_run_from_subdirectory(
 def test_git_branch_names_correct(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd("git checkout -b test/fun")
-    wd_git = git.GitWorkdir(os.fspath(wd.cwd))
+    wd_git = git.GitWorkdir(wd.cwd)
     assert wd_git.get_branch() == "test/fun"
 
 
@@ -443,10 +446,10 @@ def test_non_dotted_tag_no_version_match(wd: WorkDir) -> None:
 def test_gitdir(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> None:
     """ """
     wd.commit_testfile()
-    normal = wd.version
+    normal = wd.get_version()
     # git hooks set this and break subsequent setuptools_scm unless we clean
     monkeypatch.setenv("GIT_DIR", __file__)
-    assert wd.version == normal
+    assert wd.get_version() == normal
 
 
 def test_git_getdate(wd: WorkDir) -> None:
@@ -459,7 +462,7 @@ def test_git_getdate(wd: WorkDir) -> None:
         assert parsed.node_date is not None
         return parsed.node_date
 
-    git_wd = git.GitWorkdir(os.fspath(wd.cwd))
+    git_wd = git.GitWorkdir(wd.cwd)
     assert git_wd.get_head_date() is None
     assert parse_date() == today
 
@@ -468,10 +471,17 @@ def test_git_getdate(wd: WorkDir) -> None:
     assert parse_date() == today
 
 
-def test_git_getdate_badgit(wd: WorkDir) -> None:
+def test_git_getdate_badgit(
+    wd: WorkDir, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
     wd.commit_testfile()
-    git_wd = git.GitWorkdir(os.fspath(wd.cwd))
-    with patch.object(git_wd, "do_ex", Mock(return_value=("%cI", "", 0))):
+    git_wd = git.GitWorkdir(wd.cwd)
+    fake_date_result = CompletedProcess(args=[], stdout="%cI", stderr="", returncode=0)
+    with patch.object(
+        git,
+        "run_git",
+        Mock(return_value=fake_date_result),
+    ):
         assert git_wd.get_head_date() is None
 
 
@@ -504,7 +514,7 @@ Expire-Date: 0
 def test_git_getdate_signed_commit(signed_commit_wd: WorkDir) -> None:
     today = date.today()
     signed_commit_wd.commit_testfile(signed=True)
-    git_wd = git.GitWorkdir(os.fspath(signed_commit_wd.cwd))
+    git_wd = git.GitWorkdir(signed_commit_wd.cwd)
     assert git_wd.get_head_date() == today
 
 
@@ -551,6 +561,8 @@ def test_git_archival_node_missing_no_version() -> None:
 def test_git_archival_from_unfiltered() -> None:
     config = Configuration()
 
-    with pytest.warns(UserWarning, match="unexported git archival found"):
+    with pytest.warns(
+        UserWarning, match=r"unprocessed git archival found \(no export subst applied\)"
+    ):
         version = archival_to_version({"node": "$Format:%H$"}, config=config)
     assert version is None

@@ -23,15 +23,12 @@ class WorkDir:
         if kw:
             assert isinstance(cmd, str), "formatting the command requires text input"
             cmd = cmd.format(**kw)
-        from setuptools_scm.utils import do
+        from setuptools_scm._run_cmd import run
 
-        return do(cmd, self.cwd)
+        return run(cmd, cwd=self.cwd).stdout
 
-    def write(self, name: str, content: str | bytes, **kw: object) -> Path:
+    def write(self, name: str, content: str | bytes) -> Path:
         path = self.cwd / name
-        if kw:
-            assert isinstance(content, str)
-            content = content.format(**kw)
         if isinstance(content, bytes):
             path.write_bytes(content)
         else:
@@ -59,7 +56,7 @@ class WorkDir:
 
     def commit_testfile(self, reason: str | None = None, signed: bool = False) -> None:
         reason = self._reason(reason)
-        self.write("test.txt", "test {reason}", reason=reason)
+        self.write("test.txt", f"test {reason}")
         self(self.add_command)
         self.commit(reason=reason, signed=signed)
 
@@ -68,10 +65,5 @@ class WorkDir:
         from setuptools_scm import get_version
 
         version = get_version(root=self.cwd, fallback_root=self.cwd, **kw)
-        print(version)
+        print(self.cwd.name, version, sep=": ")
         return version
-
-    @property
-    def version(self) -> str:
-        __tracebackhide__ = True
-        return self.get_version()

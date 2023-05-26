@@ -1,13 +1,18 @@
 
 
 [build-system]
-build-backend = "hatchling.build"
+build-backend = "_own_version_helper"
 requires = [
-  "hatchling>=1.10",
+  'importlib-metadata>=4.6; python_version < "3.10"',
   "packaging>=20",
-  "setuptools>=55",
+  "rich",
+  "setuptools>=61",
   'tomli; python_version < "3.11"',
-  "typing_extensions",
+  'typing_extensions; python_version < "3.8"',
+]
+backend-path = [
+  ".",
+  "src",
 ]
 
 [project]
@@ -20,35 +25,38 @@ authors = [
 ]
 requires-python = ">=3.7"
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Topic :: Software Development :: Libraries",
-    "Topic :: Software Development :: Version Control",
-    "Topic :: System :: Software Distribution",
-    "Topic :: Utilities",
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development :: Version Control",
+  "Topic :: System :: Software Distribution",
+  "Topic :: Utilities",
 ]
 dynamic = [
   "version",
 ]
 dependencies = [
-  'importlib-metadata; python_version < "3.8"',
+  'importlib-metadata>=4.6; python_version < "3.10"',
   "packaging>=20",
   "setuptools",
   'tomli>=1; python_version < "3.11"',
-  "typing-extensions",
+  'typing-extensions; python_version < "3.11"',
 ]
 [project.optional-dependencies]
+rich = [
+  "rich",
+]
 test = [
   "pytest",
+  "rich",
   "virtualenv>20",
 ]
 toml = [
@@ -56,11 +64,11 @@ toml = [
 [project.urls]
 repository = "https://github.com/pypa/setuptools_scm/"
 [project.entry-points."distutils.setup_keywords"]
-use_scm_version = "setuptools_scm.integration:version_keyword"
+use_scm_version = "setuptools_scm._integration.setuptools:version_keyword"
 [project.entry-points."setuptools.file_finders"]
 setuptools_scm = "setuptools_scm._file_finders:find_files"
 [project.entry-points."setuptools.finalize_distribution_options"]
-setuptools_scm = "setuptools_scm.integration:infer_version"
+setuptools_scm = "setuptools_scm._integration.setuptools:infer_version"
 [project.entry-points."setuptools_scm.files_command"]
 ".git" = "setuptools_scm._file_finders.git:git_find_files"
 ".hg" = "setuptools_scm._file_finders.hg:hg_find_files"
@@ -78,10 +86,9 @@ node-and-timestamp = "setuptools_scm.version:get_local_node_and_timestamp"
 [project.entry-points."setuptools_scm.parse_scm_fallback"]
 ".git_archival.txt" = "setuptools_scm.git:parse_archival"
 ".hg_archival.txt" = "setuptools_scm.hg:parse_archival"
-PKG-INFO = "setuptools_scm.hacks:parse_pkginfo"
-pip-egg-info = "setuptools_scm.hacks:parse_pip_egg_info"
-"pyproject.toml" = "setuptools_scm.hacks:fallback_version"
-"setup.py" = "setuptools_scm.hacks:fallback_version"
+PKG-INFO = "setuptools_scm.fallbacks:parse_pkginfo"
+"pyproject.toml" = "setuptools_scm.fallbacks:fallback_version"
+"setup.py" = "setuptools_scm.fallbacks:fallback_version"
 [project.entry-points."setuptools_scm.version_scheme"]
 "calver-by-date" = "setuptools_scm.version:calver_by_date"
 "guess-next-dev" = "setuptools_scm.version:guess_next_dev_version"
@@ -90,8 +97,9 @@ pip-egg-info = "setuptools_scm.hacks:parse_pip_egg_info"
 "python-simplified-semver" = "setuptools_scm.version:simplified_semver_version"
 "release-branch-semver" = "setuptools_scm.version:release_branch_semver_version"
 
-[tool.hatch.version]
-source = "code"
-path = "_own_version_helper.py"
-search-paths = ["src"]
-expression = "scm_version()"
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
+
+[tool.setuptools.dynamic]
+version = { attr = "_own_version_helper.version"}

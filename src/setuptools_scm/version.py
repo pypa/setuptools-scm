@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import logging
 import os
 import re
 import warnings
@@ -13,22 +14,21 @@ from typing import Match
 from typing import TYPE_CHECKING
 
 from . import _entrypoints
-from ._modify_version import _bump_dev
-from ._modify_version import _bump_regex
-from ._modify_version import _dont_guess_next_version
-from ._modify_version import _format_local_with_time
-from ._modify_version import _strip_local
+from . import _modify_version
 
 if TYPE_CHECKING:
     from typing_extensions import Concatenate
+    from typing_extensions import ParamSpec
 
-    from . import _types as _t
+    _P = ParamSpec("_P")
 
 
 from ._version_cls import Version as PkgVersion, _VersionT
 from . import _version_cls as _v
 from . import _config
-from ._trace import trace
+
+log = logging.getLogger(__name__)
+
 
 SEMVER_MINOR = 2
 SEMVER_PATCH = 3
@@ -38,10 +38,8 @@ SEMVER_LEN = 3
 def _parse_version_tag(
     tag: str | object, config: _config.Configuration
 ) -> dict[str, str] | None:
-    tagstring = tag if isinstance(tag, str) else str(tag)
-    match = config.tag_regex.match(tagstring)
+    match = config.tag_regex.match(str(tag))
 
-    result = None
     if match:
         key: str | int
         if len(match.groups()) == 1:
@@ -49,25 +47,34 @@ def _parse_version_tag(
         else:
             key = "version"
 
+        full = match.group(0)
+        log.debug("%r %r %s", tag, config.tag_regex, match)
+        log.debug(
+            "key %s data %s, %s, %r", key, match.groupdict(), match.groups(), full
+        )
         result = {
             "version": match.group(key),
-            "prefix": match.group(0)[: match.start(key)],
-            "suffix": match.group(0)[match.end(key) :],
+            "prefix": full[: match.start(key)],
+            "suffix": full[match.end(key) :],
         }
 
-    trace(f"tag '{tag}' parsed to {result}")
-    return result
+        log.debug("tag %r parsed to %r", tag, result)
+        return result
+    else:
+        log.debug("tag %r did not parse", tag)
+
+        return None
 
 
 def callable_or_entrypoint(group: str, callable_or_name: str | Any) -> Any:
-    trace("ep", (group, callable_or_name))
+    log.debug("ep %r %r", group, callable_or_name)
 
     if callable(callable_or_name):
         return callable_or_name
     from ._entrypoints import iter_entry_points
 
     for ep in iter_entry_points(group, callable_or_name):
-        trace("ep found:", ep.name)
+        log.debug("ep found: %s", ep.name)
         return ep.load()
 
 
@@ -77,7 +84,7 @@ def tag_to_version(
     """
     take a tag that might be prefixed with a keyword and return only the version part
     """
-    trace("tag", tag)
+    log.debug("tag %s", tag)
 
     tagdict = _parse_version_tag(tag, config)
     if not isinstance(tagdict, dict) or not tagdict.get("version", None):
@@ -85,7 +92,7 @@ def tag_to_version(
         return None
 
     version_str = tagdict["version"]
-    trace("version pre parse", version_str)
+    log.debug("version pre parse %s", version_str)
 
     if tagdict.get("suffix", ""):
         warnings.warn(
@@ -95,7 +102,7 @@ def tag_to_version(
         )
 
     version: _VersionT = config.version_cls(version_str)
-    trace("version", repr(version))
+    log.debug("version=%r", version)
 
     return version
 
@@ -112,7 +119,7 @@ def _source_epoch_or_utc_now() -> datetime:
 class ScmVersion:
     tag: _v.Version | _v.NonNormalizedVersion | str
     config: _config.Configuration
-    distance: int | None = None
+    distance: int = 0
     node: str | None = None
     dirty: bool = False
     preformatted: bool = False
@@ -122,18 +129,14 @@ class ScmVersion:
         init=False, default_factory=_source_epoch_or_utc_now
     )
 
-    def __post_init__(self) -> None:
-        if self.dirty and self.distance is None:
-            self.distance = 0
-
     @property
     def exact(self) -> bool:
-        return self.distance is None
+        return self.distance == 0 and not self.dirty
 
     def __repr__(self) -> str:
-        return self.format_with(
-            "<ScmVersion {tag} dist={distance} "
-            "node={node} dirty={dirty} branch={branch}>"
+        return (
+            f"<ScmVersion {self.tag} dist={self.distance} "
+            f"node={self.node} dirty={self.dirty} branch={self.branch}>"
         )
 
     def format_with(self, fmt: str, **kw: object) -> str:
@@ -153,10 +156,10 @@ class ScmVersion:
 
     def format_next_version(
         self,
-        guess_next: Callable[Concatenate[ScmVersion, _t.P], str],
+        guess_next: Callable[Concatenate[ScmVersion, _P], str],
         fmt: str = "{guessed}.dev{distance}",
-        *k: _t.P.args,
-        **kw: _t.P.kwargs,
+        *k: _P.args,
+        **kw: _P.kwargs,
     ) -> str:
         guessed = guess_next(self, *k, **kw)
         return self.format_with(fmt, guessed=guessed)
@@ -178,7 +181,7 @@ def _parse_tag(
 def meta(
     tag: str | _VersionT,
     *,
-    distance: int | None = None,
+    distance: int = 0,
     dirty: bool = False,
     node: str | None = None,
     preformatted: bool = False,
@@ -187,7 +190,7 @@ def meta(
     node_date: date | None = None,
 ) -> ScmVersion:
     parsed_version = _parse_tag(tag, preformatted, config)
-    trace("version", tag, "->", parsed_version)
+    log.info("version %s -> %s", tag, parsed_version)
     assert parsed_version is not None, "Can't parse version %s" % tag
     return ScmVersion(
         parsed_version,
@@ -202,8 +205,8 @@ def meta(
 
 
 def guess_next_version(tag_version: ScmVersion) -> str:
-    version = _strip_local(str(tag_version.tag))
-    return _bump_dev(version) or _bump_regex(version)
+    version = _modify_version._strip_local(str(tag_version.tag))
+    return _modify_version._bump_dev(version) or _modify_version._bump_regex(version)
 
 
 def guess_next_dev_version(version: ScmVersion) -> str:
@@ -282,7 +285,7 @@ def no_guess_dev_version(version: ScmVersion) -> str:
     if version.exact:
         return version.format_with("{tag}")
     else:
-        return version.format_next_version(_dont_guess_next_version)
+        return version.format_next_version(_modify_version._dont_guess_next_version)
 
 
 _DATE_REGEX = re.compile(
@@ -366,11 +369,11 @@ def calver_by_date(version: ScmVersion) -> str:
 
 
 def get_local_node_and_date(version: ScmVersion) -> str:
-    return _format_local_with_time(version, time_format="%Y%m%d")
+    return _modify_version._format_local_with_time(version, time_format="%Y%m%d")
 
 
 def get_local_node_and_timestamp(version: ScmVersion, fmt: str = "%Y%m%d%H%M%S") -> str:
-    return _format_local_with_time(version, time_format=fmt)
+    return _modify_version._format_local_with_time(version, time_format=fmt)
 
 
 def get_local_dirty_tag(version: ScmVersion) -> str:
@@ -389,18 +392,18 @@ def postrelease_version(version: ScmVersion) -> str:
 
 
 def format_version(version: ScmVersion, **config: Any) -> str:
-    trace("scm version", version)
-    trace("config", config)
+    log.debug("scm version %s", version)
+    log.debug("config %s", config)
     if version.preformatted:
         assert isinstance(version.tag, str)
         return version.tag
     main_version = _entrypoints._call_version_scheme(
         version, "setuptools_scm.version_scheme", config["version_scheme"], None
     )
-    trace("version", main_version)
+    log.debug("version %s", main_version)
     assert main_version is not None
     local_version = _entrypoints._call_version_scheme(
         version, "setuptools_scm.local_scheme", config["local_scheme"], "+unknown"
     )
-    trace("local_version", local_version)
+    log.debug("local_version %s", local_version)
     return main_version + local_version

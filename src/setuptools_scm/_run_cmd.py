@@ -3,10 +3,72 @@ from __future__ import annotations
 import os
 import shlex
 import subprocess
+import textwrap
+import warnings
+from typing import Callable
 from typing import Mapping
+from typing import overload
+from typing import Sequence
+from typing import TYPE_CHECKING
+from typing import TypeVar
 
-from . import _trace
+from . import _log
 from . import _types as _t
+
+if TYPE_CHECKING:
+    BaseCompletedProcess = subprocess.CompletedProcess[str]
+else:
+    BaseCompletedProcess = subprocess.CompletedProcess
+
+
+log = _log.log.getChild("run_cmd")
+
+PARSE_RESULT = TypeVar("PARSE_RESULT")
+T = TypeVar("T")
+
+
+class CompletedProcess(BaseCompletedProcess):
+    @classmethod
+    def from_raw(
+        cls, input: BaseCompletedProcess, strip: bool = True
+    ) -> CompletedProcess:
+        return cls(
+            args=input.args,
+            returncode=input.returncode,
+            stdout=input.stdout.strip() if strip and input.stdout else input.stdout,
+            stderr=input.stderr.strip() if strip and input.stderr else input.stderr,
+        )
+
+    @overload
+    def parse_success(
+        self,
+        parse: Callable[[str], PARSE_RESULT],
+        default: None = None,
+        error_msg: str | None = None,
+    ) -> PARSE_RESULT | None:
+        ...
+
+    @overload
+    def parse_success(
+        self,
+        parse: Callable[[str], PARSE_RESULT],
+        default: T,
+        error_msg: str | None = None,
+    ) -> PARSE_RESULT | T:
+        ...
+
+    def parse_success(
+        self,
+        parse: Callable[[str], PARSE_RESULT],
+        default: T | None = None,
+        error_msg: str | None = None,
+    ) -> PARSE_RESULT | T | None:
+        if self.returncode:
+            if error_msg:
+                log.warning("%s %s", error_msg, self)
+            return default
+        else:
+            return parse(self.stdout)
 
 
 def no_git_env(env: Mapping[str, str]) -> dict[str, str]:
@@ -21,7 +83,7 @@ def no_git_env(env: Mapping[str, str]) -> dict[str, str]:
     # GIT_INDEX_FILE: Causes 'error invalid object ...' during commit
     for k, v in env.items():
         if k.startswith("GIT_"):
-            _trace.trace(k, v)
+            log.debug("%s: %s", k, v)
     return {
         k: v
         for k, v in env.items()
@@ -66,17 +128,17 @@ def run(
     trace: bool = True,
     timeout: int = 20,
     check: bool = False,
-) -> subprocess.CompletedProcess[str]:
+) -> CompletedProcess:
     if isinstance(cmd, str):
         cmd = shlex.split(cmd)
     else:
         cmd = [os.fspath(x) for x in cmd]
-    if trace:
-        _trace.trace_command(cmd, cwd)
+    cmd_4_trace = " ".join(map(_unsafe_quote_for_display, cmd))
+    log.debug("at %s\n    $ %s ", cwd, cmd_4_trace)
     res = subprocess.run(
         cmd,
         capture_output=True,
-        cwd=str(cwd),
+        cwd=os.fspath(cwd),
         env=dict(
             avoid_pip_isolation(no_git_env(os.environ)),
             # os.environ,
@@ -88,17 +150,45 @@ def run(
         text=True,
         timeout=timeout,
     )
-    if strip:
-        if res.stdout:
-            res.stdout = ensure_stripped_str(res.stdout)
-            res.stderr = ensure_stripped_str(res.stderr)
+
+    res = CompletedProcess.from_raw(res, strip=strip)
     if trace:
         if res.stdout:
-            _trace.trace("out:\n", res.stdout, indent=True)
+            log.debug("out:\n%s", textwrap.indent(res.stdout, "    "))
         if res.stderr:
-            _trace.trace("err:\n", res.stderr, indent=True)
+            log.debug("err:\n%s", textwrap.indent(res.stderr, "    "))
         if res.returncode:
-            _trace.trace("ret:", res.returncode)
+            log.debug("ret: %s", res.returncode)
     if check:
         res.check_returncode()
     return res
+
+
+def _unsafe_quote_for_display(item: _t.PathT) -> str:
+    # give better results than shlex.join in our cases
+    text = os.fspath(item)
+    return text if all(c not in text for c in " {[:") else f'"{text}"'
+
+
+def has_command(
+    name: str, args: Sequence[str] = ["version"], warn: bool = True
+) -> bool:
+    try:
+        p = run([name, *args], cwd=".", timeout=5)
+    except OSError as e:
+        log.warning("command %s missing: %s", name, e)
+        res = False
+    except subprocess.TimeoutExpired as e:
+        log.warning("command %s timed out %s", name, e)
+        res = False
+
+    else:
+        res = not p.returncode
+    if not res and warn:
+        warnings.warn("%r was not found" % name, category=RuntimeWarning)
+    return res
+
+
+def require_command(name: str) -> None:
+    if not has_command(name, warn=False):
+        raise OSError(f"{name!r} was not found")

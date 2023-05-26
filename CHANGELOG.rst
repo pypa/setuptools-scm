@@ -8,7 +8,13 @@ breaking
 * turn Configuration into a dataclass
 * require configuration to always pass into helpers
 * hide file-finders implementation in private module
-* define own build backend to have setuptools work
+* renamed setuptools_scm.hacks to setuptools_scm.fallbacks and drop support for pip-egg-info
+* remove trace function and use logging instead
+* unify distance=None and distance=0 they should mean the same
+  and where hiding dirty states that are now explicitly dirty
+* depend on later importlib for the full selectable api
+* move setuptools integration code to private sub-package
+* use normalized dist names for the SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DIST_NAME}
 
 features
 --------
@@ -26,6 +32,9 @@ features
   * stricter tag typing
   * pre-compiled regex
   * move helpers to private modules
+
+* support passing log levels to SETUPTOOLS_SCM_DEBUG
+* support using rich.logging as console log handler if installed
 
 
 v7.1.0

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import warnings
+import sys
 from typing import Any
 from typing import Callable
 from typing import cast
@@ -8,17 +8,26 @@ from typing import Iterator
 from typing import overload
 from typing import TYPE_CHECKING
 
+if sys.version_info[:2] >= (3, 8):
+    from typing import Protocol
+else:
+    from typing_extensions import Protocol
+
+from . import _log
 from . import version
-from ._trace import trace
 
 if TYPE_CHECKING:
     from ._config import Configuration
-    from typing_extensions import Protocol
     from . import _types as _t
-else:
-    Configuration = Any
 
-    class Protocol:
+
+log = _log.log.getChild("entrypoints")
+
+
+class EntrypointProtocol(Protocol):
+    name: str
+
+    def load(self) -> Any:
         pass
 
 
@@ -34,64 +43,51 @@ def _version_from_entrypoints(
 
     from .discover import iter_matching_entrypoints
 
-    trace("version_from_ep", entrypoint, root)
+    log.debug("version_from_ep %s in %s", entrypoint, root)
     for ep in iter_matching_entrypoints(root, entrypoint, config):
         fn = ep.load()
         maybe_version: version.ScmVersion | None = fn(root, config=config)
-        trace(ep, version)
+        log.debug("%s found %r", ep, maybe_version)
         if maybe_version is not None:
             return maybe_version
     return None
 
 
 try:
-    from importlib.metadata import entry_points  # type: ignore
-    from importlib.metadata import EntryPoint
+    from importlib_metadata import entry_points
+    from importlib_metadata import EntryPoint
 except ImportError:
-    try:
-        from importlib_metadata import entry_points
-        from importlib_metadata import EntryPoint
-    except ImportError:
-        from collections import defaultdict
-
-        def entry_points() -> dict[str, list[_t.EntrypointProtocol]]:
-            warnings.warn(
-                "importlib metadata missing, "
-                "this may happen at build time for python3.7"
-            )
-            return defaultdict(list)
-
-        class EntryPoint:  # type: ignore
-            def __init__(self, *args: Any, **kwargs: Any):
-                pass  # entry_points() already provides the warning
+    from importlib.metadata import entry_points  # type: ignore [no-redef, import]
+    from importlib.metadata import EntryPoint  # type: ignore [no-redef]
 
 
 def iter_entry_points(
     group: str, name: str | None = None
-) -> Iterator[_t.EntrypointProtocol]:
-    all_eps = entry_points()
-    if hasattr(all_eps, "select"):
-        eps = all_eps.select(group=group)
-    else:
-        eps = all_eps[group]
-    if name is None:
-        return iter(eps)
-    return (ep for ep in eps if ep.name == name)
+) -> Iterator[EntrypointProtocol]:
+    eps = entry_points(group=group)
+    res = (
+        eps
+        if name is None
+        else eps.select(  # type: ignore [no-untyped-call]
+            name=name,
+        )
+    )
+    return cast(Iterator[EntrypointProtocol], iter(res))
 
 
 def _get_ep(group: str, name: str) -> Any | None:
-    from ._entrypoints import iter_entry_points
-
     for ep in iter_entry_points(group, name):
-        trace("ep found:", ep.name)
+        log.debug("ep found: %s", ep.name)
         return ep.load()
     else:
         return None
 
 
-def _get_from_object_reference_str(path: str) -> Any | None:
+def _get_from_object_reference_str(path: str, group: str) -> Any | None:
+    # todo: remove for importlib native spelling
+    ep: EntrypointProtocol = EntryPoint(path, path, group)
     try:
-        return EntryPoint(path, path, None).load()
+        return ep.load()
     except (AttributeError, ModuleNotFoundError):
         return None
 
@@ -107,7 +103,7 @@ def _iter_version_schemes(
         scheme_value = cast(
             "_t.VERSION_SCHEMES",
             _get_ep(entrypoint, scheme_value)
-            or _get_from_object_reference_str(scheme_value),
+            or _get_from_object_reference_str(scheme_value, entrypoint),
         )
 
     if isinstance(scheme_value, (list, tuple)):
@@ -121,22 +117,22 @@ def _iter_version_schemes(
 
 @overload
 def _call_version_scheme(
-    version: version.ScmVersion, entypoint: str, given_value: str, default: str
+    version: version.ScmVersion, entrypoint: str, given_value: str, default: str
 ) -> str:
     ...
 
 
 @overload
 def _call_version_scheme(
-    version: version.ScmVersion, entypoint: str, given_value: str, default: None
+    version: version.ScmVersion, entrypoint: str, given_value: str, default: None
 ) -> str | None:
     ...
 
 
 def _call_version_scheme(
-    version: version.ScmVersion, entypoint: str, given_value: str, default: str | None
+    version: version.ScmVersion, entrypoint: str, given_value: str, default: str | None
 ) -> str | None:
-    for scheme in _iter_version_schemes(entypoint, given_value):
+    for scheme in _iter_version_schemes(entrypoint, given_value):
         result = scheme(version)
         if result is not None:
             return result

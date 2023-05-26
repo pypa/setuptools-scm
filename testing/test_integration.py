@@ -10,8 +10,8 @@ import setuptools_scm._integration.setuptools
 from .wd_wrapper import WorkDir
 from setuptools_scm import PRETEND_KEY
 from setuptools_scm import PRETEND_KEY_NAMED
+from setuptools_scm._integration.setuptools import _warn_on_old_setuptools
 from setuptools_scm._run_cmd import run
-from setuptools_scm.integration import _warn_on_old_setuptools
 
 
 @pytest.fixture
@@ -91,7 +91,7 @@ def test_pyproject_support_with_git(wd: WorkDir, metadata_in: str) -> None:
     wd.write("setup.py", SETUP_PY_FILES[metadata_in])
     wd.write("setup.cfg", SETUP_CFG_FILES[metadata_in])
     res = wd([sys.executable, "setup.py", "--version"])
-    assert res.endswith("0.1.dev0")
+    assert res.endswith("0.1.dev0+d20090213")
 
 
 def test_pretend_version(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> None:
@@ -139,9 +139,9 @@ def test_pretend_version_accepts_bad_string(
 
 
 def testwarn_on_broken_setuptools() -> None:
-    _warn_on_old_setuptools("45")
-    with pytest.warns(RuntimeWarning, match="ERROR: setuptools==44"):
-        _warn_on_old_setuptools("44")
+    _warn_on_old_setuptools("61")
+    with pytest.warns(RuntimeWarning, match="ERROR: setuptools==60"):
+        _warn_on_old_setuptools("60")
 
 
 @pytest.mark.issue(611)
@@ -152,7 +152,7 @@ def test_distribution_provides_extras() -> None:
         from importlib_metadata import distribution
 
     dist = distribution("setuptools_scm")
-    assert sorted(dist.metadata.get_all("Provides-Extra")) == ["test", "toml"]
+    assert sorted(dist.metadata.get_all("Provides-Extra")) == ["rich", "test", "toml"]
 
 
 @pytest.mark.issue(760)

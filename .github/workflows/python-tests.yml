@@ -79,8 +79,7 @@ jobs:
           echo "C:\Program Files (x86)\gnupg\bin" >> $env:GITHUB_PATH
           git config --system gpg.program "C:\Program Files (x86)\gnupg\bin\gpg.exe"
         if: runner.os == 'Windows'
-      - run: pip install -U 'setuptools>=60'
-        if: matrix.python_version != 'msys2'
+      - run: pip install -U 'setuptools>=61'
       - uses: actions/download-artifact@v3
         with:
           name: Packages
@@ -90,22 +89,12 @@ jobs:
       - run: |
           $(hg debuginstall --template "{pythonexe}") -m pip install hg-git --user
         if: matrix.os == 'ubuntu-latest'
+      # this hopefull helps with os caches, hg init sometimes gets 20s timeouts
+      - run: hg version
       - run: pytest
 
-  test_legacy_setuptools:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.8"
-          architecture: x64
-      - run: pip install -e .[toml,test] pytest virtualenv
-      - run: pytest --test-legacy testing/test_setuptools_support.py || true # ignore fail flaky on ci
+  dist_upload:
 
-
-  pypi-upload:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
     permissions:
