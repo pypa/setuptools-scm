@@ -45,9 +45,9 @@ __version_tuple__ = version_tuple = {version_tuple!r}
 def dump_version(
     root: _t.PathT,
     version: str,
-    scm_version: ScmVersion,
     write_to: _t.PathT,
     template: str | None = None,
+    scm_version: ScmVersion | None = None,
 ) -> None:
     assert isinstance(version, str)
     target = os.path.normpath(os.path.join(root, write_to))
@@ -64,14 +64,18 @@ def dump_version(
         )
     version_tuple = _version_as_tuple(version)
 
-    with open(target, "w") as fp:
-        fp.write(
-            template.format(
-                version=version,
-                version_tuple=version_tuple,
-                scm_version=scm_version,
+    if scm_version is not None:
+        with open(target, "w") as fp:
+            fp.write(
+                template.format(
+                    version=version,
+                    version_tuple=version_tuple,
+                    scm_version=scm_version,
+                )
             )
-        )
+    else:
+        with open(target, "w") as fp:
+            fp.write(template.format(version=version, version_tuple=version_tuple))
 
 
 def _do_parse(config: Configuration) -> _t.SCMVERSION | None:
