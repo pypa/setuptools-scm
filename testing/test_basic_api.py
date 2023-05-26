@@ -11,8 +11,12 @@ from setuptools_scm import Configuration
 from setuptools_scm import dump_version
 from setuptools_scm._run_cmd import run
 from setuptools_scm.integration import data_from_mime
+from setuptools_scm.version import meta
 from setuptools_scm.version import ScmVersion
 from testing.wd_wrapper import WorkDir
+
+
+c = Configuration()
 
 
 def test_run_plain(tmp_path: Path) -> None:
@@ -155,24 +159,32 @@ def test_root_relative_to(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> No
 
 
 def test_dump_version(tmp_path: Path) -> None:
-    dump_version(tmp_path, "1.0", "first.txt")
+    version = "1.0"
+    scm_version = meta(version, config=c)
+    dump_version(tmp_path, version, scm_version, "first.txt")
 
     def read(name: str) -> str:
         return tmp_path.joinpath(name).read_text()
 
     assert read("first.txt") == "1.0"
 
-    dump_version(tmp_path, "1.0.dev42", "first.py")
+    version = "1.0.dev42"
+    scm_version = meta(version, config=c)
+    dump_version(tmp_path, version, scm_version, "first.py")
     lines = read("first.py").splitlines()
     assert "__version__ = version = '1.0.dev42'" in lines
     assert "__version_tuple__ = version_tuple = (1, 0, 'dev42')" in lines
 
-    dump_version(tmp_path, "1.0.1+g4ac9d2c", "second.py")
+    version = "1.0.1+g4ac9d2c"
+    scm_version = meta(version, config=c)
+    dump_version(tmp_path, version, scm_version, "second.py")
     lines = read("second.py").splitlines()
     assert "__version__ = version = '1.0.1+g4ac9d2c'" in lines
     assert "__version_tuple__ = version_tuple = (1, 0, 1, 'g4ac9d2c')" in lines
 
-    dump_version(tmp_path, "1.2.3.dev18+gb366d8b.d20210415", "third.py")
+    version = "1.2.3.dev18+gb366d8b.d20210415"
+    scm_version = meta(version, config=c)
+    dump_version(tmp_path, version, scm_version, "third.py")
     lines = read("third.py").splitlines()
     assert "__version__ = version = '1.2.3.dev18+gb366d8b.d20210415'" in lines
     assert (

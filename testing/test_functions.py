@@ -74,8 +74,9 @@ def test_format_version(
 def test_dump_version_doesnt_bail_on_value_error(tmp_path: Path) -> None:
     write_to = "VERSION"
     version = str(VERSIONS["exact"].tag)
+    scm_version = meta(VERSIONS["exact"].tag, config=c)
     with pytest.raises(ValueError, match="^bad file format:"):
-        dump_version(tmp_path, version, write_to)
+        dump_version(tmp_path, version, scm_version, write_to)
 
 
 @pytest.mark.parametrize(
