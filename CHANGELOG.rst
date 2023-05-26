@@ -8,7 +8,6 @@ breaking
 * turn Configuration into a dataclass
 * require configuration to always pass into helpers
 * hide file-finders implementation in private module
-* migrate to hatchling
 * renamed setuptools_scm.hacks to setuptools_scm.fallbacks and drop support for pip-egg-info
 * remove trace function and use logging instead
 * unify distance=None and distance=0 they should mean the same
