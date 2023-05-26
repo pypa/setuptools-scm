@@ -160,6 +160,12 @@ def test_root_relative_to(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> No
 
 
 def test_dump_version(tmp_path: Path) -> None:
+    template = """\
+    __version__ = version = {version!r}
+    __version_tuple__ = version_tuple = {version_tuple!r}
+    __sha__ = {scm_version.node!r}
+    __date__ = {scm_version.node_date!r}
+    """
     version = "1.0"
     scm_version = meta(version, config=c)
     dump_version(tmp_path, version, scm_version, "first.txt")
@@ -178,10 +184,11 @@ def test_dump_version(tmp_path: Path) -> None:
 
     version = "1.0.1+g4ac9d2c"
     scm_version = meta("1.0.1", node="g4ac9d2c", config=c)
-    dump_version(tmp_path, version, scm_version, "second.py")
+    dump_version(tmp_path, version, scm_version, "second.py", template=template)
     lines = read("second.py").splitlines()
     assert "__version__ = version = '1.0.1+g4ac9d2c'" in lines
     assert "__version_tuple__ = version_tuple = (1, 0, 1, 'g4ac9d2c')" in lines
+    assert "__sha__ = 'g4ac9d2c'" in lines
 
     version = "1.2.3.dev18+gb366d8b.d20210415"
     scm_version = meta(
@@ -194,6 +201,8 @@ def test_dump_version(tmp_path: Path) -> None:
         "__version_tuple__ = version_tuple = (1, 2, 3, 'dev18', 'gb366d8b.d20210415')"
         in lines
     )
+    assert "__sha__ = 'gb366d8b'" in lines
+    assert "__date__ = '2021-04-15'" in lines
 
     import ast
 
