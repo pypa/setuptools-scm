@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 import setuptools_scm
+from datetime import date
 from setuptools_scm import Configuration
 from setuptools_scm import dump_version
 from setuptools_scm._run_cmd import run
@@ -176,14 +177,14 @@ def test_dump_version(tmp_path: Path) -> None:
     assert "__version_tuple__ = version_tuple = (1, 0, 'dev42')" in lines
 
     version = "1.0.1+g4ac9d2c"
-    scm_version = meta(version, config=c)
+    scm_version = meta("1.0.1", node="g4ac9d2c", config=c)
     dump_version(tmp_path, version, scm_version, "second.py")
     lines = read("second.py").splitlines()
     assert "__version__ = version = '1.0.1+g4ac9d2c'" in lines
     assert "__version_tuple__ = version_tuple = (1, 0, 1, 'g4ac9d2c')" in lines
 
     version = "1.2.3.dev18+gb366d8b.d20210415"
-    scm_version = meta(version, config=c)
+    scm_version = meta("1.2.3", node="gb366d8b", distance=18, node_date=date(2021, 4, 15), config=c)
     dump_version(tmp_path, version, scm_version, "third.py")
     lines = read("third.py").splitlines()
     assert "__version__ = version = '1.2.3.dev18+gb366d8b.d20210415'" in lines
