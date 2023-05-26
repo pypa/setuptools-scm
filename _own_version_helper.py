@@ -1,11 +1,16 @@
 """
 this module is a hack only in place to allow for setuptools
 to use the attribute for the versions
+
+it works only if the backend-path of the build-system section
+from pyproject.toml is respected
 """
 from __future__ import annotations
 
 import logging
 from typing import Callable
+
+from setuptools.build_meta import *  # noqa
 
 from setuptools_scm import _types as _t
 from setuptools_scm import Configuration
@@ -48,3 +53,14 @@ def scm_version() -> str:
         version_scheme=guess_next_dev_version,
         local_scheme=get_local_node_and_date,
     )
+
+
+version: str
+
+
+def __getattr__(name: str) -> str:
+    if name == "version":
+        global version
+        version = scm_version()
+        return version
+    raise AttributeError(name)
