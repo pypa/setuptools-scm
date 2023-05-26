@@ -119,7 +119,7 @@ jobs:
         name: Packages
         path: dist
     - name: Publish package to PyPI
-      continue-on-error: yes
+      continue-on-error: true
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         repository-url: https://test.pypi.org/legacy/
