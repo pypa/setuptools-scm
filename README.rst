@@ -7,9 +7,10 @@ or in a SCM managed file.
 
 Additionally ``setuptools_scm`` provides setuptools with a list of
 files that are managed by the SCM (i.e. it automatically adds all of
-the SCM-managed files to the sdist). This is opt-in, by supplying
-config argument: ``enable_find_files``. Once opted in unwanted files
-must be excluded by discarding them via ``MANIFEST.in``.
+the SCM-managed files to the sdist). Unwanted files must be excluded
+by discarding them via ``MANIFEST.in``. It is also possible to
+opt-out of this behavior by setting the ``enable_find_files`` config
+argument to false.
 
 ``setuptools_scm`` supports the following scm out of the box:
 
