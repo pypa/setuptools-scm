@@ -300,7 +300,7 @@ so you will see an additional ``g`` prepended to the ``{revision hash}``.
     be seen in auto-publishing workflows or when a configuration mistake is made.
 
     However, some package indexes such as devpi or other alternatives allow local
-    versions. Local version identifiers must comply with PEP `PEP 440`_.
+    versions. Local version identifiers must comply with `PEP 440`_.
 
 Semantic Versioning (SemVer)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
