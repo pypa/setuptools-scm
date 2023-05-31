@@ -292,6 +292,15 @@ the tag.
 For Git projects, the version relies on `git describe <https://git-scm.com/docs/git-describe>`_,
 so you will see an additional ``g`` prepended to the ``{revision hash}``.
 
+.. note::
+
+    According to `PEP 440 <https://peps.python.org/pep-0440/#local-version-identifiers>`_,
+    if a version includes a local component, the package cannot be published to public
+    package indexes like PyPI or TestPyPI. The disallowed version segments may
+    be seen in auto-publishing workflows or when a configuration mistake is made.
+
+    However, some package indexes such as devpi or other alternatives allow local
+    versions. Local version identifiers must comply with `PEP 440`_.
 
 Semantic Versioning (SemVer)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
