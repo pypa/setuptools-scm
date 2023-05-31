@@ -24,6 +24,7 @@ from ._version_cls import _version_as_tuple
 from ._version_cls import NonNormalizedVersion
 from ._version_cls import Version
 from .version import format_version as _format_version
+from .version import ScmVersion
 
 if TYPE_CHECKING:
     from typing import NoReturn
@@ -46,6 +47,7 @@ def dump_version(
     version: str,
     write_to: _t.PathT,
     template: str | None = None,
+    scm_version: ScmVersion | None = None,
 ) -> None:
     assert isinstance(version, str)
     target = os.path.normpath(os.path.join(root, write_to))
@@ -62,8 +64,18 @@ def dump_version(
         )
     version_tuple = _version_as_tuple(version)
 
-    with open(target, "w") as fp:
-        fp.write(template.format(version=version, version_tuple=version_tuple))
+    if scm_version is not None:
+        with open(target, "w") as fp:
+            fp.write(
+                template.format(
+                    version=version,
+                    version_tuple=version_tuple,
+                    scm_version=scm_version,
+                )
+            )
+    else:
+        with open(target, "w") as fp:
+            fp.write(template.format(version=version, version_tuple=version_tuple))
 
 
 def _do_parse(config: Configuration) -> _t.SCMVERSION | None:
@@ -164,6 +176,7 @@ def _get_version(config: Configuration) -> str | None:
         dump_version(
             root=config.root,
             version=version_string,
+            scm_version=parsed_version,
             write_to=config.write_to,
             template=config.write_to_template,
         )

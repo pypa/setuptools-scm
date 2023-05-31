@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -11,8 +12,18 @@ from setuptools_scm import Configuration
 from setuptools_scm import dump_version
 from setuptools_scm._run_cmd import run
 from setuptools_scm.integration import data_from_mime
+from setuptools_scm.version import meta
 from setuptools_scm.version import ScmVersion
 from testing.wd_wrapper import WorkDir
+
+
+c = Configuration()
+
+template = """\
+__version__ = version = {version!r}
+__version_tuple__ = version_tuple = {version_tuple!r}
+__sha__ = {scm_version.node!r}
+"""
 
 
 def test_run_plain(tmp_path: Path) -> None:
@@ -155,30 +166,46 @@ def test_root_relative_to(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> No
 
 
 def test_dump_version(tmp_path: Path) -> None:
-    dump_version(tmp_path, "1.0", "first.txt")
+    version = "1.0"
+    scm_version = meta(version, config=c)
+    dump_version(tmp_path, version, "first.txt", scm_version=scm_version)
 
     def read(name: str) -> str:
         return tmp_path.joinpath(name).read_text()
 
     assert read("first.txt") == "1.0"
 
-    dump_version(tmp_path, "1.0.dev42", "first.py")
+    version = "1.0.dev42"
+    scm_version = meta("1.0", distance=42, config=c)
+    dump_version(tmp_path, version, "first.py", scm_version=scm_version)
     lines = read("first.py").splitlines()
     assert "__version__ = version = '1.0.dev42'" in lines
     assert "__version_tuple__ = version_tuple = (1, 0, 'dev42')" in lines
 
-    dump_version(tmp_path, "1.0.1+g4ac9d2c", "second.py")
+    version = "1.0.1+g4ac9d2c"
+    scm_version = meta("1.0.1", node="g4ac9d2c", config=c)
+    dump_version(
+        tmp_path, version, "second.py", scm_version=scm_version, template=template
+    )
     lines = read("second.py").splitlines()
     assert "__version__ = version = '1.0.1+g4ac9d2c'" in lines
     assert "__version_tuple__ = version_tuple = (1, 0, 1, 'g4ac9d2c')" in lines
+    assert "__sha__ = 'g4ac9d2c'" in lines
 
-    dump_version(tmp_path, "1.2.3.dev18+gb366d8b.d20210415", "third.py")
+    version = "1.2.3.dev18+gb366d8b.d20210415"
+    scm_version = meta(
+        "1.2.3", node="gb366d8b", distance=18, node_date=date(2021, 4, 15), config=c
+    )
+    dump_version(
+        tmp_path, version, "third.py", scm_version=scm_version, template=template
+    )
     lines = read("third.py").splitlines()
     assert "__version__ = version = '1.2.3.dev18+gb366d8b.d20210415'" in lines
     assert (
         "__version_tuple__ = version_tuple = (1, 2, 3, 'dev18', 'gb366d8b.d20210415')"
         in lines
     )
+    assert "__sha__ = 'gb366d8b'" in lines
 
     import ast
 
