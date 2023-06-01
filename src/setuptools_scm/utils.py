@@ -154,7 +154,7 @@ def function_has_arg(fn: object | FunctionType, argname: str) -> bool:
 
 def has_command(name: str, args: list[str] | None = None, warn: bool = True) -> bool:
     try:
-        cmd = [name, "help"] if args is None else [name, *args]
+        cmd = [name, "version"] if args is None else [name, *args]
         p = _run(cmd, ".")
     except OSError:
         trace(*sys.exc_info())

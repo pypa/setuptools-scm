@@ -36,7 +36,7 @@ DESCRIBE_UNSUPPORTED = "%(describe"
 DEFAULT_DESCRIBE = [
     "git",
     "describe",
-    "--dirty",
+    "--dirty=-dirty",
     "--tags",
     "--long",
     "--match",
@@ -88,15 +88,32 @@ class GitWorkdir(Workdir):
             branch, err, ret = self.do_ex_git(["symbolic-ref", "--short", "HEAD"])
             if ret:
                 trace("branch err (symbolic-ref)", branch, err, ret)
-                return None
+                branch, err, ret = self.do_ex_git(["rev-parse", "HEAD"])
+                if ret:
+                    trace("branch err (no abbrev)", branch, err, ret)
+                    return None
         return branch
 
     def get_head_date(self) -> date | None:
         timestamp, err, ret = self.do_ex_git(
-            ["-c", "log.showSignature=false", "log", "-n", "1", "HEAD", "--format=%cI"]
+            ["-c", "log.showSignature=false", "log", "--max-count=1", "HEAD", "--format=%cI"]
         )
         if ret:
             trace("timestamp err", timestamp, err, ret)
+            timestamp, err, ret = self.do_ex_git(
+                ["log", "--max-count=1"]
+            )
+            if ret:
+                return None
+            try:
+                from dateutil.parser import parse, ParserError
+            except ImportError:
+                return None
+            for line in timestamp.split('\n'):
+                try:
+                    return parse(line.split(':',1)[-1])
+                except ParserError:
+                    pass
             return None
         # TODO, when dropping python3.6 use fromiso
         date_part = timestamp.split("T")[0]
@@ -161,7 +178,7 @@ def get_working_directory(config: Configuration) -> GitWorkdir | None:
     if config.search_parent_directories:
         return search_parent(config.absolute_root)
 
-    return GitWorkdir.from_potential_worktree(config.absolute_root)
+    return GitWorkdir.from_potential_worktree(config.absolute_root) or GitWorkdir(config.absolute_root)
 
 
 def parse(
