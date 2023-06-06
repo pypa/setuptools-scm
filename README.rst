@@ -677,7 +677,7 @@ Note for Conda Users
 Setuptools-scm will not set the correct version by default when built with conda. In order
 for it to work, the conda recipe needs to be modified to use the
 SETUPTOOLS_SCM_PRETEND_VERSION env variable.
-[Here](https://github.com/conda-forge/pint-feedstock/commit/b107bcafd4a8571b416bd06b7c292eccc62ef3fc)
+`Here <lhttps://github.com/conda-forge/pint-feedstock/commit/b107bcafd4a8571b416bd06b7c292eccc62ef3fc>`_
 is an example of how to do this.
 
 
