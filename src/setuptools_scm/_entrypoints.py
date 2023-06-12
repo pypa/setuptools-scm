@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from typing import Any
 from typing import Callable
@@ -85,11 +86,21 @@ def _get_ep(group: str, name: str) -> Any | None:
 
 def _get_from_object_reference_str(path: str, group: str) -> Any | None:
     # todo: remove for importlib native spelling
+
+    # Split module path from entrypoint (e.g. 'version_tools/module.submodule:version_hook')
+    module_path = os.getcwd()
+    if "/" in group:
+        nested_path, group = group.rsplit("/", 1)
+        module_path = os.path.join(module_path, nested_path)
+    sys.path.insert(0, module_path)
+
     ep: EntrypointProtocol = EntryPoint(path, path, group)
     try:
         return ep.load()
     except (AttributeError, ModuleNotFoundError):
         return None
+    finally:
+        sys.path.pop(0)
 
 
 def _iter_version_schemes(
