@@ -56,7 +56,8 @@ PYPROJECT_FILES = {
         "[tool.setuptools_scm]\ndist_name='setuptools_scm_example'"
     ),
     "pyproject.project": (
-        "[project]\nname='setuptools_scm_example'\n[tool.setuptools_scm]"
+        "[project]\nname='setuptools_scm_example'\n"
+        "dynamic=['version']\n[tool.setuptools_scm]"
     ),
 }
 
