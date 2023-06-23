@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import os
 import shutil
 import subprocess
@@ -10,6 +11,7 @@ from datetime import timezone
 from os.path import join as opj
 from pathlib import Path
 from textwrap import dedent
+from typing import Generator
 from unittest.mock import Mock
 from unittest.mock import patch
 
@@ -109,41 +111,42 @@ def test_parse_call_order(wd: WorkDir) -> None:
     git.parse(str(wd.cwd), Configuration(), git.DEFAULT_DESCRIBE)
 
 
-@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/707")
-@pytest.mark.xfail(run=False, reason="This test requires passwordless sudo")
-def test_not_owner(wd: WorkDir) -> None:
-    git_dir = opj(wd.cwd)
-    original_stat = os.stat(git_dir)
+def sudo_devnull(
+    args: list[str | os.PathLike[str]], check: bool = False
+) -> subprocess.CompletedProcess[bytes]:
+    """shortcut to run sudo with non-interactive input"""
+    return subprocess.run(
+        ["sudo", *args],
+        stdin=subprocess.DEVNULL,
+        check=check,
+    )
+
+
+@contextlib.contextmanager
+def break_folder_permissions(path: Path) -> Generator[None, None, None]:
+    """break the permissions of a folder for a while"""
     if not shutil.which("sudo"):
         pytest.skip("sudo executable not found")
+    original_stat = path.stat()
 
-    proc = subprocess.run(
-        ["sudo", "chown", "-R", "12345", git_dir], stdin=subprocess.DEVNULL
-    )
+    proc = sudo_devnull(["chown", "-R", "12345", path])
     if proc.returncode != 0:
-        pytest.skip("Failed to change ownership, is passwordless sudo available?")
+        pytest.xfail("Failed to change ownership, is passwordless sudo available?")
+
     try:
-        subprocess.run(
-            ["sudo", "chmod", "a+r", git_dir], stdin=subprocess.DEVNULL, check=True
-        )
-        subprocess.run(
-            ["sudo", "chgrp", "-R", "12345", git_dir],
-            stdin=subprocess.DEVNULL,
-            check=True,
-        )
-        assert git.parse(str(wd.cwd), Configuration())
+        sudo_devnull(["chmod", "a+r", path], check=True)
+        sudo_devnull(["chgrp", "-R", "12345", path], check=True)
+        yield
     finally:
         # Restore the ownership
-        subprocess.run(
-            ["sudo", "chown", "-R", str(original_stat.st_uid), git_dir],
-            stdin=subprocess.DEVNULL,
-            check=True,
-        )
-        subprocess.run(
-            ["sudo", "chgrp", "-R", str(original_stat.st_gid), git_dir],
-            stdin=subprocess.DEVNULL,
-            check=True,
-        )
+        sudo_devnull(["chown", "-R", str(original_stat.st_uid), path], check=True)
+        sudo_devnull(["chgrp", "-R", str(original_stat.st_gid), path], check=True)
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/707")
+def test_not_owner(wd: WorkDir) -> None:
+    with break_folder_permissions(wd.cwd):
+        assert git.parse(str(wd.cwd), Configuration())
 
 
 def test_version_from_git(wd: WorkDir) -> None:
