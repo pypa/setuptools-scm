@@ -15,6 +15,7 @@ breaking
 * depend on later importlib for the full selectable api
 * move setuptools integration code to private sub-package
 * use normalized dist names for the SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DIST_NAME}
+* drop support for python 3.7
 
 features
 --------

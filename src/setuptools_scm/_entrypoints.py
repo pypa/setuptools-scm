@@ -6,12 +6,8 @@ from typing import Callable
 from typing import cast
 from typing import Iterator
 from typing import overload
+from typing import Protocol
 from typing import TYPE_CHECKING
-
-if sys.version_info[:2] >= (3, 8):
-    from typing import Protocol
-else:
-    from typing_extensions import Protocol
 
 from . import _log
 from . import version
@@ -53,12 +49,12 @@ def _version_from_entrypoints(
     return None
 
 
-try:
+if sys.version_info[:2] < (3, 10):
     from importlib_metadata import entry_points
     from importlib_metadata import EntryPoint
-except ImportError:
-    from importlib.metadata import entry_points  # type: ignore [no-redef, import]
-    from importlib.metadata import EntryPoint  # type: ignore [no-redef]
+else:
+    from importlib.metadata import entry_points
+    from importlib.metadata import EntryPoint
 
 
 def iter_entry_points(

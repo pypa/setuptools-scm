@@ -3,20 +3,15 @@ from __future__ import annotations
 import pprint
 import subprocess
 import sys
-from typing import Callable
-
-if sys.version_info >= (3, 8):
-    distribution: Callable[[str], EntryPoint]
-    from importlib.metadata import distribution, EntryPoint
-else:
-    from importlib_metadata import distribution, EntryPoint
+from importlib.metadata import distribution
+from importlib.metadata import EntryPoint
 from pathlib import Path
 
 import pytest
 
 from setuptools_scm import Configuration
-from setuptools_scm.git import parse
 from setuptools_scm._run_cmd import run
+from setuptools_scm.git import parse
 
 
 def test_pkginfo_noscmroot(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

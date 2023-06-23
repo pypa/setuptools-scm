@@ -147,13 +147,11 @@ def testwarn_on_broken_setuptools() -> None:
 
 @pytest.mark.issue(611)
 def test_distribution_provides_extras() -> None:
-    try:
-        from importlib.metadata import distribution  # type: ignore
-    except ImportError:
-        from importlib_metadata import distribution
+    from importlib.metadata import distribution
 
     dist = distribution("setuptools_scm")
-    assert sorted(dist.metadata.get_all("Provides-Extra")) == ["rich", "test", "toml"]
+    pe: list[str] = dist.metadata.get_all("Provides-Extra", [])
+    assert sorted(pe) == ["rich", "test", "toml"]
 
 
 @pytest.mark.issue(760)
