@@ -48,7 +48,7 @@ Suggested workaround if applicable:
 def _assign_version(
     dist: setuptools.Distribution, config: _config.Configuration
 ) -> None:
-    from .. import _get_version, _version_missing
+    from .._get_version import _get_version, _version_missing
 
     maybe_version = _get_version(config)
 

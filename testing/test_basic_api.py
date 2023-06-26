@@ -56,7 +56,7 @@ def assert_root(monkeypatch: pytest.MonkeyPatch, expected_root: str) -> None:
         assert config.absolute_root == expected_root
         return ScmVersion("1.0", config=config)
 
-    monkeypatch.setattr(setuptools_scm, "_do_parse", assertion)
+    monkeypatch.setattr(setuptools_scm._get_version, "_do_parse", assertion)
 
 
 def test_root_parameter_creation(monkeypatch: pytest.MonkeyPatch) -> None:
