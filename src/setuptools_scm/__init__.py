@@ -22,6 +22,10 @@ def dump_version(
     template: str | None = None,
     scm_version: ScmVersion | None = None,
 ) -> None:
+    """soft deprecated helper to write the version file in the cwd
+
+    still used by hatch-vcs, will be removed after upstream uses the modern patterns
+    """
     from ._integration.dump_version import dump_version as real
 
     return real(root, version, write_to, template, scm_version)
@@ -45,6 +49,13 @@ def get_version(
     normalize: bool = True,
     search_parent_directories: bool = False,
 ) -> str:
+    """
+    soft deprecated helper to obtain the vcs version
+    its misused at runtime in numerous projects and has to stay for now
+
+    a replacement supporting editable installation in hatch/setuptools is planned
+    """
+
     params = {**locals()}
     from ._get_version import get_version
 
