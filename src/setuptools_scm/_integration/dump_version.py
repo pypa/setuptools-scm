@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os.path
+from pathlib import Path
 
 from .. import _types as _t
 from .._version_cls import _version_as_tuple
@@ -25,29 +25,27 @@ def dump_version(
     scm_version: ScmVersion | None = None,
 ) -> None:
     assert isinstance(version, str)
-    target = os.path.normpath(os.path.join(root, write_to))
-    ext = os.path.splitext(target)[1]
-    template = template or TEMPLATES.get(ext)
+    target = Path(root).joinpath(write_to)
+    template = template or TEMPLATES.get(target.suffix)
     from .._log import log
 
     log.debug("dump %s into %s", version, write_to)
     if template is None:
         raise ValueError(
-            "bad file format: '{}' (of {}) \nonly *.txt and *.py are supported".format(
-                os.path.splitext(target)[1], target
-            )
+            f"bad file format: {target.suffix!r} (of {target})\n"
+            "only *.txt and *.py have a default template"
         )
     version_tuple = _version_as_tuple(version)
 
     if scm_version is not None:
-        with open(target, "w") as fp:
-            fp.write(
-                template.format(
-                    version=version,
-                    version_tuple=version_tuple,
-                    scm_version=scm_version,
-                )
-            )
+        content = template.format(
+            version=version,
+            version_tuple=version_tuple,
+            scm_version=scm_version,
+        )
+
     else:
-        with open(target, "w") as fp:
-            fp.write(template.format(version=version, version_tuple=version_tuple))
+        content = template.format(version=version, version_tuple=version_tuple)
+
+    with open(target, "w", encoding="utf-8") as fp:
+        fp.write(content)
