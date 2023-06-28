@@ -48,7 +48,7 @@ def get_version(
     params = {**locals()}
     from ._get_version import get_version
 
-    return get_version(**locals())
+    return get_version(**params)
 
 
 # Public API
