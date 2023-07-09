@@ -93,6 +93,8 @@ class Configuration:
     fallback_root: _t.PathT = "."
     write_to: _t.PathT | None = None
     write_to_template: str | None = None
+    version_file: _t.PathT | None = None
+    version_file_template: str | None = None
     parse: ParseFunction | None = None
     git_describe_command: _t.CMD_TYPE | None = None
     dist_name: str | None = None

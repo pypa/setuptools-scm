@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 
 from .. import _types as _t
+from .._log import log as parent_log
 from .._version_cls import _version_as_tuple
 from ..version import ScmVersion
+
+
+log = parent_log.getChild("dump_version")
 
 TEMPLATES = {
     ".py": """\
@@ -25,27 +30,44 @@ def dump_version(
     scm_version: ScmVersion | None = None,
 ) -> None:
     assert isinstance(version, str)
+    # todo: assert write_to doesnt escape
+    write_to = Path(write_to)
+    assert not write_to.is_absolute(), f"{write_to=}"
     target = Path(root).joinpath(write_to)
-    template = template or TEMPLATES.get(target.suffix)
-    from .._log import log
+    write_version_to_path(
+        target, template=template, version=version, scm_version=scm_version
+    )
 
-    log.debug("dump %s into %s", version, write_to)
+
+def _validate_template(target: Path, template: str | None) -> str:
+    if template == "":
+        warnings.warn(f"{template=} looks like a error, using default instead")
+        template = None
+    if template is None:
+        template = TEMPLATES.get(target.suffix)
+
     if template is None:
         raise ValueError(
             f"bad file format: {target.suffix!r} (of {target})\n"
             "only *.txt and *.py have a default template"
         )
-    version_tuple = _version_as_tuple(version)
+    else:
+        return template
 
+
+def write_version_to_path(
+    target: Path, template: str | None, version: str, scm_version: ScmVersion | None
+) -> None:
+    final_template = _validate_template(target, template)
+    log.debug("dump %s into %s", version, target)
+    version_tuple = _version_as_tuple(version)
     if scm_version is not None:
-        content = template.format(
+        content = final_template.format(
             version=version,
             version_tuple=version_tuple,
             scm_version=scm_version,
         )
-
     else:
-        content = template.format(version=version, version_tuple=version_tuple)
+        content = final_template.format(version=version, version_tuple=version_tuple)
 
-    with open(target, "w", encoding="utf-8") as fp:
-        fp.write(content)
+    target.write_text(content, encoding="utf-8")

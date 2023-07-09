@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import warnings
+from pathlib import Path
 from typing import Any
 from typing import NoReturn
 from typing import Pattern
@@ -41,7 +42,38 @@ def _do_parse(config: Configuration) -> ScmVersion | None:
     )
 
 
-def _get_version(config: Configuration) -> str | None:
+def write_version_files(
+    config: Configuration, version: str, scm_version: ScmVersion
+) -> None:
+    if config.write_to is not None:
+        from ._integration.dump_version import dump_version
+
+        dump_version(
+            root=config.root,
+            version=version,
+            scm_version=scm_version,
+            write_to=config.write_to,
+            template=config.write_to_template,
+        )
+    if config.version_file:
+        from ._integration.dump_version import write_version_to_path
+
+        version_file = Path(config.version_file)
+        assert not version_file.is_absolute(), f"{version_file=}"
+        # todo: use a better name than fallback root
+        assert config.relative_to is not None
+        target = Path(config.relative_to).parent.joinpath(version_file)
+        write_version_to_path(
+            target,
+            template=config.version_file_template,
+            version=version,
+            scm_version=scm_version,
+        )
+
+
+def _get_version(
+    config: Configuration, force_write_version_files: bool = False
+) -> str | None:
     parsed_version = _do_parse(config)
     if parsed_version is None:
         return None
@@ -50,16 +82,8 @@ def _get_version(config: Configuration) -> str | None:
         version_scheme=config.version_scheme,
         local_scheme=config.local_scheme,
     )
-    if config.write_to is not None:
-        from ._integration.dump_version import dump_version
-
-        dump_version(
-            root=config.root,
-            version=version_string,
-            scm_version=parsed_version,
-            write_to=config.write_to,
-            template=config.write_to_template,
-        )
+    if force_write_version_files:
+        write_version_files(config, version=version_string, scm_version=parsed_version)
 
     return version_string
 
@@ -83,6 +107,8 @@ def get_version(
     local_scheme: _t.VERSION_SCHEME = _config.DEFAULT_LOCAL_SCHEME,
     write_to: _t.PathT | None = None,
     write_to_template: str | None = None,
+    version_file: _t.PathT | None = None,
+    version_file_template: str | None = None,
     relative_to: _t.PathT | None = None,
     tag_regex: str | Pattern[str] = _config.DEFAULT_TAG_REGEX,
     parentdir_prefix_version: str | None = None,
@@ -106,7 +132,7 @@ def get_version(
     del normalize
     tag_regex = parse_tag_regex(tag_regex)
     config = Configuration(**locals())
-    maybe_version = _get_version(config)
+    maybe_version = _get_version(config, force_write_version_files=True)
 
     if maybe_version is None:
         _version_missing(config)

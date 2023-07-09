@@ -37,6 +37,8 @@ def get_version(
     local_scheme: _t.VERSION_SCHEME = _config.DEFAULT_LOCAL_SCHEME,
     write_to: _t.PathT | None = None,
     write_to_template: str | None = None,
+    version_file: _t.PathT | None = None,
+    version_file_template: str | None = None,
     relative_to: _t.PathT | None = None,
     tag_regex: str | Pattern[str] = _config.DEFAULT_TAG_REGEX,
     parentdir_prefix_version: str | None = None,

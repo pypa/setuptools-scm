@@ -86,8 +86,22 @@ def test_dump_version_works_with_pretend(
     version: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv(PRETEND_KEY, version)
-    target = tmp_path.joinpath("VERSION.txt")
-    get_version(write_to=target)
+    name = "VERSION.txt"
+    target = tmp_path.joinpath(name)
+    get_version(root=tmp_path, write_to=name)
+    assert target.read_text() == version
+
+
+def test_dump_version_modern(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    version = "1.2.3"
+    monkeypatch.setenv(PRETEND_KEY, version)
+    name = "VERSION.txt"
+
+    project = tmp_path.joinpath("project")
+    target = project.joinpath(name)
+    project.mkdir()
+
+    get_version(root="..", relative_to=target, version_file=name)
     assert target.read_text() == version
 
 
