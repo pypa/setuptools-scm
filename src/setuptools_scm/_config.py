@@ -8,6 +8,7 @@ import warnings
 from typing import Any
 from typing import Callable
 from typing import Pattern
+from typing import Protocol
 
 from . import _log
 from . import _types as _t
@@ -43,6 +44,13 @@ def _check_tag_regex(value: str | Pattern[str] | None) -> Pattern[str]:
         )
 
     return regex
+
+
+class ParseFunction(Protocol):
+    def __call__(
+        self, root: _t.PathT, *, config: Configuration
+    ) -> _t.SCMVERSION | None:
+        ...
 
 
 def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
@@ -85,7 +93,9 @@ class Configuration:
     fallback_root: _t.PathT = "."
     write_to: _t.PathT | None = None
     write_to_template: str | None = None
-    parse: Any | None = None
+    version_file: _t.PathT | None = None
+    version_file_template: str | None = None
+    parse: ParseFunction | None = None
     git_describe_command: _t.CMD_TYPE | None = None
     dist_name: str | None = None
     version_cls: type[_VersionT] = _Version

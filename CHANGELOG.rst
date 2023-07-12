@@ -16,6 +16,7 @@ breaking
 * move setuptools integration code to private sub-package
 * use normalized dist names for the SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DIST_NAME}
 * drop support for python 3.7
+* introduce version_file as replacement for write_to
 
 features
 --------

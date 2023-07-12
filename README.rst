@@ -76,7 +76,7 @@ to be supplied to ``get_version()``. For example:
 
     # pyproject.toml
     [tool.setuptools_scm]
-    write_to = "pkg/_version.py"
+    version_file = "pkg/_version.py"
 
 Where ``pkg`` is the name of your package.
 
@@ -93,72 +93,7 @@ directly in your working environment and run:
     $ python -m setuptools_scm --help
 
 
-``setup.py`` usage (deprecated)
--------------------------------
 
-.. warning::
-
-   ``setup_requires`` has been deprecated in favor of ``pyproject.toml``
-
-The following settings are considered legacy behavior and
-superseded by the ``pyproject.toml`` usage, but for maximal
-compatibility, projects may also supply the configuration in
-this older form.
-
-To use ``setuptools_scm`` just modify your project's ``setup.py`` file
-like this:
-
-* Add ``setuptools_scm`` to the ``setup_requires`` parameter.
-* Add the ``use_scm_version`` parameter and set it to ``True``.
-
-For example:
-
-.. code:: python
-
-    from setuptools import setup
-    setup(
-        ...,
-        use_scm_version=True,
-        setup_requires=['setuptools_scm'],
-        ...,
-    )
-
-Arguments to ``get_version()`` (see below) may be passed as a dictionary to
-``use_scm_version``. For example:
-
-.. code:: python
-
-    from setuptools import setup
-    setup(
-        ...,
-        use_scm_version = {
-            "root": "..",
-            "relative_to": __file__,
-            "local_scheme": "node-and-timestamp"
-        },
-        setup_requires=['setuptools_scm'],
-        ...,
-    )
-
-You can confirm the version number locally via ``setup.py``:
-
-.. code-block:: shell
-
-    $ python setup.py --version
-
-.. note::
-
-   If you see unusual version numbers for packages but ``python setup.py
-   --version`` reports the expected version number, ensure ``[egg_info]`` is
-   not defined in ``setup.cfg``.
-
-
-``setup.cfg`` usage (deprecated)
-------------------------------------
-
-as ``setup_requires`` is deprecated in favour of ``pyproject.toml``
-usage in ``setup.cfg`` is considered deprecated,
-please use ``pyproject.toml`` whenever possible.
 
 
 Programmatic usage
@@ -171,8 +106,6 @@ than the project's root, you can use:
 
     from setuptools_scm import get_version
     version = get_version(root='..', relative_to=__file__)
-
-See `setup.py Usage (deprecated)`_ above for how to use this within ``setup.py``.
 
 
 Retrieving package version at runtime
@@ -193,21 +126,6 @@ or the `importlib_metadata`_ backport:
         # package is not installed
         pass
 
-Alternatively, you can use ``pkg_resources`` which is included in
-``setuptools`` (but has a significant runtime cost):
-
-.. code:: python
-
-   from pkg_resources import get_distribution, DistributionNotFound
-
-   try:
-       __version__ = get_distribution("package-name").version
-   except DistributionNotFound:
-        # package is not installed
-       pass
-
-However, this does place a runtime dependency on ``setuptools`` and can add up to
-a few 100ms overhead for the package import time.
 
 .. _PEP-0566: https://www.python.org/dev/peps/pep-0566/
 .. _importlib_metadata: https://pypi.org/project/importlib-metadata/
@@ -392,7 +310,7 @@ The currently supported configuration keys are:
     Configures how the local component of the version is constructed; either an
     entrypoint name or a callable.
 
-:write_to:
+:version_file:
     A path to a file that gets replaced with a file containing the current
     version. It is ideal for creating a ``_version.py`` file within the
     package, typically used to avoid using `pkg_resources.get_distribution`
@@ -404,10 +322,14 @@ The currently supported configuration keys are:
       templates, for other file types it is necessary to provide
       :code:`write_to_template`.
 
-:write_to_template:
+:version_file_template_template:
     A newstyle format string that is given the current version as
     the ``version`` keyword argument for formatting.
 
+:write_to:
+   (deprecated) legacy option to create a version file relative to the scm root
+   its broken for usage from a sdist and fixing it would be a fatal breaking change,
+   use ``version_file`` instead
 :relative_to:
     A file from which the root can be resolved.
     Typically called by a script or module that is not in the root of the
@@ -488,20 +410,6 @@ function:
 It optionally accepts the keys of the ``use_scm_version`` parameter as
 keyword arguments.
 
-Example configuration in ``setup.py`` format:
-
-.. code:: python
-
-    from setuptools import setup
-
-    setup(
-        use_scm_version={
-            'write_to': '_version.py',
-            'write_to_template': '__version__ = "{version}"',
-            'tag_regex': r'^(?P<prefix>v)?(?P<version>[^\+]+)(?P<suffix>.*)?$',
-        }
-    )
-
 
 Environment variables
 ---------------------
@@ -509,7 +417,13 @@ Environment variables
 :SETUPTOOLS_SCM_PRETEND_VERSION:
     when defined and not empty,
     its used as the primary source for the version number
-    in which case it will be an unparsed string
+    in which case it will be an string
+
+    .. warning::
+
+      its strongly  recommended to use use distribution name specific pretend versions
+
+
 
 :SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME}:
     when defined and not empty,

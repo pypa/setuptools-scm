@@ -8,9 +8,9 @@ import pytest
 
 import setuptools_scm._integration.setuptools
 from .wd_wrapper import WorkDir
-from setuptools_scm import PRETEND_KEY
-from setuptools_scm import PRETEND_KEY_NAMED
 from setuptools_scm._integration.setuptools import _warn_on_old_setuptools
+from setuptools_scm._overrides import PRETEND_KEY
+from setuptools_scm._overrides import PRETEND_KEY_NAMED
 from setuptools_scm._run_cmd import run
 
 

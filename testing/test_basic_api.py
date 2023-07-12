@@ -56,7 +56,7 @@ def assert_root(monkeypatch: pytest.MonkeyPatch, expected_root: str) -> None:
         assert config.absolute_root == expected_root
         return ScmVersion("1.0", config=config)
 
-    monkeypatch.setattr(setuptools_scm, "_do_parse", assertion)
+    monkeypatch.setattr(setuptools_scm._get_version, "_do_parse", assertion)
 
 
 def test_root_parameter_creation(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -143,7 +143,7 @@ def test_get_version_blank_tag_regex() -> None:
     "version", ["1.0", "1.2.3.dev1+ge871260", "1.2.3.dev15+ge871260.d20180625", "2345"]
 )
 def test_pretended(version: str, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv(setuptools_scm.PRETEND_KEY, version)
+    monkeypatch.setenv(setuptools_scm._overrides.PRETEND_KEY, version)
     assert setuptools_scm.get_version() == version
 
 
