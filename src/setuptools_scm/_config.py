@@ -68,8 +68,8 @@ def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
         if os.path.isdir(relative_to):
             warnings.warn(
                 "relative_to is expected to be a file,"
-                " its the directory %r\n"
-                "assuming the parent directory was passed" % (relative_to,)
+                f" its the directory {relative_to}\n"
+                "assuming the parent directory was passed"
             )
             log.debug("dir %s", relative_to)
             root = os.path.join(relative_to, root)
@@ -132,6 +132,10 @@ class Configuration:
     def from_data(
         cls, relative_to: str | os.PathLike[str], data: dict[str, Any]
     ) -> Configuration:
+        """
+        given configuration data
+        create a config instance after validating tag regex/version class
+        """
         tag_regex = _check_tag_regex(data.pop("tag_regex", None))
         version_cls = _validate_version_cls(
             data.pop("version_cls", None), data.pop("normalize", True)

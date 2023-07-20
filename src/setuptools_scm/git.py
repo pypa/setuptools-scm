@@ -121,7 +121,6 @@ class GitWorkdir(Workdir):
         return res.parse_success(
             parse=parse_timestamp,
             error_msg="logging the iso date for head failed",
-            default=None,
         )
 
     def is_shallow(self) -> bool:
@@ -219,7 +218,7 @@ def version_from_describe(
     if describe_command is not None:
         if isinstance(describe_command, str):
             describe_command = shlex.split(describe_command)
-            # todo: figure how ot ensure git with gitdir gets correctly invoked
+            # todo: figure how to ensure git with gitdir gets correctly invoked
         if describe_command[0] == "git":
             describe_res = run_git(describe_command[1:], wd.path)
         else:

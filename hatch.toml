@@ -1,0 +1,10 @@
+[envs.docs]
+dependencies = [
+  "mkdocs",
+  "mkdocstrings[python]",
+  "mkdocs-material",
+]
+[envs.docs.scripts]
+build = "mkdocs build --clean --strict"
+serve = "mkdocs serve --dev-addr localhost:8000"
+init = "mkdocs {args}"
