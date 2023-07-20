@@ -10,10 +10,6 @@ files that are managed by the SCM (i.e. it automatically adds all of
 the SCM-managed files to the sdist). Unwanted files must be excluded
 by discarding them via ``MANIFEST.in``.
 
-``setuptools_scm`` supports the following scm out of the box:
-
-* git
-* mercurial
 
 .. image:: https://github.com/pypa/setuptools_scm/workflows/python%20tests+artifacts+release/badge.svg
     :target: https://github.com/pypa/setuptools_scm/actions
