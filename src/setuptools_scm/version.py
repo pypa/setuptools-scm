@@ -117,20 +117,32 @@ def _source_epoch_or_utc_now() -> datetime:
 
 @dataclasses.dataclass
 class ScmVersion:
+    """represents a parsed version from scm"""
+
     tag: _v.Version | _v.NonNormalizedVersion | str
+    """the related tag or preformatted version string"""
     config: _config.Configuration
+    """the configuration used to parse the version"""
     distance: int = 0
+    """the number of commits since the tag"""
     node: str | None = None
+    """the shortened node id"""
     dirty: bool = False
+    """whether the working copy had uncommitted changes"""
     preformatted: bool = False
+    """whether the version string was preformatted"""
     branch: str | None = None
+    """the branch name if any"""
     node_date: date | None = None
+    """the date of the commit if available"""
     time: datetime = dataclasses.field(
         init=False, default_factory=_source_epoch_or_utc_now
     )
+    """the current time or source epoch time"""
 
     @property
     def exact(self) -> bool:
+        """returns true checked out exactly on a tag and no local changes apply"""
         return self.distance == 0 and not self.dirty
 
     def __repr__(self) -> str:
@@ -140,6 +152,7 @@ class ScmVersion:
         )
 
     def format_with(self, fmt: str, **kw: object) -> str:
+        """format a given format string with attributes of this object"""
         return fmt.format(
             time=self.time,
             tag=self.tag,
@@ -152,6 +165,10 @@ class ScmVersion:
         )
 
     def format_choice(self, clean_format: str, dirty_format: str, **kw: object) -> str:
+        """given `clean_format` and `dirty_format`
+
+        choose one based on `self.dirty` and format it using `self.format_with`"""
+
         return self.format_with(dirty_format if self.dirty else clean_format, **kw)
 
     def format_next_version(

@@ -102,3 +102,5 @@ namespaces = false
 
 [tool.setuptools.dynamic]
 version = { attr = "_own_version_helper.version"}
+
+[tool.setuptools_scm]

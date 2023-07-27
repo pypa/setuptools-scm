@@ -1,8 +1,13 @@
 [envs.docs]
+python = "3.11"
 dependencies = [
   "mkdocs",
   "mkdocstrings[python]",
+  "pygments",
   "mkdocs-material",
+  "mkdocs-entangled-plugin",
+  "entangled_cli[rich]"
+
 ]
 [envs.docs.scripts]
 build = "mkdocs build --clean --strict"

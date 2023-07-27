@@ -42,6 +42,8 @@ htmlcov/
 .cache
 .pytest_cache
 .mypy_cache/
+.entangled/
+
 nosetests.xml
 coverage.xml
 *,cover
