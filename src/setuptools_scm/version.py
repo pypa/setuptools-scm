@@ -389,15 +389,15 @@ def get_local_node_and_date(version: ScmVersion) -> str:
     return _modify_version._format_local_with_time(version, time_format="%Y%m%d")
 
 
-def get_local_node_and_timestamp(version: ScmVersion, fmt: str = "%Y%m%d%H%M%S") -> str:
-    return _modify_version._format_local_with_time(version, time_format=fmt)
+def get_local_node_and_timestamp(version: ScmVersion) -> str:
+    return _modify_version._format_local_with_time(version, time_format="%Y%m%d%H%M%S")
 
 
 def get_local_dirty_tag(version: ScmVersion) -> str:
     return version.format_choice("", "+dirty")
 
 
-def get_no_local_node(_: Any) -> str:
+def get_no_local_node(version: ScmVersion) -> str:
     return ""
 
 

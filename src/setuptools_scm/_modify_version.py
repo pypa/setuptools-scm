@@ -37,12 +37,12 @@ def _bump_regex(version: str) -> str:
     match = re.match(r"(.*?)(\d+)$", version)
     if match is None:
         raise ValueError(
-            "{version} does not end with a number to bump, "
-            "please correct or use a custom version scheme".format(version=version)
+            f"{version} does not end with a number to bump, "
+            "please correct or use a custom version scheme"
         )
     else:
         prefix, tail = match.groups()
-        return "%s%d" % (prefix, int(tail) + 1)
+        return f"{prefix}{int(tail) + 1}"
 
 
 def _format_local_with_time(version: _t.SCMVERSION, time_format: str) -> str:

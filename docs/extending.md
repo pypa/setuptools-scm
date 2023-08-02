@@ -14,8 +14,8 @@
     entrypoint's name. E.g. for the built-in entrypoint for git the
     entrypoint is named `.git` and references `setuptools_scm.git:parse`
 
-    The return value MUST be a `setuptools_scm.version.ScmVersion` instance
-    created by the function `setuptools_scm.version.meta`.
+    The return value MUST be a [`setuptools_scm.version.ScmVersion`][] instance
+    created by the function [`setuptools_scm.version.meta`][].
 
 `setuptools_scm.files_command`
 :  Either a string containing a shell command that prints all SCM managed
@@ -25,10 +25,17 @@
    Also uses then name of your SCM control directory as name of the entrypoint.
 
 
+### api reference for scm version objects
+
 ::: setuptools_scm.version.ScmVersion
     options:
       show_root_heading: yes
+      heading_level: 4
 
+::: setuptools_scm.version.meta
+    options:
+      show_root_heading: yes
+      heading_level: 4
 
 ## Version number construction
 

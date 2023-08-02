@@ -355,37 +355,6 @@ The callable must return the configuration.
     )
 
 
-Customizing Version Scheme with pyproject.toml
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-To support custom version schemes in pyproject.toml, you may specify your own function as an entrypoint for getting the version.
-
-.. code:: toml
-
-    # pyproject.toml
-    [tool.setuptools_scm]
-    version_scheme = "myproject.my_file:myversion_func"
-
-.. code:: python
-
-    # myproject/my_file
-    def myversion_func(version: ScmVersion):
-        from setuptools_scm.version import guess_next_version
-        return version.format_next_version(guess_next_version, '{guessed}b{distance}')
-
-
-Note on testing non-installed versions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-While the general advice is to test against a installed version,
-some environments require a test prior to install,
-
-.. code::
-
-  $ python setup.py egg_info
-  $ PYTHONPATH=$PWD:$PWD/src pytest
-
-
 Interaction with Enterprise Distributions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

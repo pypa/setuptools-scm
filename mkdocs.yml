@@ -3,6 +3,7 @@ site_name: setuptools scm
 nav:
   - index.md
   - usage.md
+  - customizing.md
   - config.md
   - extending.md
   - overrides.md
