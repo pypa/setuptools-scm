@@ -365,9 +365,8 @@ In those case its typically possible to build by using a sdist against ``setupto
 As those old setuptools versions lack sensible types for versions,
 modern setuptools_scm is unable to support them sensibly.
 
-In case the project you need to build can not be patched to either use old setuptools_scm,
-its still possible to install a more recent version of setuptools in order to handle the build
-and/or install the package by using wheels or eggs.
+Its strongly recommended to build a wheel artifact using modern python and setuptools,
+then installing the artifact instead of trying to run against old setuptools versions.
 
 
 Code of Conduct
