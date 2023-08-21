@@ -70,6 +70,16 @@ def scm_find_files(
         for filename in filenames:
             if not force_all_files and _link_not_in_scm(filename):
                 continue
+            if not force_all_files and filename.lower().endswith(".ipynb"):
+                # ignore jupyter notebooks by default.
+                # they can be included with a MANIFEST.in
+                # 1) jupyter notebooks are ubiquitous in python repositories,
+                # they are saved in git and detected by setuptools-scm.
+                # 2) it's common for a notebook file to reach dozens
+                # or hundreds of MB (jupyter saves the content of each cell on save).
+                # 3) there is no expectation of these files to be included in
+                # or distributed via the python wheel.
+                continue
             # dirpath + filename with symlinks preserved
             fullfilename = os.path.join(dirpath, filename)
             is_tracked = os.path.normcase(os.path.realpath(fullfilename)) in scm_files
