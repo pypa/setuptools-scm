@@ -52,3 +52,26 @@ dynamic = [
 - [ ] correct config after [entangled mkdocs bug] is fixed
 
 [entangled mkdocs bug]: https://github.com/entangled/mkdocs-plugin/issues/1
+
+
+
+
+##  Importing in setup.py
+
+with the pep-517/518 build backend, setuptools_scm is importable from `setup.py`
+
+``` { .python title="setup.py" }
+import setuptools
+from setuptools_scm.version import get_local_dirty_tag
+
+def clean_scheme(version):
+    return get_local_dirty_tag(version) if version.dirty else '+clean'
+
+setup(use_scm_version={'local_scheme': clean_scheme})
+```
+
+
+
+## alternative version classes
+
+::: setuptools_scm.NonNormalizedVersion

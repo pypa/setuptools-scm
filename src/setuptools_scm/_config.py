@@ -26,6 +26,9 @@ log = _log.log.getChild("config")
 DEFAULT_TAG_REGEX = re.compile(
     r"^(?:[\w-]+-)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"
 )
+"""default tag regex that tries to match PEP440 style versions
+with prefix consisting of dashed words"""
+
 DEFAULT_VERSION_SCHEME = "guess-next-dev"
 DEFAULT_LOCAL_SCHEME = "node-and-date"
 

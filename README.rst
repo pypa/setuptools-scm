@@ -63,11 +63,6 @@ Then add this section to your ``pyproject.toml``:
     # pyproject.toml
     [tool.setuptools_scm]
 
-Including this section is comparable to supplying
-``use_scm_version=True`` in ``setup.py``. Additionally,
-include arbitrary keyword arguments in that section
-to be supplied to ``get_version()``. For example:
-
 .. code:: toml
 
     # pyproject.toml
@@ -140,12 +135,6 @@ will increment the wrong part of the SemVer (e.g. tag ``2.0`` results in
 ``2.1.devX`` instead of ``2.0.1.devX``). So please make sure to tag
 accordingly.
 
-.. note::
-
-    Future versions of ``setuptools_scm`` will switch to `SemVer
-    <http://semver.org/>`_ by default hiding the the old behavior as an
-    configurable option.
-
 
 Builtin mechanisms for obtaining version numbers
 ------------------------------------------------
@@ -210,149 +199,7 @@ a mapping with options instead of a boolean value.
 
 The currently supported configuration keys are:
 
-:root:
-    Relative path to cwd, used for finding the SCM root; defaults to ``.``
 
-:version_scheme:
-    Configures how the local version number is constructed; either an
-    entrypoint name or a callable.
-
-:local_scheme:
-    Configures how the local component of the version is constructed; either an
-    entrypoint name or a callable.
-
-:version_file:
-    A path to a file that gets replaced with a file containing the current
-    version. It is ideal for creating a ``_version.py`` file within the
-    package, typically used to avoid using `pkg_resources.get_distribution`
-    (which adds some overhead).
-
-    .. warning::
-
-      Only files with :code:`.py` and :code:`.txt` extensions have builtin
-      templates, for other file types it is necessary to provide
-      :code:`write_to_template`.
-
-:version_file_template_template:
-    A newstyle format string that is given the current version as
-    the ``version`` keyword argument for formatting.
-
-:write_to:
-   (deprecated) legacy option to create a version file relative to the scm root
-   its broken for usage from a sdist and fixing it would be a fatal breaking change,
-   use ``version_file`` instead
-:relative_to:
-    A file from which the root can be resolved.
-    Typically called by a script or module that is not in the root of the
-    repository to point ``setuptools_scm`` at the root of the repository by
-    supplying ``__file__``.
-
-:tag_regex:
-   A Python regex string to extract the version part from any SCM tag.
-    The regex needs to contain either a single match group, or a group
-    named ``version``, that captures the actual version information.
-
-    Defaults to the value of ``setuptools_scm.config.DEFAULT_TAG_REGEX``
-    (see `_config.py <src/setuptools_scm/_config.py>`_).
-
-:parentdir_prefix_version:
-    If the normal methods for detecting the version (SCM version,
-    sdist metadata) fail, and the parent directory name starts with
-    ``parentdir_prefix_version``, then this prefix is stripped and the rest of
-    the parent directory name is matched with ``tag_regex`` to get a version
-    string.  If this parameter is unset (the default), then this fallback is
-    not used.
-
-    This is intended to cover GitHub's "release tarballs", which extract into
-    directories named ``projectname-tag/`` (in which case
-    ``parentdir_prefix_version`` can be set e.g. to ``projectname-``).
-
-:fallback_version:
-    A version string that will be used if no other method for detecting the
-    version worked (e.g., when using a tarball with no metadata). If this is
-    unset (the default), setuptools_scm will error if it fails to detect the
-    version.
-
-:parse:
-    A function that will be used instead of the discovered SCM for parsing the
-    version.
-    Use with caution, this is a function for advanced use, and you should be
-    familiar with the ``setuptools_scm`` internals to use it.
-
-:git_describe_command:
-    This command will be used instead the default ``git describe`` command.
-    Use with caution, this is a function for advanced use, and you should be
-    familiar with the ``setuptools_scm`` internals to use it.
-
-    Defaults to the value set by ``setuptools_scm.git.DEFAULT_DESCRIBE``
-    (see `git.py <src/setuptools_scm/git.py>`_).
-
-:normalize:
-    A boolean flag indicating if the version string should be normalized.
-    Defaults to ``True``. Setting this to ``False`` is equivalent to setting
-    ``version_cls`` to ``setuptools_scm.version.NonNormalizedVersion``
-
-:version_cls:
-    An optional class used to parse, verify and possibly normalize the version
-    string. Its constructor should receive a single string argument, and its
-    ``str`` should return the normalized version string to use.
-    This option can also receive a class qualified name as a string.
-
-    This defaults to ``packaging.version.Version`` if available. If
-    ``packaging`` is not installed, ``pkg_resources.packaging.version.Version``
-    is used. Note that it is known to modify git release candidate schemes.
-
-    The ``setuptools_scm.NonNormalizedVersion`` convenience class is
-    provided to disable the normalization step done by
-    ``packaging.version.Version``. If this is used while ``setuptools_scm``
-    is integrated in a setuptools packaging process, the non-normalized
-    version number will appear in all files (see ``write_to``) BUT note
-    that setuptools will still normalize it to create the final distribution,
-    so as to stay compliant with the python packaging standards.
-
-To use ``setuptools_scm`` in other Python code you can use the ``get_version``
-function:
-
-.. code:: python
-
-    from setuptools_scm import get_version
-    my_version = get_version()
-
-It optionally accepts the keys of the ``use_scm_version`` parameter as
-keyword arguments.
-
-
-
-
-
-
-
-Importing in ``setup.py``
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-To support usage in ``setup.py`` passing a callable into ``use_scm_version``
-is supported.
-
-Within that callable, ``setuptools_scm`` is available for import.
-The callable must return the configuration.
-
-.. code:: python
-
-    # content of setup.py
-    import setuptools
-
-    def myversion():
-        from setuptools_scm.version import get_local_dirty_tag
-        def clean_scheme(version):
-            return get_local_dirty_tag(version) if version.dirty else '+clean'
-
-        return {'local_scheme': clean_scheme}
-
-    setup(
-        ...,
-        use_scm_version=myversion,
-        ...
-    )
 
 
 Interaction with Enterprise Distributions
