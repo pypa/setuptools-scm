@@ -222,7 +222,7 @@ def meta(
 
 
 def guess_next_version(tag_version: ScmVersion) -> str:
-    version = _modify_version._strip_local(str(tag_version.tag))
+    version = _modify_version.strip_local(str(tag_version.tag))
     return _modify_version._bump_dev(version) or _modify_version._bump_regex(version)
 
 

@@ -5,7 +5,7 @@ import re
 from . import _types as _t
 
 
-def _strip_local(version_string: str) -> str:
+def strip_local(version_string: str) -> str:
     public, sep, local = version_string.partition("+")
     return public
 
@@ -57,5 +57,5 @@ def _format_local_with_time(version: _t.SCMVERSION, time_format: str) -> str:
 
 
 def _dont_guess_next_version(tag_version: _t.SCMVERSION) -> str:
-    version = _strip_local(str(tag_version.tag))
+    version = strip_local(str(tag_version.tag))
     return _bump_dev(version) or _add_post(version)
