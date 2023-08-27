@@ -13,3 +13,4 @@ dependencies = [
 build = "mkdocs build --clean --strict"
 serve = "mkdocs serve --dev-addr localhost:8000"
 init = "mkdocs {args}"
+sync = ["entangled sync"]
