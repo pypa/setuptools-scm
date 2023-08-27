@@ -135,10 +135,11 @@ class ScmVersion:
     """the branch name if any"""
     node_date: date | None = None
     """the date of the commit if available"""
-    time: datetime = dataclasses.field(
-        init=False, default_factory=_source_epoch_or_utc_now
-    )
-    """the current time or source epoch time"""
+    time: datetime = dataclasses.field(default_factory=_source_epoch_or_utc_now)
+    """the current time or source epoch time
+    only set for unit-testing version schemes
+    for real usage it must be `now(utc)` or `SOURCE_EPOCH`
+    """
 
     @property
     def exact(self) -> bool:
@@ -290,8 +291,8 @@ def release_branch_semver_version(version: ScmVersion) -> str:
 
 def release_branch_semver(version: ScmVersion) -> str:
     warnings.warn(
-        "release_branch_semver is deprecated and will be removed in future. "
-        + "Use release_branch_semver_version instead",
+        "release_branch_semver is deprecated and will be removed in the future. "
+        "Use release_branch_semver_version instead",
         category=DeprecationWarning,
         stacklevel=2,
     )
@@ -338,7 +339,7 @@ def guess_next_date_ver(
         # deduct date format if not provided
         if date_fmt is None:
             date_fmt = "%Y.%m.%d" if len(match.group("year")) == 4 else "%y.%m.%d"
-    today = datetime.now(timezone.utc).date()
+    today = version.time.date()
     head_date = node_date or today
     # compute patch
     if match is None:
