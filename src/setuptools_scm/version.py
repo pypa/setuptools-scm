@@ -22,6 +22,8 @@ if TYPE_CHECKING:
 
     _P = ParamSpec("_P")
 
+from typing import TypedDict
+
 
 from ._version_cls import Version as PkgVersion, _VersionT
 from . import _version_cls as _v
@@ -35,30 +37,32 @@ SEMVER_PATCH = 3
 SEMVER_LEN = 3
 
 
+class _TagDict(TypedDict):
+    version: str
+    prefix: str
+    suffix: str
+
+
 def _parse_version_tag(
     tag: str | object, config: _config.Configuration
-) -> dict[str, str] | None:
+) -> _TagDict | None:
     match = config.tag_regex.match(str(tag))
 
     if match:
-        key: str | int
-        if len(match.groups()) == 1:
-            key = 1
-        else:
-            key = "version"
-
+        key: str | int = 1 if len(match.groups()) == 1 else "version"
         full = match.group(0)
         log.debug("%r %r %s", tag, config.tag_regex, match)
         log.debug(
             "key %s data %s, %s, %r", key, match.groupdict(), match.groups(), full
         )
-        result = {
-            "version": match.group(key),
-            "prefix": full[: match.start(key)],
-            "suffix": full[match.end(key) :],
-        }
+        result = _TagDict(
+            version=match.group(key),
+            prefix=full[: match.start(key)],
+            suffix=full[match.end(key) :],
+        )
 
         log.debug("tag %r parsed to %r", tag, result)
+        assert result["version"]
         return result
     else:
         log.debug("tag %r did not parse", tag)
@@ -86,20 +90,16 @@ def tag_to_version(
     """
     log.debug("tag %s", tag)
 
-    tagdict = _parse_version_tag(tag, config)
-    if not isinstance(tagdict, dict) or not tagdict.get("version", None):
+    tag_dict = _parse_version_tag(tag, config)
+    if tag_dict is None or not tag_dict.get("version", None):
         warnings.warn(f"tag {tag!r} no version found")
         return None
 
-    version_str = tagdict["version"]
+    version_str = tag_dict["version"]
     log.debug("version pre parse %s", version_str)
 
-    if tagdict.get("suffix", ""):
-        warnings.warn(
-            "tag {!r} will be stripped of its suffix '{}'".format(
-                tag, tagdict["suffix"]
-            )
-        )
+    if suffix := tag_dict.get("suffix", ""):
+        warnings.warn(f"tag {tag!r} will be stripped of its suffix {suffix!r}")
 
     version: _VersionT = config.version_cls(version_str)
     log.debug("version=%r", version)
