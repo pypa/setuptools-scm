@@ -125,7 +125,7 @@ except PackageNotFoundError:
 
 
 ### Usage from Sphinx
------------------
+
 
 ``` {.python file=docs/.entangled/sphinx_conf.py}
 from importlib.metadata import version as get_version
@@ -172,3 +172,106 @@ To avoid BuildKit and mounting of the .git folder altogether, one can also pass 
 version as a build argument.
 Note that `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME}`
 is preferred over `SETUPTOOLS_SCM_PRETEND_VERSION`.
+
+
+
+## Default versioning scheme
+
+In the standard configuration `setuptools_scm` takes a look at three things:
+
+1. latest tag (with a version number)
+2. the distance to this tag (e.g. number of revisions since latest tag)
+3. workdir state (e.g. uncommitted changes since latest tag)
+
+and uses roughly the following logic to render the version:
+
+
+| distance | state     | format                                                               |
+|----------|-----------|----------------------------------------------------------------------|
+| no       | unchanged | `{tag}`                                                              |
+| yes      | unchanged | `{next_version}.dev{distance}+{scm letter}{revision hash}`           |
+| no       | changed   | `{tag}+dYYYYMMDD`                                                    |
+| yes      | changed   | `{next_version}.dev{distance}+{scm letter}{revision hash}.dYYYYMMDD` |
+
+where `{next_version}` is the next version number after the latest tag
+
+The next version is calculated by adding `1` to the last numeric component of
+the tag.
+
+For Git projects, the version relies on  [git describe](https://git-scm.com/docs/git-describe),
+so you will see an additional `g` prepended to the `{revision hash}`.
+
+
+!!! note
+
+    According to [PEP 440](https://peps.python.org/pep-0440/#local-version-identifiers>),
+    if a version includes a local component, the package cannot be published to public
+    package indexes like PyPI or TestPyPI. The disallowed version segments may
+    be seen in auto-publishing workflows or when a configuration mistake is made.
+
+    However, some package indexes such as devpi or other alternatives allow local
+    versions. Local version identifiers must comply with [PEP 440].
+
+## Semantic Versioning (SemVer)
+
+Due to the default behavior it's necessary to always include a
+patch version (the `3` in `1.2.3`), or else the automatic guessing
+will increment the wrong part of the SemVer (e.g. tag `2.0` results in
+`2.1.devX` instead of `2.0.1.devX`). So please make sure to tag
+accordingly.
+
+
+## Builtin mechanisms for obtaining version numbers
+
+1. the SCM itself (git/hg)
+2. `.hg_archival` files (mercurial archives)
+3. `.git_archival.txt` files (git archives, see subsection below)
+4. `PKG-INFO`
+
+
+### Git archives
+
+Git archives are supported, but a few changes to your repository are required.
+
+ensure the content of the following files:
+
+```{ .text file=".git_archival.txt"}
+
+node: $Format:%H$
+node-date: $Format:%cI$
+describe-name: $Format:%(describe:tags=true,match=*[0-9]*)$
+ref-names: $Format:%D$
+```
+
+``` {.text file=".gitattributes"}
+.git_archival.txt  export-subst
+```
+
+Finally, don't forget to commit those two files
+```commandline
+$ git add .git_archival.txt .gitattributes && git commit -m "add export config"
+```
+
+
+Note that if you are creating a `_version.py` file, note that it should not
+be kept in version control. It's strongly recommended to be put into gitignore.
+
+
+
+File finders hook makes most of MANIFEST.in unnecessary
+-------------------------------------------------------
+
+`setuptools_scm` implements a [file_finders] entry point
+which returns all files tracked by your SCM.
+This eliminates the need for a manually constructed `MANIFEST.in` in most cases where this
+would be required when not using `setuptools_scm`, namely:
+
+* To ensure all relevant files are packaged when running the `sdist` command.
+  * When using [include_package_data] to include package data as part of the `build` or `bdist_wheel`.
+
+`MANIFEST.in` may still be used: anything defined there overrides the hook.
+This is mostly useful to exclude files tracked in your SCM from packages,
+although in principle it can be used to explicitly include non-tracked files too.
+
+[file_finders]: https://setuptools.pypa.io/en/latest/userguide/extension.html#adding-support-for-revision-control-systems
+[include_package_data]: https://setuptools.readthedocs.io/en/latest/setuptools.html#including-data-files

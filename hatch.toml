@@ -1,14 +1,7 @@
 [envs.docs]
 python = "3.11"
-dependencies = [
-  "mkdocs",
-  "mkdocstrings[python]",
-  "pygments",
-  "mkdocs-material",
-  "mkdocs-entangled-plugin",
-  "entangled_cli[rich]"
+extras = ["docs"]
 
-]
 [envs.docs.scripts]
 build = "mkdocs build --clean --strict"
 serve = "mkdocs serve --dev-addr localhost:8000"

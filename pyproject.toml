@@ -50,6 +50,14 @@ dependencies = [
   'typing-extensions; python_version < "3.11"',
 ]
 [project.optional-dependencies]
+docs = [
+  "entangled_cli[rich]",
+  "mkdocs",
+  "mkdocs-entangled-plugin",
+  "mkdocs-material",
+  "mkdocstrings[python]",
+  "pygments",
+]
 rich = [
   "rich",
 ]
