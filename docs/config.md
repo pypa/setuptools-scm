@@ -3,8 +3,8 @@
 
 ## configuration parameters
 
-configuration parameters can be configured in `pyproject.toml` or `setup.py`.
-Callables or other python objects have to be passed in `setup.py` (using the `use_scm_version` keyword argument).
+Configuration parameters can be configured in `pyproject.toml` or `setup.py`.
+Callables or other Python objects have to be passed in `setup.py` (via the `use_scm_version` keyword argument).
 
 
 `root : Path | PathLike[str]`
@@ -15,7 +15,7 @@ Callables or other python objects have to be passed in `setup.py` (using the `us
 
 `local_scheme : str | Callable[[ScmVersion], str]`
 : Configures how the local component of the version is constructed
-  either an  entrypoint name or a callable.
+  either an entrypoint name or a callable.
 
 
 `version_file: Path | PathLike[str] | None = None`
@@ -66,7 +66,7 @@ Callables or other python objects have to be passed in `setup.py` (using the `us
 `fallback_version: str | None = None`
  :  A version string that will be used if no other method for detecting the
     version worked (e.g., when using a tarball with no metadata). If this is
-    unset (the default), setuptools_scm will error if it fails to detect the
+    unset (the default), `setuptools_scm` will error if it fails to detect the
     version.
 
 `parse: Callable[[Path, Config], ScmVersion] | None = None`
@@ -95,35 +95,27 @@ Callables or other python objects have to be passed in `setup.py` (using the `us
     provided to disable the normalization step done by
     `packaging.version.Version`. If this is used while `setuptools_scm`
     is integrated in a setuptools packaging process, the non-normalized
-    version number will appear in all files (see `version_file`)note
+    version number will appear in all files (see `version_file` note).
 
     !!! note "normalization still applies to artifact filenames"
         Setuptools will still normalize it to create the final distribution,
         so as to stay compliant with the python packaging standards.
 
 
-
-
-
-
-
-
-
-
 ## environment variables
 
 `SETUPTOOLS_SCM_PRETEND_VERSION`
-:   its used as the primary source for the version number
+:   used as the primary source for the version number
     in which case it will be an unparsed string
 
     !!! warning "its strongly  recommended to use use distribution name specific pretend versions"
 
 
 `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME}`
-:   its used as the primary source for the version number
+:   used as the primary source for the version number
     in which case it will be an unparsed string
 
-    the dist name normalization follows adapted PEP-503 semantics, with one or
+    the dist name normalization follows adapted PEP 503 semantics, with one or
     more of ".-_" being replaced by a single "_", and the name being upper-cased
 
     it takes precedence over ``SETUPTOOLS_SCM_PRETEND_VERSION``

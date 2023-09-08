@@ -7,7 +7,7 @@ instead of declaring them as the version argument or in a SCM managed file.
 Additionally `setuptools_scm` provides setuptools with a list of
 files that are managed by the SCM (i.e. it automatically adds all
 the SCM-managed files to the sdist). Unwanted files must be excluded
-by discarding them via `MANIFEST.in`.
+via `MANIFEST.in`.
 
 ## basic usage
 
@@ -40,5 +40,5 @@ dynamic = ["version"]
 ### with hatch
 
 [Hatch-vcs](https://github.com/ofek/hatch-vcs) integrates with setuptools_scm
-but provides own configuration options in its style,
+but provides its own configuration options,
 please see its [documentation](https://github.com/ofek/hatch-vcs#readme)

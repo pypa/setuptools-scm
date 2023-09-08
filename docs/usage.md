@@ -5,7 +5,7 @@
 The preferred way to configure `setuptools_scm` is to author
 settings in the `tool.setuptools_scm` section of `pyproject.toml`.
 
-It's considered necessary to use a setuptools version released after 2022.
+It's necessary to use a setuptools version released after 2022.
 
 ```toml
 # pyproject.toml
@@ -60,7 +60,7 @@ $ python -m setuptools_scm # example from running local after changes
 
 ```commandline
 $ python -m setuptools_scm ls # output trimmed for brevity
-./LICESE
+./LICENSE
 ...
 ./src/setuptools_scm/__init__.py
 ./src/...
@@ -96,13 +96,12 @@ version = get_version(root='..', relative_to=__file__)
 ```
 
 
-## python package metadata
+## Python package metadata
 
 
 
 
 ### version at runtime
--------------------------------------
 
 If you have opted not to hardcode the version number inside the package,
 you can retrieve it at runtime from PEP-0566_ metadata using
@@ -134,18 +133,18 @@ release: str = get_version('setuptools_scm')
 version: str = ".".join(release.split('.')[:2])
 ```
 
-The underlying reason is, that services like *Read the Docs* sometimes change
+The underlying reason is that services like *Read the Docs* sometimes change
 the working directory for good reasons and using the installed metadata
 prevents using needless volatile data there.
 
 
-## with docker/podman
+## with Docker/Podman
 
 
-By default, docker will not copy the `.git`  folder into your container.
+By default, Docker will not copy the `.git`  folder into your container.
 Therefore, builds with version inference might fail.
 Consequently, you can use the following snippet to infer the version from
-the host os without copying the entire `.git` folder to your Dockerfile.
+the host OS without copying the entire `.git` folder to your `Dockerfile`.
 
 ```dockerfile
 RUN --mount=source=.git,target=.git,type=bind \
@@ -223,9 +222,9 @@ accordingly.
 
 ## Builtin mechanisms for obtaining version numbers
 
-1. the SCM itself (git/hg)
-2. `.hg_archival` files (mercurial archives)
-3. `.git_archival.txt` files (git archives, see subsection below)
+1. the SCM itself (Git/Mercurial)
+2. `.hg_archival` files (Mercurial archives)
+3. `.git_archival.txt` files (Git archives, see subsection below)
 4. `PKG-INFO`
 
 
@@ -233,7 +232,7 @@ accordingly.
 
 Git archives are supported, but a few changes to your repository are required.
 
-ensure the content of the following files:
+Ensure the content of the following files:
 
 ```{ .text file=".git_archival.txt"}
 
@@ -247,7 +246,7 @@ ref-names: $Format:%D$
 .git_archival.txt  export-subst
 ```
 
-Finally, don't forget to commit those two files
+Finally, don't forget to commit the two files:
 ```commandline
 $ git add .git_archival.txt .gitattributes && git commit -m "add export config"
 ```
@@ -258,8 +257,7 @@ be kept in version control. It's strongly recommended to be put into gitignore.
 
 
 
-File finders hook makes most of MANIFEST.in unnecessary
--------------------------------------------------------
+### File finders hook makes most of MANIFEST.in unnecessary
 
 `setuptools_scm` implements a [file_finders] entry point
 which returns all files tracked by your SCM.

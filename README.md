@@ -6,12 +6,12 @@
 
 [setuptools-scm] extracts Python package versions from `git` or
 `hg` metadata instead of declaring them as the version argument
-or in a SCM managed file.
+or in an SCM managed file.
 
 Additionally, [setuptools-scm] provides setuptools
 with a list of files that are managed by the SCM <br/>
 (i.e. it automatically adds **all of** the SCM-managed files to the sdist).<br/>
-Unwanted files must be excluded by discarding them via `MANIFEST.in`.
+Unwanted files must be excluded via `MANIFEST.in`.
 
 
 ## `pyproject.toml` usage
@@ -19,9 +19,9 @@ Unwanted files must be excluded by discarding them via `MANIFEST.in`.
 The preferred way to configure [setuptools-scm] is to author
 settings in a `tool.setuptools_scm` section of `pyproject.toml`.
 
-This feature requires Setuptools 60 or later
+This feature requires setuptools 60 or later.
 First, ensure that [setuptools-scm] is present during the project's
-built step by specifying it as one of the build requirements.
+build step by specifying it as one of the build requirements.
 
 ```toml
 [build-system]
@@ -31,11 +31,11 @@ requires = [
 ```
 
 That will be sufficient to require [setuptools-scm] for projects
-that support [PEP-518] like [pip] and [build].
+that support [PEP 518] like [pip] and [build].
 
 [pip]: https://pypi.org/project/pip
 [build]: https://pypi.org/project/build
-[PEP-518]: https://www.python.org/dev/peps/pep-0518/
+[PEP 518]: https://peps.python.org/pep-0518/
 
 
 To enable version inference, you need to set the version
@@ -48,7 +48,7 @@ dynamic = ["version"]
 [tool.setuptools_scm]
 ```
 
-Additionally, a version file can be written by specifying
+Additionally, a version file can be written by specifying:
 
 ```toml title="pyproject.toml"
 [tool.setuptools_scm]
@@ -62,7 +62,7 @@ you can install [setuptools-scm] directly in your working environment and run:
 
 [setuptools-scm]: https://github.com/pypa/setuptools_scm
 
-```commandline
+```console
 $ python -m setuptools_scm
 # To explore other options, try:
 $ python -m setuptools_scm --help
@@ -72,14 +72,14 @@ $ python -m setuptools_scm --help
 
 ## Interaction with Enterprise Distributions
 
-Some enterprise distributions like RHEL7 and others
-ship rather old setuptools versions due to various release management details.
+Some enterprise distributions like RHEL7
+ship rather old setuptools versions.
 
-In those case its typically possible to build by using a sdist against `setuptools_scm<2.0`.
+In those cases its typically possible to build by using an sdist against `setuptools_scm<2.0`.
 As those old setuptools versions lack sensible types for versions,
 modern [setuptools-scm] is unable to support them sensibly.
 
-It's strongly recommended to build a wheel artifact using modern python and setuptools,
+It's strongly recommended to build a wheel artifact using modern Python and setuptools,
 then installing the artifact instead of trying to run against old setuptools versions.
 
 

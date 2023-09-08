@@ -2,7 +2,7 @@
 
 ## providing project local version schemes
 
-As the PEP-621 provides no way to specify local code as a build backend plugin,
+As PEP 621 provides no way to specify local code as a build backend plugin,
 setuptools_scm has to piggyback on setuptools for passing functions over.
 
 To facilitate that one needs to write a `setup.py` file and
@@ -58,7 +58,7 @@ dynamic = [
 
 ##  Importing in setup.py
 
-with the pep-517/518 build backend, setuptools_scm is importable from `setup.py`
+With the pep 517/518 build backend, setuptools_scm is importable from `setup.py`
 
 ``` { .python title="setup.py" }
 import setuptools
