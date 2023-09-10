@@ -70,5 +70,6 @@ __all__ = [
     "dump_version",
     "Configuration",
     "Version",
+    "ScmVersion",
     "NonNormalizedVersion",
 ]

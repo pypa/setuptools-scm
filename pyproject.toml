@@ -18,7 +18,7 @@ backend-path = [
 [project]
 name = "setuptools-scm"
 description = "the blessed package to manage your versions by scm tags"
-readme = "README.rst"
+readme = "README.md"
 license.file = "LICENSE"
 authors = [
     {name="Ronny Pfannschmidt", email="opensource@ronnypfannschmidt.de"}
@@ -50,6 +50,14 @@ dependencies = [
   'typing-extensions; python_version < "3.11"',
 ]
 [project.optional-dependencies]
+docs = [
+  "entangled_cli[rich]",
+  "mkdocs",
+  "mkdocs-entangled-plugin",
+  "mkdocs-material",
+  "mkdocstrings[python]",
+  "pygments",
+]
 rich = [
   "rich",
 ]
@@ -102,3 +110,5 @@ namespaces = false
 
 [tool.setuptools.dynamic]
 version = { attr = "_own_version_helper.version"}
+
+[tool.setuptools_scm]

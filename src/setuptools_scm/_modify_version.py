@@ -5,7 +5,7 @@ import re
 from . import _types as _t
 
 
-def _strip_local(version_string: str) -> str:
+def strip_local(version_string: str) -> str:
     public, sep, local = version_string.partition("+")
     return public
 
@@ -37,12 +37,12 @@ def _bump_regex(version: str) -> str:
     match = re.match(r"(.*?)(\d+)$", version)
     if match is None:
         raise ValueError(
-            "{version} does not end with a number to bump, "
-            "please correct or use a custom version scheme".format(version=version)
+            f"{version} does not end with a number to bump, "
+            "please correct or use a custom version scheme"
         )
     else:
         prefix, tail = match.groups()
-        return "%s%d" % (prefix, int(tail) + 1)
+        return f"{prefix}{int(tail) + 1}"
 
 
 def _format_local_with_time(version: _t.SCMVERSION, time_format: str) -> str:
@@ -57,5 +57,5 @@ def _format_local_with_time(version: _t.SCMVERSION, time_format: str) -> str:
 
 
 def _dont_guess_next_version(tag_version: _t.SCMVERSION) -> str:
-    version = _strip_local(str(tag_version.tag))
+    version = strip_local(str(tag_version.tag))
     return _bump_dev(version) or _add_post(version)

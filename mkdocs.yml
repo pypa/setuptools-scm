@@ -1,0 +1,37 @@
+site_name: setuptools scm
+
+nav:
+  - index.md
+  - usage.md
+  - customizing.md
+  - config.md
+  - extending.md
+  - overrides.md
+theme:
+  name: material
+
+watch:
+- src/setuptools_scm
+- docs
+markdown_extensions:
+  - def_list
+  - admonition
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+  - pymdownx.superfences
+
+plugins:
+- entangled
+- search
+- mkdocstrings:
+    default_handler: python
+    handlers:
+      python:
+        paths: [ src ]
+
+        options:
+          separate_signature: true
+          show_signature_annotations: true
+          allow_inspection: true
+          show_root_heading: true

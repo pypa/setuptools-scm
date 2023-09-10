@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 
 from setuptools_scm import Configuration
+from setuptools_scm import NonNormalizedVersion
 from setuptools_scm.version import calver_by_date
 from setuptools_scm.version import format_version
 from setuptools_scm.version import guess_next_version
@@ -18,6 +19,7 @@ from setuptools_scm.version import simplified_semver_version
 
 
 c = Configuration()
+c_non_normalize = Configuration(version_cls=NonNormalizedVersion)
 
 
 @pytest.mark.parametrize(
@@ -224,26 +226,34 @@ def test_custom_version_schemes() -> None:
     assert custom_computed == no_guess_dev_version(version)
 
 
+def date_offset(base_date: date | None = None, days_offset: int = 0) -> date:
+    if base_date is None:
+        from setuptools_scm.version import _source_epoch_or_utc_now
+
+        base_date = _source_epoch_or_utc_now().date()
+    return base_date - timedelta(days=days_offset)
+
+
 def date_to_str(
-    date_: date | None = None,
+    base_date: date | None = None,
     days_offset: int = 0,
-    fmt: str = "{dt:%y}.{dt.month}.{dt.day}",
+    fmt: str = "%y.%m.%d",
 ) -> str:
-    date_ = date_ or date.today()
-    date_ = date_ - timedelta(days=days_offset)
-    return fmt.format(dt=date_)
+    return format(date_offset(base_date, days_offset), fmt)
 
 
 @pytest.mark.parametrize(
     "version, expected_next",
     [
         pytest.param(
-            meta(date_to_str(days_offset=3), config=c),
+            meta(date_to_str(days_offset=3), config=c_non_normalize),
             date_to_str(days_offset=3),
             id="exact",
         ),
         pytest.param(
-            meta(date_to_str() + ".1", config=c), date_to_str() + ".1", id="exact patch"
+            meta(date_to_str() + ".1", config=c_non_normalize),
+            date_to_str() + ".1",
+            id="exact patch",
         ),
         pytest.param(
             meta("20.01.02", config=c),
@@ -251,35 +261,45 @@ def date_to_str(
             id="leading 0s",
         ),
         pytest.param(
-            meta(date_to_str(days_offset=3), config=c, dirty=True),
+            meta(date_to_str(days_offset=3), config=c_non_normalize, dirty=True),
             date_to_str() + ".0.dev0",
             id="dirty other day",
         ),
         pytest.param(
-            meta(date_to_str(), config=c, distance=2, branch="default"),
+            meta(date_to_str(), config=c_non_normalize, distance=2, branch="default"),
             date_to_str() + ".1.dev2",
             id="normal branch",
         ),
         pytest.param(
-            meta(date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}"), config=c),
-            date_to_str(fmt="{dt:%Y}.{dt.month}.{dt.day}"),
+            meta(date_to_str(fmt="%Y.%m.%d"), config=c_non_normalize),
+            date_to_str(fmt="%Y.%m.%d"),
             id="4 digits year",
         ),
         pytest.param(
-            meta(date_to_str(), config=c, distance=2, branch="release-2021.05.06"),
+            meta(
+                date_to_str(),
+                config=c_non_normalize,
+                distance=2,
+                branch="release-2021.05.06",
+            ),
             "2021.05.06",
             id="release branch",
         ),
         pytest.param(
-            meta(date_to_str() + ".2", config=c, distance=2, branch="release-21.5.1"),
+            meta(
+                date_to_str() + ".2",
+                config=c_non_normalize,
+                distance=2,
+                branch="release-21.5.1",
+            ),
             "21.5.1",
             id="release branch short",
         ),
         pytest.param(
             meta(
                 date_to_str(days_offset=3) + ".2",
-                config=c,
-                node_date=date.today() - timedelta(days=2),
+                config=c_non_normalize,
+                node_date=date_offset(days_offset=2),
             ),
             date_to_str(days_offset=3) + ".2",
             id="node date clean",
@@ -287,19 +307,19 @@ def date_to_str(
         pytest.param(
             meta(
                 date_to_str(days_offset=2) + ".2",
-                config=c,
+                config=c_non_normalize,
                 distance=2,
-                node_date=date.today() - timedelta(days=2),
+                node_date=date_offset(days_offset=2),
             ),
-            date_to_str(date.today() - timedelta(days=2)) + ".3.dev2",
+            date_to_str(days_offset=2) + ".3.dev2",
             id="node date distance",
         ),
         pytest.param(
             meta(
                 "1.2.0",
-                config=c,
+                config=c_non_normalize,
                 distance=2,
-                node_date=date.today() - timedelta(days=2),
+                node_date=date_offset(days_offset=2),
             ),
             date_to_str(days_offset=2) + ".0.dev2",
             marks=pytest.mark.filterwarnings(
@@ -333,7 +353,9 @@ def test_calver_by_date_semver(version: ScmVersion, expected_next: str) -> None:
 
 def test_calver_by_date_future_warning() -> None:
     with pytest.warns(UserWarning, match="your previous tag*"):
-        calver_by_date(meta(date_to_str(days_offset=-2), config=c, distance=2))
+        calver_by_date(
+            meta(date_to_str(days_offset=-2), config=c_non_normalize, distance=2)
+        )
 
 
 def test_custom_version_cls() -> None:

@@ -1,0 +1,9 @@
+[envs.docs]
+python = "3.11"
+extras = ["docs"]
+
+[envs.docs.scripts]
+build = "mkdocs build --clean --strict"
+serve = "mkdocs serve --dev-addr localhost:8000"
+init = "mkdocs {args}"
+sync = ["entangled sync"]

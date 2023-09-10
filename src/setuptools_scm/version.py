@@ -22,6 +22,8 @@ if TYPE_CHECKING:
 
     _P = ParamSpec("_P")
 
+from typing import TypedDict
+
 
 from ._version_cls import Version as PkgVersion, _VersionT
 from . import _version_cls as _v
@@ -35,30 +37,32 @@ SEMVER_PATCH = 3
 SEMVER_LEN = 3
 
 
+class _TagDict(TypedDict):
+    version: str
+    prefix: str
+    suffix: str
+
+
 def _parse_version_tag(
     tag: str | object, config: _config.Configuration
-) -> dict[str, str] | None:
+) -> _TagDict | None:
     match = config.tag_regex.match(str(tag))
 
     if match:
-        key: str | int
-        if len(match.groups()) == 1:
-            key = 1
-        else:
-            key = "version"
-
+        key: str | int = 1 if len(match.groups()) == 1 else "version"
         full = match.group(0)
         log.debug("%r %r %s", tag, config.tag_regex, match)
         log.debug(
             "key %s data %s, %s, %r", key, match.groupdict(), match.groups(), full
         )
-        result = {
-            "version": match.group(key),
-            "prefix": full[: match.start(key)],
-            "suffix": full[match.end(key) :],
-        }
+        result = _TagDict(
+            version=match.group(key),
+            prefix=full[: match.start(key)],
+            suffix=full[match.end(key) :],
+        )
 
         log.debug("tag %r parsed to %r", tag, result)
+        assert result["version"]
         return result
     else:
         log.debug("tag %r did not parse", tag)
@@ -86,20 +90,16 @@ def tag_to_version(
     """
     log.debug("tag %s", tag)
 
-    tagdict = _parse_version_tag(tag, config)
-    if not isinstance(tagdict, dict) or not tagdict.get("version", None):
+    tag_dict = _parse_version_tag(tag, config)
+    if tag_dict is None or not tag_dict.get("version", None):
         warnings.warn(f"tag {tag!r} no version found")
         return None
 
-    version_str = tagdict["version"]
+    version_str = tag_dict["version"]
     log.debug("version pre parse %s", version_str)
 
-    if tagdict.get("suffix", ""):
-        warnings.warn(
-            "tag {!r} will be stripped of its suffix '{}'".format(
-                tag, tagdict["suffix"]
-            )
-        )
+    if suffix := tag_dict.get("suffix", ""):
+        warnings.warn(f"tag {tag!r} will be stripped of its suffix {suffix!r}")
 
     version: _VersionT = config.version_cls(version_str)
     log.debug("version=%r", version)
@@ -117,20 +117,33 @@ def _source_epoch_or_utc_now() -> datetime:
 
 @dataclasses.dataclass
 class ScmVersion:
+    """represents a parsed version from scm"""
+
     tag: _v.Version | _v.NonNormalizedVersion | str
+    """the related tag or preformatted version string"""
     config: _config.Configuration
+    """the configuration used to parse the version"""
     distance: int = 0
+    """the number of commits since the tag"""
     node: str | None = None
+    """the shortened node id"""
     dirty: bool = False
+    """whether the working copy had uncommitted changes"""
     preformatted: bool = False
+    """whether the version string was preformatted"""
     branch: str | None = None
+    """the branch name if any"""
     node_date: date | None = None
-    time: datetime = dataclasses.field(
-        init=False, default_factory=_source_epoch_or_utc_now
-    )
+    """the date of the commit if available"""
+    time: datetime = dataclasses.field(default_factory=_source_epoch_or_utc_now)
+    """the current time or source epoch time
+    only set for unit-testing version schemes
+    for real usage it must be `now(utc)` or `SOURCE_EPOCH`
+    """
 
     @property
     def exact(self) -> bool:
+        """returns true checked out exactly on a tag and no local changes apply"""
         return self.distance == 0 and not self.dirty
 
     def __repr__(self) -> str:
@@ -140,6 +153,7 @@ class ScmVersion:
         )
 
     def format_with(self, fmt: str, **kw: object) -> str:
+        """format a given format string with attributes of this object"""
         return fmt.format(
             time=self.time,
             tag=self.tag,
@@ -152,6 +166,10 @@ class ScmVersion:
         )
 
     def format_choice(self, clean_format: str, dirty_format: str, **kw: object) -> str:
+        """given `clean_format` and `dirty_format`
+
+        choose one based on `self.dirty` and format it using `self.format_with`"""
+
         return self.format_with(dirty_format if self.dirty else clean_format, **kw)
 
     def format_next_version(
@@ -205,7 +223,7 @@ def meta(
 
 
 def guess_next_version(tag_version: ScmVersion) -> str:
-    version = _modify_version._strip_local(str(tag_version.tag))
+    version = _modify_version.strip_local(str(tag_version.tag))
     return _modify_version._bump_dev(version) or _modify_version._bump_regex(version)
 
 
@@ -273,8 +291,8 @@ def release_branch_semver_version(version: ScmVersion) -> str:
 
 def release_branch_semver(version: ScmVersion) -> str:
     warnings.warn(
-        "release_branch_semver is deprecated and will be removed in future. "
-        + "Use release_branch_semver_version instead",
+        "release_branch_semver is deprecated and will be removed in the future. "
+        "Use release_branch_semver_version instead",
         category=DeprecationWarning,
         stacklevel=2,
     )
@@ -321,7 +339,7 @@ def guess_next_date_ver(
         # deduct date format if not provided
         if date_fmt is None:
             date_fmt = "%Y.%m.%d" if len(match.group("year")) == 4 else "%y.%m.%d"
-    today = datetime.now(timezone.utc).date()
+    today = version.time.date()
     head_date = node_date or today
     # compute patch
     if match is None:
@@ -372,15 +390,15 @@ def get_local_node_and_date(version: ScmVersion) -> str:
     return _modify_version._format_local_with_time(version, time_format="%Y%m%d")
 
 
-def get_local_node_and_timestamp(version: ScmVersion, fmt: str = "%Y%m%d%H%M%S") -> str:
-    return _modify_version._format_local_with_time(version, time_format=fmt)
+def get_local_node_and_timestamp(version: ScmVersion) -> str:
+    return _modify_version._format_local_with_time(version, time_format="%Y%m%d%H%M%S")
 
 
 def get_local_dirty_tag(version: ScmVersion) -> str:
     return version.format_choice("", "+dirty")
 
 
-def get_no_local_node(_: Any) -> str:
+def get_no_local_node(version: ScmVersion) -> str:
     return ""
 
 

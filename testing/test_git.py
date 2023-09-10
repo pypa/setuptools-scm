@@ -421,7 +421,6 @@ def test_not_matching_tags(wd: WorkDir) -> None:
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/411")
-@pytest.mark.xfail(reason="https://github.com/pypa/setuptools_scm/issues/449")
 def test_non_dotted_version(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd("git tag apache-arrow-1")

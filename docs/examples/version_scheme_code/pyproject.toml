@@ -1,0 +1,16 @@
+# ~/~ begin <<docs/customizing.md#docs/examples/version_scheme_code/pyproject.toml>>[init]
+[build-system]
+requires = [
+  "setuptools>=64",
+  "setuptools_scm>=8",
+  "wheel",
+]
+
+[project]
+name = "scm-example"
+dynamic = [
+  "version",
+]
+
+[tool.setuptools_scm]
+# ~/~ end

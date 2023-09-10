@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 import re
 from typing import Any
+from typing import cast
+from typing import TypedDict
 
 from . import _config
 from . import _log
@@ -18,6 +20,7 @@ PRETEND_KEY_NAMED = PRETEND_KEY + "_FOR_{name}"
 def read_named_env(
     *, tool: str = "SETUPTOOLS_SCM", name: str, dist_name: str | None
 ) -> str | None:
+    """ """
     if dist_name is not None:
         # Normalize the dist name as per PEP 503.
         normalized_dist_name = re.sub(r"[-_.]+", "-", dist_name)
@@ -48,13 +51,23 @@ def _read_pretended_version_for(
         return None
 
 
+class _CheatTomlData(TypedDict):
+    cheat: dict[str, Any]
+
+
+def load_toml_or_inline_map(data: str | None) -> dict[str, Any]:
+    """
+    load toml data - with a special hack if only a inline map is given
+    """
+    if not data:
+        return {}
+    elif data[0] == "{":
+        data = "cheat=" + data
+        loaded: _CheatTomlData = cast(_CheatTomlData, lazy_toml_load(data))
+        return loaded["cheat"]
+    return lazy_toml_load(data)
+
+
 def read_toml_overrides(dist_name: str | None) -> dict[str, Any]:
     data = read_named_env(name="OVERRIDES", dist_name=dist_name)
-    if data:
-        if data[0] == "{":
-            data = "cheat=" + data
-            loaded = lazy_toml_load(data)
-            return loaded["cheat"]  # type: ignore[no-any-return]
-        return lazy_toml_load(data)
-    else:
-        return {}
+    return load_toml_or_inline_map(data)
