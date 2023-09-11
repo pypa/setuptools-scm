@@ -307,7 +307,13 @@ def no_guess_dev_version(version: ScmVersion) -> str:
 
 
 _DATE_REGEX = re.compile(
-    r"^(?P<date>(?P<year>\d{2}|\d{4})(?:\.\d{1,2}){2})(?:\.(?P<patch>\d*))?$"
+    r"""
+    ^(?P<date>
+        (?P<prefix>[vV]?)
+        (?P<year>\d{2}|\d{4})(?:\.\d{1,2}){2})
+        (?:\.(?P<patch>\d*))?$
+    """,
+    re.VERBOSE,
 )
 
 
@@ -339,6 +345,10 @@ def guess_next_date_ver(
         # deduct date format if not provided
         if date_fmt is None:
             date_fmt = "%Y.%m.%d" if len(match.group("year")) == 4 else "%y.%m.%d"
+        if prefix := match.group("prefix"):
+            if not date_fmt.startswith(prefix):
+                date_fmt = prefix + date_fmt
+
     today = version.time.date()
     head_date = node_date or today
     # compute patch
