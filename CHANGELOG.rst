@@ -43,6 +43,7 @@ bugfixes
 --------
 
 * fix #883: use HeadersParser to ensure only mime metadata in headers is used
+* fix #884: parse calver dates from versions with the v prefix
 
 v7.1.0
 ======

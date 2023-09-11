@@ -10,6 +10,7 @@ from setuptools_scm import Configuration
 from setuptools_scm import NonNormalizedVersion
 from setuptools_scm.version import calver_by_date
 from setuptools_scm.version import format_version
+from setuptools_scm.version import guess_next_date_ver
 from setuptools_scm.version import guess_next_version
 from setuptools_scm.version import meta
 from setuptools_scm.version import no_guess_dev_version
@@ -356,6 +357,29 @@ def test_calver_by_date_future_warning() -> None:
         calver_by_date(
             meta(date_to_str(days_offset=-2), config=c_non_normalize, distance=2)
         )
+
+
+@pytest.mark.parametrize(
+    ["tag", "node_date", "expected"],
+    [
+        pytest.param("20.03.03", date(2020, 3, 4), "20.03.04.0", id="next day"),
+        pytest.param("20.03.03", date(2020, 3, 3), "20.03.03.1", id="same day"),
+        pytest.param(
+            "20.03.03.2", date(2020, 3, 3), "20.03.03.3", id="same day with patch"
+        ),
+        pytest.param(
+            "v20.03.03", date(2020, 3, 4), "v20.03.04.0", id="next day with v prefix"
+        ),
+    ],
+)
+def test_calver_guess_next_data(tag: str, node_date: date, expected: str) -> None:
+    version = meta(tag, config=c_non_normalize, node_date=node_date)
+    next = guess_next_date_ver(
+        version,
+        node_date=node_date,
+        version_cls=c_non_normalize.version_cls,
+    )
+    assert next == expected
 
 
 def test_custom_version_cls() -> None:
