@@ -39,6 +39,11 @@ features
 * support using rich.logging as console log handler if installed
 * fix #527: type annotation in default version template
 
+bugfixes
+--------
+
+* fix #883: use HeadersParser to ensure only mime metadata in headers is used
+
 v7.1.0
 ======
 
