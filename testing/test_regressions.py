@@ -12,6 +12,14 @@ import pytest
 from setuptools_scm import Configuration
 from setuptools_scm._run_cmd import run
 from setuptools_scm.git import parse
+from setuptools_scm.integration import data_from_mime
+
+
+def test_data_from_mime_ignores_body() -> None:
+    assert data_from_mime(
+        "test",
+        "version: 1.0\r\n\r\nversion: bad",
+    ) == {"version": "1.0"}
 
 
 def test_pkginfo_noscmroot(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
