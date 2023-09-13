@@ -7,6 +7,7 @@ import pytest
 
 import setuptools_scm._file_finders
 from setuptools_scm import Configuration
+from setuptools_scm._run_cmd import CommandNotFoundError
 from setuptools_scm._run_cmd import has_command
 from setuptools_scm.hg import archival_to_version
 from setuptools_scm.hg import parse
@@ -55,8 +56,8 @@ def test_archival_to_version(expected: str, data: dict[str, str]) -> None:
 def test_hg_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
     config = Configuration()
-    with pytest.raises(EnvironmentError, match="'hg' was not found"):
-        parse(str(wd.cwd), config=config)
+    with pytest.raises(CommandNotFoundError, match=r"hg"):
+        parse(wd.cwd, config=config)
 
 
 def test_find_files_stop_at_root_hg(

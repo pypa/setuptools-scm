@@ -189,6 +189,10 @@ def has_command(
     return res
 
 
+class CommandNotFoundError(LookupError, FileNotFoundError):
+    pass
+
+
 def require_command(name: str) -> None:
     if not has_command(name, warn=False):
-        raise OSError(f"{name!r} was not found")
+        raise CommandNotFoundError(name)

@@ -24,6 +24,7 @@ from setuptools_scm import Configuration
 from setuptools_scm import git
 from setuptools_scm import NonNormalizedVersion
 from setuptools_scm._file_finders.git import git_find_files
+from setuptools_scm._run_cmd import CommandNotFoundError
 from setuptools_scm._run_cmd import CompletedProcess
 from setuptools_scm._run_cmd import has_command
 from setuptools_scm._run_cmd import run
@@ -93,8 +94,8 @@ setup(use_scm_version={"search_parent_directories": True})
 
 def test_git_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
-    with pytest.raises(EnvironmentError, match="'git' was not found"):
-        git.parse(str(wd.cwd), Configuration(), git.DEFAULT_DESCRIBE)
+    with pytest.raises(CommandNotFoundError, match=r"git"):
+        git.parse(wd.cwd, Configuration(), git.DEFAULT_DESCRIBE)
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/298")
