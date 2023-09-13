@@ -142,8 +142,8 @@ def run(
         env=dict(
             avoid_pip_isolation(no_git_env(os.environ)),
             # os.environ,
-            # try to disable i18n
-            LC_ALL="C",
+            # try to disable i18n, but still allow UTF-8 encoded text.
+            LC_ALL="C.UTF-8",
             LANGUAGE="",
             HGPLAIN="1",
         ),
