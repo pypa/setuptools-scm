@@ -8,9 +8,9 @@ from typing import NoReturn
 from typing import Pattern
 
 from . import _config
+from . import _entrypoints
 from . import _types as _t
 from ._config import Configuration
-from ._entrypoints import _version_from_entrypoints
 from ._overrides import _read_pretended_version_for
 from ._version_cls import _validate_version_cls
 from .version import format_version as _format_version
@@ -27,11 +27,15 @@ def parse_scm_version(config: Configuration) -> ScmVersion | None:
             )
         return parse_result
     else:
-        return _version_from_entrypoints(config)
+        entrypoint = "setuptools_scm.parse_scm"
+        root = config.absolute_root
+        return _entrypoints.version_from_entrypoint(config, entrypoint, root)
 
 
 def parse_fallback_version(config: Configuration) -> ScmVersion | None:
-    return _version_from_entrypoints(config, fallback=True)
+    entrypoint = "setuptools_scm.parse_scm_fallback"
+    root = config.fallback_root
+    return _entrypoints.version_from_entrypoint(config, entrypoint, root)
 
 
 def _do_parse(config: Configuration) -> ScmVersion | None:
