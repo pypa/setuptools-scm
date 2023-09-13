@@ -5,14 +5,14 @@ import shlex
 import subprocess
 import textwrap
 import warnings
-from typing import Callable
+from typing import Callable, Optional
 from typing import Mapping
 from typing import overload
 from typing import Sequence
 from typing import TYPE_CHECKING
 from typing import TypeVar
 
-from . import _log
+from . import _log, Configuration
 from . import _types as _t
 
 if TYPE_CHECKING:
@@ -128,6 +128,7 @@ def run(
     trace: bool = True,
     timeout: int = 20,
     check: bool = False,
+    config: Optional[Configuration] = None,
 ) -> CompletedProcess:
     if isinstance(cmd, str):
         cmd = shlex.split(cmd)
@@ -135,18 +136,25 @@ def run(
         cmd = [os.fspath(x) for x in cmd]
     cmd_4_trace = " ".join(map(_unsafe_quote_for_display, cmd))
     log.debug("at %s\n    $ %s ", cwd, cmd_4_trace)
+
+    run_env = dict(
+        avoid_pip_isolation(no_git_env(os.environ)),
+        # os.environ,
+        HGPLAIN="1",
+    )
+    if not config or (config and config.disable_i18n):
+        run_env.update({
+            # try to disable i18n
+            "LC_ALL": "C",
+            "LANGUAGE": "",
+        })
+    log.debug("Shell environment to be used for command: %s", run_env)
+
     res = subprocess.run(
         cmd,
         capture_output=True,
         cwd=os.fspath(cwd),
-        env=dict(
-            avoid_pip_isolation(no_git_env(os.environ)),
-            # os.environ,
-            # try to disable i18n
-            LC_ALL="C",
-            LANGUAGE="",
-            HGPLAIN="1",
-        ),
+        env=run_env,
         text=True,
         timeout=timeout,
     )
@@ -171,10 +179,10 @@ def _unsafe_quote_for_display(item: _t.PathT) -> str:
 
 
 def has_command(
-    name: str, args: Sequence[str] = ["version"], warn: bool = True
+    name: str, args: Sequence[str] = ["version"], warn: bool = True, config: Optional[Configuration] = None
 ) -> bool:
     try:
-        p = run([name, *args], cwd=".", timeout=5)
+        p = run([name, *args], cwd=".", timeout=5, config=config)
     except OSError as e:
         log.warning("command %s missing: %s", name, e)
         res = False
@@ -189,6 +197,6 @@ def has_command(
     return res
 
 
-def require_command(name: str) -> None:
-    if not has_command(name, warn=False):
+def require_command(name: str, config: Optional[Configuration] = None) -> None:
+    if not has_command(name, warn=False, config=config):
         raise OSError(f"{name!r} was not found")

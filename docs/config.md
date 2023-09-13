@@ -101,6 +101,10 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
         Setuptools will still normalize it to create the final distribution,
         so as to stay compliant with the python packaging standards.
 
+`disable_i18n`
+:   A boolean flag indicating if the values `LC_ALL="C" LANGUAGE=""` should be
+    injected into the environment when running commands such as `git` and `hg`. 
+    Defaults to `True`.
 
 ## environment variables
 

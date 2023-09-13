@@ -103,6 +103,7 @@ class Configuration:
     dist_name: str | None = None
     version_cls: type[_VersionT] = _Version
     search_parent_directories: bool = False
+    disable_i18n: bool = True
 
     parent: _t.PathT | None = None
 
