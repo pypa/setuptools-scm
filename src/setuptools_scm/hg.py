@@ -5,7 +5,8 @@ import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
+from typing import TYPE_CHECKING
 
 from . import Configuration
 from ._version_cls import Version
@@ -25,10 +26,12 @@ log = logging.getLogger(__name__)
 
 @dataclass()
 class HgWorkdir(Workdir):
-    config: Optional[Configuration] = None
+    config: Configuration | None = None
 
     @classmethod
-    def from_potential_worktree(cls, wd: _t.PathT, config: Configuration) -> HgWorkdir | None:
+    def from_potential_worktree(
+        cls, wd: _t.PathT, config: Configuration
+    ) -> HgWorkdir | None:
         res = _run(["hg", "root"], wd, config=config)
         if res.returncode:
             return None
@@ -51,7 +54,7 @@ class HgWorkdir(Workdir):
             ["hg", "id", "-T", "{branch}\n{if(dirty, 1, 0)}\n{date|shortdate}"],
             cwd=self.path,
             check=True,
-            config=config
+            config=config,
         ).stdout.split("\n")
         dirty = bool(int(dirty_str))
         node_date = datetime.date.fromisoformat(dirty_date if dirty else node_date_str)

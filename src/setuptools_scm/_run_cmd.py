@@ -5,15 +5,17 @@ import shlex
 import subprocess
 import textwrap
 import warnings
-from typing import Callable, Optional
+from typing import Callable
 from typing import Mapping
+from typing import Optional
 from typing import overload
 from typing import Sequence
 from typing import TYPE_CHECKING
 from typing import TypeVar
 
-from . import _log, Configuration
+from . import _log
 from . import _types as _t
+from . import Configuration
 
 if TYPE_CHECKING:
     BaseCompletedProcess = subprocess.CompletedProcess[str]
@@ -128,7 +130,7 @@ def run(
     trace: bool = True,
     timeout: int = 20,
     check: bool = False,
-    config: Optional[Configuration] = None,
+    config: Configuration | None = None,
 ) -> CompletedProcess:
     if isinstance(cmd, str):
         cmd = shlex.split(cmd)
@@ -143,11 +145,13 @@ def run(
         HGPLAIN="1",
     )
     if not config or (config and config.disable_i18n):
-        run_env.update({
-            # try to disable i18n
-            "LC_ALL": "C",
-            "LANGUAGE": "",
-        })
+        run_env.update(
+            {
+                # try to disable i18n
+                "LC_ALL": "C",
+                "LANGUAGE": "",
+            }
+        )
     log.debug("Shell environment to be used for command: %s", run_env)
 
     res = subprocess.run(
@@ -179,7 +183,10 @@ def _unsafe_quote_for_display(item: _t.PathT) -> str:
 
 
 def has_command(
-    name: str, args: Sequence[str] = ["version"], warn: bool = True, config: Optional[Configuration] = None
+    name: str,
+    args: Sequence[str] = ["version"],
+    warn: bool = True,
+    config: Configuration | None = None,
 ) -> bool:
     try:
         p = run([name, *args], cwd=".", timeout=5, config=config)
@@ -197,6 +204,6 @@ def has_command(
     return res
 
 
-def require_command(name: str, config: Optional[Configuration] = None) -> None:
+def require_command(name: str, config: Configuration | None = None) -> None:
     if not has_command(name, warn=False, config=config):
         raise OSError(f"{name!r} was not found")
