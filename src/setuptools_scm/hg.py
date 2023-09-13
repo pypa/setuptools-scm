@@ -3,8 +3,9 @@ from __future__ import annotations
 import datetime
 import logging
 import os
+from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from . import Configuration
 from ._version_cls import Version
@@ -22,13 +23,16 @@ from ._run_cmd import run as _run, require_command as _require_command
 log = logging.getLogger(__name__)
 
 
+@dataclass()
 class HgWorkdir(Workdir):
+    config: Optional[Configuration] = None
+
     @classmethod
-    def from_potential_worktree(cls, wd: _t.PathT) -> HgWorkdir | None:
-        res = _run(["hg", "root"], wd)
+    def from_potential_worktree(cls, wd: _t.PathT, config: Configuration) -> HgWorkdir | None:
+        res = _run(["hg", "root"], wd, config=config)
         if res.returncode:
             return None
-        return cls(Path(res.stdout))
+        return cls(path=Path(res.stdout), config=config)
 
     def get_meta(self, config: Configuration) -> ScmVersion | None:
         node: str
@@ -47,6 +51,7 @@ class HgWorkdir(Workdir):
             ["hg", "id", "-T", "{branch}\n{if(dirty, 1, 0)}\n{date|shortdate}"],
             cwd=self.path,
             check=True,
+            config=config
         ).stdout.split("\n")
         dirty = bool(int(dirty_str))
         node_date = datetime.date.fromisoformat(dirty_date if dirty else node_date_str)
@@ -109,7 +114,7 @@ class HgWorkdir(Workdir):
     def hg_log(self, revset: str, template: str) -> str:
         cmd = ["hg", "log", "-r", revset, "-T", template]
 
-        return _run(cmd, cwd=self.path, check=True).stdout
+        return _run(cmd, cwd=self.path, check=True, config=self.config).stdout
 
     def get_latest_normalizable_tag(self) -> str | None:
         # Gets all tags containing a '.' (see #229) from oldest to newest
@@ -143,9 +148,9 @@ class HgWorkdir(Workdir):
 
 
 def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
-    _require_command("hg")
+    _require_command("hg", config=config)
     if os.path.exists(os.path.join(root, ".hg/git")):
-        res = _run(["hg", "path"], root)
+        res = _run(["hg", "path"], root, config=config)
         if not res.returncode:
             for line in res.stdout.split("\n"):
                 if line.startswith("default ="):
@@ -158,7 +163,7 @@ def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
                         if wd_hggit:
                             return _git_parse_inner(config, wd_hggit)
 
-    wd = HgWorkdir.from_potential_worktree(config.absolute_root)
+    wd = HgWorkdir.from_potential_worktree(config.absolute_root, config=config)
 
     if wd is None:
         return None
