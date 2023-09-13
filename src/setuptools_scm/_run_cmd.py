@@ -143,7 +143,7 @@ def run(
             avoid_pip_isolation(no_git_env(os.environ)),
             # os.environ,
             # try to disable i18n
-            LC_ALL="C",
+            LC_ALL="C.UTF-8",
             LANGUAGE="",
             HGPLAIN="1",
         ),
