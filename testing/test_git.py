@@ -94,8 +94,12 @@ setup(use_scm_version={"search_parent_directories": True})
 
 def test_git_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
+
+    wd.write("pyproject.toml", "[tool.setuptools_scm]")
     with pytest.raises(CommandNotFoundError, match=r"git"):
         git.parse(wd.cwd, Configuration(), git.DEFAULT_DESCRIBE)
+
+    assert wd.get_version(fallback_version="1.0") == "1.0"
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/298")

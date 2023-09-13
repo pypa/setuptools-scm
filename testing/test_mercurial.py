@@ -56,8 +56,11 @@ def test_archival_to_version(expected: str, data: dict[str, str]) -> None:
 def test_hg_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
     config = Configuration()
+    wd.write("pyproject.toml", "[tool.setuptools_scm]")
     with pytest.raises(CommandNotFoundError, match=r"hg"):
         parse(wd.cwd, config=config)
+
+    assert wd.get_version(fallback_version="1.0") == "1.0"
 
 
 def test_find_files_stop_at_root_hg(

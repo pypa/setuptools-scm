@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 import warnings
 from pathlib import Path
@@ -9,6 +10,7 @@ from typing import Pattern
 
 from . import _config
 from . import _entrypoints
+from . import _run_cmd
 from . import _types as _t
 from ._config import Configuration
 from ._overrides import _read_pretended_version_for
@@ -16,20 +18,26 @@ from ._version_cls import _validate_version_cls
 from .version import format_version as _format_version
 from .version import ScmVersion
 
+_log = logging.getLogger(__name__)
+
 
 def parse_scm_version(config: Configuration) -> ScmVersion | None:
-    if config.parse is not None:
-        parse_result = config.parse(config.absolute_root, config=config)
-        if parse_result is not None and not isinstance(parse_result, ScmVersion):
-            raise TypeError(
-                f"version parse result was {str!r}\n"
-                "please return a parsed version (ScmVersion)"
-            )
-        return parse_result
-    else:
-        entrypoint = "setuptools_scm.parse_scm"
-        root = config.absolute_root
-        return _entrypoints.version_from_entrypoint(config, entrypoint, root)
+    try:
+        if config.parse is not None:
+            parse_result = config.parse(config.absolute_root, config=config)
+            if parse_result is not None and not isinstance(parse_result, ScmVersion):
+                raise TypeError(
+                    f"version parse result was {str!r}\n"
+                    "please return a parsed version (ScmVersion)"
+                )
+            return parse_result
+        else:
+            entrypoint = "setuptools_scm.parse_scm"
+            root = config.absolute_root
+            return _entrypoints.version_from_entrypoint(config, entrypoint, root)
+    except _run_cmd.CommandNotFoundError as e:
+        _log.exception("command %s not found while parsing the scm, using fallbacks", e)
+        return None
 
 
 def parse_fallback_version(config: Configuration) -> ScmVersion | None:

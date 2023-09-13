@@ -38,6 +38,7 @@ features
 * support passing log levels to SETUPTOOLS_SCM_DEBUG
 * support using rich.logging as console log handler if installed
 * fix #527: type annotation in default version template
+* fix #549: use fallbacks when scm search raises CommandNotFoundError
 
 bugfixes
 --------
