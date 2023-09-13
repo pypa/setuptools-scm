@@ -13,8 +13,8 @@ from . import _log
 from . import version
 
 if TYPE_CHECKING:
-    from ._config import Configuration
     from . import _types as _t
+    from ._config import Configuration, ParseFunction
 
 
 log = _log.log.getChild("entrypoints")
@@ -27,21 +27,14 @@ class EntrypointProtocol(Protocol):
         pass
 
 
-def _version_from_entrypoints(
-    config: Configuration, fallback: bool = False
+def version_from_entrypoint(
+    config: Configuration, entrypoint: str, root: _t.PathT
 ) -> version.ScmVersion | None:
-    if fallback:
-        entrypoint = "setuptools_scm.parse_scm_fallback"
-        root = config.fallback_root
-    else:
-        entrypoint = "setuptools_scm.parse_scm"
-        root = config.absolute_root
-
     from .discover import iter_matching_entrypoints
 
     log.debug("version_from_ep %s in %s", entrypoint, root)
     for ep in iter_matching_entrypoints(root, entrypoint, config):
-        fn = ep.load()
+        fn: ParseFunction = ep.load()
         maybe_version: version.ScmVersion | None = fn(root, config=config)
         log.debug("%s found %r", ep, maybe_version)
         if maybe_version is not None:
