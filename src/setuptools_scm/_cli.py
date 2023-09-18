@@ -6,7 +6,7 @@ import sys
 
 from setuptools_scm import Configuration
 from setuptools_scm._file_finders import find_files
-from setuptools_scm._get_version import _get_version
+from setuptools_scm._get_version_impl import _get_version
 from setuptools_scm.discover import walk_potential_roots
 
 

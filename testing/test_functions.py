@@ -62,13 +62,16 @@ VERSIONS = {
 def test_format_version(
     version: str, version_scheme: str, local_scheme: str, expected: str
 ) -> None:
+    from dataclasses import replace
+
     scm_version = VERSIONS[version]
-    assert (
-        format_version(
-            scm_version, version_scheme=version_scheme, local_scheme=local_scheme
-        )
-        == expected
+    configured_version = replace(
+        scm_version,
+        config=replace(
+            scm_version.config, version_scheme=version_scheme, local_scheme=local_scheme
+        ),
     )
+    assert format_version(configured_version) == expected
 
 
 def test_dump_version_doesnt_bail_on_value_error(tmp_path: Path) -> None:

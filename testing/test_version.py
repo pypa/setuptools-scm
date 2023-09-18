@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
 from datetime import timedelta
 from typing import Any
@@ -209,21 +210,30 @@ def test_version_bump_bad() -> None:
 
 
 def test_format_version_schemes() -> None:
-    version = meta("1.0", config=c)
-    format_version(
-        version,
-        local_scheme="no-local-version",
-        version_scheme=[lambda v: None, "guess-next-dev"],
+    version = meta(
+        "1.0",
+        config=replace(
+            c,
+            local_scheme="no-local-version",
+            version_scheme=[  # type: ignore[arg-type]
+                lambda v: None,
+                "guess-next-dev",
+            ],
+        ),
     )
+    assert format_version(version) == "1.0"
 
 
 def test_custom_version_schemes() -> None:
-    version = meta("1.0", config=c)
-    custom_computed = format_version(
-        version,
-        local_scheme="no-local-version",
-        version_scheme="setuptools_scm.version:no_guess_dev_version",
+    version = meta(
+        "1.0",
+        config=replace(
+            c,
+            local_scheme="no-local-version",
+            version_scheme="setuptools_scm.version:no_guess_dev_version",
+        ),
     )
+    custom_computed = format_version(version)
     assert custom_computed == no_guess_dev_version(version)
 
 
@@ -338,12 +348,12 @@ def test_calver_by_date(version: ScmVersion, expected_next: str) -> None:
 @pytest.mark.parametrize(
     "version, expected_next",
     [
-        pytest.param(meta("1.0.0", config=c), "1.0.0", id="SemVer exact"),
+        pytest.param(meta("1.0.0", config=c), "1.0.0", id="SemVer exact stays"),
         pytest.param(
-            meta("1.0.0", config=c, dirty=True),
-            "1.0.0",
-            id="SemVer dirty",
-            marks=pytest.mark.xfail,
+            meta("1.0.0", config=c_non_normalize, dirty=True),
+            "09.02.13.1.dev0",
+            id="SemVer dirty is replaced by date",
+            marks=pytest.mark.filterwarnings("ignore:.*legacy version.*:UserWarning"),
         ),
     ],
 )
