@@ -419,19 +419,19 @@ def postrelease_version(version: ScmVersion) -> str:
         return version.format_with("{tag}.post{distance}")
 
 
-def format_version(version: ScmVersion, **config: Any) -> str:
+def format_version(version: ScmVersion) -> str:
     log.debug("scm version %s", version)
-    log.debug("config %s", config)
+    log.debug("config %s", version.config)
     if version.preformatted:
         assert isinstance(version.tag, str)
         return version.tag
     main_version = _entrypoints._call_version_scheme(
-        version, "setuptools_scm.version_scheme", config["version_scheme"], None
+        version, "setuptools_scm.version_scheme", version.config.version_scheme, None
     )
     log.debug("version %s", main_version)
     assert main_version is not None
     local_version = _entrypoints._call_version_scheme(
-        version, "setuptools_scm.local_scheme", config["local_scheme"], "+unknown"
+        version, "setuptools_scm.local_scheme", version.config.local_scheme, "+unknown"
     )
     log.debug("local_version %s", local_version)
     return main_version + local_version

@@ -106,20 +106,29 @@ def _iter_version_schemes(
 
 @overload
 def _call_version_scheme(
-    version: version.ScmVersion, entrypoint: str, given_value: str, default: str
+    version: version.ScmVersion,
+    entrypoint: str,
+    given_value: _t.VERSION_SCHEMES,
+    default: str,
 ) -> str:
     ...
 
 
 @overload
 def _call_version_scheme(
-    version: version.ScmVersion, entrypoint: str, given_value: str, default: None
+    version: version.ScmVersion,
+    entrypoint: str,
+    given_value: _t.VERSION_SCHEMES,
+    default: None,
 ) -> str | None:
     ...
 
 
 def _call_version_scheme(
-    version: version.ScmVersion, entrypoint: str, given_value: str, default: str | None
+    version: version.ScmVersion,
+    entrypoint: str,
+    given_value: _t.VERSION_SCHEMES,
+    default: str | None,
 ) -> str | None:
     for scheme in _iter_version_schemes(entrypoint, given_value):
         result = scheme(version)

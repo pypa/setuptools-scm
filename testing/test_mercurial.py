@@ -43,14 +43,11 @@ archival_mapping = {
 
 @pytest.mark.parametrize("expected,data", sorted(archival_mapping.items()))
 def test_archival_to_version(expected: str, data: dict[str, str]) -> None:
-    config = Configuration()
-    version = archival_to_version(data, config=config)
-    assert (
-        format_version(
-            version, version_scheme="guess-next-dev", local_scheme="node-and-date"
-        )
-        == expected
+    config = Configuration(
+        version_scheme="guess-next-dev", local_scheme="node-and-date"
     )
+    version = archival_to_version(data, config=config)
+    assert format_version(version) == expected
 
 
 def test_hg_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -547,15 +547,12 @@ def test_git_getdate_signed_commit(signed_commit_wd: WorkDir) -> None:
 )
 @pytest.mark.filterwarnings("ignore:git archive did not support describe output")
 def test_git_archival_to_version(expected: str, from_data: dict[str, str]) -> None:
-    config = Configuration()
+    config = Configuration(
+        version_scheme="guess-next-dev", local_scheme="node-and-date"
+    )
     version = archival_to_version(from_data, config=config)
     assert version is not None
-    assert (
-        format_version(
-            version, version_scheme="guess-next-dev", local_scheme="node-and-date"
-        )
-        == expected
-    )
+    assert format_version(version) == expected
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/727")

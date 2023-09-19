@@ -48,7 +48,7 @@ Suggested workaround if applicable:
 def _assign_version(
     dist: setuptools.Distribution, config: _config.Configuration
 ) -> None:
-    from .._get_version import _get_version, _version_missing
+    from .._get_version_impl import _get_version, _version_missing
 
     # todo: build time plugin
     maybe_version = _get_version(config, force_write_version_files=True)

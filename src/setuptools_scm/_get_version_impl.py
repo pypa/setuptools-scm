@@ -46,7 +46,7 @@ def parse_fallback_version(config: Configuration) -> ScmVersion | None:
     return _entrypoints.version_from_entrypoint(config, entrypoint, root)
 
 
-def _do_parse(config: Configuration) -> ScmVersion | None:
+def parse_version(config: Configuration) -> ScmVersion | None:
     return (
         _read_pretended_version_for(config)
         or parse_scm_version(config)
@@ -86,14 +86,10 @@ def write_version_files(
 def _get_version(
     config: Configuration, force_write_version_files: bool = False
 ) -> str | None:
-    parsed_version = _do_parse(config)
+    parsed_version = parse_version(config)
     if parsed_version is None:
         return None
-    version_string = _format_version(
-        parsed_version,
-        version_scheme=config.version_scheme,
-        local_scheme=config.local_scheme,
-    )
+    version_string = _format_version(parsed_version)
     if force_write_version_files:
         write_version_files(config, version=version_string, scm_version=parsed_version)
 
