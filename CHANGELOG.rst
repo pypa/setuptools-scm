@@ -5,7 +5,8 @@ bugfix
 ------
 
 * fix #912: ensure mypy safety of the version template + regression test
-
+* fix #913: use 240s timeout instead of 20 for git unshallow
+  to account for large repos or slow connections
 
 v8.0.1
 ======

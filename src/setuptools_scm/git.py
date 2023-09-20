@@ -48,9 +48,18 @@ DEFAULT_DESCRIBE = [
 
 
 def run_git(
-    args: Sequence[str | os.PathLike[str]], repo: Path, *, check: bool = False
+    args: Sequence[str | os.PathLike[str]],
+    repo: Path,
+    *,
+    check: bool = False,
+    timeout: int = 20,
 ) -> _CompletedProcess:
-    return _run(["git", "--git-dir", repo / ".git", *args], cwd=repo, check=check)
+    return _run(
+        ["git", "--git-dir", repo / ".git", *args],
+        cwd=repo,
+        check=check,
+        timeout=timeout,
+    )
 
 
 class GitWorkdir(Workdir):
@@ -127,7 +136,7 @@ class GitWorkdir(Workdir):
         return self.path.joinpath(".git/shallow").is_file()
 
     def fetch_shallow(self) -> None:
-        run_git(["fetch", "--unshallow"], self.path, check=True)
+        run_git(["fetch", "--unshallow"], self.path, check=True, timeout=240)
 
     def node(self) -> str | None:
         def _unsafe_short_node(node: str) -> str:
