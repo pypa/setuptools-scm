@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -106,6 +108,24 @@ def test_dump_version_modern(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
 
     get_version(root="..", relative_to=target, version_file=name)
     assert target.read_text() == version
+
+
+def test_dump_version_on_old_python(tmp_path: Path) -> None:
+    python37 = shutil.which("python3.7")
+    if python37 is None:
+        pytest.skip("python3.7 not found")
+    from setuptools_scm._integration.dump_version import write_version_to_path
+
+    version = "1.2.3"
+    scm_version = meta(version, config=c)
+    write_version_to_path(
+        tmp_path / "VERSION.py", template=None, version=version, scm_version=scm_version
+    )
+    subprocess.run(
+        [python37, "-c", "import VERSION;print(VERSION.version)"],
+        cwd=tmp_path,
+        check=True,
+    )
 
 
 def test_has_command() -> None:
