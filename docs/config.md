@@ -108,7 +108,7 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
 :   used as the primary source for the version number
     in which case it will be an unparsed string
 
-    !!! warning "its strongly  recommended to use use distribution name specific pretend versions"
+    !!! warning "it is strongly recommended to use use distribution name specific pretend versions"
 
 
 `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME}`
