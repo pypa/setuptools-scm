@@ -6,6 +6,7 @@ bugfix
 ------
 
 * update version file template to work on older python versions by using type comments
+* ensure tag regex from setup.py is parsed into regex
 
 v8.0.0
 ======

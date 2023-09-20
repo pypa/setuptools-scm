@@ -169,3 +169,17 @@ def test_unicode_in_setup_cfg(tmp_path: Path) -> None:
     )
     name = setuptools_scm._integration.setuptools.read_dist_name_from_setup_cfg(cfg)
     assert name == "configparser"
+
+
+def test_setuptools_version_keyword_ensures_regex(
+    wd: WorkDir,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    wd.commit_testfile("test")
+    wd("git tag 1.0")
+    monkeypatch.chdir(wd.cwd)
+    from setuptools_scm._integration.setuptools import version_keyword
+    import setuptools
+
+    dist = setuptools.Distribution({"name": "test"})
+    version_keyword(dist, "use_scm_version", {"tag_regex": "(1.0)"})

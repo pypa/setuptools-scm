@@ -91,9 +91,13 @@ def version_keyword(
         dist_name = read_dist_name_from_setup_cfg()
     version_cls = value.pop("version_cls", None)
     normalize = value.pop("normalize", True)
+    tag_regex = _config._check_tag_regex(
+        value.pop("tag_regex", _config.DEFAULT_TAG_REGEX)
+    )
     final_version = _validate_version_cls(version_cls, normalize)
+
     config = _config.Configuration(
-        dist_name=dist_name, version_cls=final_version, **value
+        dist_name=dist_name, version_cls=final_version, tag_regex=tag_regex, **value
     )
     _assign_version(dist, config)
 
