@@ -1,3 +1,12 @@
+
+v8.0.1
+======
+
+bugfix
+------
+
+* update version file template to work on older python versions by using type comments
+
 v8.0.0
 ======
 

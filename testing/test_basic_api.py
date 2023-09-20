@@ -179,10 +179,10 @@ def test_dump_version(tmp_path: Path) -> None:
     scm_version = meta("1.0", distance=42, config=c)
     dump_version(tmp_path, version, "first.py", scm_version=scm_version)
     lines = read("first.py").splitlines()
-    assert lines[3:] == [
-        "__version__ : str = version : str = '1.0.dev42'",
-        "__version_tuple__ : 'tuple[int | str, ...]' = \\",
-        "  version_tuple : 'tuple[int | str, ...]' = (1, 0, 'dev42')",
+    assert lines[-2:] == [
+        "__version__ = version = '1.0.dev42'  # type: str",
+        "__version_tuple__ = version_tuple = (1, 0, 'dev42')"
+        "  # type: tuple[int | str, ...]",
     ]
 
     version = "1.0.1+g4ac9d2c"
