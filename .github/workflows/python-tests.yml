@@ -92,6 +92,7 @@ jobs:
       # this hopefull helps with os caches, hg init sometimes gets 20s timeouts
       - run: hg version
       - run: pytest
+        timeout-minutes: 15
 
   dist_upload:
 
