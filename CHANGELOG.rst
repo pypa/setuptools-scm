@@ -1,3 +1,11 @@
+v8.0.2
+======
+
+bugfix
+------
+
+* fix #912: ensure mypy safety of the version template + regression test
+
 
 v8.0.1
 ======

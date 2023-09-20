@@ -110,10 +110,7 @@ def test_dump_version_modern(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
     assert target.read_text() == version
 
 
-def test_dump_version_on_old_python(tmp_path: Path) -> None:
-    python37 = shutil.which("python3.7")
-    if python37 is None:
-        pytest.skip("python3.7 not found")
+def dump_a_version(tmp_path: Path) -> None:
     from setuptools_scm._integration.dump_version import write_version_to_path
 
     version = "1.2.3"
@@ -121,11 +118,34 @@ def test_dump_version_on_old_python(tmp_path: Path) -> None:
     write_version_to_path(
         tmp_path / "VERSION.py", template=None, version=version, scm_version=scm_version
     )
+
+
+def test_dump_version_on_old_python(tmp_path: Path) -> None:
+    python37 = shutil.which("python3.7")
+    if python37 is None:
+        pytest.skip("python3.7 not found")
+    dump_a_version(tmp_path)
     subprocess.run(
         [python37, "-c", "import VERSION;print(VERSION.version)"],
         cwd=tmp_path,
         check=True,
     )
+
+
+def test_dump_version_mypy(tmp_path: Path) -> None:
+    mypy = shutil.which("mypy")
+    if mypy is None:
+        pytest.skip("mypy not found")
+    dump_a_version(tmp_path)
+    subprocess.run([mypy, "--strict", "VERSION.py"], cwd=tmp_path, check=True)
+
+
+def test_dump_version_flake8(tmp_path: Path) -> None:
+    flake8 = shutil.which("flake8")
+    if flake8 is None:
+        pytest.skip("flake8 not found")
+    dump_a_version(tmp_path)
+    subprocess.run([flake8, "VERSION.py"], cwd=tmp_path, check=True)
 
 
 def test_has_command() -> None:
