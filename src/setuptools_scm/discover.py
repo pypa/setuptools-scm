@@ -41,6 +41,10 @@ def match_entrypoint(root: _t.PathT, name: str) -> bool:
     return False
 
 
+# blocked entrypints from legacy plugins
+_BLOCKED_EP_TARGETS = {"setuptools_scm_git_archive:parse"}
+
+
 def iter_matching_entrypoints(
     root: _t.PathT, entrypoint: str, config: Configuration
 ) -> Iterable[_entrypoints.EntrypointProtocol]:
@@ -57,6 +61,8 @@ def iter_matching_entrypoints(
 
     for wd in walk_potential_roots(root, config.search_parent_directories):
         for ep in iter_entry_points(entrypoint):
+            if ep.value in _BLOCKED_EP_TARGETS:
+                continue
             if match_entrypoint(wd, ep.name):
                 log.debug("found ep %s in %s", ep, wd)
                 config.parent = wd

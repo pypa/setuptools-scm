@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.metadata
 import sys
 import textwrap
 from pathlib import Path
@@ -8,10 +9,13 @@ import pytest
 
 import setuptools_scm._integration.setuptools
 from .wd_wrapper import WorkDir
+from setuptools_scm import Configuration
 from setuptools_scm._integration.setuptools import _warn_on_old_setuptools
 from setuptools_scm._overrides import PRETEND_KEY
 from setuptools_scm._overrides import PRETEND_KEY_NAMED
 from setuptools_scm._run_cmd import run
+
+c = Configuration()
 
 
 @pytest.fixture
@@ -183,3 +187,17 @@ def test_setuptools_version_keyword_ensures_regex(
 
     dist = setuptools.Distribution({"name": "test"})
     version_keyword(dist, "use_scm_version", {"tag_regex": "(1.0)"})
+
+
+@pytest.mark.parametrize(
+    "ep_name", ["setuptools_scm.parse_scm", "setuptools_scm.parse_scm_fallback"]
+)
+def test_git_archival_plugin_ignored(tmp_path: Path, ep_name: str) -> None:
+    tmp_path.joinpath(".git_archival.txt").write_text("broken")
+    dist = importlib.metadata.distribution("setuptools_scm_git_archive")
+    print(dist.metadata["Name"], dist.version)
+    from setuptools_scm.discover import iter_matching_entrypoints
+
+    found = list(iter_matching_entrypoints(tmp_path, config=c, entrypoint=ep_name))
+    imports = [item.value for item in found]
+    assert "setuptools_scm_git_archive:parse" not in imports
