@@ -203,7 +203,8 @@ class CommandNotFoundError(LookupError, FileNotFoundError):
 
 def require_command(name: str) -> None:
     if not (result := has_command(name, warn=False)):
-        log.error(f"There was a failure running require_command('{name}'). Below is "
-                  "the stderr from the attempt:")
+        log.error(
+            f"There was a failure running require_command('{name}'). Below is the stderr from the attempt:"
+        )
         log.error(result.message)
         raise CommandNotFoundError(name)
