@@ -115,6 +115,7 @@ class Configuration:
         name: str | os.PathLike[str] = "pyproject.toml",
         dist_name: str | None = None,
         _load_toml: Callable[[str], dict[str, Any]] | None = None,
+        _require_section: bool = True,
         **kwargs: Any,
     ) -> Configuration:
         """

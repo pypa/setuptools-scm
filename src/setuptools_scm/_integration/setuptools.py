@@ -63,21 +63,27 @@ def _assign_version(
 _warn_on_old_setuptools()
 
 
+def _log_hookstart(hook: str, dist: setuptools.Distribution) -> None:
+    log.debug("%s %r", hook, vars(dist.metadata))
+
+
 def version_keyword(
     dist: setuptools.Distribution,
     keyword: str,
     value: bool | dict[str, Any] | Callable[[], dict[str, Any]],
 ) -> None:
-    if not value:
-        return
-    elif value is True:
+    if value is True:
         value = {}
     elif callable(value):
         value = value()
+
+    assert isinstance(value, dict), "version_keyword expects a dict or True"
     assert (
         "dist_name" not in value
     ), "dist_name may not be specified in the setup keyword "
     dist_name: str | None = dist.metadata.name
+    _log_hookstart("version_keyword", dist)
+
     if dist.metadata.version is not None:
         warnings.warn(f"version of {dist_name} already set")
         return
@@ -103,10 +109,7 @@ def version_keyword(
 
 
 def infer_version(dist: setuptools.Distribution) -> None:
-    log.debug(
-        "finalize hook %r",
-        vars(dist.metadata),
-    )
+    _log_hookstart("infer_version", dist)
     log.debug("dist %s %s", id(dist), id(dist.metadata))
     if dist.metadata.version is not None:
         return  # metadata already added by hook
@@ -120,6 +123,6 @@ def infer_version(dist: setuptools.Distribution) -> None:
     try:
         config = _config.Configuration.from_file(dist_name=dist_name)
     except LookupError as e:
-        log.exception(e)
+        log.warning(e)
     else:
         _assign_version(dist, config)

@@ -9,10 +9,13 @@ from typing import Dict
 from typing import NamedTuple
 from typing import TYPE_CHECKING
 
+from .. import _log
 from .setuptools import read_dist_name_from_setup_cfg
 
 if TYPE_CHECKING:
     from typing_extensions import TypeAlias
+
+log = _log.log.getChild("pyproject_reading")
 
 _ROOT = "root"
 TOML_RESULT: TypeAlias = Dict[str, Any]
@@ -43,6 +46,7 @@ def read_pyproject(
     name: str | os.PathLike[str] = "pyproject.toml",
     tool_name: str = "setuptools_scm",
     _load_toml: TOML_LOADER | None = None,
+    require_secion: bool = True,
 ) -> PyProjectData:
     if _load_toml is None:
         _load_toml = lazy_toml_load
@@ -52,7 +56,13 @@ def read_pyproject(
     try:
         section = defn.get("tool", {})[tool_name]
     except LookupError as e:
-        raise LookupError(f"{name} does not contain a tool.{tool_name} section") from e
+        error = f"{name} does not contain a tool.{tool_name} section"
+        if require_secion:
+            raise LookupError(error) from e
+        else:
+            log.warn(error)
+            section = {}
+
     project = defn.get("project", {})
     return PyProjectData(name, tool_name, project, section)
 
