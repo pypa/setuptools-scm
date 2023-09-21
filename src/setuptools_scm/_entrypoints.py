@@ -22,6 +22,7 @@ log = _log.log.getChild("entrypoints")
 
 class EntrypointProtocol(Protocol):
     name: str
+    value: str
 
     def load(self) -> Any:
         pass
@@ -61,6 +62,7 @@ def iter_entry_points(
             name=name,
         )
     )
+
     return cast(Iterator[EntrypointProtocol], iter(res))
 
 
