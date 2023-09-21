@@ -1,3 +1,8 @@
+v8.0.3
+======
+
+* fix #918 for good - remove external importlib-metadata to avoid source only loop
+
 v8.0.2
 ======
 
