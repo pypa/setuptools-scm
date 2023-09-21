@@ -14,6 +14,7 @@ from typing import TypeVar
 
 from . import _log
 from . import _types as _t
+from ._types import Result
 
 if TYPE_CHECKING:
     BaseCompletedProcess = subprocess.CompletedProcess[str]
@@ -172,21 +173,28 @@ def _unsafe_quote_for_display(item: _t.PathT) -> str:
 
 def has_command(
     name: str, args: Sequence[str] = ["version"], warn: bool = True
-) -> bool:
+) -> Result:
+    message = ""
     try:
         p = run([name, *args], cwd=".", timeout=5)
     except OSError as e:
         log.warning("command %s missing: %s", name, e)
+        message = str(e)
         res = False
     except subprocess.TimeoutExpired as e:
         log.warning("command %s timed out %s", name, e)
+        message = str(e)
         res = False
 
     else:
         res = not p.returncode
     if not res and warn:
         warnings.warn("%r was not found" % name, category=RuntimeWarning)
-    return res
+
+    if not res and not message:
+        message = p.stderr
+
+    return Result(status=res, message=message)
 
 
 class CommandNotFoundError(LookupError, FileNotFoundError):
@@ -194,5 +202,7 @@ class CommandNotFoundError(LookupError, FileNotFoundError):
 
 
 def require_command(name: str) -> None:
-    if not has_command(name, warn=False):
+    if not (result := has_command(name, warn=False)):
+        log.error(f"There was a failure running require_command('{name}'). Below is the stderr from the attempt:")
+        log.error(result.message)
         raise CommandNotFoundError(name)
