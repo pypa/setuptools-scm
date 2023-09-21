@@ -187,10 +187,8 @@ def has_command(
 
     else:
         res = not p.returncode
-
     if not res and warn:
         warnings.warn("%r was not found" % name, category=RuntimeWarning)
-
     return res
 
 
