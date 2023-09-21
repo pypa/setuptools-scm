@@ -5,8 +5,12 @@ from typing import cast
 from typing import Type
 from typing import Union
 
-from packaging.version import InvalidVersion
-from packaging.version import Version as Version
+try:
+    from packaging.version import InvalidVersion
+    from packaging.version import Version as Version
+except ImportError:
+    from setuptools.extern.packaging.version import InvalidVersion  # type: ignore
+    from setuptools.extern.packaging.version import Version as Version  # type: ignore
 
 
 class NonNormalizedVersion(Version):
