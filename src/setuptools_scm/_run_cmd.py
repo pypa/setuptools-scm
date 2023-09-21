@@ -175,6 +175,9 @@ def has_command(
 ) -> bool:
     try:
         p = run([name, *args], cwd=".", timeout=5)
+        if p.returncode != 0:
+            log.error(f"Command '{name}' returned non-zero. This is stderr:")
+            log.error(p.stderr)
     except OSError as e:
         log.warning("command %s missing: %s", name, e)
         res = False

@@ -153,6 +153,20 @@ def test_has_command() -> None:
         assert not has_command("yadayada_setuptools_aint_ne")
 
 
+def test_has_command_logs_stderr(caplog: pytest.LogCaptureFixture) -> None:
+    """
+    If the name provided to has_command() exists as a command, but gives a non-zero
+    return code, there should be a log message generated.
+    """
+    with pytest.warns(RuntimeWarning, match="ls"):
+        has_command("ls", ["--a-flag-that-doesnt-exist-should-give-output-on-stderr"])
+    found_it = False
+    for record in caplog.records:
+        if "returned non-zero. This is stderr" in record.message:
+            found_it = True
+    assert found_it, "Did not find expected log record for "
+
+
 @pytest.mark.parametrize(
     "tag, expected_version",
     [
