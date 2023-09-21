@@ -31,7 +31,7 @@ def main(args: list[str] | None = None) -> None:
         )
         config = Configuration(inferred_root)
 
-    version = _get_version(config)
+    version = _get_version(config, force_write_version_files=False)
     if version is None:
         raise SystemExit("ERROR: no version found for", opts)
     if opts.strip_dev:

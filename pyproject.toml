@@ -4,7 +4,6 @@
 build-backend = "_own_version_helper"
 requires = [
   'importlib-metadata>=4.6; python_version < "3.10"',
-  "packaging>=20",
   "rich",
   "setuptools>=61",
   'tomli; python_version < "3.11"',

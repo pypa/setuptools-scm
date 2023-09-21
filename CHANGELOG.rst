@@ -3,6 +3,9 @@ v8.0.2
 
 bugfix
 ------
+
+* fix #919: restore legacy version-file behaviour for external callers + add Deprecation warning
+* fix #918: use packaging from setuptools for self-build
 * fix #914: ignore the deprecated git archival plugin as its integrated now
 * fix #912: ensure mypy safety of the version template + regression test
 * fix #913: use 240s timeout instead of 20 for git unshallow

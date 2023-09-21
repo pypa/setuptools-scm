@@ -84,12 +84,20 @@ def write_version_files(
 
 
 def _get_version(
-    config: Configuration, force_write_version_files: bool = False
+    config: Configuration, force_write_version_files: bool | None = None
 ) -> str | None:
     parsed_version = parse_version(config)
     if parsed_version is None:
         return None
     version_string = _format_version(parsed_version)
+    if force_write_version_files is None:
+        force_write_version_files = True
+        warnings.warn(
+            "force_write_version_files ought to be set,"
+            " presuming the legacy True value",
+            DeprecationWarning,
+        )
+
     if force_write_version_files:
         write_version_files(config, version=version_string, scm_version=parsed_version)
 

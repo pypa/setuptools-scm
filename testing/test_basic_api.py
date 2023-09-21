@@ -242,3 +242,20 @@ def test_custom_version_cls() -> None:
     #  to create a test?
     # monkeypatch.setenv(setuptools_scm.PRETEND_KEY, "1.0.1")
     # assert setuptools_scm.get_version(version_cls=MyVersion) == "1"
+
+
+def test_internal_get_version_warns_for_version_files(tmp_path: Path) -> None:
+    tmp_path.joinpath("PKG-INFO").write_text("Version: 0.1")
+    c = Configuration(root=tmp_path, fallback_root=tmp_path)
+    with pytest.warns(
+        DeprecationWarning,
+        match="force_write_version_files ought to be set,"
+        " presuming the legacy True value",
+    ):
+        ver = setuptools_scm._get_version(c)
+    assert ver == "0.1"
+
+    # force write won't write as no version file is configured
+    assert setuptools_scm._get_version(c, force_write_version_files=False) == ver
+
+    assert setuptools_scm._get_version(c, force_write_version_files=True) == ver
