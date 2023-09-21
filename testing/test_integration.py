@@ -194,8 +194,12 @@ def test_setuptools_version_keyword_ensures_regex(
 )
 def test_git_archival_plugin_ignored(tmp_path: Path, ep_name: str) -> None:
     tmp_path.joinpath(".git_archival.txt").write_text("broken")
-    dist = importlib.metadata.distribution("setuptools_scm_git_archive")
-    print(dist.metadata["Name"], dist.version)
+    try:
+        dist = importlib.metadata.distribution("setuptools_scm_git_archive")
+    except importlib.metadata.PackageNotFoundError:
+        pytest.skip("setuptools_scm_git_archive not installed")
+    else:
+        print(dist.metadata["Name"], dist.version)
     from setuptools_scm.discover import iter_matching_entrypoints
 
     found = list(iter_matching_entrypoints(tmp_path, config=c, entrypoint=ep_name))
