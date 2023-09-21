@@ -24,8 +24,9 @@ SCMVERSION: TypeAlias = "version.ScmVersion"
 
 
 class Result:
-    """ Just like a normal bool, but with a slot for a message """
-    def __init__(self, status: bool, message: Optional[str] = None):
+    """Just like a normal bool, but with a slot for a message"""
+
+    def __init__(self, status: bool, message: str | None = None):
         self.status: bool = status
         self.message: str = message or ""
 
