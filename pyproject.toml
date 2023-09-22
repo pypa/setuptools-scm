@@ -3,11 +3,9 @@
 [build-system]
 build-backend = "_own_version_helper"
 requires = [
-  'importlib-metadata>=4.6; python_version < "3.10"',
   "rich",
   "setuptools>=61",
   'tomli; python_version < "3.11"',
-  'typing_extensions; python_version < "3.8"',
 ]
 backend-path = [
   ".",
@@ -42,7 +40,6 @@ dynamic = [
   "version",
 ]
 dependencies = [
-  'importlib-metadata>=4.6; python_version < "3.10"',
   "packaging>=20",
   "setuptools",
   'tomli>=1; python_version < "3.11"',

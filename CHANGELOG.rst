@@ -1,3 +1,9 @@
+v8.0.3
+======
+
+* fix #918 for good - remove external importlib-metadata to avoid source only loop
+* fix #926: ensure mypy on python3.8 works with the version file
+
 v8.0.2
 ======
 

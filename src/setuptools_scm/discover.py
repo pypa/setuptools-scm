@@ -47,7 +47,7 @@ _BLOCKED_EP_TARGETS = {"setuptools_scm_git_archive:parse"}
 
 def iter_matching_entrypoints(
     root: _t.PathT, entrypoint: str, config: Configuration
-) -> Iterable[_entrypoints.EntrypointProtocol]:
+) -> Iterable[_entrypoints.EntryPoint]:
     """
     Consider different entry-points in ``root`` and optionally its parents.
     :param root: File path.

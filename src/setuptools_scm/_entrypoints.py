@@ -6,7 +6,6 @@ from typing import Callable
 from typing import cast
 from typing import Iterator
 from typing import overload
-from typing import Protocol
 from typing import TYPE_CHECKING
 
 from . import _log
@@ -17,15 +16,32 @@ if TYPE_CHECKING:
     from ._config import Configuration, ParseFunction
 
 
+from importlib.metadata import EntryPoint as EntryPoint
+
+
+if sys.version_info[:2] < (3, 10):
+    from importlib.metadata import entry_points as legacy_entry_points
+
+    class EntryPoints:
+        _groupdata: list[EntryPoint]
+
+        def __init__(self, groupdata: list[EntryPoint]) -> None:
+            self._groupdata = groupdata
+
+        def select(self, name: str) -> EntryPoints:
+            return EntryPoints([x for x in self._groupdata if x.name == name])
+
+        def __iter__(self) -> Iterator[EntryPoint]:
+            return iter(self._groupdata)
+
+    def entry_points(group: str) -> EntryPoints:
+        return EntryPoints(legacy_entry_points()[group])
+
+else:
+    from importlib.metadata import entry_points, EntryPoints
+
+
 log = _log.log.getChild("entrypoints")
-
-
-class EntrypointProtocol(Protocol):
-    name: str
-    value: str
-
-    def load(self) -> Any:
-        pass
 
 
 def version_from_entrypoint(
@@ -43,27 +59,11 @@ def version_from_entrypoint(
     return None
 
 
-if sys.version_info[:2] < (3, 10):
-    from importlib_metadata import entry_points
-    from importlib_metadata import EntryPoint
-else:
-    from importlib.metadata import entry_points
-    from importlib.metadata import EntryPoint
+def iter_entry_points(group: str, name: str | None = None) -> Iterator[EntryPoint]:
+    eps: EntryPoints = entry_points(group=group)
+    res = eps if name is None else eps.select(name=name)
 
-
-def iter_entry_points(
-    group: str, name: str | None = None
-) -> Iterator[EntrypointProtocol]:
-    eps = entry_points(group=group)
-    res = (
-        eps
-        if name is None
-        else eps.select(  # type: ignore [no-untyped-call]
-            name=name,
-        )
-    )
-
-    return cast(Iterator[EntrypointProtocol], iter(res))
+    return iter(res)
 
 
 def _get_ep(group: str, name: str) -> Any | None:
@@ -76,7 +76,7 @@ def _get_ep(group: str, name: str) -> Any | None:
 
 def _get_from_object_reference_str(path: str, group: str) -> Any | None:
     # todo: remove for importlib native spelling
-    ep: EntrypointProtocol = EntryPoint(path, path, group)
+    ep = EntryPoint(path, path, group)
     try:
         return ep.load()
     except (AttributeError, ModuleNotFoundError):
