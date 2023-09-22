@@ -43,7 +43,7 @@ dependencies = [
   "packaging>=20",
   "setuptools",
   'tomli>=1; python_version < "3.11"',
-  'typing-extensions; python_version < "3.11"',
+  "typing-extensions",
 ]
 [project.optional-dependencies]
 docs = [
