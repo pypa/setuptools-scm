@@ -1,7 +1,7 @@
 
 
 [build-system]
-build-backend = "_own_version_helper"
+build-backend = "_own_version_helper:build_meta"
 requires = [
   "rich",
   "setuptools>=61",
