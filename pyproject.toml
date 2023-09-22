@@ -1,7 +1,7 @@
 
 
 [build-system]
-build-backend = "_own_version_helper"
+build-backend = "_own_version_helper:build_meta"
 requires = [
   "rich",
   "setuptools>=61",
@@ -108,3 +108,6 @@ namespaces = false
 version = { attr = "_own_version_helper.version"}
 
 [tool.setuptools_scm]
+
+[tool.scriv]
+format = "md"
