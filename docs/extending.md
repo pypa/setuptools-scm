@@ -56,6 +56,7 @@ representing the version.
     otherwise by incrementing the micro segment. Then appends :code:`.devN`.
     In case the tag ends with `.dev0` the version is not bumped
     and custom `.devN` versions will trigger a error.
+
 `post-release (deprecated)`
 :   Generates post release versions (adds `.postN`)
     after review of the version number pep this is considered a bad idea
@@ -79,6 +80,7 @@ representing the version.
     that matches the most recent tag up to the minor segment. Otherwise if on a
     non-release branch, increments the minor segment and sets the micro segment to
     zero, then appends `.devN`
+
 `no-guess-dev`
 : Does no next version guessing, just adds `.post1.devN`
 
