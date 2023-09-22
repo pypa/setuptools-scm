@@ -34,7 +34,7 @@ def _hg_ls_files_and_dirs(toplevel: str) -> tuple[set[str], set[str]]:
     hg_dirs = {toplevel}
     res = _run(["hg", "files"], cwd=toplevel)
     if res.returncode:
-        (), ()
+        return set(), set()
     for name in res.stdout.splitlines():
         name = os.path.normcase(name).replace("/", os.path.sep)
         fullname = os.path.join(toplevel, name)

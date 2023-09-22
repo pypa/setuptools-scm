@@ -240,7 +240,7 @@ def guess_next_simple_semver(
     try:
         parts = [int(i) for i in str(version.tag).split(".")[:retain]]
     except ValueError:
-        raise ValueError(f"{version} can't be parsed as numeric version")
+        raise ValueError(f"{version} can't be parsed as numeric version") from None
     while len(parts) < retain:
         parts.append(0)
     if increment:
@@ -355,7 +355,11 @@ def guess_next_date_ver(
     if match is None:
         tag_date = today
     else:
-        tag_date = datetime.strptime(match.group("date"), date_fmt).date()
+        tag_date = (
+            datetime.strptime(match.group("date"), date_fmt)
+            .replace(tzinfo=timezone.utc)
+            .date()
+        )
     if tag_date == head_date:
         patch = "0" if match is None else (match.group("patch") or "0")
         patch = int(patch) + 1
@@ -363,9 +367,8 @@ def guess_next_date_ver(
         if tag_date > head_date and match is not None:
             # warn on future times
             warnings.warn(
-                "your previous tag  ({}) is ahead your node date ({})".format(
-                    tag_date, head_date
-                )
+                f"your previous tag  ({tag_date})"
+                f" is ahead your node date ({head_date})"
             )
         patch = 0
     next_version = "{node_date:{date_fmt}}.{patch}".format(

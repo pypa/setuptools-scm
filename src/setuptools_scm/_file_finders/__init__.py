@@ -44,7 +44,7 @@ def scm_find_files(
         # dirpath with symlinks resolved
         realdirpath = os.path.normcase(os.path.realpath(dirpath))
 
-        def _link_not_in_scm(n: str) -> bool:
+        def _link_not_in_scm(n: str, realdirpath: str = realdirpath) -> bool:
             fn = os.path.join(realdirpath, os.path.normcase(n))
             return os.path.islink(fn) and fn not in scm_files
 

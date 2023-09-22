@@ -8,6 +8,7 @@ import shlex
 import warnings
 from datetime import date
 from datetime import datetime
+from datetime import timezone
 from os.path import samefile
 from pathlib import Path
 from typing import Callable
@@ -268,7 +269,7 @@ def _git_parse_inner(
             tag=tag, distance=distance, dirty=dirty, node=node, config=config
         )
     branch = wd.get_branch()
-    node_date = wd.get_head_date() or date.today()
+    node_date = wd.get_head_date() or datetime.now(timezone.utc).date()
     return dataclasses.replace(version, branch=branch, node_date=node_date)
 
 

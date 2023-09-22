@@ -18,7 +18,7 @@ from setuptools_scm._run_cmd import run
 c = Configuration()
 
 
-@pytest.fixture
+@pytest.fixture()
 def wd(wd: WorkDir) -> WorkDir:
     wd("git init")
     wd("git config user.email test@example.com")

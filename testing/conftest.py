@@ -8,6 +8,7 @@ from typing import Any
 from typing import Iterator
 
 import pytest
+from typing_extensions import Self
 
 from .wd_wrapper import WorkDir
 from setuptools_scm._run_cmd import run
@@ -46,7 +47,7 @@ class DebugMode(contextlib.AbstractContextManager):  # type: ignore[type-arg]
     def __init__(self) -> None:
         self.__stack = contextlib.ExitStack()
 
-    def __enter__(self) -> DebugMode:
+    def __enter__(self) -> Self:
         self.enable()
         return self
 
@@ -71,14 +72,14 @@ def debug_mode() -> Iterator[DebugMode]:
         yield debug_mode
 
 
-@pytest.fixture
+@pytest.fixture()
 def wd(tmp_path: Path) -> WorkDir:
     target_wd = tmp_path.resolve() / "wd"
     target_wd.mkdir()
     return WorkDir(target_wd)
 
 
-@pytest.fixture
+@pytest.fixture()
 def repositories_hg_git(tmp_path: Path) -> tuple[WorkDir, WorkDir]:
     tmp_path = tmp_path.resolve()
     path_git = tmp_path / "repo_git"
