@@ -137,7 +137,11 @@ def test_dump_version_mypy(tmp_path: Path) -> None:
     if mypy is None:
         pytest.skip("mypy not found")
     dump_a_version(tmp_path)
-    subprocess.run([mypy, "--strict", "VERSION.py"], cwd=tmp_path, check=True)
+    subprocess.run(
+        [mypy, "--python-version=3.8", "--strict", "VERSION.py"],
+        cwd=tmp_path,
+        check=True,
+    )
 
 
 def test_dump_version_flake8(tmp_path: Path) -> None:
