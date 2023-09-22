@@ -1,9 +1,13 @@
 [envs.docs]
 python = "3.11"
 extras = ["docs"]
+dependencies = ["scriv"]
 
 [envs.docs.scripts]
 build = "mkdocs build --clean --strict"
 serve = "mkdocs serve --dev-addr localhost:8000"
 init = "mkdocs {args}"
 sync = ["entangled sync"]
+
+changelog-create = "scriv create {args}"
+changelog-collect = "scriv collect {args}"
