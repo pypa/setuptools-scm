@@ -60,7 +60,6 @@ rich = [
 test = [
   "pytest",
   "rich",
-  "virtualenv>20",
 ]
 toml = [
 ]
