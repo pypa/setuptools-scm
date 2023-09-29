@@ -42,11 +42,19 @@ def dump_version(
     scm_version: ScmVersion | None = None,
 ) -> None:
     assert isinstance(version, str)
-    # todo: assert write_to doesnt escape
+    root = Path(root)
     write_to = Path(write_to)
-
-    assert not write_to.is_absolute(), f"{write_to=}"
-    target = Path(root).joinpath(write_to)
+    if write_to.is_absolute():
+        # trigger warning on escape
+        write_to.relative_to(root)
+        warnings.warn(
+            f"{write_to=!s} is a absolute path,"
+            " please switch to using a relative version file",
+            DeprecationWarning,
+        )
+        target = write_to
+    else:
+        target = Path(root).joinpath(write_to)
     write_version_to_path(
         target, template=template, version=version, scm_version=scm_version
     )

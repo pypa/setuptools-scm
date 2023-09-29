@@ -3,6 +3,7 @@ from __future__ import annotations
 import pprint
 import subprocess
 import sys
+from dataclasses import replace
 from importlib.metadata import distribution
 from importlib.metadata import EntryPoint
 from pathlib import Path
@@ -13,6 +14,7 @@ from setuptools_scm import Configuration
 from setuptools_scm._run_cmd import run
 from setuptools_scm.git import parse
 from setuptools_scm.integration import data_from_mime
+from setuptools_scm.version import meta
 
 
 def test_data_from_mime_ignores_body() -> None:
@@ -104,3 +106,21 @@ def test_entrypoints_load() -> None:
             failed.append((ep, e))
     if failed:
         pytest.fail(pprint.pformat(failed))
+
+
+def test_write_to_absolute_path_passes_when_subdir_of_root(tmp_path: Path) -> None:
+    c = Configuration(root=tmp_path, write_to=tmp_path / "VERSION.py")
+    v = meta("1.0", config=c)
+    from setuptools_scm._get_version_impl import write_version_files
+
+    with pytest.warns(DeprecationWarning, match=".*write_to=.* is a absolute.*"):
+        write_version_files(c, "1.0", v)
+    write_version_files(replace(c, write_to="VERSION.py"), "1.0", v)
+    subdir = tmp_path / "subdir"
+    subdir.mkdir()
+    with pytest.raises(
+        # todo: python version specific error list
+        ValueError,
+        match=".*VERSION.py' .* .*subdir.*",
+    ):
+        write_version_files(replace(c, root=subdir), "1.0", v)
