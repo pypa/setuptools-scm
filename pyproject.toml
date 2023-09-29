@@ -63,8 +63,11 @@ test = [
 ]
 toml = [
 ]
+
 [project.urls]
 repository = "https://github.com/pypa/setuptools_scm/"
+documentation = "https://setuptools-scm.readthedocs.io/"
+
 [project.entry-points."distutils.setup_keywords"]
 use_scm_version = "setuptools_scm._integration.setuptools:version_keyword"
 [project.entry-points."setuptools.file_finders"]

@@ -1,5 +1,6 @@
 # setuptools_scm
 [![github ci](https://github.com/pypa/setuptools_scm/workflows/python%20tests+artifacts+release/badge.svg)](https://github.com/pypa/setuptools_scm/actions)
+[![Documentation Status](https://readthedocs.org/projects/setuptools-scm/badge/?version=latest)](https://setuptools-scm.readthedocs.io/en/latest/?badge=latest)
 [![tidelift](https://tidelift.com/badges/package/pypi/setuptools-scm) ](https://tidelift.com/subscription/pkg/pypi-setuptools-scm?utm_source=pypi-setuptools-scm&utm_medium=readme)
 
 ## about
@@ -60,14 +61,16 @@ Where `pkg` is the name of your package.
 If you need to confirm which version string is being generated or debug the configuration,
 you can install [setuptools-scm] directly in your working environment and run:
 
-[setuptools-scm]: https://github.com/pypa/setuptools_scm
-
 ```console
 $ python -m setuptools_scm
 # To explore other options, try:
 $ python -m setuptools_scm --help
 ```
 
+For further configuration see the [documentation].
+
+[setuptools-scm]: https://github.com/pypa/setuptools_scm
+[documentation]: https://setuptools-scm.readthedocs.io/
 
 
 ## Interaction with Enterprise Distributions
