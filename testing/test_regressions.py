@@ -119,6 +119,8 @@ def test_write_to_absolute_path_passes_when_subdir_of_root(tmp_path: Path) -> No
     subdir = tmp_path / "subdir"
     subdir.mkdir()
     with pytest.raises(
-        ValueError, match=".*VERSION.py' does not start with .*subdir.*"
+        # todo: python version specific error list
+        ValueError,
+        match=".*VERSION.py' .* .*subdir.*",
     ):
         write_version_files(replace(c, root=subdir), "1.0", v)
