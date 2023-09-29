@@ -3,7 +3,6 @@
 [build-system]
 build-backend = "_own_version_helper:build_meta"
 requires = [
-  "rich",
   "setuptools>=61",
   'tomli; python_version < "3.11"',
 ]
