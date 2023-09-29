@@ -113,5 +113,21 @@ version = { attr = "_own_version_helper.version"}
 select = ["E", "F", "B", "U", "YTT", "C", "DTZ", "PYI", "PT"]
 ignore = ["B028"]
 
+[tool.pytest.ini_options]
+testpaths = ["testing"]
+filterwarnings = [
+  "error",
+  "ignore:.*tool\\.setuptools_scm.*",
+  "ignore:.*git archive did not support describe output.*:UserWarning",
+]
+log_level = "debug"
+log_cli_level = "info"
+# disable unraisable until investigated
+addopts = ["-p", "no:unraisableexception"]
+markers = [
+  "issue(id): reference to github issue",
+  "skip_commit: allows to skip committing in the helpers",
+]
+
 [tool.scriv]
 format = "md"
