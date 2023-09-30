@@ -6,6 +6,7 @@ import subprocess
 import textwrap
 import warnings
 from typing import Callable
+from typing import Final
 from typing import Mapping
 from typing import overload
 from typing import Sequence
@@ -20,6 +21,11 @@ if TYPE_CHECKING:
 else:
     BaseCompletedProcess = subprocess.CompletedProcess
 
+# pick 40 seconds
+# unfortunately github CI for windows sometimes needs
+# up to 30 seconds to start a command
+
+BROKEN_TIMEOUT: Final[int] = 40
 
 log = _log.log.getChild("run_cmd")
 
@@ -126,7 +132,7 @@ def run(
     *,
     strip: bool = True,
     trace: bool = True,
-    timeout: int = 20,
+    timeout: int = BROKEN_TIMEOUT,
     check: bool = False,
 ) -> CompletedProcess:
     if isinstance(cmd, str):
@@ -174,7 +180,7 @@ def has_command(
     name: str, args: Sequence[str] = ["version"], warn: bool = True
 ) -> bool:
     try:
-        p = run([name, *args], cwd=".", timeout=5)
+        p = run([name, *args], cwd=".", timeout=BROKEN_TIMEOUT)
         if p.returncode != 0:
             log.error(f"Command '{name}' returned non-zero. This is stderr:")
             log.error(p.stderr)
