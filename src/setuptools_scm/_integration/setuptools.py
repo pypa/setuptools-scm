@@ -9,7 +9,6 @@ from typing import Callable
 import setuptools
 
 from .. import _config
-from .._version_cls import _validate_version_cls
 
 log = logging.getLogger(__name__)
 
@@ -95,15 +94,9 @@ def version_keyword(
 
     if dist_name is None:
         dist_name = read_dist_name_from_setup_cfg()
-    version_cls = value.pop("version_cls", None)
-    normalize = value.pop("normalize", True)
-    tag_regex = _config._check_tag_regex(
-        value.pop("tag_regex", _config.DEFAULT_TAG_REGEX)
-    )
-    final_version = _validate_version_cls(version_cls, normalize)
 
-    config = _config.Configuration(
-        dist_name=dist_name, version_cls=final_version, tag_regex=tag_regex, **value
+    config = _config.Configuration.from_file(
+        dist_name=dist_name, _require_section=False, **value
     )
     _assign_version(dist, config)
 

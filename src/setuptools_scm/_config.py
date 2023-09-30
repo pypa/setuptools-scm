@@ -125,11 +125,14 @@ class Configuration:
         not contain the [tool.setuptools_scm] section.
         """
 
-        pyproject_data = _read_pyproject(name, _load_toml=_load_toml)
+        pyproject_data = _read_pyproject(
+            name, _load_toml=_load_toml, require_section=_require_section
+        )
         args = _get_args_for_pyproject(pyproject_data, dist_name, kwargs)
 
         args.update(read_toml_overrides(args["dist_name"]))
-        return cls.from_data(relative_to=name, data=args)
+        relative_to = args.pop("relative_to", name)
+        return cls.from_data(relative_to=relative_to, data=args)
 
     @classmethod
     def from_data(

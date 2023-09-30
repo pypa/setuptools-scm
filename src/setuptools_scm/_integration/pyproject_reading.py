@@ -46,21 +46,29 @@ def read_pyproject(
     name: str | os.PathLike[str] = "pyproject.toml",
     tool_name: str = "setuptools_scm",
     _load_toml: TOML_LOADER | None = None,
-    require_secion: bool = True,
+    require_section: bool = True,
 ) -> PyProjectData:
     if _load_toml is None:
         _load_toml = lazy_toml_load
-    with open(name, encoding="UTF-8") as strm:
-        data = strm.read()
-    defn = _load_toml(data)
+    try:
+        with open(name, encoding="UTF-8") as strm:
+            data = strm.read()
+    except FileNotFoundError:
+        if require_section:
+            raise
+        else:
+            log.debug("%s missing, presuming emptry as section is not required", name)
+            defn = {}
+    else:
+        defn = _load_toml(data)
     try:
         section = defn.get("tool", {})[tool_name]
     except LookupError as e:
         error = f"{name} does not contain a tool.{tool_name} section"
-        if require_secion:
+        if require_section:
             raise LookupError(error) from e
         else:
-            log.warn(error)
+            log.warning(error)
             section = {}
 
     project = defn.get("project", {})
