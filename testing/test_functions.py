@@ -20,7 +20,7 @@ c = Configuration()
 
 
 @pytest.mark.parametrize(
-    "tag, expected",
+    ("tag", "expected"),
     [
         ("1.1", "1.2"),
         ("1.2.dev", "1.2"),
@@ -48,7 +48,7 @@ VERSIONS = {
 
 
 @pytest.mark.parametrize(
-    "version,version_scheme, local_scheme,expected",
+    ("version", "version_scheme", "local_scheme", "expected"),
     [
         ("exact", "guess-next-dev", "node-and-date", "1.1"),
         ("dirty", "guess-next-dev", "node-and-date", "1.2.dev0+d20090213"),
@@ -172,7 +172,7 @@ def test_has_command_logs_stderr(caplog: pytest.LogCaptureFixture) -> None:
 
 
 @pytest.mark.parametrize(
-    "tag, expected_version",
+    ("tag", "expected_version"),
     [
         ("1.1", "1.1"),
         ("release-1.1", "1.1"),

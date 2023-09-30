@@ -25,7 +25,7 @@ c_non_normalize = Configuration(version_cls=NonNormalizedVersion)
 
 
 @pytest.mark.parametrize(
-    "version, expected_next",
+    ("version", "expected_next"),
     [
         pytest.param(meta("1.0.0", config=c), "1.0.0", id="exact"),
         pytest.param(meta("1.0", config=c), "1.0.0", id="short_tag"),
@@ -70,7 +70,7 @@ def test_next_semver_bad_tag() -> None:
 
 
 @pytest.mark.parametrize(
-    "version, expected_next",
+    ("version", "expected_next"),
     [
         pytest.param(meta("1.0.0", config=c), "1.0.0", id="exact"),
         pytest.param(
@@ -115,7 +115,7 @@ def m(tag: str, **kw: Any) -> ScmVersion:
 
 
 @pytest.mark.parametrize(
-    "version, expected_next",
+    ("version", "expected_next"),
     [
         pytest.param(
             m("1.0.0", distance=2),
@@ -143,7 +143,7 @@ def test_no_guess_version(version: ScmVersion, expected_next: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "version, match",
+    ("version", "match"),
     [
         ("1.0.dev1", "choosing custom numbers for the `.devX` distance"),
         ("1.0.post1", "already is a post release"),
@@ -159,19 +159,19 @@ def test_bump_dev_version_zero() -> None:
 
 
 def test_bump_dev_version_nonzero_raises() -> None:
-    with pytest.raises(ValueError) as excinfo:
-        guess_next_version(m("1.0.dev1"))
-
-    assert str(excinfo.value) == (
+    match = (
         "choosing custom numbers for the `.devX` distance "
         "is not supported.\n "
         "The 1.0.dev1 can't be bumped\n"
         "Please drop the tag or create a new supported one ending in .dev0"
     )
 
+    with pytest.raises(ValueError, match=match):
+        guess_next_version(m("1.0.dev1"))
+
 
 @pytest.mark.parametrize(
-    "tag, expected",
+    ("tag", "expected"),
     [
         ("v1.0.0", "1.0.0"),
         ("v1.0.0-rc.1", "1.0.0rc1"),
@@ -194,7 +194,7 @@ def test_version_bump_bad() -> None:
     class YikesVersion:
         val: str
 
-        def __init__(self, val: str):
+        def __init__(self, val: str) -> None:
             self.val = val
 
         def __str__(self) -> str:
@@ -254,7 +254,7 @@ def date_to_str(
 
 
 @pytest.mark.parametrize(
-    "version, expected_next",
+    ("version", "expected_next"),
     [
         pytest.param(
             meta(date_to_str(days_offset=3), config=c_non_normalize),
@@ -346,7 +346,7 @@ def test_calver_by_date(version: ScmVersion, expected_next: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "version, expected_next",
+    ("version", "expected_next"),
     [
         pytest.param(meta("1.0.0", config=c), "1.0.0", id="SemVer exact stays"),
         pytest.param(
@@ -370,7 +370,7 @@ def test_calver_by_date_future_warning() -> None:
 
 
 @pytest.mark.parametrize(
-    ["tag", "node_date", "expected"],
+    ("tag", "node_date", "expected"),
     [
         pytest.param("20.03.03", date(2020, 3, 4), "20.03.04.0", id="next day"),
         pytest.param("20.03.03", date(2020, 3, 3), "20.03.03.1", id="same day"),
@@ -396,7 +396,7 @@ def test_custom_version_cls() -> None:
     """Test that we can pass our own version class instead of pkg_resources"""
 
     class MyVersion:
-        def __init__(self, tag_str: str):
+        def __init__(self, tag_str: str) -> None:
             self.tag = tag_str
 
         def __str__(self) -> str:

@@ -226,14 +226,18 @@ def test_custom_version_cls() -> None:
     """Test that `normalize` and `version_cls` work as expected"""
 
     class MyVersion:
-        def __init__(self, tag_str: str):
+        def __init__(self, tag_str: str) -> None:
             self.version = tag_str
 
         def __repr__(self) -> str:
             return f"hello,{self.version}"
 
     # you can not use normalize=False and version_cls at the same time
-    with pytest.raises(ValueError):
+    with pytest.raises(
+        ValueError,
+        match="Providing a custom `version_cls`"
+        " is not permitted when `normalize=False`",
+    ):
         setuptools_scm.get_version(normalize=False, version_cls=MyVersion)
 
     # TODO unfortunately with PRETEND_KEY the preformatted flag becomes True

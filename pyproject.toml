@@ -42,7 +42,7 @@ dependencies = [
   "packaging>=20",
   "setuptools",
   'tomli>=1; python_version < "3.11"',
-  'typing-extensions; python_version < "3.11"',
+  "typing-extensions",
 ]
 [project.optional-dependencies]
 docs = [
@@ -107,6 +107,26 @@ namespaces = false
 version = { attr = "_own_version_helper.version"}
 
 [tool.setuptools_scm]
+
+[tool.ruff]
+select = ["E", "F", "B", "U", "YTT", "C", "DTZ", "PYI", "PT"]
+ignore = ["B028"]
+
+[tool.pytest.ini_options]
+testpaths = ["testing"]
+filterwarnings = [
+  "error",
+  "ignore:.*tool\\.setuptools_scm.*",
+  "ignore:.*git archive did not support describe output.*:UserWarning",
+]
+log_level = "debug"
+log_cli_level = "info"
+# disable unraisable until investigated
+addopts = ["-p", "no:unraisableexception"]
+markers = [
+  "issue(id): reference to github issue",
+  "skip_commit: allows to skip committing in the helpers",
+]
 
 [tool.scriv]
 format = "md"

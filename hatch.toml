@@ -1,3 +1,13 @@
+[envs.test]
+extras = ["test", "dev"]
+
+[envs.test.scripts]
+all = "pytest {args}"
+
+[[env.test.matrix]]
+python = ["3.8", "3.9", "3.10", "3.11"]
+
+
 [envs.docs]
 python = "3.11"
 extras = ["docs"]

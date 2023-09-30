@@ -50,7 +50,7 @@ def wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch, debug_mode: DebugMode) -> W
 
 
 @pytest.mark.parametrize(
-    "given, tag, number, node, dirty",
+    ("given", "tag", "number", "node", "dirty"),
     [
         ("3.3.1-rc26-0-g9df187b", "3.3.1-rc26", 0, "g9df187b", False),
         ("17.33.0-rc-17-g38c3047c0", "17.33.0-rc", 17, "g38c3047c0", False),
@@ -158,7 +158,8 @@ def test_version_from_git(wd: WorkDir) -> None:
     assert wd.get_version() == "0.1.dev0+d20090213"
 
     parsed = git.parse(str(wd.cwd), Configuration(), git.DEFAULT_DESCRIBE)
-    assert parsed is not None and parsed.branch in ("master", "main")
+    assert parsed is not None
+    assert parsed.branch in ("master", "main")
 
     wd.commit_testfile()
     assert wd.get_version().startswith("0.1.dev1+g")
@@ -285,7 +286,8 @@ def test_git_dirty_notag(
         tag = datetime.now(timezone.utc).date().strftime(".d%Y%m%d")
     else:
         tag = ".d20090213"
-    assert version.startswith("0.1.dev1+g") and version.endswith(tag)
+    assert version.startswith("0.1.dev1+g")
+    assert version.endswith(tag)
 
 
 @pytest.mark.issue(193)
@@ -300,7 +302,7 @@ def test_git_worktree_support(wd: WorkDir, tmp_path: Path) -> None:
     assert str(worktree) in res.stdout
 
 
-@pytest.fixture
+@pytest.fixture()
 def shallow_wd(wd: WorkDir, tmp_path: Path) -> Path:
     wd.commit_testfile()
     wd.commit_testfile()
@@ -461,7 +463,7 @@ def test_gitdir(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> None:
 
 def test_git_getdate(wd: WorkDir) -> None:
     # TODO: case coverage for git wd parse
-    today = date.today()
+    today = datetime.now(timezone.utc).date()
 
     def parse_date() -> date:
         parsed = git.parse(os.fspath(wd.cwd), Configuration())
@@ -492,7 +494,7 @@ def test_git_getdate_badgit(
         assert git_wd.get_head_date() is None
 
 
-@pytest.fixture
+@pytest.fixture()
 def signed_commit_wd(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> WorkDir:
     if not has_command("gpg", args=["--version"], warn=False):
         pytest.skip("gpg executable not found")
@@ -519,14 +521,14 @@ Expire-Date: 0
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/548")
 def test_git_getdate_signed_commit(signed_commit_wd: WorkDir) -> None:
-    today = date.today()
+    today = datetime.now(timezone.utc).date()
     signed_commit_wd.commit_testfile(signed=True)
     git_wd = git.GitWorkdir(signed_commit_wd.cwd)
     assert git_wd.get_head_date() == today
 
 
 @pytest.mark.parametrize(
-    "expected, from_data",
+    ("expected", "from_data"),
     [
         (
             "1.0",

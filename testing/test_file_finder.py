@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import Generator
 from typing import Iterable
 
 import pytest
@@ -14,8 +13,8 @@ from setuptools_scm._file_finders import find_files
 @pytest.fixture(params=["git", "hg"])
 def inwd(
     request: pytest.FixtureRequest, wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> Generator[WorkDir, None, None]:
-    param: str = getattr(request, "param")  # todo: fix
+) -> WorkDir:
+    param: str = request.param  # type: ignore
     if param == "git":
         try:
             wd("git init")
@@ -42,7 +41,7 @@ def inwd(
     if request.node.get_closest_marker("skip_commit") is None:
         wd.add_and_commit()
     monkeypatch.chdir(wd.cwd)
-    yield wd
+    return wd
 
 
 def _sep(paths: Iterable[str]) -> set[str]:
@@ -198,7 +197,7 @@ def test_symlink_not_in_scm_while_target_is(inwd: WorkDir) -> None:
 
 
 @pytest.mark.issue(587)
-@pytest.mark.skip_commit
+@pytest.mark.skip_commit()
 def test_not_commited(inwd: WorkDir) -> None:
     assert find_files() == []
 
@@ -212,7 +211,7 @@ def test_unexpanded_git_archival(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -
     assert find_files() == []
 
 
-@pytest.mark.parametrize("archive_file", (".git_archival.txt", ".hg_archival.txt"))
+@pytest.mark.parametrize("archive_file", [".git_archival.txt", ".hg_archival.txt"])
 def test_archive(
     wd: WorkDir, monkeypatch: pytest.MonkeyPatch, archive_file: str
 ) -> None:

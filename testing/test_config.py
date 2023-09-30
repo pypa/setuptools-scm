@@ -10,7 +10,7 @@ from setuptools_scm import Configuration
 
 
 @pytest.mark.parametrize(
-    "tag, expected_version",
+    ("tag", "expected_version"),
     [
         ("apache-arrow-0.9.0", "0.9.0"),
         ("arrow-0.9.0", "0.9.0"),
