@@ -112,7 +112,14 @@ def test_pyproject_missing_setup_hook_works(wd: WorkDir, use_scm_version: str) -
     )
     wd.write(
         "pyproject.toml",
-        """[build-system]\nrequires=["setuptools", "setuptools_scm"]\n\n[tool]""",
+        textwrap.dedent(
+            """
+            [build-system]
+            requires=["setuptools", "setuptools_scm"]
+            build-backend = "setuptools.build_meta"
+            [tool]
+            """
+        ),
     )
 
     res = subprocess.run(
