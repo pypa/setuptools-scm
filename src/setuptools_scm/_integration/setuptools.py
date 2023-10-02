@@ -71,14 +71,17 @@ def version_keyword(
     keyword: str,
     value: bool | dict[str, Any] | Callable[[], dict[str, Any]],
 ) -> None:
+    overrides: dict[str, Any]
     if value is True:
-        value = {}
+        overrides = {}
     elif callable(value):
-        value = value()
+        overrides = value()
+    else:
+        assert isinstance(value, dict), "version_keyword expects a dict or True"
+        overrides = value
 
-    assert isinstance(value, dict), "version_keyword expects a dict or True"
     assert (
-        "dist_name" not in value
+        "dist_name" not in overrides
     ), "dist_name may not be specified in the setup keyword "
     dist_name: str | None = dist.metadata.name
     _log_hookstart("version_keyword", dist)
@@ -86,17 +89,14 @@ def version_keyword(
     if dist.metadata.version is not None:
         warnings.warn(f"version of {dist_name} already set")
         return
-    log.debug(
-        "version keyword %r",
-        vars(dist.metadata),
-    )
-    log.debug("dist %s %s", id(dist), id(dist.metadata))
 
     if dist_name is None:
         dist_name = read_dist_name_from_setup_cfg()
 
     config = _config.Configuration.from_file(
-        dist_name=dist_name, _require_section=False, **value
+        dist_name=dist_name,
+        _require_section=False,
+        **overrides,
     )
     _assign_version(dist, config)
 
