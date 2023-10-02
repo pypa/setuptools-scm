@@ -6,13 +6,16 @@ from typing import Any
 from typing import Callable
 from typing import cast
 from typing import Dict
+from typing import TYPE_CHECKING
 from typing import TypedDict
 
 if sys.version_info >= (3, 11):
     from tomllib import loads as load_toml
 else:
     from tomli import loads as load_toml
-from typing_extensions import TypeAlias
+
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias
 
 from .. import _log
 
