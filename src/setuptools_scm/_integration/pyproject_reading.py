@@ -1,29 +1,22 @@
 from __future__ import annotations
 
-import os
-import sys
 import warnings
-from typing import Any
-from typing import Callable
-from typing import Dict
+from pathlib import Path
 from typing import NamedTuple
-from typing import TYPE_CHECKING
 
 from .. import _log
 from .setuptools import read_dist_name_from_setup_cfg
+from .toml import read_toml_content
+from .toml import TOML_RESULT
 
-if TYPE_CHECKING:
-    from typing_extensions import TypeAlias
 
 log = _log.log.getChild("pyproject_reading")
 
 _ROOT = "root"
-TOML_RESULT: TypeAlias = Dict[str, Any]
-TOML_LOADER: TypeAlias = Callable[[str], TOML_RESULT]
 
 
 class PyProjectData(NamedTuple):
-    name: str | os.PathLike[str]
+    path: Path
     tool_name: str
     project: TOML_RESULT
     section: TOML_RESULT
@@ -33,46 +26,24 @@ class PyProjectData(NamedTuple):
         return self.project.get("name")
 
 
-def lazy_toml_load(data: str) -> TOML_RESULT:
-    if sys.version_info >= (3, 11):
-        from tomllib import loads
-    else:
-        from tomli import loads
-
-    return loads(data)
-
-
 def read_pyproject(
-    name: str | os.PathLike[str] = "pyproject.toml",
+    path: Path = Path("pyproject.toml"),
     tool_name: str = "setuptools_scm",
-    _load_toml: TOML_LOADER | None = None,
     require_section: bool = True,
 ) -> PyProjectData:
-    if _load_toml is None:
-        _load_toml = lazy_toml_load
-    try:
-        with open(name, encoding="UTF-8") as strm:
-            data = strm.read()
-    except FileNotFoundError:
-        if require_section:
-            raise
-        else:
-            log.debug("%s missing, presuming emptry as section is not required", name)
-            defn = {}
-    else:
-        defn = _load_toml(data)
+    defn = read_toml_content(path, None if require_section else {})
     try:
         section = defn.get("tool", {})[tool_name]
     except LookupError as e:
-        error = f"{name} does not contain a tool.{tool_name} section"
+        error = f"{path} does not contain a tool.{tool_name} section"
         if require_section:
             raise LookupError(error) from e
         else:
-            log.warning(error)
+            log.warning("toml section missing %r", error)
             section = {}
 
     project = defn.get("project", {})
-    return PyProjectData(name, tool_name, project, section)
+    return PyProjectData(path, tool_name, project, section)
 
 
 def get_args_for_pyproject(
@@ -86,7 +57,7 @@ def get_args_for_pyproject(
     if "relative_to" in section:
         relative = section.pop("relative_to")
         warnings.warn(
-            f"{pyproject.name}: at [tool.{pyproject.tool_name}]\n"
+            f"{pyproject.path}: at [tool.{pyproject.tool_name}]\n"
             f"ignoring value relative_to={relative!r}"
             " as its always relative to the config file"
         )
@@ -110,5 +81,5 @@ def get_args_for_pyproject(
                     f"root {section[_ROOT]} is overridden"
                     f" by the cli arg {kwargs[_ROOT]}"
                 )
-            section.pop("root", None)
+            section.pop(_ROOT, None)
     return {"dist_name": dist_name, **section, **kwargs}

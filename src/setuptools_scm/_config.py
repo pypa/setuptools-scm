@@ -5,8 +5,8 @@ import dataclasses
 import os
 import re
 import warnings
+from pathlib import Path
 from typing import Any
-from typing import Callable
 from typing import Pattern
 from typing import Protocol
 
@@ -114,7 +114,6 @@ class Configuration:
         cls,
         name: str | os.PathLike[str] = "pyproject.toml",
         dist_name: str | None = None,
-        _load_toml: Callable[[str], dict[str, Any]] | None = None,
         _require_section: bool = True,
         **kwargs: Any,
     ) -> Configuration:
@@ -125,9 +124,7 @@ class Configuration:
         not contain the [tool.setuptools_scm] section.
         """
 
-        pyproject_data = _read_pyproject(
-            name, _load_toml=_load_toml, require_section=_require_section
-        )
+        pyproject_data = _read_pyproject(Path(name), require_section=_require_section)
         args = _get_args_for_pyproject(pyproject_data, dist_name, kwargs)
 
         args.update(read_toml_overrides(args["dist_name"]))
