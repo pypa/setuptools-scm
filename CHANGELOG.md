@@ -1,4 +1,21 @@
 
+# v8.0.4
+
+## Changed
+
+- introduce scriv for changelog management
+- reconfigure local build backend to use an attribute instead of star imports from setuptools
+- introduce ruff as a linter
+- ensure the setuptools version keyword correctly load pyproject.toml configuration
+- add build and wheel to the test requirements for regression testing
+- move internal toml handling to own module
+
+## Fixed
+
+- fix #925: allow `write_to` to be an absolute path when it's a subdirectory of the root
+- fix #932: ensure type annotations in version file don't cause linter issues
+- fix #930: temporary restore `DEFAULT_VERSION_SCHEME` and `DEFAULT_LOCAL_SCHEME` on the `setuptools_scm` package
+
 
 
 # v8.0.3
