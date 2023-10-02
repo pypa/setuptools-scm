@@ -32,18 +32,22 @@ def parse_scm_version(config: Configuration) -> ScmVersion | None:
                 )
             return parse_result
         else:
-            entrypoint = "setuptools_scm.parse_scm"
-            root = config.absolute_root
-            return _entrypoints.version_from_entrypoint(config, entrypoint, root)
+            return _entrypoints.version_from_entrypoint(
+                config,
+                entrypoint="setuptools_scm.parse_scm",
+                root=config.absolute_root,
+            )
     except _run_cmd.CommandNotFoundError as e:
         _log.exception("command %s not found while parsing the scm, using fallbacks", e)
         return None
 
 
 def parse_fallback_version(config: Configuration) -> ScmVersion | None:
-    entrypoint = "setuptools_scm.parse_scm_fallback"
-    root = config.fallback_root
-    return _entrypoints.version_from_entrypoint(config, entrypoint, root)
+    return _entrypoints.version_from_entrypoint(
+        config,
+        entrypoint="setuptools_scm.parse_scm_fallback",
+        root=config.fallback_root,
+    )
 
 
 def parse_version(config: Configuration) -> ScmVersion | None:

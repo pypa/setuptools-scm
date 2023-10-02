@@ -45,7 +45,7 @@ log = _log.log.getChild("entrypoints")
 
 
 def version_from_entrypoint(
-    config: Configuration, entrypoint: str, root: _t.PathT
+    config: Configuration, *, entrypoint: str, root: _t.PathT
 ) -> version.ScmVersion | None:
     from .discover import iter_matching_entrypoints
 
