@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from logging import getLogger
 from typing import cast
 from typing import Type
 from typing import Union
@@ -11,6 +10,9 @@ try:
 except ImportError:
     from setuptools.extern.packaging.version import InvalidVersion  # type: ignore
     from setuptools.extern.packaging.version import Version as Version  # type: ignore
+from . import _log
+
+log = _log.log.getChild("version_cls")
 
 
 class NonNormalizedVersion(Version):
@@ -41,10 +43,8 @@ class NonNormalizedVersion(Version):
 def _version_as_tuple(version_str: str) -> tuple[int | str, ...]:
     try:
         parsed_version = Version(version_str)
-    except InvalidVersion:
-        log = getLogger(__name__).parent
-        assert log is not None
-        log.error("failed to parse version %s", version_str)
+    except InvalidVersion as e:
+        log.error("failed to parse version %s: %s", e, version_str)
         return (version_str,)
     else:
         version_fields: tuple[int | str, ...] = parsed_version.release
