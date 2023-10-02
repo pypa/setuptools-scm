@@ -27,7 +27,7 @@ TOML_LOADER: TypeAlias = Callable[[str], TOML_RESULT]
 
 def read_toml_content(path: Path, default: TOML_RESULT | None = None) -> TOML_RESULT:
     try:
-        data = path.read_text()
+        data = path.read_text(encoding="utf-8")
     except FileNotFoundError:
         if default is None:
             raise
