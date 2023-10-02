@@ -60,6 +60,7 @@ test = [
   "build",
   "pytest",
   "rich",
+  "wheel",
 ]
 toml = [
 ]
