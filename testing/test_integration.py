@@ -128,8 +128,6 @@ def test_pyproject_missing_setup_hook_works(wd: WorkDir, use_scm_version: str) -
     res_build = subprocess.run(
         [sys.executable, "-m", "build", "-nxw"],
         env={k: v for k, v in os.environ.items() if k != "SETUPTOOLS_SCM_DEBUG"},
-        capture_output=True,
-        text=True,
         cwd=wd.cwd,
     )
     import pprint
