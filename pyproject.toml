@@ -57,8 +57,10 @@ rich = [
   "rich",
 ]
 test = [
+  "build",
   "pytest",
   "rich",
+  "wheel",
 ]
 toml = [
 ]

@@ -20,7 +20,7 @@ def pytest_configure() -> None:
     os.environ["SETUPTOOLS_SCM_DEBUG"] = "1"
 
 
-VERSION_PKGS = ["setuptools", "setuptools_scm", "packaging"]
+VERSION_PKGS = ["setuptools", "setuptools_scm", "packaging", "build", "wheel"]
 
 
 def pytest_report_header() -> list[str]:

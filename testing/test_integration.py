@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.metadata
+import os
+import subprocess
 import sys
 import textwrap
 from pathlib import Path
@@ -97,6 +99,49 @@ def test_pyproject_support_with_git(wd: WorkDir, metadata_in: str) -> None:
     wd.write("setup.cfg", SETUP_CFG_FILES[metadata_in])
     res = wd([sys.executable, "setup.py", "--version"])
     assert res.endswith("0.1.dev0+d20090213")
+
+
+@pytest.mark.parametrize("use_scm_version", ["True", "{}", "lambda: {}"])
+def test_pyproject_missing_setup_hook_works(wd: WorkDir, use_scm_version: str) -> None:
+    wd.write(
+        "setup.py",
+        f"""__import__('setuptools').setup(
+    name="example-scm-unique",
+    use_scm_version={use_scm_version},
+    )""",
+    )
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent(
+            """
+            [build-system]
+            requires=["setuptools", "setuptools_scm"]
+            build-backend = "setuptools.build_meta"
+            [tool]
+            """
+        ),
+    )
+
+    res = subprocess.run(
+        [sys.executable, "setup.py", "--version"],
+        cwd=wd.cwd,
+        check=True,
+        stdout=subprocess.PIPE,
+        encoding="utf-8",
+    )
+    stripped = res.stdout.strip()
+    assert stripped.endswith("0.1.dev0+d20090213")
+
+    res_build = subprocess.run(
+        [sys.executable, "-m", "build", "-nxw"],
+        env={k: v for k, v in os.environ.items() if k != "SETUPTOOLS_SCM_DEBUG"},
+        cwd=wd.cwd,
+    )
+    import pprint
+
+    pprint.pprint(res_build)
+    wheel: Path = next(wd.cwd.joinpath("dist").iterdir())
+    assert "0.1.dev0+d20090213" in str(wheel)
 
 
 def test_pretend_version(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> None:

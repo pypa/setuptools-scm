@@ -3,13 +3,11 @@ from __future__ import annotations
 import os
 import re
 from typing import Any
-from typing import cast
-from typing import TypedDict
 
 from . import _config
 from . import _log
 from . import version
-from ._integration.pyproject_reading import lazy_toml_load
+from ._integration.toml import load_toml_or_inline_map
 
 log = _log.log.getChild("overrides")
 
@@ -49,23 +47,6 @@ def _read_pretended_version_for(
         return version.meta(tag=pretended, preformatted=True, config=config)
     else:
         return None
-
-
-class _CheatTomlData(TypedDict):
-    cheat: dict[str, Any]
-
-
-def load_toml_or_inline_map(data: str | None) -> dict[str, Any]:
-    """
-    load toml data - with a special hack if only a inline map is given
-    """
-    if not data:
-        return {}
-    elif data[0] == "{":
-        data = "cheat=" + data
-        loaded: _CheatTomlData = cast(_CheatTomlData, lazy_toml_load(data))
-        return loaded["cheat"]
-    return lazy_toml_load(data)
 
 
 def read_toml_overrides(dist_name: str | None) -> dict[str, Any]:

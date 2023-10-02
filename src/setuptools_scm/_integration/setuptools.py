@@ -9,7 +9,6 @@ from typing import Callable
 import setuptools
 
 from .. import _config
-from .._version_cls import _validate_version_cls
 
 log = logging.getLogger(__name__)
 
@@ -63,50 +62,47 @@ def _assign_version(
 _warn_on_old_setuptools()
 
 
+def _log_hookstart(hook: str, dist: setuptools.Distribution) -> None:
+    log.debug("%s %r", hook, vars(dist.metadata))
+
+
 def version_keyword(
     dist: setuptools.Distribution,
     keyword: str,
     value: bool | dict[str, Any] | Callable[[], dict[str, Any]],
 ) -> None:
-    if not value:
-        return
-    elif value is True:
-        value = {}
+    overrides: dict[str, Any]
+    if value is True:
+        overrides = {}
     elif callable(value):
-        value = value()
+        overrides = value()
+    else:
+        assert isinstance(value, dict), "version_keyword expects a dict or True"
+        overrides = value
+
     assert (
-        "dist_name" not in value
+        "dist_name" not in overrides
     ), "dist_name may not be specified in the setup keyword "
     dist_name: str | None = dist.metadata.name
+    _log_hookstart("version_keyword", dist)
+
     if dist.metadata.version is not None:
         warnings.warn(f"version of {dist_name} already set")
         return
-    log.debug(
-        "version keyword %r",
-        vars(dist.metadata),
-    )
-    log.debug("dist %s %s", id(dist), id(dist.metadata))
 
     if dist_name is None:
         dist_name = read_dist_name_from_setup_cfg()
-    version_cls = value.pop("version_cls", None)
-    normalize = value.pop("normalize", True)
-    tag_regex = _config._check_tag_regex(
-        value.pop("tag_regex", _config.DEFAULT_TAG_REGEX)
-    )
-    final_version = _validate_version_cls(version_cls, normalize)
 
-    config = _config.Configuration(
-        dist_name=dist_name, version_cls=final_version, tag_regex=tag_regex, **value
+    config = _config.Configuration.from_file(
+        dist_name=dist_name,
+        _require_section=False,
+        **overrides,
     )
     _assign_version(dist, config)
 
 
 def infer_version(dist: setuptools.Distribution) -> None:
-    log.debug(
-        "finalize hook %r",
-        vars(dist.metadata),
-    )
+    _log_hookstart("infer_version", dist)
     log.debug("dist %s %s", id(dist), id(dist.metadata))
     if dist.metadata.version is not None:
         return  # metadata already added by hook
@@ -120,6 +116,6 @@ def infer_version(dist: setuptools.Distribution) -> None:
     try:
         config = _config.Configuration.from_file(dist_name=dist_name)
     except LookupError as e:
-        log.exception(e)
+        log.warning(e)
     else:
         _assign_version(dist, config)
