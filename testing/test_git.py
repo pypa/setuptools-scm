@@ -71,7 +71,8 @@ def test_root_relative_to(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
         """from setuptools import setup
 setup(use_scm_version={"root": "../..",
                        "relative_to": __file__})
-"""
+""",
+        encoding="utf-8",
     )
     res = run([sys.executable, "setup.py", "--version"], p)
     assert res.stdout == "0.1.dev0+d20090213"
@@ -86,7 +87,8 @@ def test_root_search_parent_directories(
     p.joinpath("setup.py").write_text(
         """from setuptools import setup
 setup(use_scm_version={"search_parent_directories": True})
-"""
+""",
+        encoding="utf-8",
     )
     res = run([sys.executable, "setup.py", "--version"], p)
     assert res.stdout == "0.1.dev0+d20090213"
@@ -249,7 +251,7 @@ def test_git_version_unnormalized_setuptools(
     assert res == "17.33.0rc1"
 
     # but the version tag in the file is non-normalized (with the dash)
-    assert wd.cwd.joinpath("VERSION.txt").read_text() == "17.33.0-rc1"
+    assert wd.cwd.joinpath("VERSION.txt").read_text(encoding="utf-8") == "17.33.0-rc1"
 
 
 @pytest.mark.issue(179)

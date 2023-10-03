@@ -94,7 +94,7 @@ def test_dump_version_works_with_pretend(
     name = "VERSION.txt"
     target = tmp_path.joinpath(name)
     get_version(root=tmp_path, write_to=name)
-    assert target.read_text() == version
+    assert target.read_text(encoding="utf-8") == version
 
 
 def test_dump_version_modern(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -107,7 +107,7 @@ def test_dump_version_modern(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
     project.mkdir()
 
     get_version(root="..", relative_to=target, version_file=name)
-    assert target.read_text() == version
+    assert target.read_text(encoding="utf-8") == version
 
 
 def dump_a_version(tmp_path: Path) -> None:

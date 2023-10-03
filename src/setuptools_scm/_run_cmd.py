@@ -154,6 +154,7 @@ def run(
             HGPLAIN="1",
         ),
         text=True,
+        encoding="utf-8",
         timeout=timeout,
     )
 

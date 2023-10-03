@@ -32,7 +32,7 @@ def test_run_plain(tmp_path: Path) -> None:
 
 def test_data_from_mime(tmp_path: Path) -> None:
     tmpfile = tmp_path.joinpath("test.archival")
-    tmpfile.write_text("name: test\nrevision: 1")
+    tmpfile.write_bytes(b"name: test\nrevision: 1")
 
     res = data_from_mime(str(tmpfile))
     assert res == {"name": "test", "revision": "1"}
@@ -81,7 +81,8 @@ def test_parentdir_prefix(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     p.joinpath("setup.py").write_text(
         """from setuptools import setup
 setup(use_scm_version={"parentdir_prefix_version": "projectname-"})
-"""
+""",
+        encoding="utf-8",
     )
     res = run([sys.executable, "setup.py", "--version"], p)
     assert res.stdout == "12.34"
@@ -94,7 +95,8 @@ def test_fallback(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     p.joinpath("setup.py").write_text(
         """from setuptools import setup
 setup(use_scm_version={"fallback_version": "12.34"})
-"""
+""",
+        encoding="utf-8",
     )
     res = run([sys.executable, "setup.py", "--version"], p)
     assert res.stdout == "12.34"
@@ -108,7 +110,8 @@ def test_empty_pretend_version(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     p.joinpath("setup.py").write_text(
         """from setuptools import setup
 setup(use_scm_version={"fallback_version": "12.34"})
-"""
+""",
+        encoding="utf-8",
     )
     res = run([sys.executable, "setup.py", "--version"], p)
     assert res.stdout == "12.34"
@@ -126,7 +129,8 @@ def test_empty_pretend_version_named(
     p.joinpath("setup.py").write_text(
         """from setuptools import setup
 setup(name="myscm", use_scm_version={"fallback_version": "12.34"})
-"""
+""",
+        encoding="utf-8",
     )
     res = run([sys.executable, "setup.py", "--version"], p)
     assert res.stdout == "12.34"
@@ -171,7 +175,7 @@ def test_dump_version(tmp_path: Path) -> None:
     dump_version(tmp_path, version, "first.txt", scm_version=scm_version)
 
     def read(name: str) -> str:
-        return tmp_path.joinpath(name).read_text()
+        return tmp_path.joinpath(name).read_text(encoding="utf-8")
 
     assert read("first.txt") == "1.0"
 
@@ -248,7 +252,7 @@ def test_custom_version_cls() -> None:
 
 
 def test_internal_get_version_warns_for_version_files(tmp_path: Path) -> None:
-    tmp_path.joinpath("PKG-INFO").write_text("Version: 0.1")
+    tmp_path.joinpath("PKG-INFO").write_bytes(b"Version: 0.1")
     c = Configuration(root=tmp_path, fallback_root=tmp_path)
     with pytest.warns(
         DeprecationWarning,
