@@ -14,7 +14,7 @@ def test_main() -> None:
         os.path.dirname(__file__), "..", "src", "setuptools_scm", "__main__.py"
     )
     ns = {"__package__": "setuptools_scm"}
-    with open(mainfile) as f:
+    with open(mainfile, encoding="utf-8") as f:
         code = compile(f.read(), "__main__.py", "exec")
         exec(code, ns)
 

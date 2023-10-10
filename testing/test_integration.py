@@ -50,7 +50,9 @@ def test_pyproject_support(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> N
         ),
         encoding="utf-8",
     )
-    pkg.joinpath("setup.py").write_text("__import__('setuptools').setup()")
+    pkg.joinpath("setup.py").write_text(
+        "__import__('setuptools').setup()", encoding="utf-8"
+    )
     res = run([sys.executable, "setup.py", "--version"], pkg)
     assert res.stdout == "12.34"
 
@@ -238,7 +240,7 @@ def test_setuptools_version_keyword_ensures_regex(
     "ep_name", ["setuptools_scm.parse_scm", "setuptools_scm.parse_scm_fallback"]
 )
 def test_git_archival_plugin_ignored(tmp_path: Path, ep_name: str) -> None:
-    tmp_path.joinpath(".git_archival.txt").write_text("broken")
+    tmp_path.joinpath(".git_archival.txt").write_text("broken", encoding="utf-8")
     try:
         dist = importlib.metadata.distribution("setuptools_scm_git_archive")
     except importlib.metadata.PackageNotFoundError:

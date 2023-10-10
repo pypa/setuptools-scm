@@ -34,14 +34,15 @@ def test_pkginfo_noscmroot(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> N
 
     tmp_path.joinpath(".git").mkdir()
     p.joinpath("setup.py").write_text(
-        "from setuptools import setup;" 'setup(use_scm_version={"root": ".."})'
+        "from setuptools import setup;" 'setup(use_scm_version={"root": ".."})',
+        encoding="utf-8",
     )
 
     res = run([sys.executable, "setup.py", "--version"], p)
     assert "setuptools-scm was unable to detect version for" in res.stderr
     assert res.returncode == 1
 
-    p.joinpath("PKG-INFO").write_text("Version: 1.0")
+    p.joinpath("PKG-INFO").write_text("Version: 1.0", encoding="utf-8")
     res = run([sys.executable, "setup.py", "--version"], p)
     assert res.stdout == "1.0"
 
@@ -76,9 +77,10 @@ def vcfg():
         return guess_next_dev_version(v)
     return {"version_scheme": vs}
 setup(use_scm_version=vcfg)
-"""
+""",
+        encoding="utf-8",
     )
-    p.joinpath("PKG-INFO").write_text("Version: 1.0")
+    p.joinpath("PKG-INFO").write_text("Version: 1.0", encoding="utf-8")
 
     res = run([sys.executable, "setup.py", "--version"], p)
     assert res.stdout == "1.0"

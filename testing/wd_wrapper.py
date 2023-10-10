@@ -32,7 +32,7 @@ class WorkDir:
         if isinstance(content, bytes):
             path.write_bytes(content)
         else:
-            path.write_text(content)
+            path.write_text(content, encoding="utf-8")
         return path
 
     def _reason(self, given_reason: str | None) -> str:
