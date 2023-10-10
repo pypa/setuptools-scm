@@ -141,10 +141,12 @@ prevents using needless volatile data there.
 ## with Docker/Podman
 
 
-By default, Docker will not copy the `.git`  folder into your container.
-Therefore, builds with version inference might fail.
-Consequently, you can use the following snippet to infer the version from
-the host OS without copying the entire `.git` folder to your `Dockerfile`.
+In some situations, Docker may not copy the `.git`  into the container when
+building images. Because of this, builds with version inference may fail.
+
+The following snippet exposes the external `.git` directory without copying.
+This allows the version to be inferred properly form inside the container
+without copying the entire `.git` folder into the container image.
 
 ```dockerfile
 RUN --mount=source=.git,target=.git,type=bind \
