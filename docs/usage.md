@@ -36,13 +36,12 @@ version_file = "pkg/_version.py"
 Where ``pkg`` is the name of your package.
 
 
-.. code-block:: shell
+```commandline
+$ python -m setuptools_scm
 
-    $ python -m setuptools_scm
-
-    # To explore other options, try:
-    $ python -m setuptools_scm --help
-
+# To explore other options, try:
+$ python -m setuptools_scm --help
+```
 
 ## as cli tool
 
@@ -104,9 +103,9 @@ version = get_version(root='..', relative_to=__file__)
 ### version at runtime
 
 If you have opted not to hardcode the version number inside the package,
-you can retrieve it at runtime from PEP-0566_ metadata using
+you can retrieve it at runtime from [PEP-0566](https://www.python.org/dev/peps/pep-0566/) metadata using
 ``importlib.metadata`` from the standard library (added in Python 3.8)
-or the `importlib_metadata`_ backport:
+or the [`importlib_metadata`](https://pypi.org/project/importlib-metadata/) backport:
 
 ```python
 # contents of package_name/__init__.py
@@ -118,9 +117,6 @@ except PackageNotFoundError:
     # package is not installed
     pass
 ```
-
-.. _PEP-0566: https://www.python.org/dev/peps/pep-0566/
-.. _importlib_metadata: https://pypi.org/project/importlib-metadata/
 
 
 ### Usage from Sphinx
