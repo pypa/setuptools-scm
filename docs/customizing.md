@@ -31,13 +31,10 @@ setup(use_scm_version={"version_scheme": myversion_func})
 ```
 
 
-``` { .python title="pyproject.toml" file="docs/examples/version_scheme_code/pyproject.toml" }
+``` { .toml title="pyproject.toml" file="docs/examples/version_scheme_code/pyproject.toml" }
 [build-system]
-requires = [
-  "setuptools>=64",
-  "setuptools_scm>=8",
-  "wheel",
-]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "scm-example"
@@ -49,9 +46,6 @@ dynamic = [
 ```
 
 - [ ] add a build block that adds example output
-- [ ] correct config after [entangled mkdocs bug] is fixed
-
-[entangled mkdocs bug]: https://github.com/entangled/mkdocs-plugin/issues/1
 
 
 

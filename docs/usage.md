@@ -7,10 +7,10 @@ settings in the `tool.setuptools_scm` section of `pyproject.toml`.
 
 It's necessary to use a setuptools version released after 2022.
 
-```toml
-# pyproject.toml
+```toml title="pyproject.toml"
 [build-system]
-requires = ["setuptools>=62", "setuptools_scm[toml]>=8.0"]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
 
 [project]
 # version = "0.0.1"  # Remove any existing version parameter.
@@ -27,8 +27,7 @@ Tools that still invoke `setup.py` must ensure build requirements are installed
 
 ### version files
 
-```toml
-# pyproject.toml
+```toml title="pyproject.toml"
 ...
 [tool.setuptools_scm]
 version_file = "pkg/_version.py"
@@ -108,8 +107,7 @@ you can retrieve it at runtime from PEP-0566_ metadata using
 ``importlib.metadata`` from the standard library (added in Python 3.8)
 or the `importlib_metadata`_ backport:
 
-```python
-# contents of package_name/__init__.py
+```python title="package_name/__init__.py"
 from importlib.metadata import version, PackageNotFoundError
 
 try:
@@ -259,7 +257,7 @@ be kept in version control. It's strongly recommended to be put into gitignore.
 
 
 
-### File finders hook makes most of MANIFEST.in unnecessary
+### File finders hook makes most of `MANIFEST.in` unnecessary
 
 `setuptools_scm` implements a [file_finders] entry point
 which returns all files tracked by your SCM.
