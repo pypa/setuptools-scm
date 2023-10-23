@@ -93,7 +93,7 @@ def test_config_overrides(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.setenv(
         "SETUPTOOLS_SCM_OVERRIDES_FOR_TEST_A", '{root="..", fallback_root=".."}'
     )
-    overriden = Configuration.from_file(fn)
+    overridden = Configuration.from_file(fn)
 
-    assert pristine.root != overriden.root
-    assert pristine.fallback_root != overriden.fallback_root
+    assert pristine.root != overridden.root
+    assert pristine.fallback_root != overridden.fallback_root
