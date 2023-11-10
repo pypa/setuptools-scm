@@ -122,7 +122,7 @@ except PackageNotFoundError:
 
 ``` {.python file=docs/.entangled/sphinx_conf.py}
 from importlib.metadata import version as get_version
-release: str = get_version('setuptools_scm')
+release: str = get_version("package-name")
 # for example take major/minor
 version: str = ".".join(release.split('.')[:2])
 ```
