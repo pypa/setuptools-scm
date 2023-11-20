@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: [ '3.8', '3.9', '3.10', '3.11', '3.12.0-beta - 3.12', 'pypy-3.8' ]
+        python_version: [ '3.8', '3.9', '3.10', '3.11', '3.12', 'pypy-3.10' ]
         os: [windows-latest, ubuntu-latest] #, macos-latest]
         include:
         - os: windows-latest
@@ -89,7 +89,7 @@ jobs:
       - run: |
           $(hg debuginstall --template "{pythonexe}") -m pip install hg-git --user
         if: matrix.os == 'ubuntu-latest'
-      # this hopefull helps with os caches, hg init sometimes gets 20s timeouts
+      # this hopefully helps with os caches, hg init sometimes gets 20s timeouts
       - run: hg version
       - run: pytest
         timeout-minutes: 15
