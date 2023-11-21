@@ -47,7 +47,7 @@ dependencies = [
 ]
 [project.optional-dependencies]
 docs = [
-  "entangled_cli[rich]",
+  "entangled-cli~=2.0",
   "mkdocs",
   "mkdocs-entangled-plugin",
   "mkdocs-material",
