@@ -27,9 +27,9 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
     !!! warning ""
 
         Only files with `.py` and `.txt` extensions have builtin templates,
-        for other file types it is necessary to provide `write_to_template`.
+        for other file types it is necessary to provide `version_file_template`.
 
-`version_file_template_template: str | None = None`
+`version_file_template: str | None = None`
 :   A new-style format string that is given the current version as
     the `version` keyword argument for formatting.
 
