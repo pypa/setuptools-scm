@@ -108,17 +108,22 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
 :   used as the primary source for the version number
     in which case it will be an unparsed string
 
-    !!! warning "it is strongly recommended to use use distribution name specific pretend versions"
+    !!! warning ""
 
+        it is strongly recommended to use distribution-specific pretend versions
+        (see below).
 
 `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME}`
-:   used as the primary source for the version number
-    in which case it will be an unparsed string
+:   used as the primary source for the version number,
+    in which case it will be an unparsed string.
+    Specifying distribution-specific pretend versions will
+    avoid possible collisions with third party distributions
+    also using ``setuptools_scm``
 
     the dist name normalization follows adapted PEP 503 semantics, with one or
     more of ".-_" being replaced by a single "_", and the name being upper-cased
 
-    it takes precedence over ``SETUPTOOLS_SCM_PRETEND_VERSION``
+    this will take precedence over ``SETUPTOOLS_SCM_PRETEND_VERSION``
 
 `SETUPTOOLS_SCM_DEBUG`
 :    enable the debug logging
