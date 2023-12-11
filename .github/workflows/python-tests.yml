@@ -44,7 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         if: matrix.python_version != 'msys2'
         with:
           python-version: ${{ matrix.python_version }}
