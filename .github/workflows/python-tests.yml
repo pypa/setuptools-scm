@@ -26,7 +26,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: hynek/build-and-inspect-python-package@v1
+      - uses: hynek/build-and-inspect-python-package@v2
 
   test:
     needs: [package]
