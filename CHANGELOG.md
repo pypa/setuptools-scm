@@ -100,7 +100,7 @@
 
 # v7.0.5
 
-- fixes #742, #745: correctly hande accidentally released archival files
+- fixes #742, #745: correctly handle accidentally released archival files
 
 # v7.0.4
 
@@ -484,7 +484,7 @@ v3.0.3 (pulled from pypi due to a packaging issue) ======
 
 v1.15.7 ======
 
--   Fix #174 with #207: Re-use samefile backport as developed in
+-   Fix #174 with #207: Reuse samefile backport as developed in
     jaraco.windows, and only use the backport where samefile is not
     available.
 
