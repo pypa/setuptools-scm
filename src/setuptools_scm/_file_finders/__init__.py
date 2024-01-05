@@ -34,7 +34,7 @@ def scm_find_files(
     scm_files and scm_dirs must be absolute with symlinks resolved (realpath),
     with normalized case (normcase)
 
-    Spec here: http://setuptools.readthedocs.io/en/latest/setuptools.html#\
+    Spec here: https://setuptools.pypa.io/en/latest/userguide/extension.html#\
         adding-support-for-revision-control-systems
     """
     realpath = os.path.normcase(os.path.realpath(path))
