@@ -18,8 +18,8 @@ def _hg_toplevel(path: str) -> str | None:
         res = _run(
             ["hg", "root"],
             cwd=(path or "."),
+            check=True,
         )
-        res.check_returncode()
         return os.path.normcase(os.path.realpath(res.stdout))
     except subprocess.CalledProcessError:
         # hg returned error, we are not in a mercurial repo
