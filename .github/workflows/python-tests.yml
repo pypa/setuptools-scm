@@ -80,7 +80,7 @@ jobs:
           git config --system gpg.program "C:\Program Files (x86)\gnupg\bin\gpg.exe"
         if: runner.os == 'Windows'
       - run: pip install -U 'setuptools>=61'
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: Packages
           path: dist
@@ -102,7 +102,7 @@ jobs:
       id-token: write
     needs: [test]
     steps:
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: Packages
         path: dist
@@ -115,7 +115,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: Packages
         path: dist
