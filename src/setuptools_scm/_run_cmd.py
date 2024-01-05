@@ -181,7 +181,7 @@ def has_command(
     name: str, args: Sequence[str] = ["version"], warn: bool = True
 ) -> bool:
     try:
-        p = run([name, *args], cwd=".", timeout=BROKEN_TIMEOUT)
+        p = run([name, *args], cwd=".")
         if p.returncode != 0:
             log.error(f"Command '{name}' returned non-zero. This is stderr:")
             log.error(p.stderr)
