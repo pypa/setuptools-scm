@@ -39,7 +39,7 @@ def read_pyproject(
         if require_section:
             raise LookupError(error) from e
         else:
-            log.warning("toml section missing %r", error)
+            log.warning("toml section missing %r", error, exc_info=True)
             section = {}
 
     project = defn.get("project", {})
