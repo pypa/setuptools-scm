@@ -25,7 +25,12 @@ else:
 # unfortunately github CI for windows sometimes needs
 # up to 30 seconds to start a command
 
-BROKEN_TIMEOUT: Final[int] = 40
+
+def _get_timeout(env: Mapping[str, str]) -> int:
+    return int(env.get("SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT") or 40)
+
+
+BROKEN_TIMEOUT: Final[int] = _get_timeout(os.environ)
 
 log = _log.log.getChild("run_cmd")
 
@@ -132,7 +137,7 @@ def run(
     *,
     strip: bool = True,
     trace: bool = True,
-    timeout: int = BROKEN_TIMEOUT,
+    timeout: int | None = None,
     check: bool = False,
 ) -> CompletedProcess:
     if isinstance(cmd, str):
@@ -141,6 +146,8 @@ def run(
         cmd = [os.fspath(x) for x in cmd]
     cmd_4_trace = " ".join(map(_unsafe_quote_for_display, cmd))
     log.debug("at %s\n    $ %s ", cwd, cmd_4_trace)
+    if timeout is None:
+        timeout = BROKEN_TIMEOUT
     res = subprocess.run(
         cmd,
         capture_output=True,
