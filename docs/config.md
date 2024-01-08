@@ -30,8 +30,11 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
         for other file types it is necessary to provide `version_file_template`.
 
 `version_file_template: str | None = None`
-:   A new-style format string that is given the current version as
-    the `version` keyword argument for formatting.
+:   A new-style format string taking `version`, `scm_version` and `version_tuple` as parameters.
+    `version` is the generated next_version as string,
+    `version_tuple` is a tuple of split numbers/strings and
+    `scm_version` is the `ScmVersion` instance the current `version` was rendered from
+
 
 `write_to: Pathlike[str] | Path | None = None`
 :  (deprecated) legacy option to create a version file relative to the scm root
