@@ -69,6 +69,19 @@ def test_case(inwd: WorkDir) -> None:
     )
 
 
+@pytest.mark.skipif(
+    os.path.normcase("B") != os.path.normcase("b"), reason="case sensitive filesystem"
+)
+def test_case_cwd_evil(inwd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
+    (inwd.cwd / "CamelFile").touch()
+    (inwd.cwd / "file2").touch()
+    inwd.add_and_commit()
+    monkeypatch.chdir(inwd.cwd.parent.joinpath(inwd.cwd.name.capitalize()))
+    assert set(find_files()) == _sep(
+        {"CamelFile", "file2", "file1", "adir/filea", "bdir/fileb"}
+    )
+
+
 @pytest.mark.skipif(sys.platform == "win32", reason="symlinks to dir not supported")
 def test_symlink_dir(inwd: WorkDir) -> None:
     (inwd.cwd / "adir" / "bdirlink").symlink_to("../bdir")

@@ -92,7 +92,7 @@ def git_find_files(path: _t.PathT = "") -> list[str]:
     toplevel = _git_toplevel(os.fspath(path))
     if not is_toplevel_acceptable(toplevel):
         return []
-    fullpath = os.path.normcase(os.path.abspath(os.path.normpath(path)))
+    fullpath = norm_real(path)
     if not fullpath.startswith(toplevel):
         log.warning("toplevel mismatch computed %s vs resolved %s ", toplevel, fullpath)
     git_files, git_dirs = _git_ls_files_and_dirs(toplevel)
