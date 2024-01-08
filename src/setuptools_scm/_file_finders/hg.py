@@ -9,18 +9,18 @@ from .._file_finders import is_toplevel_acceptable
 from .._file_finders import scm_find_files
 from .._run_cmd import run as _run
 from ..integration import data_from_mime
+from .pathtools import norm_real
 
 log = logging.getLogger(__name__)
 
 
 def _hg_toplevel(path: str) -> str | None:
     try:
-        res = _run(
+        return _run(
             ["hg", "root"],
             cwd=(path or "."),
             check=True,
-        )
-        return os.path.normcase(os.path.realpath(res.stdout))
+        ).parse_success(norm_real)
     except subprocess.CalledProcessError:
         # hg returned error, we are not in a mercurial repo
         return None
