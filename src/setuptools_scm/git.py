@@ -53,7 +53,7 @@ def run_git(
     repo: Path,
     *,
     check: bool = False,
-    timeout: int = 20,
+    timeout: int | None = None,
 ) -> _CompletedProcess:
     return _run(
         ["git", "--git-dir", repo / ".git", *args],
