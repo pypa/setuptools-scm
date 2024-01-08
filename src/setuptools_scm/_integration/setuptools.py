@@ -116,6 +116,6 @@ def infer_version(dist: setuptools.Distribution) -> None:
     try:
         config = _config.Configuration.from_file(dist_name=dist_name)
     except LookupError as e:
-        log.warning(e, exc_info=True)
+        log.info(e, exc_info=True)
     else:
         _assign_version(dist, config)
