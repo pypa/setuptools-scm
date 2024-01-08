@@ -56,3 +56,31 @@ def test_cli_find_pyproject(
     with warns_cli_root_override:
         out = get_output(["-c", PYPROJECT_TOML, "--root=."])
     assert out.startswith("0.1.dev1+")
+
+
+def test_cli_force_version_files(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch, debug_mode: DebugMode
+) -> None:
+    debug_mode.disable()
+    wd.commit_testfile()
+    wd.write(
+        PYPROJECT_TOML,
+        """
+[project]
+name = "test"
+[tool.setuptools_scm]
+version_file = "ver.py"
+""",
+    )
+    monkeypatch.chdir(wd.cwd)
+
+    version_file = wd.cwd.joinpath("ver.py")
+    assert not version_file.exists()
+
+    get_output([])
+    assert not version_file.exists()
+
+    output = get_output(["--force-write-version-files"])
+    assert version_file.exists()
+
+    assert output[:5] in version_file.read_text("utf-8")

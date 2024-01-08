@@ -31,7 +31,9 @@ def main(args: list[str] | None = None) -> None:
         )
         config = Configuration(inferred_root)
 
-    version = _get_version(config, force_write_version_files=False)
+    version = _get_version(
+        config, force_write_version_files=opts.force_write_version_files
+    )
     if version is None:
         raise SystemExit("ERROR: no version found for", opts)
     if opts.strip_dev:
@@ -66,6 +68,12 @@ def _get_cli_opts(args: list[str] | None) -> argparse.Namespace:
         "--strip-dev",
         action="store_true",
         help="remove the dev/local parts of the version before printing the version",
+    )
+    parser.add_argument(
+        "--force-write-version-files",
+        action="store_true",
+        help="trigger to write the content of the version files\n"
+        "its recommended to use normal/editable installation instead)",
     )
     sub = parser.add_subparsers(title="extra commands", dest="command", metavar="")
     # We avoid `metavar` to prevent printing repetitive information
