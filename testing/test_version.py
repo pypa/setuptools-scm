@@ -424,7 +424,7 @@ def test_no_matching_entrypoints(config_key: str) -> None:
         config=replace(
             c,
             **{
-                config_key:"nonexistant"
+                config_key: "nonexistant"
             }
         ),
     )
