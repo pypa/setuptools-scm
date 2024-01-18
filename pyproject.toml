@@ -101,6 +101,7 @@ PKG-INFO = "setuptools_scm.fallbacks:parse_pkginfo"
 "post-release" = "setuptools_scm.version:postrelease_version"
 "python-simplified-semver" = "setuptools_scm.version:simplified_semver_version"
 "release-branch-semver" = "setuptools_scm.version:release_branch_semver_version"
+"just-tag" = "setuptools_scm.version:just_tag"
 
 [tool.setuptools.packages.find]
 where = ["src"]

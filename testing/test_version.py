@@ -18,6 +18,7 @@ from setuptools_scm.version import no_guess_dev_version
 from setuptools_scm.version import release_branch_semver_version
 from setuptools_scm.version import ScmVersion
 from setuptools_scm.version import simplified_semver_version
+from setuptools_scm.version import just_tag
 
 
 c = Configuration()
@@ -168,6 +169,32 @@ def test_bump_dev_version_nonzero_raises() -> None:
 
     with pytest.raises(ValueError, match=match):
         guess_next_version(m("1.0.dev1"))
+
+@pytest.mark.parametrize(
+    "version",
+    [
+        "1.dev0",
+        "1.0.dev456",
+        "1.0a1",
+        "1.0a2.dev456",
+        "1.0a12.dev456",
+        "1.0a12",
+        "1.0b1.dev456",
+        "1.0b2",
+        "1.0b2.post345.dev456",
+        "1.0b2.post345",
+        "1.0rc1.dev456",
+        "1.0rc1",
+        "1.0",
+        "1.0.post456.dev34",
+        "1.0.post456",
+        "1.0.15",
+        "1.1.dev1",
+    ],
+)
+def test_just_tag(version: str) -> None:
+    assert version == just_tag(meta(version, config=c))
+    assert version == just_tag(meta(version, distance=2, config=c))
 
 
 @pytest.mark.parametrize(
