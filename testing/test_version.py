@@ -18,7 +18,7 @@ from setuptools_scm.version import no_guess_dev_version
 from setuptools_scm.version import release_branch_semver_version
 from setuptools_scm.version import ScmVersion
 from setuptools_scm.version import simplified_semver_version
-from setuptools_scm.version import just_tag
+from setuptools_scm.version import just_version
 
 
 c = Configuration()
@@ -192,9 +192,9 @@ def test_bump_dev_version_nonzero_raises() -> None:
         "1.1.dev1",
     ],
 )
-def test_just_tag(version: str) -> None:
-    assert version == just_tag(meta(version, config=c))
-    assert version == just_tag(meta(version, distance=2, config=c))
+def test_just_version(version: str) -> None:
+    assert version == just_version(meta(version, config=c))
+    assert version == just_version(meta(version, distance=2, config=c))
 
 
 @pytest.mark.parametrize(

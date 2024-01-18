@@ -299,7 +299,7 @@ def release_branch_semver(version: ScmVersion) -> str:
     return release_branch_semver_version(version)
 
 
-def just_tag(version: ScmVersion) -> str:
+def just_version(version: ScmVersion) -> str:
     return version.format_with("{tag}")
 
 

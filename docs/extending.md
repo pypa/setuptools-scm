@@ -84,7 +84,7 @@ representing the version.
 `no-guess-dev`
 : Does no next version guessing, just adds `.post1.devN`
 
-`just-tag`
+`just-version`
 : Just use the version from the tag, as given.
 
 ### `setuptools_scm.local_scheme`
