@@ -5,7 +5,6 @@ from typing import Any
 from typing import Callable
 from typing import cast
 from typing import Iterator
-from typing import overload
 from typing import TYPE_CHECKING
 
 from . import _log
@@ -106,34 +105,20 @@ def _iter_version_schemes(
         yield scheme_value
 
 
-@overload
 def _call_version_scheme(
     version: version.ScmVersion,
     entrypoint: str,
     given_value: _t.VERSION_SCHEMES,
-    default: str,
-) -> str:
-    ...
-
-
-@overload
-def _call_version_scheme(
-    version: version.ScmVersion,
-    entrypoint: str,
-    given_value: _t.VERSION_SCHEMES,
-    default: None,
+    default: str | None = None,
 ) -> str | None:
-    ...
-
-
-def _call_version_scheme(
-    version: version.ScmVersion,
-    entrypoint: str,
-    given_value: _t.VERSION_SCHEMES,
-    default: str | None,
-) -> str | None:
+    found_any_implementation = False
     for scheme in _iter_version_schemes(entrypoint, given_value):
+        found_any_implementation = True
         result = scheme(version)
         if result is not None:
             return result
-    return default
+    if not found_any_implementation:
+        raise ValueError(f'Couldn\'t find any implementations for entrypoint "{entrypoint}" with value "{given_value}".')
+    if default is not None:
+        return default
+    raise ValueError(f'None of the "{entrypoint}" entrypoints matching "{given_value}" returned a value.')
