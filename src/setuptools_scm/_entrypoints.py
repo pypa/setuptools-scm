@@ -118,7 +118,11 @@ def _call_version_scheme(
         if result is not None:
             return result
     if not found_any_implementation:
-        raise ValueError(f'Couldn\'t find any implementations for entrypoint "{entrypoint}" with value "{given_value}".')
+        raise ValueError(
+            f'Couldn\'t find any implementations for entrypoint "{entrypoint}" with value "{given_value}".'
+        )
     if default is not None:
         return default
-    raise ValueError(f'None of the "{entrypoint}" entrypoints matching "{given_value}" returned a value.')
+    raise ValueError(
+        f'None of the "{entrypoint}" entrypoints matching "{given_value}" returned a value.'
+    )

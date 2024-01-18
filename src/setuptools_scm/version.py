@@ -68,7 +68,7 @@ def _parse_version_tag(
 
         raise ValueError(
             f'The tag_regex "{config.tag_regex.pattern}" matched tag "{tag}", however the matched'
-            ' group has no value.'
+            " group has no value."
         )
     else:
         log.debug("tag %r did not parse", tag)

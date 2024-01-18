@@ -190,8 +190,12 @@ def test_tag_regex1(tag: str, expected: str) -> None:
 
 
 def test_regex_match_but_no_version() -> None:
-    with pytest.raises(ValueError, match=r'The tag_regex "\(\?P<version>\)\.\*" matched tag "v1", however the matched group has no value'):
+    with pytest.raises(
+        ValueError,
+        match=r'The tag_regex "\(\?P<version>\)\.\*" matched tag "v1", however the matched group has no value',
+    ):
         meta("v1", config=replace(c, tag_regex="(?P<version>).*"))
+
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/471")
 def test_version_bump_bad() -> None:
@@ -415,21 +419,19 @@ def test_custom_version_cls() -> None:
     assert isinstance(scm_version.tag, MyVersion)
     assert str(scm_version.tag) == "Custom 1.0.0-foo"
 
-@pytest.mark.parametrize(
-        "config_key", ["version_scheme", "local_scheme"]
-)
+
+@pytest.mark.parametrize("config_key", ["version_scheme", "local_scheme"])
 def test_no_matching_entrypoints(config_key: str) -> None:
     version = meta(
         "1.0",
-        config=replace(
-            c,
-            **{
-                config_key: "nonexistant"
-            }
-        ),
+        config=replace(c, **{config_key: "nonexistant"}),
     )
-    with pytest.raises(ValueError, match=r'Couldn\'t find any implementations for entrypoint "setuptools_scm\..*?" with value "nonexistant"'):
+    with pytest.raises(
+        ValueError,
+        match=r'Couldn\'t find any implementations for entrypoint "setuptools_scm\..*?" with value "nonexistant"',
+    ):
         format_version(version)
+
 
 def test_all_entrypoints_return_none() -> None:
     version = meta(
@@ -439,5 +441,8 @@ def test_all_entrypoints_return_none() -> None:
             version_scheme=lambda v: None,
         ),
     )
-    with pytest.raises(ValueError, match=r'None of the "setuptools_scm.version_scheme" entrypoints matching .*? returned a value.'):
+    with pytest.raises(
+        ValueError,
+        match=r'None of the "setuptools_scm.version_scheme" entrypoints matching .*? returned a value.',
+    ):
         format_version(version)
