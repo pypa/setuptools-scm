@@ -194,7 +194,7 @@ def test_regex_match_but_no_version() -> None:
     with pytest.raises(
         ValueError,
         match=(
-            r'The tag_regex "\(\?P<version>\)\.\*" matched tag "v1", '
+            r'The tag_regex "\(\?P<version>\)\.\*" matched tag "v1",'
             " however the matched group has no value"
         ),
     ):
