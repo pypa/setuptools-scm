@@ -42,8 +42,8 @@ def _check_tag_regex(value: str | Pattern[str] | None) -> Pattern[str]:
     group_names = regex.groupindex.keys()
     if regex.groups == 0 or (regex.groups > 1 and "version" not in group_names):
         raise ValueError(
-            f"Expected tag_regex '{regex.pattern}' to contain a single match group or a group named"
-            " 'version' to identify the version part of any tag."
+            f"Expected tag_regex '{regex.pattern}' to contain a single match group or"
+            " a group named 'version' to identify the version part of any tag."
         )
 
     return regex
@@ -105,7 +105,7 @@ class Configuration:
 
     parent: _t.PathT | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.tag_regex = _check_tag_regex(self.tag_regex)
 
     @property

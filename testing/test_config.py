@@ -110,6 +110,10 @@ def test_config_overrides(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
 def test_config_bad_regex(tag_regex: str) -> None:
     with pytest.raises(
         ValueError,
-        match=f"Expected tag_regex '{re.escape(tag_regex)}' to contain a single match group or a group named 'version' to identify the version part of any tag.",
+        match=(
+            f"Expected tag_regex '{re.escape(tag_regex)}' to contain a single match"
+            " group or a group named 'version' to identify the version part of any"
+            " tag."
+        ),
     ):
-        Configuration(tag_regex=tag_regex)
+        Configuration(tag_regex=re.compile(tag_regex))

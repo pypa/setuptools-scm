@@ -110,7 +110,7 @@ def _call_version_scheme(
     entrypoint: str,
     given_value: _t.VERSION_SCHEMES,
     default: str | None = None,
-) -> str | None:
+) -> str:
     found_any_implementation = False
     for scheme in _iter_version_schemes(entrypoint, given_value):
         found_any_implementation = True
@@ -119,10 +119,12 @@ def _call_version_scheme(
             return result
     if not found_any_implementation:
         raise ValueError(
-            f'Couldn\'t find any implementations for entrypoint "{entrypoint}" with value "{given_value}".'
+            f'Couldn\'t find any implementations for entrypoint "{entrypoint}"'
+            f' with value "{given_value}".'
         )
     if default is not None:
         return default
     raise ValueError(
-        f'None of the "{entrypoint}" entrypoints matching "{given_value}" returned a value.'
+        f'None of the "{entrypoint}" entrypoints matching "{given_value}"'
+        " returned a value."
     )
