@@ -299,6 +299,10 @@ def release_branch_semver(version: ScmVersion) -> str:
     return release_branch_semver_version(version)
 
 
+def only_version(version: ScmVersion) -> str:
+    return version.format_with("{tag}")
+
+
 def no_guess_dev_version(version: ScmVersion) -> str:
     if version.exact:
         return version.format_with("{tag}")
