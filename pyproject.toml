@@ -2,8 +2,14 @@
 
 [build-system]
 build-backend = "_own_version_helper:build_meta"
-requires = ["setuptools>=61", 'tomli; python_version < "3.11"']
-backend-path = [".", "src"]
+requires = [
+  "setuptools>=61",
+  'tomli; python_version < "3.11"',
+]
+backend-path = [
+  ".",
+  "src",
+]
 
 [project]
 name = "setuptools-scm"
@@ -11,7 +17,7 @@ description = "the blessed package to manage your versions by scm tags"
 readme = "README.md"
 license.file = "LICENSE"
 authors = [
-  { name = "Ronny Pfannschmidt", email = "opensource@ronnypfannschmidt.de" },
+    {name="Ronny Pfannschmidt", email="opensource@ronnypfannschmidt.de"}
 ]
 requires-python = ">=3.8"
 classifiers = [
@@ -30,7 +36,9 @@ classifiers = [
   "Topic :: System :: Software Distribution",
   "Topic :: Utilities",
 ]
-dynamic = ["version"]
+dynamic = [
+  "version",
+]
 dependencies = [
   "packaging>=20",
   "setuptools",
@@ -46,9 +54,17 @@ docs = [
   "mkdocstrings[python]",
   "pygments",
 ]
-rich = ["rich"]
-test = ["build", "pytest", "rich", "wheel"]
-toml = []
+rich = [
+  "rich",
+]
+test = [
+  "build",
+  "pytest",
+  "rich",
+  "wheel",
+]
+toml = [
+]
 [project.urls]
 documentation = "https://setuptools-scm.readthedocs.io/"
 repository = "https://github.com/pypa/setuptools_scm/"
@@ -81,7 +97,6 @@ PKG-INFO = "setuptools_scm.fallbacks:parse_pkginfo"
 [project.entry-points."setuptools_scm.version_scheme"]
 "calver-by-date" = "setuptools_scm.version:calver_by_date"
 "guess-next-dev" = "setuptools_scm.version:guess_next_dev_version"
-"just-version" = "setuptools_scm.version:just_version"
 "no-guess-dev" = "setuptools_scm.version:no_guess_dev_version"
 "post-release" = "setuptools_scm.version:postrelease_version"
 "python-simplified-semver" = "setuptools_scm.version:simplified_semver_version"
@@ -93,7 +108,7 @@ where = ["src"]
 namespaces = false
 
 [tool.setuptools.dynamic]
-version = { attr = "_own_version_helper.version" }
+version = { attr = "_own_version_helper.version"}
 
 [tool.setuptools_scm]
 
