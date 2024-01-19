@@ -85,7 +85,10 @@ representing the version.
 : Does no next version guessing, just adds `.post1.devN`
 
 `only-version`
-: Only use the version from the tag, as given.
+:   Only use the version from the tag, as given.
+
+    !!! warning "This means version is no longer pseudo unique per commit"
+
 
 ### `setuptools_scm.local_scheme`
 Configures how the local part of a version is rendered given a
