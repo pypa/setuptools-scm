@@ -15,10 +15,10 @@ from setuptools_scm.version import guess_next_date_ver
 from setuptools_scm.version import guess_next_version
 from setuptools_scm.version import meta
 from setuptools_scm.version import no_guess_dev_version
+from setuptools_scm.version import only_version
 from setuptools_scm.version import release_branch_semver_version
 from setuptools_scm.version import ScmVersion
 from setuptools_scm.version import simplified_semver_version
-from setuptools_scm.version import only_version
 
 
 c = Configuration()
@@ -169,6 +169,7 @@ def test_bump_dev_version_nonzero_raises() -> None:
 
     with pytest.raises(ValueError, match=match):
         guess_next_version(m("1.0.dev1"))
+
 
 @pytest.mark.parametrize(
     "version",
