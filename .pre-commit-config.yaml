@@ -2,7 +2,7 @@ default_language_version:
   python: python3.9
 repos:
 -   repo: https://github.com/psf/black
-    rev: 23.12.1
+    rev: 24.2.0
     hooks:
     - id: black
       args: [--safe, --quiet]
@@ -28,12 +28,12 @@ repos:
     - id: pyupgrade
       args: [--py38-plus]
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.1.11
+  rev: v0.2.1
   hooks:
     - id: ruff
       args: [--fix, --exit-non-zero-on-fix]
 - repo: https://github.com/tox-dev/pyproject-fmt
-  rev: "1.5.3"
+  rev: "1.7.0"
   hooks:
     - id: pyproject-fmt
       exclude: docs/examples/
