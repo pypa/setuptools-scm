@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import logging
-import os
 from contextlib import suppress
 from datetime import date
+import logging
+import os
 from pathlib import Path
 
 from . import _types as _t

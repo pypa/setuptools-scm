@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import logging
-import re
-import warnings
 from pathlib import Path
+import re
 from typing import Any
 from typing import NoReturn
 from typing import Pattern
+import warnings
 
 from . import _config
 from . import _entrypoints
@@ -15,8 +15,8 @@ from . import _types as _t
 from ._config import Configuration
 from ._overrides import _read_pretended_version_for
 from ._version_cls import _validate_version_cls
-from .version import format_version as _format_version
 from .version import ScmVersion
+from .version import format_version as _format_version
 
 EMPTY_TAG_REGEX_DEPRECATION = DeprecationWarning(
     "empty regex for tag regex is invalid, using default"

@@ -1,28 +1,25 @@
 from __future__ import annotations
 
 import contextlib
-import os
-import shutil
-import subprocess
-import sys
 from datetime import date
 from datetime import datetime
 from datetime import timezone
+import os
 from os.path import join as opj
 from pathlib import Path
+import shutil
+import subprocess
+import sys
 from textwrap import dedent
 from typing import Generator
 from unittest.mock import Mock
 from unittest.mock import patch
 
 import pytest
-
-import setuptools_scm._file_finders
-from .conftest import DebugMode
-from .wd_wrapper import WorkDir
 from setuptools_scm import Configuration
-from setuptools_scm import git
 from setuptools_scm import NonNormalizedVersion
+from setuptools_scm import git
+import setuptools_scm._file_finders
 from setuptools_scm._file_finders.git import git_find_files
 from setuptools_scm._run_cmd import CommandNotFoundError
 from setuptools_scm._run_cmd import CompletedProcess
@@ -30,6 +27,9 @@ from setuptools_scm._run_cmd import has_command
 from setuptools_scm._run_cmd import run
 from setuptools_scm.git import archival_to_version
 from setuptools_scm.version import format_version
+
+from .conftest import DebugMode
+from .wd_wrapper import WorkDir
 
 pytestmark = pytest.mark.skipif(
     not has_command("git", warn=False), reason="git executable not found"

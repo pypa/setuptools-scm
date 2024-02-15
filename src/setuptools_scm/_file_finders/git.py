@@ -6,11 +6,11 @@ import subprocess
 import tarfile
 from typing import IO
 
-from . import is_toplevel_acceptable
-from . import scm_find_files
 from .. import _types as _t
 from .._run_cmd import run as _run
 from ..integration import data_from_mime
+from . import is_toplevel_acceptable
+from . import scm_find_files
 from .pathtools import norm_real
 
 log = logging.getLogger(__name__)

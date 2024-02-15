@@ -1,30 +1,30 @@
 from __future__ import annotations
 
 import dataclasses
-import logging
-import os
-import re
-import shlex
-import warnings
 from datetime import date
 from datetime import datetime
 from datetime import timezone
+import logging
+import os
 from os.path import samefile
 from pathlib import Path
+import re
+import shlex
+from typing import TYPE_CHECKING
 from typing import Callable
 from typing import Sequence
-from typing import TYPE_CHECKING
+import warnings
 
-from . import _types as _t
 from . import Configuration
+from . import _types as _t
 from . import discover
 from ._run_cmd import CompletedProcess as _CompletedProcess
 from ._run_cmd import require_command as _require_command
 from ._run_cmd import run as _run
 from .integration import data_from_mime
 from .scm_workdir import Workdir
-from .version import meta
 from .version import ScmVersion
+from .version import meta
 from .version import tag_to_version
 
 if TYPE_CHECKING:

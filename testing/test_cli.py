@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-import io
 from contextlib import redirect_stdout
+import io
 
 import pytest
+from setuptools_scm._cli import main
 
 from .conftest import DebugMode
 from .test_git import wd as wd_fixture  # NOQA evil fixture reuse
 from .wd_wrapper import WorkDir
-from setuptools_scm._cli import main
-
 
 PYPROJECT_TOML = "pyproject.toml"
 PYPROJECT_SIMPLE = "[tool.setuptools_scm]"

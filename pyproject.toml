@@ -113,8 +113,18 @@ version = { attr = "_own_version_helper.version"}
 [tool.setuptools_scm]
 
 [tool.ruff]
-select = ["E", "F", "B", "U", "YTT", "C", "DTZ", "PYI", "PT"]
-ignore = ["B028"]
+required-version = "0.2.1"
+fix = true
+lint.select = ["E", "F", "B", "U", "YTT", "C", "DTZ", "PYI", "PT", "I"]
+lint.ignore = ["B028"]
+
+
+[tool.ruff.lint.isort]
+force-single-line = true
+force-sort-within-sections = true
+from-first = false
+lines-between-types = 1
+order-by-type = true
 
 [tool.pytest.ini_options]
 testpaths = ["testing"]

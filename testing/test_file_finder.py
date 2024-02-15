@@ -5,9 +5,9 @@ import sys
 from typing import Iterable
 
 import pytest
+from setuptools_scm._file_finders import find_files
 
 from .wd_wrapper import WorkDir
-from setuptools_scm._file_finders import find_files
 
 
 @pytest.fixture(params=["git", "hg"])

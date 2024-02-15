@@ -2,20 +2,20 @@ from __future__ import annotations
 
 import importlib.metadata
 import os
+from pathlib import Path
 import subprocess
 import sys
 import textwrap
-from pathlib import Path
 
 import pytest
-
-import setuptools_scm._integration.setuptools
-from .wd_wrapper import WorkDir
 from setuptools_scm import Configuration
+import setuptools_scm._integration.setuptools
 from setuptools_scm._integration.setuptools import _warn_on_old_setuptools
 from setuptools_scm._overrides import PRETEND_KEY
 from setuptools_scm._overrides import PRETEND_KEY_NAMED
 from setuptools_scm._run_cmd import run
+
+from .wd_wrapper import WorkDir
 
 c = Configuration()
 
@@ -229,8 +229,8 @@ def test_setuptools_version_keyword_ensures_regex(
     wd.commit_testfile("test")
     wd("git tag 1.0")
     monkeypatch.chdir(wd.cwd)
-    from setuptools_scm._integration.setuptools import version_keyword
     import setuptools
+    from setuptools_scm._integration.setuptools import version_keyword
 
     dist = setuptools.Distribution({"name": "test"})
     version_keyword(dist, "use_scm_version", {"tag_regex": "(1.0)"})

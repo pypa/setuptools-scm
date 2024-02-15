@@ -1,14 +1,15 @@
 """ configuration """
+
 from __future__ import annotations
 
 import dataclasses
 import os
-import re
-import warnings
 from pathlib import Path
+import re
 from typing import Any
 from typing import Pattern
 from typing import Protocol
+import warnings
 
 from . import _log
 from . import _types as _t
@@ -17,9 +18,9 @@ from ._integration.pyproject_reading import (
 )
 from ._integration.pyproject_reading import read_pyproject as _read_pyproject
 from ._overrides import read_toml_overrides
+from ._version_cls import Version as _Version
 from ._version_cls import _validate_version_cls
 from ._version_cls import _VersionT
-from ._version_cls import Version as _Version
 
 log = _log.log.getChild("config")
 

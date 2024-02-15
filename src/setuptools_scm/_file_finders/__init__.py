@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import itertools
 import os
-from typing import Callable
 from typing import TYPE_CHECKING
+from typing import Callable
 
 from .. import _log
 from .. import _types as _t

@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import warnings
 from pathlib import Path
 from typing import NamedTuple
+import warnings
 
 from .. import _log
 from .setuptools import read_dist_name_from_setup_cfg
-from .toml import read_toml_content
 from .toml import TOML_RESULT
-
+from .toml import read_toml_content
 
 log = _log.log.getChild("pyproject_reading")
 

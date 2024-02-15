@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import pytest
-
 from setuptools_scm._run_cmd import has_command
 from setuptools_scm._run_cmd import run
+
 from testing.wd_wrapper import WorkDir
 
 

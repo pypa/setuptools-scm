@@ -10,14 +10,15 @@ from . import Configuration
 from ._version_cls import Version
 from .integration import data_from_mime
 from .scm_workdir import Workdir
-from .version import meta
 from .version import ScmVersion
+from .version import meta
 from .version import tag_to_version
 
 if TYPE_CHECKING:
     from . import _types as _t
 
-from ._run_cmd import run as _run, require_command as _require_command
+from ._run_cmd import require_command as _require_command
+from ._run_cmd import run as _run
 
 log = logging.getLogger(__name__)
 

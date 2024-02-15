@@ -6,9 +6,9 @@ from datetime import timedelta
 from typing import Any
 
 import pytest
-
 from setuptools_scm import Configuration
 from setuptools_scm import NonNormalizedVersion
+from setuptools_scm.version import ScmVersion
 from setuptools_scm.version import calver_by_date
 from setuptools_scm.version import format_version
 from setuptools_scm.version import guess_next_date_ver
@@ -17,9 +17,7 @@ from setuptools_scm.version import meta
 from setuptools_scm.version import no_guess_dev_version
 from setuptools_scm.version import only_version
 from setuptools_scm.version import release_branch_semver_version
-from setuptools_scm.version import ScmVersion
 from setuptools_scm.version import simplified_semver_version
-
 
 c = Configuration()
 c_non_normalize = Configuration(version_cls=NonNormalizedVersion)
