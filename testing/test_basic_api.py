@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from datetime import date
 import os
-from pathlib import Path
 import sys
+
+from datetime import date
+from pathlib import Path
 
 import pytest
 import setuptools_scm
+
 from setuptools_scm import Configuration
 from setuptools_scm import dump_version
 from setuptools_scm._run_cmd import run

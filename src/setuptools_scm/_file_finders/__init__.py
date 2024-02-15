@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import itertools
 import os
+
 from typing import TYPE_CHECKING
 from typing import Callable
 

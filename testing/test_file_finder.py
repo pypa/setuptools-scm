@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import os
 import sys
+
 from typing import Iterable
 
 import pytest
+
 from setuptools_scm._file_finders import find_files
 
 from .wd_wrapper import WorkDir

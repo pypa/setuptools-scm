@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 import textwrap
+
+from pathlib import Path
 
 from . import _types as _t
 

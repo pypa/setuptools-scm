@@ -115,13 +115,12 @@ version = { attr = "_own_version_helper.version"}
 [tool.ruff]
 required-version = "0.2.1"
 fix = true
-lint.select = ["E", "F", "B", "U", "YTT", "C", "DTZ", "PYI", "PT", "I"]
+lint.select = ["E", "F", "B", "U", "YTT", "C", "DTZ", "PYI", "PT", "I", "FURB", "RUF"]
 lint.ignore = ["B028"]
-
+lint.preview = true
 
 [tool.ruff.lint.isort]
 force-single-line = true
-force-sort-within-sections = true
 from-first = false
 lines-between-types = 1
 order-by-type = true

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 import re
+import warnings
+
+from pathlib import Path
 from typing import Any
 from typing import NoReturn
 from typing import Pattern
-import warnings
 
 from . import _config
 from . import _entrypoints

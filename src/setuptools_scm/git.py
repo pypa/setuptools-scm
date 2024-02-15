@@ -1,19 +1,20 @@
 from __future__ import annotations
 
 import dataclasses
+import logging
+import os
+import re
+import shlex
+import warnings
+
 from datetime import date
 from datetime import datetime
 from datetime import timezone
-import logging
-import os
 from os.path import samefile
 from pathlib import Path
-import re
-import shlex
 from typing import TYPE_CHECKING
 from typing import Callable
 from typing import Sequence
-import warnings
 
 from . import Configuration
 from . import _types as _t

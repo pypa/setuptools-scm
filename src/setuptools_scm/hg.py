@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import logging
 import os
+
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -34,10 +35,9 @@ class HgWorkdir(Workdir):
     def get_meta(self, config: Configuration) -> ScmVersion | None:
         node: str
         tags_str: str
-        bookmark: str
         node_date_str: str
-        node, tags_str, bookmark, node_date_str = self.hg_log(
-            ".", "{node}\n{tag}\n{bookmark}\n{date|shortdate}"
+        node, tags_str, node_date_str = self.hg_log(
+            ".", "{node}\n{tag}\n{date|shortdate}"
         ).split("\n")
 
         # TODO: support bookmarks and topics (but nowadays bookmarks are

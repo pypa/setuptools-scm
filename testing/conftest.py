@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import contextlib
 import os
+
 from pathlib import Path
 from types import TracebackType
 from typing import Any
 from typing import Iterator
 
 import pytest
+
 from setuptools_scm._run_cmd import run
 from typing_extensions import Self
 

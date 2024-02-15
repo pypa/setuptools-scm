@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import logging
 import os
+import warnings
+
 from typing import Any
 from typing import Callable
-import warnings
 
 import setuptools
 

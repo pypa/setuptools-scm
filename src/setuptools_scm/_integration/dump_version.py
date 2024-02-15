@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
 import warnings
+
+from pathlib import Path
 
 from .. import _types as _t
 from .._log import log as parent_log

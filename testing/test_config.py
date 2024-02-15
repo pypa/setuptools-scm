@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
 import re
 import textwrap
 
+from pathlib import Path
+
 import pytest
+
 from setuptools_scm import Configuration
 
 

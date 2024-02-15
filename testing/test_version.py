@@ -6,6 +6,7 @@ from datetime import timedelta
 from typing import Any
 
 import pytest
+
 from setuptools_scm import Configuration
 from setuptools_scm import NonNormalizedVersion
 from setuptools_scm.version import ScmVersion

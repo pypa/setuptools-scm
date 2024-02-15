@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
 import shutil
 import subprocess
 
+from pathlib import Path
+
 import pytest
+
 from setuptools_scm import Configuration
 from setuptools_scm import dump_version
 from setuptools_scm import get_version

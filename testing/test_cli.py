@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from contextlib import redirect_stdout
 import io
 
+from contextlib import redirect_stdout
+
 import pytest
+
 from setuptools_scm._cli import main
 
 from .conftest import DebugMode

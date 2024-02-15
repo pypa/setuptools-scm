@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import os
+
 from pathlib import Path
 
 import pytest
-from setuptools_scm import Configuration
 import setuptools_scm._file_finders
+
+from setuptools_scm import Configuration
 from setuptools_scm._run_cmd import CommandNotFoundError
 from setuptools_scm._run_cmd import has_command
 from setuptools_scm.hg import archival_to_version

@@ -9,9 +9,10 @@ from pyproject.toml is respected
 from __future__ import annotations
 
 import logging
+
 from typing import Callable
 
-from setuptools import build_meta as build_meta  # noqa
+from setuptools import build_meta as build_meta
 from setuptools_scm import Configuration
 from setuptools_scm import _types as _t
 from setuptools_scm import get_version

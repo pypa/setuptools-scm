@@ -17,14 +17,14 @@ from .version import ScmVersion
 
 # Public API
 __all__ = [
-    # soft deprecated imports, left for backward compatibility
-    "get_version",
+    "DEFAULT_LOCAL_SCHEME",
+    "DEFAULT_VERSION_SCHEME",
+    "Configuration",
+    "NonNormalizedVersion",
+    "ScmVersion",
+    "Version",
     "_get_version",
     "dump_version",
-    "DEFAULT_VERSION_SCHEME",
-    "DEFAULT_LOCAL_SCHEME",
-    "Configuration",
-    "Version",
-    "ScmVersion",
-    "NonNormalizedVersion",
+    # soft deprecated imports, left for backward compatibility
+    "get_version",
 ]

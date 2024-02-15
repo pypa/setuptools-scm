@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import dataclasses
 import os
-from pathlib import Path
 import re
+import warnings
+
+from pathlib import Path
 from typing import Any
 from typing import Pattern
 from typing import Protocol
-import warnings
 
 from . import _log
 from . import _types as _t

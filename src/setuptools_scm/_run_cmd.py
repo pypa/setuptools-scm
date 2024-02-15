@@ -4,6 +4,8 @@ import os
 import shlex
 import subprocess
 import textwrap
+import warnings
+
 from typing import TYPE_CHECKING
 from typing import Callable
 from typing import Final
@@ -11,7 +13,6 @@ from typing import Mapping
 from typing import Sequence
 from typing import TypeVar
 from typing import overload
-import warnings
 
 from . import _log
 from . import _types as _t

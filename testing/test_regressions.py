@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-from dataclasses import replace
-from importlib.metadata import EntryPoint
-from importlib.metadata import distribution
-from pathlib import Path
 import pprint
 import subprocess
 import sys
 
+from dataclasses import replace
+from importlib.metadata import EntryPoint
+from importlib.metadata import distribution
+from pathlib import Path
+
 import pytest
+
 from setuptools_scm import Configuration
 from setuptools_scm._run_cmd import run
 from setuptools_scm.git import parse
