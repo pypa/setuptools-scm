@@ -144,7 +144,7 @@ class Configuration:
             data.pop("version_cls", None), data.pop("normalize", True)
         )
         return cls(
-            relative_to,
+            relative_to=relative_to,
             version_cls=version_cls,
             tag_regex=tag_regex,
             **data,
