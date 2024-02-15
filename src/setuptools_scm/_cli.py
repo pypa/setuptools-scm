@@ -29,7 +29,7 @@ def main(args: list[str] | None = None) -> None:
             f" Reason: {ex}.",
             file=sys.stderr,
         )
-        config = Configuration(inferred_root)
+        config = Configuration(root=inferred_root)
 
     version = _get_version(
         config, force_write_version_files=opts.force_write_version_files
