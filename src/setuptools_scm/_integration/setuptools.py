@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import warnings
+
 from typing import Any
 from typing import Callable
 
@@ -47,7 +48,8 @@ Suggested workaround if applicable:
 def _assign_version(
     dist: setuptools.Distribution, config: _config.Configuration
 ) -> None:
-    from .._get_version_impl import _get_version, _version_missing
+    from .._get_version_impl import _get_version
+    from .._get_version_impl import _version_missing
 
     # todo: build time plugin
     maybe_version = _get_version(config, force_write_version_files=True)
@@ -116,6 +118,6 @@ def infer_version(dist: setuptools.Distribution) -> None:
     try:
         config = _config.Configuration.from_file(dist_name=dist_name)
     except LookupError as e:
-        log.warning(e)
+        log.info(e, exc_info=True)
     else:
         _assign_version(dist, config)

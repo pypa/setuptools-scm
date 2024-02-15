@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import sys
+
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
-from typing import cast
 from typing import Dict
-from typing import TYPE_CHECKING
 from typing import TypedDict
+from typing import cast
 
 if sys.version_info >= (3, 11):
     from tomllib import loads as load_toml

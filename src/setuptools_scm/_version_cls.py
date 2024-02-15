@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import cast
 from typing import Type
 from typing import Union
+from typing import cast
 
 try:
     from packaging.version import InvalidVersion

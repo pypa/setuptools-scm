@@ -5,13 +5,14 @@ import logging
 import os
 import re
 import warnings
+
 from datetime import date
 from datetime import datetime
 from datetime import timezone
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
 from typing import Match
-from typing import TYPE_CHECKING
 
 from . import _entrypoints
 from . import _modify_version
@@ -24,10 +25,10 @@ if TYPE_CHECKING:
 
 from typing import TypedDict
 
-
-from ._version_cls import Version as PkgVersion, _VersionT
-from . import _version_cls as _v
 from . import _config
+from . import _version_cls as _v
+from ._version_cls import Version as PkgVersion
+from ._version_cls import _VersionT
 
 log = logging.getLogger(__name__)
 

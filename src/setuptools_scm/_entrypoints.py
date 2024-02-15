@@ -1,23 +1,24 @@
 from __future__ import annotations
 
 import sys
+
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
-from typing import cast
 from typing import Iterator
+from typing import cast
 from typing import overload
-from typing import TYPE_CHECKING
 
 from . import _log
 from . import version
 
 if TYPE_CHECKING:
     from . import _types as _t
-    from ._config import Configuration, ParseFunction
+    from ._config import Configuration
+    from ._config import ParseFunction
 
 
 from importlib.metadata import EntryPoint as EntryPoint
-
 
 if sys.version_info[:2] < (3, 10):
     from importlib.metadata import entry_points as legacy_entry_points
@@ -38,7 +39,8 @@ if sys.version_info[:2] < (3, 10):
         return EntryPoints(legacy_entry_points()[group])
 
 else:
-    from importlib.metadata import entry_points, EntryPoints
+    from importlib.metadata import EntryPoints
+    from importlib.metadata import entry_points
 
 
 log = _log.log.getChild("entrypoints")

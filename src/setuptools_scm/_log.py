@@ -1,12 +1,14 @@
 """
 logging helpers, supports vendoring
 """
+
 from __future__ import annotations
 
 import contextlib
 import logging
 import os
 import sys
+
 from typing import IO
 from typing import Iterator
 from typing import Mapping

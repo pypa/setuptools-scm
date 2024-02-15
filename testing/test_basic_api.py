@@ -2,20 +2,21 @@ from __future__ import annotations
 
 import os
 import sys
+
 from datetime import date
 from pathlib import Path
 
 import pytest
-
 import setuptools_scm
+
 from setuptools_scm import Configuration
 from setuptools_scm import dump_version
 from setuptools_scm._run_cmd import run
 from setuptools_scm.integration import data_from_mime
-from setuptools_scm.version import meta
 from setuptools_scm.version import ScmVersion
-from testing.wd_wrapper import WorkDir
+from setuptools_scm.version import meta
 
+from testing.wd_wrapper import WorkDir
 
 c = Configuration()
 

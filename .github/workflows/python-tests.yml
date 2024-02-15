@@ -43,6 +43,8 @@ jobs:
     name: ${{ matrix.os }} - Python ${{ matrix.python_version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Setup python
         uses: actions/setup-python@v5
         if: matrix.python_version != 'msys2'

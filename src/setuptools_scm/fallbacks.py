@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -9,8 +10,8 @@ if TYPE_CHECKING:
     from . import _types as _t
 from . import Configuration
 from .integration import data_from_mime
-from .version import meta
 from .version import ScmVersion
+from .version import meta
 from .version import tag_to_version
 
 log = logging.getLogger(__name__)

@@ -5,13 +5,14 @@ import shlex
 import subprocess
 import textwrap
 import warnings
+
+from typing import TYPE_CHECKING
 from typing import Callable
 from typing import Final
 from typing import Mapping
-from typing import overload
 from typing import Sequence
-from typing import TYPE_CHECKING
 from typing import TypeVar
+from typing import overload
 
 from . import _log
 from . import _types as _t
@@ -25,7 +26,12 @@ else:
 # unfortunately github CI for windows sometimes needs
 # up to 30 seconds to start a command
 
-BROKEN_TIMEOUT: Final[int] = 40
+
+def _get_timeout(env: Mapping[str, str]) -> int:
+    return int(env.get("SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT") or 40)
+
+
+BROKEN_TIMEOUT: Final[int] = _get_timeout(os.environ)
 
 log = _log.log.getChild("run_cmd")
 
@@ -132,7 +138,7 @@ def run(
     *,
     strip: bool = True,
     trace: bool = True,
-    timeout: int = BROKEN_TIMEOUT,
+    timeout: int | None = None,
     check: bool = False,
 ) -> CompletedProcess:
     if isinstance(cmd, str):
@@ -141,6 +147,8 @@ def run(
         cmd = [os.fspath(x) for x in cmd]
     cmd_4_trace = " ".join(map(_unsafe_quote_for_display, cmd))
     log.debug("at %s\n    $ %s ", cwd, cmd_4_trace)
+    if timeout is None:
+        timeout = BROKEN_TIMEOUT
     res = subprocess.run(
         cmd,
         capture_output=True,
@@ -181,7 +189,7 @@ def has_command(
     name: str, args: Sequence[str] = ["version"], warn: bool = True
 ) -> bool:
     try:
-        p = run([name, *args], cwd=".", timeout=BROKEN_TIMEOUT)
+        p = run([name, *args], cwd=".")
         if p.returncode != 0:
             log.error(f"Command '{name}' returned non-zero. This is stderr:")
             log.error(p.stderr)
