@@ -18,6 +18,10 @@ from ._version_cls import _validate_version_cls
 from .version import format_version as _format_version
 from .version import ScmVersion
 
+EMPTY_TAG_REGEX_DEPRECATION = DeprecationWarning(
+    "empty regex for tag regex is invalid, using default"
+)
+
 _log = logging.getLogger(__name__)
 
 
@@ -162,11 +166,7 @@ def get_version(
 def parse_tag_regex(tag_regex: str | Pattern[str]) -> Pattern[str]:
     if isinstance(tag_regex, str):
         if tag_regex == "":
-            warnings.warn(
-                DeprecationWarning(
-                    "empty regex for tag regex is invalid, using default"
-                )
-            )
+            warnings.warn(EMPTY_TAG_REGEX_DEPRECATION)
             return _config.DEFAULT_TAG_REGEX
         else:
             return re.compile(tag_regex)
