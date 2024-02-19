@@ -43,7 +43,7 @@ dependencies = [
   "packaging>=20",
   "setuptools",
   'tomli>=1; python_version < "3.11"',
-  "typing-extensions",
+  'typing-extensions; python_version < "3.10"',
 ]
 [project.optional-dependencies]
 docs = [
@@ -61,6 +61,7 @@ test = [
   "build",
   "pytest",
   "rich",
+  'typing-extensions; python_version < "3.11"',
   "wheel",
 ]
 toml = [
