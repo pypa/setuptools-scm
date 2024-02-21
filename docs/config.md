@@ -124,7 +124,7 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
     also using ``setuptools_scm``
 
     the dist name normalization follows adapted PEP 503 semantics, with one or
-    more of ".-_" being replaced by a single "_", and the name being upper-cased
+    more of ".-\_" being replaced by a single "\_", and the name being upper-cased
 
     this will take precedence over ``SETUPTOOLS_SCM_PRETEND_VERSION``
 
