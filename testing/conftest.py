@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import sys
 
 from pathlib import Path
 from types import TracebackType
@@ -11,7 +12,11 @@ from typing import Iterator
 import pytest
 
 from setuptools_scm._run_cmd import run
-from typing_extensions import Self
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 from .wd_wrapper import WorkDir
 

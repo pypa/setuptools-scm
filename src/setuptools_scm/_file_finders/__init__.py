@@ -12,7 +12,12 @@ from .._entrypoints import iter_entry_points
 from .pathtools import norm_real
 
 if TYPE_CHECKING:
-    from typing_extensions import TypeGuard
+    import sys
+
+    if sys.version_info >= (3, 10):
+        from typing import TypeGuard
+    else:
+        from typing_extensions import TypeGuard
 
 
 log = _log.log.getChild("file_finder")

@@ -18,8 +18,14 @@ from . import _entrypoints
 from . import _modify_version
 
 if TYPE_CHECKING:
-    from typing_extensions import Concatenate
-    from typing_extensions import ParamSpec
+    import sys
+
+    if sys.version_info >= (3, 10):
+        from typing import Concatenate
+        from typing import ParamSpec
+    else:
+        from typing_extensions import Concatenate
+        from typing_extensions import ParamSpec
 
     _P = ParamSpec("_P")
 
