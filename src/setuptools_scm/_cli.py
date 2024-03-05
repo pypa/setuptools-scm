@@ -117,7 +117,7 @@ def command(opts: argparse.Namespace, version: str, config: Configuration) -> in
         opts.no_version = True
         sys.stderr.write("Available queries:\n\n")
         opts.query = ["queries"]
-        data["queries"] = ["files"] + list(config.__dataclass_fields__.keys())
+        data["queries"] = ["files", *config.__dataclass_fields__]
 
     if opts.query is None:
         opts.query = []
