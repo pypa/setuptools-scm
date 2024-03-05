@@ -1,4 +1,4 @@
-""" configuration """
+"""configuration"""
 
 from __future__ import annotations
 
@@ -54,8 +54,7 @@ def _check_tag_regex(value: str | Pattern[str] | None) -> Pattern[str]:
 class ParseFunction(Protocol):
     def __call__(
         self, root: _t.PathT, *, config: Configuration
-    ) -> _t.SCMVERSION | None:
-        ...
+    ) -> _t.SCMVERSION | None: ...
 
 
 def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:

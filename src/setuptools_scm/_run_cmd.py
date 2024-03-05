@@ -57,8 +57,7 @@ class CompletedProcess(BaseCompletedProcess):
         parse: Callable[[str], PARSE_RESULT],
         default: None = None,
         error_msg: str | None = None,
-    ) -> PARSE_RESULT | None:
-        ...
+    ) -> PARSE_RESULT | None: ...
 
     @overload
     def parse_success(
@@ -66,8 +65,7 @@ class CompletedProcess(BaseCompletedProcess):
         parse: Callable[[str], PARSE_RESULT],
         default: T,
         error_msg: str | None = None,
-    ) -> PARSE_RESULT | T:
-        ...
+    ) -> PARSE_RESULT | T: ...
 
     def parse_success(
         self,
