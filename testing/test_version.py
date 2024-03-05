@@ -54,6 +54,11 @@ c_non_normalize = Configuration(version_cls=NonNormalizedVersion)
             "1.1.0.dev2",
             id="feature_in_branch",
         ),
+        pytest.param(
+            meta(NonNormalizedVersion("v1.0"), distance=2, branch="default", config=c),
+            "1.0.1.dev2",
+            id="non-normalized-allowed",
+        ),
     ],
 )
 def test_next_semver(version: ScmVersion, expected_next: str) -> None:

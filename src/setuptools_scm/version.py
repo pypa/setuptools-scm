@@ -244,10 +244,13 @@ def guess_next_dev_version(version: ScmVersion) -> str:
 def guess_next_simple_semver(
     version: ScmVersion, retain: int, increment: bool = True
 ) -> str:
-    try:
-        parts = [int(i) for i in str(version.tag).split(".")[:retain]]
-    except ValueError:
-        raise ValueError(f"{version} can't be parsed as numeric version") from None
+    if isinstance(version.tag, _v.Version):
+        parts = list(version.tag.release[:retain])
+    else:
+        try:
+            parts = [int(i) for i in str(version.tag).split(".")[:retain]]
+        except ValueError:
+            raise ValueError(f"{version} can't be parsed as numeric version") from None
     while len(parts) < retain:
         parts.append(0)
     if increment:
