@@ -113,7 +113,7 @@ def command(opts: argparse.Namespace, version: str, config: Configuration) -> in
     if opts.query is None:
         opts.query = []
 
-    if opts.no_version is False:
+    if not opts.no_version:
         data["version"] = version
 
     if "files" in opts.query:
@@ -143,7 +143,7 @@ def command(opts: argparse.Namespace, version: str, config: Configuration) -> in
     return 0
 
 
-def _print_plain(data: dict[Any, Any]) -> None:
+def _print_plain(data: dict[str, Any]) -> None:
     version = data.pop("version", None)
     if version:
         print(version)
@@ -157,7 +157,7 @@ def _print_plain(data: dict[Any, Any]) -> None:
         print("\n".join(data.values()))
 
 
-def _print_key_value(data: dict[Any, Any]) -> None:
+def _print_key_value(data: dict[str, Any]) -> None:
     for key, value in data.items():
         if isinstance(value, str):
             print(f"{key} = {value}")
