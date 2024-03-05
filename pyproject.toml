@@ -114,7 +114,6 @@ version = { attr = "_own_version_helper.version"}
 [tool.setuptools_scm]
 
 [tool.ruff]
-required-version = "0.2.1"
 fix = true
 lint.select = ["E", "F", "B", "U", "YTT", "C", "DTZ", "PYI", "PT", "I", "FURB", "RUF"]
 lint.ignore = ["B028"]

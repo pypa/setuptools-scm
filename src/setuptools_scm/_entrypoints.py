@@ -114,8 +114,7 @@ def _call_version_scheme(
     entrypoint: str,
     given_value: _t.VERSION_SCHEMES,
     default: str,
-) -> str:
-    ...
+) -> str: ...
 
 
 @overload
@@ -124,8 +123,7 @@ def _call_version_scheme(
     entrypoint: str,
     given_value: _t.VERSION_SCHEMES,
     default: None,
-) -> str | None:
-    ...
+) -> str | None: ...
 
 
 def _call_version_scheme(
