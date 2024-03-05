@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import os
 import sys
+
 from typing import Iterable
 
 import pytest
 
-from .wd_wrapper import WorkDir
 from setuptools_scm._file_finders import find_files
+
+from .wd_wrapper import WorkDir
 
 
 @pytest.fixture(params=["git", "hg"])
@@ -64,6 +66,19 @@ def test_case(inwd: WorkDir) -> None:
     (inwd.cwd / "CamelFile").touch()
     (inwd.cwd / "file2").touch()
     inwd.add_and_commit()
+    assert set(find_files()) == _sep(
+        {"CamelFile", "file2", "file1", "adir/filea", "bdir/fileb"}
+    )
+
+
+@pytest.mark.skipif(
+    os.path.normcase("B") != os.path.normcase("b"), reason="case sensitive filesystem"
+)
+def test_case_cwd_evil(inwd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
+    (inwd.cwd / "CamelFile").touch()
+    (inwd.cwd / "file2").touch()
+    inwd.add_and_commit()
+    monkeypatch.chdir(inwd.cwd.parent.joinpath(inwd.cwd.name.capitalize()))
     assert set(find_files()) == _sep(
         {"CamelFile", "file2", "file1", "adir/filea", "bdir/fileb"}
     )

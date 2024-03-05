@@ -5,29 +5,36 @@ import logging
 import os
 import re
 import warnings
+
 from datetime import date
 from datetime import datetime
 from datetime import timezone
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
 from typing import Match
-from typing import TYPE_CHECKING
 
 from . import _entrypoints
 from . import _modify_version
 
 if TYPE_CHECKING:
-    from typing_extensions import Concatenate
-    from typing_extensions import ParamSpec
+    import sys
+
+    if sys.version_info >= (3, 10):
+        from typing import Concatenate
+        from typing import ParamSpec
+    else:
+        from typing_extensions import Concatenate
+        from typing_extensions import ParamSpec
 
     _P = ParamSpec("_P")
 
 from typing import TypedDict
 
-
-from ._version_cls import Version as PkgVersion, _VersionT
-from . import _version_cls as _v
 from . import _config
+from . import _version_cls as _v
+from ._version_cls import Version as PkgVersion
+from ._version_cls import _VersionT
 
 log = logging.getLogger(__name__)
 
@@ -237,10 +244,13 @@ def guess_next_dev_version(version: ScmVersion) -> str:
 def guess_next_simple_semver(
     version: ScmVersion, retain: int, increment: bool = True
 ) -> str:
-    try:
-        parts = [int(i) for i in str(version.tag).split(".")[:retain]]
-    except ValueError:
-        raise ValueError(f"{version} can't be parsed as numeric version") from None
+    if isinstance(version.tag, _v.Version):
+        parts = list(version.tag.release[:retain])
+    else:
+        try:
+            parts = [int(i) for i in str(version.tag).split(".")[:retain]]
+        except ValueError:
+            raise ValueError(f"{version} can't be parsed as numeric version") from None
     while len(parts) < retain:
         parts.append(0)
     if increment:
@@ -297,6 +307,10 @@ def release_branch_semver(version: ScmVersion) -> str:
         stacklevel=2,
     )
     return release_branch_semver_version(version)
+
+
+def only_version(version: ScmVersion) -> str:
+    return version.format_with("{tag}")
 
 
 def no_guess_dev_version(version: ScmVersion) -> str:

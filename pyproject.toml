@@ -30,6 +30,7 @@ classifiers = [
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Topic :: Software Development :: Libraries",
   "Topic :: Software Development :: Version Control",
   "Topic :: System :: Software Distribution",
@@ -42,11 +43,11 @@ dependencies = [
   "packaging>=20",
   "setuptools",
   'tomli>=1; python_version < "3.11"',
-  "typing-extensions",
+  'typing-extensions; python_version < "3.10"',
 ]
 [project.optional-dependencies]
 docs = [
-  "entangled_cli[rich]",
+  "entangled-cli~=2.0",
   "mkdocs",
   "mkdocs-entangled-plugin",
   "mkdocs-material",
@@ -60,6 +61,7 @@ test = [
   "build",
   "pytest",
   "rich",
+  'typing-extensions; python_version < "3.11"',
   "wheel",
 ]
 toml = [
@@ -97,6 +99,7 @@ PKG-INFO = "setuptools_scm.fallbacks:parse_pkginfo"
 "calver-by-date" = "setuptools_scm.version:calver_by_date"
 "guess-next-dev" = "setuptools_scm.version:guess_next_dev_version"
 "no-guess-dev" = "setuptools_scm.version:no_guess_dev_version"
+"only-version" = "setuptools_scm.version:only_version"
 "post-release" = "setuptools_scm.version:postrelease_version"
 "python-simplified-semver" = "setuptools_scm.version:simplified_semver_version"
 "release-branch-semver" = "setuptools_scm.version:release_branch_semver_version"
@@ -111,8 +114,16 @@ version = { attr = "_own_version_helper.version"}
 [tool.setuptools_scm]
 
 [tool.ruff]
-select = ["E", "F", "B", "U", "YTT", "C", "DTZ", "PYI", "PT"]
-ignore = ["B028"]
+fix = true
+lint.select = ["E", "F", "B", "U", "YTT", "C", "DTZ", "PYI", "PT", "I", "FURB", "RUF"]
+lint.ignore = ["B028"]
+lint.preview = true
+
+[tool.ruff.lint.isort]
+force-single-line = true
+from-first = false
+lines-between-types = 1
+order-by-type = true
 
 [tool.pytest.ini_options]
 testpaths = ["testing"]

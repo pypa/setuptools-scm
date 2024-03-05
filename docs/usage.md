@@ -7,10 +7,10 @@ settings in the `tool.setuptools_scm` section of `pyproject.toml`.
 
 It's necessary to use a setuptools version released after 2022.
 
-```toml
-# pyproject.toml
+```toml title="pyproject.toml"
 [build-system]
-requires = ["setuptools>=62", "setuptools_scm[toml]>=8.0"]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
 
 [project]
 # version = "0.0.1"  # Remove any existing version parameter.
@@ -27,8 +27,7 @@ Tools that still invoke `setup.py` must ensure build requirements are installed
 
 ### version files
 
-```toml
-# pyproject.toml
+```toml title="pyproject.toml"
 ...
 [tool.setuptools_scm]
 version_file = "pkg/_version.py"
@@ -36,13 +35,12 @@ version_file = "pkg/_version.py"
 Where ``pkg`` is the name of your package.
 
 
-.. code-block:: shell
+```commandline
+$ python -m setuptools_scm
 
-    $ python -m setuptools_scm
-
-    # To explore other options, try:
-    $ python -m setuptools_scm --help
-
+# To explore other options, try:
+$ python -m setuptools_scm --help
+```
 
 ## as cli tool
 
@@ -104,12 +102,11 @@ version = get_version(root='..', relative_to=__file__)
 ### version at runtime
 
 If you have opted not to hardcode the version number inside the package,
-you can retrieve it at runtime from PEP-0566_ metadata using
+you can retrieve it at runtime from [PEP-0566](https://www.python.org/dev/peps/pep-0566/) metadata using
 ``importlib.metadata`` from the standard library (added in Python 3.8)
-or the `importlib_metadata`_ backport:
+or the [`importlib_metadata`](https://pypi.org/project/importlib-metadata/) backport:
 
-```python
-# contents of package_name/__init__.py
+```python title="package_name/__init__.py"
 from importlib.metadata import version, PackageNotFoundError
 
 try:
@@ -119,16 +116,13 @@ except PackageNotFoundError:
     pass
 ```
 
-.. _PEP-0566: https://www.python.org/dev/peps/pep-0566/
-.. _importlib_metadata: https://pypi.org/project/importlib-metadata/
-
 
 ### Usage from Sphinx
 
 
 ``` {.python file=docs/.entangled/sphinx_conf.py}
 from importlib.metadata import version as get_version
-release: str = get_version('setuptools_scm')
+release: str = get_version("package-name")
 # for example take major/minor
 version: str = ".".join(release.split('.')[:2])
 ```
@@ -259,7 +253,7 @@ be kept in version control. It's strongly recommended to be put into gitignore.
 
 
 
-### File finders hook makes most of MANIFEST.in unnecessary
+### File finders hook makes most of `MANIFEST.in` unnecessary
 
 `setuptools_scm` implements a [file_finders] entry point
 which returns all files tracked by your SCM.

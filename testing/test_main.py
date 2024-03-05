@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-import os.path
 import sys
 import textwrap
+
+from pathlib import Path
 
 import pytest
 
@@ -10,13 +11,13 @@ from .wd_wrapper import WorkDir
 
 
 def test_main() -> None:
-    mainfile = os.path.join(
-        os.path.dirname(__file__), "..", "src", "setuptools_scm", "__main__.py"
+    mainfile = Path(__file__).parent.parent.joinpath(
+        "src", "setuptools_scm", "__main__.py"
     )
     ns = {"__package__": "setuptools_scm"}
-    with open(mainfile, encoding="utf-8") as f:
-        code = compile(f.read(), "__main__.py", "exec")
-        exec(code, ns)
+
+    code = compile(mainfile.read_text(encoding="utf-8"), "__main__.py", "exec")
+    exec(code, ns)
 
 
 @pytest.fixture()

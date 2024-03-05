@@ -1,10 +1,12 @@
-""" configuration """
+"""configuration"""
+
 from __future__ import annotations
 
 import dataclasses
 import os
 import re
 import warnings
+
 from pathlib import Path
 from typing import Any
 from typing import Pattern
@@ -17,9 +19,9 @@ from ._integration.pyproject_reading import (
 )
 from ._integration.pyproject_reading import read_pyproject as _read_pyproject
 from ._overrides import read_toml_overrides
+from ._version_cls import Version as _Version
 from ._version_cls import _validate_version_cls
 from ._version_cls import _VersionT
-from ._version_cls import Version as _Version
 
 log = _log.log.getChild("config")
 
@@ -52,8 +54,7 @@ def _check_tag_regex(value: str | Pattern[str] | None) -> Pattern[str]:
 class ParseFunction(Protocol):
     def __call__(
         self, root: _t.PathT, *, config: Configuration
-    ) -> _t.SCMVERSION | None:
-        ...
+    ) -> _t.SCMVERSION | None: ...
 
 
 def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
@@ -144,7 +145,7 @@ class Configuration:
             data.pop("version_cls", None), data.pop("normalize", True)
         )
         return cls(
-            relative_to,
+            relative_to=relative_to,
             version_cls=version_cls,
             tag_regex=tag_regex,
             **data,

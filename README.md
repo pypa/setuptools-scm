@@ -20,15 +20,14 @@ Unwanted files must be excluded via `MANIFEST.in`.
 The preferred way to configure [setuptools-scm] is to author
 settings in a `tool.setuptools_scm` section of `pyproject.toml`.
 
-This feature requires setuptools 60 or later.
+This feature requires setuptools 61 or later.
 First, ensure that [setuptools-scm] is present during the project's
 build step by specifying it as one of the build requirements.
 
-```toml
+```toml title="pyproject.toml"
 [build-system]
-requires = [
-    "setuptools>=60",
-    "setuptools-scm>=8.0"]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
 ```
 
 That will be sufficient to require [setuptools-scm] for projects
@@ -46,6 +45,7 @@ dynamically in the `project` section of `pyproject.toml`:
 [project]
 # version = "0.0.1"  # Remove any existing version parameter.
 dynamic = ["version"]
+
 [tool.setuptools_scm]
 ```
 

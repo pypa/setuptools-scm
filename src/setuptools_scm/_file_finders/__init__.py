@@ -2,15 +2,22 @@ from __future__ import annotations
 
 import itertools
 import os
-from typing import Callable
+
 from typing import TYPE_CHECKING
+from typing import Callable
 
 from .. import _log
 from .. import _types as _t
 from .._entrypoints import iter_entry_points
+from .pathtools import norm_real
 
 if TYPE_CHECKING:
-    from typing_extensions import TypeGuard
+    import sys
+
+    if sys.version_info >= (3, 10):
+        from typing import TypeGuard
+    else:
+        from typing_extensions import TypeGuard
 
 
 log = _log.log.getChild("file_finder")
@@ -34,15 +41,15 @@ def scm_find_files(
     scm_files and scm_dirs must be absolute with symlinks resolved (realpath),
     with normalized case (normcase)
 
-    Spec here: http://setuptools.readthedocs.io/en/latest/setuptools.html#\
+    Spec here: https://setuptools.pypa.io/en/latest/userguide/extension.html#\
         adding-support-for-revision-control-systems
     """
-    realpath = os.path.normcase(os.path.realpath(path))
+    realpath = norm_real(path)
     seen: set[str] = set()
     res: list[str] = []
     for dirpath, dirnames, filenames in os.walk(realpath, followlinks=True):
         # dirpath with symlinks resolved
-        realdirpath = os.path.normcase(os.path.realpath(dirpath))
+        realdirpath = norm_real(dirpath)
 
         def _link_not_in_scm(n: str, realdirpath: str = realdirpath) -> bool:
             fn = os.path.join(realdirpath, os.path.normcase(n))
@@ -72,7 +79,7 @@ def scm_find_files(
                 continue
             # dirpath + filename with symlinks preserved
             fullfilename = os.path.join(dirpath, filename)
-            is_tracked = os.path.normcase(os.path.realpath(fullfilename)) in scm_files
+            is_tracked = norm_real(fullfilename) in scm_files
             if force_all_files or is_tracked:
                 res.append(os.path.join(path, os.path.relpath(fullfilename, realpath)))
         seen.add(realdirpath)

@@ -27,11 +27,14 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
     !!! warning ""
 
         Only files with `.py` and `.txt` extensions have builtin templates,
-        for other file types it is necessary to provide `write_to_template`.
+        for other file types it is necessary to provide `version_file_template`.
 
-`version_file_template_template: str | None = None`
-:   A new-style format string that is given the current version as
-    the `version` keyword argument for formatting.
+`version_file_template: str | None = None`
+:   A new-style format string taking `version`, `scm_version` and `version_tuple` as parameters.
+    `version` is the generated next_version as string,
+    `version_tuple` is a tuple of split numbers/strings and
+    `scm_version` is the `ScmVersion` instance the current `version` was rendered from
+
 
 `write_to: Pathlike[str] | Path | None = None`
 :  (deprecated) legacy option to create a version file relative to the scm root
@@ -108,17 +111,22 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
 :   used as the primary source for the version number
     in which case it will be an unparsed string
 
-    !!! warning "it is strongly recommended to use use distribution name specific pretend versions"
+    !!! warning ""
 
+        it is strongly recommended to use distribution-specific pretend versions
+        (see below).
 
 `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME}`
-:   used as the primary source for the version number
-    in which case it will be an unparsed string
+:   used as the primary source for the version number,
+    in which case it will be an unparsed string.
+    Specifying distribution-specific pretend versions will
+    avoid possible collisions with third party distributions
+    also using ``setuptools_scm``
 
     the dist name normalization follows adapted PEP 503 semantics, with one or
-    more of ".-_" being replaced by a single "_", and the name being upper-cased
+    more of ".-\_" being replaced by a single "\_", and the name being upper-cased
 
-    it takes precedence over ``SETUPTOOLS_SCM_PRETEND_VERSION``
+    this will take precedence over ``SETUPTOOLS_SCM_PRETEND_VERSION``
 
 `SETUPTOOLS_SCM_DEBUG`
 :    enable the debug logging

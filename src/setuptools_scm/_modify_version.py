@@ -6,7 +6,7 @@ from . import _types as _t
 
 
 def strip_local(version_string: str) -> str:
-    public, sep, local = version_string.partition("+")
+    public = version_string.partition("+")[0]
     return public
 
 

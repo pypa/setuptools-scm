@@ -31,9 +31,11 @@ def main(args: list[str] | None = None) -> int:
             f" Reason: {ex}.",
             file=sys.stderr,
         )
-        config = Configuration(inferred_root)
+        config = Configuration(root=inferred_root)
 
-    version = _get_version(config, force_write_version_files=False)
+    version = _get_version(
+        config, force_write_version_files=opts.force_write_version_files
+    )
     if version is None:
         raise SystemExit("ERROR: no version found for", opts)
     if opts.strip_dev:
@@ -89,6 +91,13 @@ def _get_cli_opts(args: list[str] | None) -> argparse.Namespace:
         help="display setuptools_scm settings according to query, "
         "e.g. dist_name, do not supply an argument in order to "
         "print a list of valid queries.",
+    )
+    parser.add_argument(
+        "--force-write-version-files",
+        action="store_true",
+        help="trigger to write the content of the version files\n"
+        "its recommended to use normal/editable installation instead)",
+
     )
     sub = parser.add_subparsers(title="extra commands", dest="command", metavar="")
     # We avoid `metavar` to prevent printing repetitive information

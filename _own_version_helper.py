@@ -5,22 +5,23 @@ to use the attribute for the versions
 it works only if the backend-path of the build-system section
 from pyproject.toml is respected
 """
+
 from __future__ import annotations
 
 import logging
+
 from typing import Callable
 
-from setuptools import build_meta as build_meta  # noqa
-
-from setuptools_scm import _types as _t
+from setuptools import build_meta as build_meta
 from setuptools_scm import Configuration
+from setuptools_scm import _types as _t
 from setuptools_scm import get_version
 from setuptools_scm import git
 from setuptools_scm import hg
 from setuptools_scm.fallbacks import parse_pkginfo
+from setuptools_scm.version import ScmVersion
 from setuptools_scm.version import get_local_node_and_date
 from setuptools_scm.version import guess_next_dev_version
-from setuptools_scm.version import ScmVersion
 
 log = logging.getLogger("setuptools_scm")
 # todo: take fake entrypoints from pyproject.toml

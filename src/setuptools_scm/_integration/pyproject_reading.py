@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import warnings
+
 from pathlib import Path
 from typing import NamedTuple
 
 from .. import _log
 from .setuptools import read_dist_name_from_setup_cfg
-from .toml import read_toml_content
 from .toml import TOML_RESULT
-
+from .toml import read_toml_content
 
 log = _log.log.getChild("pyproject_reading")
 
@@ -39,7 +39,7 @@ def read_pyproject(
         if require_section:
             raise LookupError(error) from e
         else:
-            log.warning("toml section missing %r", error)
+            log.warning("toml section missing %r", error, exc_info=True)
             section = {}
 
     project = defn.get("project", {})

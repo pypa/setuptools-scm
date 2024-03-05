@@ -17,14 +17,11 @@ Note: `setuptools_scm>=8` intentionally doesn't depend on setuptools to ease non
 Please ensure a recent version of setuptools (>=64) is installed.
 
 
-```toml
-# pyproject.toml
+```toml title="pyproject.toml"
 [build-system]
-requires = [
-    "setuptools>=64",
-    "setuptools_scm>=8",
-    "wheel",
-]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "example"
 # Important: Remove any existing version declaration

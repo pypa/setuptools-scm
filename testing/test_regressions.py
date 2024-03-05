@@ -3,9 +3,10 @@ from __future__ import annotations
 import pprint
 import subprocess
 import sys
+
 from dataclasses import replace
-from importlib.metadata import distribution
 from importlib.metadata import EntryPoint
+from importlib.metadata import distribution
 from pathlib import Path
 
 import pytest

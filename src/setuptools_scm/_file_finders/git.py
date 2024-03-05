@@ -4,13 +4,15 @@ import logging
 import os
 import subprocess
 import tarfile
+
 from typing import IO
 
-from . import is_toplevel_acceptable
-from . import scm_find_files
 from .. import _types as _t
 from .._run_cmd import run as _run
 from ..integration import data_from_mime
+from . import is_toplevel_acceptable
+from . import scm_find_files
+from .pathtools import norm_real
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +45,7 @@ def _git_toplevel(path: str) -> str | None:
             # ``\\`` is just and escape for `\`
             out = cwd[: -len(out)]
         log.debug("find files toplevel %s", out)
-        return os.path.normcase(os.path.realpath(out.strip()))
+        return norm_real(out)
     except subprocess.CalledProcessError:
         # git returned error, we are not in a git repo
         return None
@@ -91,7 +93,7 @@ def git_find_files(path: _t.PathT = "") -> list[str]:
     toplevel = _git_toplevel(os.fspath(path))
     if not is_toplevel_acceptable(toplevel):
         return []
-    fullpath = os.path.abspath(os.path.normpath(path))
+    fullpath = norm_real(path)
     if not fullpath.startswith(toplevel):
         log.warning("toplevel mismatch computed %s vs resolved %s ", toplevel, fullpath)
     git_files, git_dirs = _git_ls_files_and_dirs(toplevel)
