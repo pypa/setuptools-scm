@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import sys
+
 from typing import Any
 
 from setuptools_scm import Configuration
@@ -97,7 +98,6 @@ def _get_cli_opts(args: list[str] | None) -> argparse.Namespace:
         action="store_true",
         help="trigger to write the content of the version files\n"
         "its recommended to use normal/editable installation instead)",
-
     )
     sub = parser.add_subparsers(title="extra commands", dest="command", metavar="")
     # We avoid `metavar` to prevent printing repetitive information
