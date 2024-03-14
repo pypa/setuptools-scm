@@ -179,6 +179,7 @@ def archival_to_version(data: dict[str, str], config: Configuration) -> ScmVersi
             data["latesttag"],
             distance=int(data["latesttagdistance"]),
             node=node,
+            branch=data.get("branch"),
             config=config,
         )
     else:
