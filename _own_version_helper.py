@@ -22,9 +22,9 @@ from setuptools_scm.version import guess_next_dev_version
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    
-    from setuptools_scm import _types as _t
+
     from setuptools_scm import Configuration
+    from setuptools_scm import _types as _t
     from setuptools_scm.version import ScmVersion
 
 
