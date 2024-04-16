@@ -235,8 +235,18 @@ Ensure the content of the following files:
 node: $Format:%H$
 node-date: $Format:%cI$
 describe-name: $Format:%(describe:tags=true,match=*[0-9]*)$
-ref-names: $Format:%D$
 ```
+
+Feel free to alter the `match` field in `describe-name` to match your project's
+tagging style.
+
+!!! note
+
+    If your git host provider does not properly expand `describe-name`, you may
+    need to include `ref-names: $Format:%D$`. But **beware**, this can often
+    lead to the git archive's checksum changing after a commit is added
+    post-release. See [this issue][git-archive-issue] for more details.
+
 
 ``` {.text file=".gitattributes"}
 .git_archival.txt  export-subst
@@ -251,7 +261,7 @@ $ git add .git_archival.txt .gitattributes && git commit -m "add export config"
 Note that if you are creating a `_version.py` file, note that it should not
 be kept in version control. It's strongly recommended to be put into gitignore.
 
-
+[git-archive-issue]: https://github.com/pypa/setuptools_scm/issues/806
 
 ### File finders hook makes most of `MANIFEST.in` unnecessary
 
