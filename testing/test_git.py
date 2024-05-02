@@ -498,6 +498,21 @@ def test_git_getdate_badgit(
         assert git_wd.get_head_date() is None
 
 
+
+def test_git_getdate_git_2_45_0_plus(
+    wd: WorkDir, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    wd.commit_testfile()
+    git_wd = git.GitWorkdir(wd.cwd)
+    fake_date_result = CompletedProcess(args=[], stdout="2024-04-30T22:33:10Z", stderr="", returncode=0)
+    with patch.object(
+        git,
+        "run_git",
+        Mock(return_value=fake_date_result),
+    ):
+        assert git_wd.get_head_date() == date(2024, 4, 30)
+
+
 @pytest.fixture()
 def signed_commit_wd(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> WorkDir:
     if not has_command("gpg", args=["--version"], warn=False):
