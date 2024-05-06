@@ -115,12 +115,22 @@ def test_version_from_archival(wd: WorkDir) -> None:
     # entrypoints are unordered,
     # cleaning the wd ensure this test won't break randomly
     wd.cwd.joinpath(".hg").rename(wd.cwd / ".nothg")
-    wd.write(".hg_archival.txt", "node: 000000000000\n" "tag: 0.1\n")
+    wd.write(
+        ".hg_archival.txt",
+        """\
+node: 000000000000
+tag: 0.1
+""",
+    )
     assert wd.get_version() == "0.1"
 
     wd.write(
         ".hg_archival.txt",
-        "node: 000000000000\n" "latesttag: 0.1\n" "latesttagdistance: 3\n",
+        """\
+node: 000000000000
+latesttag: 0.1
+latesttagdistance: 3
+""",
     )
 
     assert wd.get_version() == "0.2.dev3+h000000000000"

@@ -35,7 +35,10 @@ def test_pkginfo_noscmroot(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> N
 
     tmp_path.joinpath(".git").mkdir()
     p.joinpath("setup.py").write_text(
-        "from setuptools import setup;" 'setup(use_scm_version={"root": ".."})',
+        """\
+from setuptools import setup
+setup(use_scm_version={"root": ".."})
+""",
         encoding="utf-8",
     )
 
