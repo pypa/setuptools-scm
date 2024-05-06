@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import shlex
+import sys
 import warnings
 
 from datetime import date
@@ -119,6 +120,8 @@ class GitWorkdir(Workdir):
             if "%c" in timestamp_text:
                 log.warning("git too old -> timestamp is %r", timestamp_text)
                 return None
+            if sys.version_info < (3, 11) and timestamp_text.endswith("Z"):
+                timestamp_text = timestamp_text[:-1] + "+00:00"
             return datetime.fromisoformat(timestamp_text).date()
 
         res = run_git(
