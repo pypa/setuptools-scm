@@ -299,7 +299,7 @@ def test_git_dirty_notag(
 def test_git_worktree_support(wd: WorkDir, tmp_path: Path) -> None:
     wd.commit_testfile()
     worktree = tmp_path / "work_tree"
-    wd("git worktree add -b work-tree %s" % worktree)
+    wd(f"git worktree add -b work-tree {worktree}")
 
     res = run([sys.executable, "-m", "setuptools_scm", "ls"], cwd=worktree)
     assert "test.txt" in res.stdout
