@@ -432,10 +432,10 @@ def test_custom_version_cls() -> None:
             self.tag = tag_str
 
         def __str__(self) -> str:
-            return "Custom %s" % self.tag
+            return f"Custom {self.tag}"
 
         def __repr__(self) -> str:
-            return "MyVersion<Custom%s>" % self.tag
+            return f"MyVersion<Custom{self.tag}>"
 
     config = Configuration(version_cls=MyVersion)  # type: ignore[arg-type]
     scm_version = meta("1.0.0-foo", config=config)

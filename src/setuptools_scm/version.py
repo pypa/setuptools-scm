@@ -216,7 +216,7 @@ def meta(
 ) -> ScmVersion:
     parsed_version = _parse_tag(tag, preformatted, config)
     log.info("version %s -> %s", tag, parsed_version)
-    assert parsed_version is not None, "Can't parse version %s" % tag
+    assert parsed_version is not None, f"Can't parse version {tag}"
     return ScmVersion(
         parsed_version,
         distance=distance,

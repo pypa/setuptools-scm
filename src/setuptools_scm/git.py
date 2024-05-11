@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import operator
 import os
 import re
 import shlex
@@ -144,8 +145,7 @@ class GitWorkdir(Workdir):
         run_git(["fetch", "--unshallow"], self.path, check=True, timeout=240)
 
     def node(self) -> str | None:
-        def _unsafe_short_node(node: str) -> str:
-            return node[:7]
+        _unsafe_short_node = operator.itemgetter(slice(7))
 
         return run_git(
             ["rev-parse", "--verify", "--quiet", "HEAD"], self.path
