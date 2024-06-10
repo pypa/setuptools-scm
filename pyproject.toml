@@ -103,6 +103,9 @@ PKG-INFO = "setuptools_scm.fallbacks:parse_pkginfo"
 "post-release" = "setuptools_scm.version:postrelease_version"
 "python-simplified-semver" = "setuptools_scm.version:simplified_semver_version"
 "release-branch-semver" = "setuptools_scm.version:release_branch_semver_version"
+[project.entry-points."pipx.run"]
+# support `pipx run setuptools_scm`
+setuptools_scm = "setuptools_scm._cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
