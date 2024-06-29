@@ -101,8 +101,8 @@ class HgWorkdir(Workdir):
             else:
                 return meta(tag, config=config, node_date=node_date)
 
-        except ValueError as e:
-            log.exception("error %s", e)
+        except ValueError:
+            log.exception("error")
             pass  # unpacking failed, old hg
 
         return None
