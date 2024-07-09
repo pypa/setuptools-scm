@@ -1,5 +1,5 @@
 # setuptools_scm
-[![github ci](https://github.com/pypa/setuptools_scm/workflows/python%20tests+artifacts+release/badge.svg)](https://github.com/pypa/setuptools_scm/actions)
+[![github ci](https://github.com/pypa/setuptools_scm/actions/workflows/python-tests.yml/badge.svg)](https://github.com/pypa/setuptools_scm/actions/workflows/python-tests.yml)
 [![Documentation Status](https://readthedocs.org/projects/setuptools-scm/badge/?version=latest)](https://setuptools-scm.readthedocs.io/en/latest/?badge=latest)
 [![tidelift](https://tidelift.com/badges/package/pypi/setuptools-scm) ](https://tidelift.com/subscription/pkg/pypi-setuptools-scm?utm_source=pypi-setuptools-scm&utm_medium=readme)
 
