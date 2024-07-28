@@ -1,13 +1,16 @@
 # About
 
-
 `setuptools_scm` extracts Python package versions from `git` or `hg` metadata
-instead of declaring them as the version argument or in a SCM managed file.
+instead of declaring them as the version argument
+or in a Source Code Managed (SCM) managed file.
 
-Additionally `setuptools_scm` provides setuptools with a list of
-files that are managed by the SCM (i.e. it automatically adds all
-the SCM-managed files to the sdist). Unwanted files must be excluded
-via `MANIFEST.in`.
+Additionally `setuptools_scm` provides `setuptools` with a list of
+files that are managed by the SCM
+(i.e. it automatically adds all the SCM-managed files to the sdist).
+Unwanted files must be excluded via `MANIFEST.in`
+or [configuring Git archive][git-archive-docs].
+
+[git-archive-docs]: usage.md#builtin-mechanisms-for-obtaining-version-numbers
 
 ## basic usage
 

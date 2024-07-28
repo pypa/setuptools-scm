@@ -205,7 +205,7 @@ so you will see an additional `g` prepended to the `{revision hash}`.
     be seen in auto-publishing workflows or when a configuration mistake is made.
 
     However, some package indexes such as devpi or other alternatives allow local
-    versions. Local version identifiers must comply with [PEP 440].
+    versions. Local version identifiers must comply with [PEP 440](https://peps.python.org/pep-0440/#local-version-identifiers>).
 
 ## Semantic Versioning (SemVer)
 

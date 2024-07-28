@@ -1,19 +1,21 @@
 # setuptools_scm
-[![github ci](https://github.com/pypa/setuptools_scm/workflows/python%20tests+artifacts+release/badge.svg)](https://github.com/pypa/setuptools_scm/actions)
+[![github ci](https://github.com/pypa/setuptools_scm/actions/workflows/python-tests.yml/badge.svg)](https://github.com/pypa/setuptools_scm/actions/workflows/python-tests.yml)
 [![Documentation Status](https://readthedocs.org/projects/setuptools-scm/badge/?version=latest)](https://setuptools-scm.readthedocs.io/en/latest/?badge=latest)
 [![tidelift](https://tidelift.com/badges/package/pypi/setuptools-scm) ](https://tidelift.com/subscription/pkg/pypi-setuptools-scm?utm_source=pypi-setuptools-scm&utm_medium=readme)
 
 ## about
 
-[setuptools-scm] extracts Python package versions from `git` or
-`hg` metadata instead of declaring them as the version argument
-or in an SCM managed file.
+[setuptools-scm] extracts Python package versions from `git` or `hg` metadata
+instead of declaring them as the version argument
+or in a Source Code Managed (SCM) managed file.
 
-Additionally, [setuptools-scm] provides setuptools
-with a list of files that are managed by the SCM <br/>
-(i.e. it automatically adds **all of** the SCM-managed files to the sdist).<br/>
-Unwanted files must be excluded via `MANIFEST.in`.
-
+Additionally [setuptools-scm] provides `setuptools` with a list of
+files that are managed by the SCM
+<br/>
+(i.e. it automatically adds all the SCM-managed files to the sdist).
+<br/>
+Unwanted files must be excluded via `MANIFEST.in`
+or [configuring Git archive][git-archive-docs].
 
 ## `pyproject.toml` usage
 
@@ -71,6 +73,7 @@ For further configuration see the [documentation].
 
 [setuptools-scm]: https://github.com/pypa/setuptools_scm
 [documentation]: https://setuptools-scm.readthedocs.io/
+[git-archive-docs]: https://setuptools-scm.readthedocs.io/en/stable/usage/#builtin-mechanisms-for-obtaining-version-numbers
 
 
 ## Interaction with Enterprise Distributions
