@@ -137,7 +137,7 @@ filterwarnings = [
 log_level = "debug"
 log_cli_level = "info"
 # disable unraisable until investigated
-addopts = ["-p", "no:unraisableexception"]
+addopts = ["-ra", "--strict-config", "--strict-markers", "-p", "no:unraisableexception"]
 markers = [
   "issue(id): reference to github issue",
   "skip_commit: allows to skip committing in the helpers",
