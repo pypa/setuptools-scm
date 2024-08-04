@@ -17,6 +17,7 @@ from unittest.mock import Mock
 from unittest.mock import patch
 
 import pytest
+
 import setuptools_scm._file_finders
 
 from setuptools_scm import Configuration
