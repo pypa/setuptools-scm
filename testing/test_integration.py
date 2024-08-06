@@ -9,6 +9,7 @@ import textwrap
 from pathlib import Path
 
 import pytest
+
 import setuptools_scm._integration.setuptools
 
 from setuptools_scm import Configuration
