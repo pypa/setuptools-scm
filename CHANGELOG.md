@@ -14,7 +14,7 @@
 
 - fix #925: allow `write_to` to be an absolute path when it's a subdirectory of the root
 - fix #932: ensure type annotations in version file don't cause linter issues
-- fix #930: temporary restore `DEFAULT_VERSION_SCHEME` and `DEFAULT_LOCAL_SCHEME` on the `setuptools_scm` package
+- fix #930: temporary restore `DEFAULT_VERSION_SCHEME` and `DEFAULT_LOCAL_SCHEME` on the `setuptools-scm` package
 
 
 
@@ -60,6 +60,7 @@
 - use normalized dist names for the `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DIST_NAME}` env var
 - drop support for python 3.7
 - introduce `version_file` as replacement for `write_to`
+- renameed the project from `setuptools_scm` to `setuptools-scm`
 
 ## features
 

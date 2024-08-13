@@ -1,12 +1,12 @@
-# Extending setuptools_scm
+# Extending setuptools-scm
 
-`setuptools_scm` uses [entry-point][entry-point] based hooks to extend its default capabilities.
+`setuptools-scm` uses [entry-point][entry-point] based hooks to extend its default capabilities.
 
 [entry-point]: https://packaging.python.org/en/latest/specifications/entry-points/
 
 ## Adding a new SCM
 
-`setuptools_scm` provides two entrypoints for adding new SCMs:
+`setuptools-scm` provides two entrypoints for adding new SCMs:
 
 `setuptools_scm.parse_scm`
 :   A function used to parse the metadata of the current workdir
