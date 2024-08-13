@@ -107,7 +107,7 @@ def test_git_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
     assert wd.get_version(fallback_version="1.0") == "1.0"
 
 
-@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/298")
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/298")
 @pytest.mark.issue(403)
 def test_file_finder_no_history(wd: WorkDir, caplog: pytest.LogCaptureFixture) -> None:
     file_list = git_find_files(str(wd.cwd))
@@ -116,7 +116,7 @@ def test_file_finder_no_history(wd: WorkDir, caplog: pytest.LogCaptureFixture) -
     assert "listing git files failed - pretending there aren't any" in caplog.text
 
 
-@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/281")
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/281")
 def test_parse_call_order(wd: WorkDir) -> None:
     git.parse(str(wd.cwd), Configuration(), git.DEFAULT_DESCRIBE)
 
@@ -153,7 +153,7 @@ def break_folder_permissions(path: Path) -> Generator[None, None, None]:
         sudo_devnull(["chgrp", "-R", str(original_stat.st_gid), path], check=True)
 
 
-@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/707")
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/707")
 def test_not_owner(wd: WorkDir) -> None:
     with break_folder_permissions(wd.cwd):
         assert git.parse(str(wd.cwd), Configuration())
@@ -401,7 +401,7 @@ def test_git_archive_run_from_subdirectory(
     assert setuptools_scm._file_finders.find_files(".") == [opj(".", "test1.txt")]
 
 
-@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/728")
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/728")
 def test_git_branch_names_correct(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd("git checkout -b test/fun")
@@ -419,7 +419,7 @@ def test_git_feature_branch_increments_major(wd: WorkDir) -> None:
     assert wd.get_version(version_scheme="python-simplified-semver").startswith("1.1.0")
 
 
-@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/303")
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/303")
 def test_not_matching_tags(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd("git tag apache-arrow-0.11.1")
@@ -432,7 +432,7 @@ def test_not_matching_tags(wd: WorkDir) -> None:
     ).startswith("0.11.2")
 
 
-@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/411")
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/411")
 def test_non_dotted_version(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd("git tag apache-arrow-1")
@@ -456,12 +456,12 @@ def test_non_dotted_tag_no_version_match(wd: WorkDir) -> None:
     assert wd.get_version().startswith("0.11.2.dev2")
 
 
-@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/381")
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/381")
 def test_gitdir(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> None:
     """ """
     wd.commit_testfile()
     normal = wd.get_version()
-    # git hooks set this and break subsequent setuptools_scm unless we clean
+    # git hooks set this and break subsequent setuptools-scm unless we clean
     monkeypatch.setenv("GIT_DIR", __file__)
     assert wd.get_version() == normal
 
@@ -540,7 +540,7 @@ Expire-Date: 0
     return wd
 
 
-@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/548")
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/548")
 def test_git_getdate_signed_commit(signed_commit_wd: WorkDir) -> None:
     today = datetime.now(timezone.utc).date()
     signed_commit_wd.commit_testfile(signed=True)
@@ -578,7 +578,7 @@ def test_git_archival_to_version(expected: str, from_data: dict[str, str]) -> No
     assert format_version(version) == expected
 
 
-@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/727")
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/727")
 def test_git_archival_node_missing_no_version() -> None:
     config = Configuration()
     version = archival_to_version({}, config=config)

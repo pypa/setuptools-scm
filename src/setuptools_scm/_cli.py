@@ -61,7 +61,7 @@ def _get_cli_opts(args: list[str] | None) -> argparse.Namespace:
         "--config",
         default=None,
         metavar="PATH",
-        help="path to 'pyproject.toml' with setuptools_scm config, "
+        help="path to 'pyproject.toml' with setuptools-scm config, "
         "default: looked up in the current or parent directories",
     )
     parser.add_argument(
@@ -89,7 +89,7 @@ def _get_cli_opts(args: list[str] | None) -> argparse.Namespace:
         "--query",
         type=str.casefold,
         nargs="*",
-        help="display setuptools_scm settings according to query, "
+        help="display setuptools-scm settings according to query, "
         "e.g. dist_name, do not supply an argument in order to "
         "print a list of valid queries.",
     )

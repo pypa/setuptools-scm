@@ -31,10 +31,10 @@ def _warn_on_old_setuptools(_version: str = setuptools.__version__) -> None:
         warnings.warn(
             RuntimeWarning(
                 f"""
-ERROR: setuptools=={_version} is used in combination with setuptools_scm>=8.x
+ERROR: setuptools=={_version} is used in combination with setuptools-scm>=8.x
 
 Your build configuration is incomplete and previously worked by accident!
-setuptools_scm requires setuptools>=61
+setuptools-scm requires setuptools>=61
 
 Suggested workaround if applicable:
  - migrating from the deprecated setup_requires mechanism to pep517/518
@@ -113,7 +113,7 @@ def infer_version(dist: setuptools.Distribution) -> None:
         dist_name = read_dist_name_from_setup_cfg()
     if not os.path.isfile("pyproject.toml"):
         return
-    if dist_name == "setuptools_scm":
+    if dist_name == "setuptools-scm":
         return
     try:
         config = _config.Configuration.from_file(dist_name=dist_name)

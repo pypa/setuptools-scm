@@ -201,7 +201,7 @@ def test_version_bump_from_commit_including_hgtag_mods(wd: WorkDir) -> None:
 @pytest.mark.usefixtures("version_1_0")
 def test_latest_tag_detection(wd: WorkDir) -> None:
     """Tests that tags not containing a "." are ignored, the same as for git.
-    Note that will be superseded by the fix for pypa/setuptools_scm/issues/235
+    Note that will be superseded by the fix for pypa/setuptools-scm/issues/235
     """
     wd('hg tag some-random-tag -u test -d "0 0"')
     assert wd.get_version() == "1.0.0"

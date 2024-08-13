@@ -149,7 +149,7 @@ def get_version(
     """
     If supplied, relative_to should be a file from which root may
     be resolved. Typically called by a script or module that is not
-    in the root of the repository to direct setuptools_scm to the
+    in the root of the repository to direct setuptools-scm to the
     root of the repository by supplying ``__file__``.
     """
 
