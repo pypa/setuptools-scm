@@ -21,7 +21,7 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
 `version_file: Path | PathLike[str] | None = None`
 :   A path to a file that gets replaced with a file containing the current
     version. It is ideal for creating a ``_version.py`` file within the
-    package, typically used to avoid using `pkg_resources.get_distribution`
+    package, typically used to avoid using `importlib.metadata`
     (which adds some overhead).
 
     !!! warning ""

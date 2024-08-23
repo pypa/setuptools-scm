@@ -1,6 +1,6 @@
 # Usage
 
-## at build time
+## At build time
 
 The preferred way to configure `setuptools_scm` is to author
 settings in the `tool.setuptools_scm` section of `pyproject.toml`.
@@ -25,7 +25,9 @@ that support PEP 518 ([pip](https://pypi.org/project/pip) and
 [pep517](https://pypi.org/project/pep517/)).
 Tools that still invoke `setup.py` must ensure build requirements are installed
 
-### version files
+### Version files
+
+Version files can be created with the ``version_file`` directive.
 
 ```toml title="pyproject.toml"
 ...
@@ -34,15 +36,13 @@ version_file = "pkg/_version.py"
 ```
 Where ``pkg`` is the name of your package.
 
+Unless the small overhead of introspecting the version at runtime via
+`importlib.metadata` is a concern or you need a version file in an
+alternative format such as plain-text (see ``version_file_template``)
+you most likely do _not_ need to write a separate version file; see
+the runtime discussion below for more details.
 
-```commandline
-$ python -m setuptools_scm
-
-# To explore other options, try:
-$ python -m setuptools_scm --help
-```
-
-## as cli tool
+## As cli tool
 
 If you need to confirm which version string is being generated
 or debug the configuration, you can install
@@ -65,46 +65,32 @@ $ python -m setuptools_scm ls # output trimmed for brevity
 ...
 ```
 
-!!! note "committed files only"
+!!! note "Committed files only"
 
     currently only committed files are listed, this might change in the future
 
 !!! warning "sdists/archives don't provide file lists"
 
-    currently there is no builtin mechanism
-    to safely transfer the file lists to sdists or obtaining them from archives
-    coordination for setuptools and hatch is ongoing
+    Currently there is no builtin mechanism
+    to safely transfer the file lists to sdists or obtaining them from archives.
+    Coordination for setuptools and hatch is ongoing.
 
-## at runtime (strongly discouraged)
+To explore other options, try
 
-the most simple **looking** way to use `setuptools_scm` at runtime is:
-
-```python
-from setuptools_scm import get_version
-version = get_version()
+```commandline
+$ python -m setuptools_scm --help
 ```
 
+## At runtime
 
-In order to use `setuptools_scm` from code that is one directory deeper
-than the project's root, you can use:
+### Python Metadata
 
-```python
-from setuptools_scm import get_version
-version = get_version(root='..', relative_to=__file__)
-```
-
-
-## Python package metadata
-
-
-
-
-### version at runtime
-
-If you have opted not to hardcode the version number inside the package,
-you can retrieve it at runtime from [PEP-0566](https://www.python.org/dev/peps/pep-0566/) metadata using
+The standard method to retrieve the version number at runtime is via
+[PEP-0566](https://www.python.org/dev/peps/pep-0566/) metadata using
 ``importlib.metadata`` from the standard library (added in Python 3.8)
-or the [`importlib_metadata`](https://pypi.org/project/importlib-metadata/) backport:
+or the
+[`importlib_metadata`](https://pypi.org/project/importlib-metadata/)
+backport for earlier versions:
 
 ```python title="package_name/__init__.py"
 from importlib.metadata import version, PackageNotFoundError
@@ -116,6 +102,40 @@ except PackageNotFoundError:
     pass
 ```
 
+### Via your version file
+
+If you have opted to create a Python version file via the standard
+template, you can import that file, where you will have a ``version``
+string and a ``version_tuple`` tuple with elements corresponding to
+the version tags.
+
+```python title="Using package_name/_version.py"
+import package_name._version as v
+
+print(v.version)
+print(v.version_tuple)
+```
+
+### Via setuptools_scm (strongly discouraged)
+
+While the most simple **looking** way to use `setuptools_scm` at
+runtime is:
+
+```python
+from setuptools_scm import get_version
+version = get_version()
+```
+
+it is strongly discouraged to call directly into `setuptools_scm` over
+the standard Python `importlib.metadata`.
+
+In order to use `setuptools_scm` from code that is one directory deeper
+than the project's root, you can use:
+
+```python
+from setuptools_scm import get_version
+version = get_version(root='..', relative_to=__file__)
+```
 
 ### Usage from Sphinx
 
@@ -132,7 +152,7 @@ the working directory for good reasons and using the installed metadata
 prevents using needless volatile data there.
 
 
-## with Docker/Podman
+### With Docker/Podman
 
 
 In some situations, Docker may not copy the `.git`  into the container when

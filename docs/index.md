@@ -12,9 +12,9 @@ or [configuring Git archive][git-archive-docs].
 
 [git-archive-docs]: usage.md#builtin-mechanisms-for-obtaining-version-numbers
 
-## basic usage
+## Basic usage
 
-### with setuptools
+### With setuptools
 
 Note: `setuptools_scm>=8` intentionally doesn't depend on setuptools to ease non-setuptools usage.
 Please ensure a recent version of setuptools (>=64) is installed.
@@ -37,7 +37,7 @@ dynamic = ["version"]
 ```
 
 
-### with hatch
+### With hatch
 
 [Hatch-vcs](https://github.com/ofek/hatch-vcs) integrates with setuptools_scm
 but provides its own configuration options,
