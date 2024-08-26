@@ -221,7 +221,7 @@ def test_tag_regex1(tag: str, expected: str) -> None:
     assert result.tag.public == expected
 
 
-@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/471")
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/471")
 def test_version_bump_bad() -> None:
     class YikesVersion:
         val: str

@@ -1,5 +1,5 @@
-# setuptools_scm
-[![github ci](https://github.com/pypa/setuptools_scm/actions/workflows/python-tests.yml/badge.svg)](https://github.com/pypa/setuptools_scm/actions/workflows/python-tests.yml)
+# setuptools-scm
+[![github ci](https://github.com/pypa/setuptools-scm/actions/workflows/python-tests.yml/badge.svg)](https://github.com/pypa/setuptools-scm/actions/workflows/python-tests.yml)
 [![Documentation Status](https://readthedocs.org/projects/setuptools-scm/badge/?version=latest)](https://setuptools-scm.readthedocs.io/en/latest/?badge=latest)
 [![tidelift](https://tidelift.com/badges/package/pypi/setuptools-scm) ](https://tidelift.com/subscription/pkg/pypi-setuptools-scm?utm_source=pypi-setuptools-scm&utm_medium=readme)
 
@@ -28,7 +28,7 @@ build step by specifying it as one of the build requirements.
 
 ```toml title="pyproject.toml"
 [build-system]
-requires = ["setuptools>=64", "setuptools_scm>=8"]
+requires = ["setuptools>=64", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 ```
 
@@ -71,7 +71,7 @@ $ python -m setuptools_scm --help
 
 For further configuration see the [documentation].
 
-[setuptools-scm]: https://github.com/pypa/setuptools_scm
+[setuptools-scm]: https://github.com/pypa/setuptools-scm
 [documentation]: https://setuptools-scm.readthedocs.io/
 [git-archive-docs]: https://setuptools-scm.readthedocs.io/en/stable/usage/#builtin-mechanisms-for-obtaining-version-numbers
 
@@ -81,7 +81,7 @@ For further configuration see the [documentation].
 Some enterprise distributions like RHEL7
 ship rather old setuptools versions.
 
-In those cases its typically possible to build by using an sdist against `setuptools_scm<2.0`.
+In those cases its typically possible to build by using an sdist against `setuptools-scm<2.0`.
 As those old setuptools versions lack sensible types for versions,
 modern [setuptools-scm] is unable to support them sensibly.
 
