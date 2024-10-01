@@ -1,4 +1,5 @@
 # setuptools-scm
+
 [![github ci](https://github.com/pypa/setuptools-scm/actions/workflows/python-tests.yml/badge.svg)](https://github.com/pypa/setuptools-scm/actions/workflows/python-tests.yml)
 [![Documentation Status](https://readthedocs.org/projects/setuptools-scm/badge/?version=latest)](https://setuptools-scm.readthedocs.io/en/latest/?badge=latest)
 [![tidelift](https://tidelift.com/badges/package/pypi/setuptools-scm) ](https://tidelift.com/subscription/pkg/pypi-setuptools-scm?utm_source=pypi-setuptools-scm&utm_medium=readme)
@@ -39,7 +40,6 @@ that support [PEP 518] like [pip] and [build].
 [build]: https://pypi.org/project/build
 [PEP 518]: https://peps.python.org/pep-0518/
 
-
 To enable version inference, you need to set the version
 dynamically in the `project` section of `pyproject.toml`:
 
@@ -75,7 +75,6 @@ For further configuration see the [documentation].
 [documentation]: https://setuptools-scm.readthedocs.io/
 [git-archive-docs]: https://setuptools-scm.readthedocs.io/en/stable/usage/#builtin-mechanisms-for-obtaining-version-numbers
 
-
 ## Interaction with Enterprise Distributions
 
 Some enterprise distributions like RHEL7
@@ -88,16 +87,13 @@ modern [setuptools-scm] is unable to support them sensibly.
 It's strongly recommended to build a wheel artifact using modern Python and setuptools,
 then installing the artifact instead of trying to run against old setuptools versions.
 
-
 ## Code of Conduct
-
 
 Everyone interacting in the [setuptools-scm] project's codebases, issue
 trackers, chat rooms, and mailing lists is expected to follow the
 [PSF Code of Conduct].
 
 [PSF Code of Conduct]: https://github.com/pypa/.github/blob/main/CODE_OF_CONDUCT.md
-
 
 ## Security Contact
 

@@ -4,9 +4,9 @@ on:
   pull_request:
   push:
     branches:
-    - "*"
+      - "*"
     tags:
-    - "v*"
+      - "v*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -16,7 +16,6 @@ env:
   FORCE_COLOR: 1
 
 jobs:
-
   package:
     name: Build & inspect our package.
     runs-on: ubuntu-latest
@@ -34,11 +33,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: [ '3.8', '3.9', '3.10', '3.11', '3.12', 'pypy-3.10' ]
+        python_version: ["3.8", "3.9", "3.10", "3.11", "3.12", "pypy-3.10"]
         os: [windows-latest, ubuntu-latest] #, macos-latest]
         include:
-        - os: windows-latest
-          python_version: 'msys2'
+          - os: windows-latest
+            python_version: "msys2"
 
     name: ${{ matrix.os }} - Python ${{ matrix.python_version }}
     steps:
@@ -97,19 +96,18 @@ jobs:
         timeout-minutes: 15
 
   dist_upload:
-
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
     permissions:
       id-token: write
     needs: [test]
     steps:
-    - uses: actions/download-artifact@v4
-      with:
-        name: Packages
-        path: dist
-    - name: Publish package to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: Packages
+          path: dist
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
 
   test-pypi-upload:
     runs-on: ubuntu-latest
@@ -117,12 +115,12 @@ jobs:
     permissions:
       id-token: write
     steps:
-    - uses: actions/download-artifact@v4
-      with:
-        name: Packages
-        path: dist
-    - name: Publish package to PyPI
-      continue-on-error: true
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        repository-url: https://test.pypi.org/legacy/
+      - uses: actions/download-artifact@v4
+        with:
+          name: Packages
+          path: dist
+      - name: Publish package to PyPI
+        continue-on-error: true
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/

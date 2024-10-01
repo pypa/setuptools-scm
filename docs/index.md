@@ -19,7 +19,6 @@ or [configuring Git archive][git-archive-docs].
 Note: `setuptools-scm>=8` intentionally doesn't depend on setuptools to ease non-setuptools usage.
 Please ensure a recent version of setuptools (>=64) is installed.
 
-
 ```toml title="pyproject.toml"
 [build-system]
 requires = ["setuptools>=64", "setuptools-scm>=8"]
@@ -35,7 +34,6 @@ dynamic = ["version"]
 [tool.setuptools_scm]
 
 ```
-
 
 ### with hatch
 

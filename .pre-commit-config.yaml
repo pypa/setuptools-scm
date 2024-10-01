@@ -1,43 +1,40 @@
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
-    -   id: trailing-whitespace
-    -   id: check-yaml
-    -   id: debug-statements
-    -   id: end-of-file-fixer
-- repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.3.4
-  hooks:
-    - id: ruff
-      args: [--fix, --exit-non-zero-on-fix, --show-fixes]
-    - id: ruff-format
-- repo: https://github.com/rbubley/mirrors-prettier
-  rev: v3.3.3
-  hooks:
-    - id: prettier
-
-- repo: https://github.com/tox-dev/pyproject-fmt
-  rev: 1.7.0
-  hooks:
-    - id: pyproject-fmt
-      exclude: docs/examples/
-
--   repo: https://github.com/pre-commit/mirrors-mypy
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: debug-statements
+      - id: end-of-file-fixer
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.4
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix, --show-fixes]
+      - id: ruff-format
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.3.3
+    hooks:
+      - id: prettier
+  - repo: https://github.com/tox-dev/pyproject-fmt
+    rev: 1.7.0
+    hooks:
+      - id: pyproject-fmt
+        exclude: docs/examples/
+  - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.9.0
     hooks:
-    -   id: mypy
+      - id: mypy
         args: [--strict]
         language_version: "3.10"
         additional_dependencies:
-            - types-setuptools
-            - tokenize-rt==3.2.0
-            - pytest == 7.1
-            - importlib_metadata
-            - typing-extensions>=4.5
-            - rich
-
--   repo: https://github.com/scientific-python/cookie
+          - types-setuptools
+          - tokenize-rt==3.2.0
+          - pytest == 7.1
+          - importlib_metadata
+          - typing-extensions>=4.5
+          - rich
+  - repo: https://github.com/scientific-python/cookie
     rev: 2024.04.23
     hooks:
       - id: sp-repo-review

@@ -20,4 +20,3 @@ as a toml inline map to override the configuration data from `pyproject.toml`.
 The environment variable `SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT` allows to override the subprocess timeout.
 The default is 40 seconds and should work for most needs. However, users with git lfs + windows reported
 situations where this was not enough.
-

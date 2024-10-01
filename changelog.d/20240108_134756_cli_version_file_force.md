@@ -1,9 +1,9 @@
-
 ### Added
 
-- fix #960: add a ``--force-write-version-files`` flag for the cli
+- fix #960: add a `--force-write-version-files` flag for the cli
 
 -->
+
 <!--
 ### Changed
 

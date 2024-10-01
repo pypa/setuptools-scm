@@ -3,7 +3,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/vcs-versioning.svg)](https://pypi.org/project/vcs-versioning)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/vcs-versioning.svg)](https://pypi.org/project/vcs-versioning)
 
------
+---
 
 **Table of Contents**
 

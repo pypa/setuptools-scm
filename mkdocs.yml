@@ -11,8 +11,8 @@ theme:
   name: material
 
 watch:
-- src/setuptools_scm
-- docs
+  - src/setuptools_scm
+  - docs
 markdown_extensions:
   - def_list
   - admonition
@@ -22,16 +22,16 @@ markdown_extensions:
   - pymdownx.superfences
 
 plugins:
-- entangled
-- search
-- mkdocstrings:
-    default_handler: python
-    handlers:
-      python:
-        paths: [ src ]
+  - entangled
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [src]
 
-        options:
-          separate_signature: true
-          show_signature_annotations: true
-          allow_inspection: true
-          show_root_heading: true
+          options:
+            separate_signature: true
+            show_signature_annotations: true
+            allow_inspection: true
+            show_root_heading: true

@@ -32,8 +32,8 @@ Tools that still invoke `setup.py` must ensure build requirements are installed
 [tool.setuptools_scm]
 version_file = "pkg/_version.py"
 ```
-Where ``pkg`` is the name of your package.
 
+Where `pkg` is the name of your package.
 
 ```commandline
 $ python -m setuptools_scm
@@ -54,7 +54,7 @@ $ python -m setuptools_scm # example from running local after changes
 7.1.1.dev149+g5197d0f.d20230727
 ```
 
- and to list all tracked by the scm:
+and to list all tracked by the scm:
 
 ```commandline
 $ python -m setuptools_scm ls # output trimmed for brevity
@@ -84,7 +84,6 @@ from setuptools_scm import get_version
 version = get_version()
 ```
 
-
 In order to use `setuptools-scm` from code that is one directory deeper
 than the project's root, you can use:
 
@@ -93,17 +92,13 @@ from setuptools_scm import get_version
 version = get_version(root='..', relative_to=__file__)
 ```
 
-
 ## Python package metadata
-
-
-
 
 ### version at runtime
 
 If you have opted not to hardcode the version number inside the package,
 you can retrieve it at runtime from [PEP-0566](https://www.python.org/dev/peps/pep-0566/) metadata using
-``importlib.metadata`` from the standard library (added in Python 3.8)
+`importlib.metadata` from the standard library (added in Python 3.8)
 or the [`importlib_metadata`](https://pypi.org/project/importlib-metadata/) backport:
 
 ```python title="package_name/__init__.py"
@@ -116,26 +111,22 @@ except PackageNotFoundError:
     pass
 ```
 
-
 ### Usage from Sphinx
 
-
-``` {.python file=docs/.entangled/sphinx_conf.py}
+```{.python file=docs/.entangled/sphinx_conf.py}
 from importlib.metadata import version as get_version
 release: str = get_version("package-name")
 # for example take major/minor
 version: str = ".".join(release.split('.')[:2])
 ```
 
-The underlying reason is that services like *Read the Docs* sometimes change
+The underlying reason is that services like _Read the Docs_ sometimes change
 the working directory for good reasons and using the installed metadata
 prevents using needless volatile data there.
 
-
 ## with Docker/Podman
 
-
-In some situations, Docker may not copy the `.git`  into the container when
+In some situations, Docker may not copy the `.git` into the container when
 building images. Because of this, builds with version inference may fail.
 
 The following snippet exposes the external `.git` directory without copying.
@@ -146,11 +137,11 @@ without copying the entire `.git` folder into the container image.
 RUN --mount=source=.git,target=.git,type=bind \
     pip install --no-cache-dir -e .
 ```
+
 However, this build step introduces a dependency to the state of your local
 `.git` folder the build cache and triggers the long-running pip install process on every build.
 To optimize build caching, one can use an environment variable to pretend a pseudo
 version that is used to cache the results of the pip install process:
-
 
 ```dockerfile
 FROM python
@@ -168,8 +159,6 @@ version as a build argument.
 Note that `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME}`
 is preferred over `SETUPTOOLS_SCM_PRETEND_VERSION`.
 
-
-
 ## Default versioning scheme
 
 In the standard configuration `setuptools-scm` takes a look at three things:
@@ -180,9 +169,8 @@ In the standard configuration `setuptools-scm` takes a look at three things:
 
 and uses roughly the following logic to render the version:
 
-
 | distance | state     | format                                                               |
-|----------|-----------|----------------------------------------------------------------------|
+| -------- | --------- | -------------------------------------------------------------------- |
 | no       | unchanged | `{tag}`                                                              |
 | yes      | unchanged | `{next_version}.dev{distance}+{scm letter}{revision hash}`           |
 | no       | changed   | `{tag}+dYYYYMMDD`                                                    |
@@ -193,9 +181,8 @@ where `{next_version}` is the next version number after the latest tag
 The next version is calculated by adding `1` to the last numeric component of
 the tag.
 
-For Git projects, the version relies on  [git describe](https://git-scm.com/docs/git-describe),
+For Git projects, the version relies on [git describe](https://git-scm.com/docs/git-describe),
 so you will see an additional `g` prepended to the `{revision hash}`.
-
 
 !!! note
 
@@ -215,14 +202,12 @@ will increment the wrong part of the SemVer (e.g. tag `2.0` results in
 `2.1.devX` instead of `2.0.1.devX`). So please make sure to tag
 accordingly.
 
-
 ## Builtin mechanisms for obtaining version numbers
 
 1. the SCM itself (Git/Mercurial)
 2. `.hg_archival` files (Mercurial archives)
 3. `.git_archival.txt` files (Git archives, see subsection below)
 4. `PKG-INFO`
-
 
 ### Git archives
 
@@ -247,16 +232,15 @@ tagging style.
     lead to the git archive's checksum changing after a commit is added
     post-release. See [this issue][git-archive-issue] for more details.
 
-
-``` {.text file=".gitattributes"}
+```{.text file=".gitattributes"}
 .git_archival.txt  export-subst
 ```
 
 Finally, don't forget to commit the two files:
+
 ```commandline
 $ git add .git_archival.txt .gitattributes && git commit -m "add export config"
 ```
-
 
 Note that if you are creating a `_version.py` file, note that it should not
 be kept in version control. It's strongly recommended to be put into gitignore.
@@ -270,8 +254,8 @@ which returns all files tracked by your SCM.
 This eliminates the need for a manually constructed `MANIFEST.in` in most cases where this
 would be required when not using `setuptools-scm`, namely:
 
-* To ensure all relevant files are packaged when running the `sdist` command.
-  * When using [include_package_data] to include package data as part of the `build` or `bdist_wheel`.
+- To ensure all relevant files are packaged when running the `sdist` command.
+  - When using [include_package_data] to include package data as part of the `build` or `bdist_wheel`.
 
 `MANIFEST.in` may still be used: anything defined there overrides the hook.
 This is mostly useful to exclude files tracked in your SCM from packages,
