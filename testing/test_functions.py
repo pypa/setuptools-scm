@@ -153,6 +153,14 @@ def test_dump_version_flake8(tmp_path: Path) -> None:
     subprocess.run([flake8, "VERSION.py"], cwd=tmp_path, check=True)
 
 
+def test_dump_version_ruff(tmp_path: Path) -> None:
+    ruff = shutil.which("ruff")
+    if ruff is None:
+        pytest.skip("ruff not found")
+    dump_a_version(tmp_path)
+    subprocess.run([ruff, "check", "--no-fix", "VERSION.py"], cwd=tmp_path, check=True)
+
+
 def test_has_command() -> None:
     with pytest.warns(RuntimeWarning, match="yadayada"):
         assert not has_command("yadayada_setuptools_aint_ne")
