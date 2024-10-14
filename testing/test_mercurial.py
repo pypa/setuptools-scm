@@ -21,7 +21,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def wd(wd: WorkDir) -> WorkDir:
     wd("hg init")
     wd.add_command = "hg add ."
@@ -153,7 +153,7 @@ def test_parse_no_worktree(tmp_path: Path) -> None:
     assert ret is None
 
 
-@pytest.fixture()
+@pytest.fixture
 def version_1_0(wd: WorkDir) -> WorkDir:
     wd("hg branch default")
     wd.commit_testfile()
@@ -161,7 +161,7 @@ def version_1_0(wd: WorkDir) -> WorkDir:
     return wd
 
 
-@pytest.fixture()
+@pytest.fixture
 def pre_merge_commit_after_tag(version_1_0: WorkDir) -> WorkDir:
     wd = version_1_0
     wd("hg branch testbranch")
