@@ -1,10 +1,8 @@
-
-
 [build-system]
 build-backend = "_own_version_helper:build_meta"
 requires = [
   "setuptools>=61",
-  'tomli; python_version < "3.11"',
+  "tomli; python_version<'3.11'",
 ]
 backend-path = [
   ".",
@@ -17,7 +15,7 @@ description = "the blessed package to manage your versions by scm tags"
 readme = "README.md"
 license.file = "LICENSE"
 authors = [
-    {name="Ronny Pfannschmidt", email="opensource@ronnypfannschmidt.de"}
+  { name = "Ronny Pfannschmidt", email = "opensource@ronnypfannschmidt.de" },
 ]
 requires-python = ">=3.8"
 classifiers = [
@@ -31,6 +29,7 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Software Development :: Libraries",
   "Topic :: Software Development :: Version Control",
   "Topic :: System :: Software Distribution",
@@ -42,11 +41,10 @@ dynamic = [
 dependencies = [
   "packaging>=20",
   "setuptools",
-  'tomli>=1; python_version < "3.11"',
-  'typing-extensions; python_version < "3.10"',
+  "tomli>=1; python_version<'3.11'",
+  "typing-extensions; python_version<'3.10'",
 ]
-[project.optional-dependencies]
-docs = [
+optional-dependencies.docs = [
   "entangled-cli~=2.0",
   "mkdocs",
   "mkdocs-entangled-plugin",
@@ -54,86 +52,73 @@ docs = [
   "mkdocstrings[python]",
   "pygments",
 ]
-rich = [
+optional-dependencies.rich = [
   "rich",
 ]
-test = [
+optional-dependencies.test = [
   "build",
   "pytest",
   "rich",
-  'typing-extensions; python_version < "3.11"',
+  "typing-extensions; python_version<'3.11'",
   "wheel",
 ]
-toml = [
+optional-dependencies.toml = [
 ]
-[project.urls]
-documentation = "https://setuptools-scm.readthedocs.io/"
-repository = "https://github.com/pypa/setuptools-scm/"
-[project.entry-points."distutils.setup_keywords"]
-use_scm_version = "setuptools_scm._integration.setuptools:version_keyword"
-[project.entry-points."pipx.run"]
-setuptools_scm = "setuptools_scm._cli:main"
-[project.entry-points."setuptools.file_finders"]
-setuptools_scm = "setuptools_scm._file_finders:find_files"
-[project.entry-points."setuptools.finalize_distribution_options"]
-setuptools_scm = "setuptools_scm._integration.setuptools:infer_version"
-[project.entry-points."setuptools_scm.files_command"]
-".git" = "setuptools_scm._file_finders.git:git_find_files"
-".hg" = "setuptools_scm._file_finders.hg:hg_find_files"
-[project.entry-points."setuptools_scm.files_command_fallback"]
-".git_archival.txt" = "setuptools_scm._file_finders.git:git_archive_find_files"
-".hg_archival.txt" = "setuptools_scm._file_finders.hg:hg_archive_find_files"
-[project.entry-points."setuptools_scm.local_scheme"]
-dirty-tag = "setuptools_scm.version:get_local_dirty_tag"
-no-local-version = "setuptools_scm.version:get_no_local_node"
-node-and-date = "setuptools_scm.version:get_local_node_and_date"
-node-and-timestamp = "setuptools_scm.version:get_local_node_and_timestamp"
-[project.entry-points."setuptools_scm.parse_scm"]
-".git" = "setuptools_scm.git:parse"
-".hg" = "setuptools_scm.hg:parse"
-[project.entry-points."setuptools_scm.parse_scm_fallback"]
-".git_archival.txt" = "setuptools_scm.git:parse_archival"
-".hg_archival.txt" = "setuptools_scm.hg:parse_archival"
-PKG-INFO = "setuptools_scm.fallbacks:parse_pkginfo"
-"pyproject.toml" = "setuptools_scm.fallbacks:fallback_version"
-"setup.py" = "setuptools_scm.fallbacks:fallback_version"
-[project.entry-points."setuptools_scm.version_scheme"]
-"calver-by-date" = "setuptools_scm.version:calver_by_date"
-"guess-next-dev" = "setuptools_scm.version:guess_next_dev_version"
-"no-guess-dev" = "setuptools_scm.version:no_guess_dev_version"
-"only-version" = "setuptools_scm.version:only_version"
-"post-release" = "setuptools_scm.version:postrelease_version"
-"python-simplified-semver" = "setuptools_scm.version:simplified_semver_version"
-"release-branch-semver" = "setuptools_scm.version:release_branch_semver_version"
+urls.documentation = "https://setuptools-scm.readthedocs.io/"
+urls.repository = "https://github.com/pypa/setuptools-scm/"
+entry-points."distutils.setup_keywords".use_scm_version = "setuptools_scm._integration.setuptools:version_keyword"
+entry-points."pipx.run".setuptools_scm = "setuptools_scm._cli:main"
+entry-points."setuptools.file_finders".setuptools_scm = "setuptools_scm._file_finders:find_files"
+entry-points."setuptools.finalize_distribution_options".setuptools_scm = "setuptools_scm._integration.setuptools:infer_version"
+entry-points."setuptools_scm.files_command".".git" = "setuptools_scm._file_finders.git:git_find_files"
+entry-points."setuptools_scm.files_command".".hg" = "setuptools_scm._file_finders.hg:hg_find_files"
+entry-points."setuptools_scm.files_command_fallback".".git_archival.txt" = "setuptools_scm._file_finders.git:git_archive_find_files"
+entry-points."setuptools_scm.files_command_fallback".".hg_archival.txt" = "setuptools_scm._file_finders.hg:hg_archive_find_files"
+entry-points."setuptools_scm.local_scheme".dirty-tag = "setuptools_scm.version:get_local_dirty_tag"
+entry-points."setuptools_scm.local_scheme".no-local-version = "setuptools_scm.version:get_no_local_node"
+entry-points."setuptools_scm.local_scheme".node-and-date = "setuptools_scm.version:get_local_node_and_date"
+entry-points."setuptools_scm.local_scheme".node-and-timestamp = "setuptools_scm.version:get_local_node_and_timestamp"
+entry-points."setuptools_scm.parse_scm".".git" = "setuptools_scm.git:parse"
+entry-points."setuptools_scm.parse_scm".".hg" = "setuptools_scm.hg:parse"
+entry-points."setuptools_scm.parse_scm_fallback".".git_archival.txt" = "setuptools_scm.git:parse_archival"
+entry-points."setuptools_scm.parse_scm_fallback".".hg_archival.txt" = "setuptools_scm.hg:parse_archival"
+entry-points."setuptools_scm.parse_scm_fallback".PKG-INFO = "setuptools_scm.fallbacks:parse_pkginfo"
+entry-points."setuptools_scm.parse_scm_fallback"."pyproject.toml" = "setuptools_scm.fallbacks:fallback_version"
+entry-points."setuptools_scm.parse_scm_fallback"."setup.py" = "setuptools_scm.fallbacks:fallback_version"
+entry-points."setuptools_scm.version_scheme"."calver-by-date" = "setuptools_scm.version:calver_by_date"
+entry-points."setuptools_scm.version_scheme"."guess-next-dev" = "setuptools_scm.version:guess_next_dev_version"
+entry-points."setuptools_scm.version_scheme"."no-guess-dev" = "setuptools_scm.version:no_guess_dev_version"
+entry-points."setuptools_scm.version_scheme"."only-version" = "setuptools_scm.version:only_version"
+entry-points."setuptools_scm.version_scheme"."post-release" = "setuptools_scm.version:postrelease_version"
+entry-points."setuptools_scm.version_scheme"."python-simplified-semver" = "setuptools_scm.version:simplified_semver_version"
+entry-points."setuptools_scm.version_scheme"."release-branch-semver" = "setuptools_scm.version:release_branch_semver_version"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = [ "src" ]
 namespaces = false
 
 [tool.setuptools.dynamic]
-version = { attr = "_own_version_helper.version"}
+version = { attr = "_own_version_helper.version" }
 
 [tool.setuptools_scm]
 
 [tool.ruff]
-src = ["src"]
+src = [ "src" ]
 fix = true
-lint.select = ["E", "F", "B", "UP", "YTT", "C", "DTZ", "PYI", "PT", "I", "FURB", "RUF"]
-lint.ignore = ["B028"]
+lint.select = [ "B", "C", "DTZ", "E", "F", "FURB", "I", "PT", "PYI", "RUF", "UP", "YTT" ]
+lint.ignore = [ "B028" ]
+lint.isort.force-single-line = true
+lint.isort.from-first = false
+lint.isort.lines-between-types = 1
+lint.isort.order-by-type = true
 lint.preview = true
 
-[tool.ruff.lint.isort]
-force-single-line = true
-from-first = false
-lines-between-types = 1
-order-by-type = true
-
 [tool.repo-review]
-ignore = ["PP305", "GH103", "GH212", "MY100", "PC111", "PC160", "PC170", "PC180", "PC901"]
+ignore = [ "PP305", "GH103", "GH212", "MY100", "PC111", "PC160", "PC170", "PC180", "PC901" ]
 
 [tool.pytest.ini_options]
 minversion = "7"
-testpaths = ["testing"]
+testpaths = [ "testing" ]
 filterwarnings = [
   "error",
   "ignore:.*tool\\.setuptools_scm.*",
@@ -142,7 +127,7 @@ filterwarnings = [
 log_level = "debug"
 log_cli_level = "info"
 # disable unraisable until investigated
-addopts = ["-ra", "--strict-config", "--strict-markers", "-p", "no:unraisableexception"]
+addopts = [ "-ra", "--strict-config", "--strict-markers", "-p", "no:unraisableexception" ]
 markers = [
   "issue(id): reference to github issue",
   "skip_commit: allows to skip committing in the helpers",
