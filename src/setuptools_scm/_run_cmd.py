@@ -117,7 +117,7 @@ def avoid_pip_isolation(env: Mapping[str, str]) -> dict[str, str]:
         [
             path
             for path in new_env["PYTHONPATH"].split(os.pathsep)
-            if "pip-build-env-" not in path
+            if "-build-env-" not in path
         ]
     )
     return new_env
