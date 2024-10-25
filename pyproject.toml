@@ -72,6 +72,7 @@ repository = "https://github.com/pypa/setuptools-scm/"
 [project.entry-points."distutils.setup_keywords"]
 use_scm_version = "setuptools_scm._integration.setuptools:version_keyword"
 [project.entry-points."pipx.run"]
+setuptools-scm = "setuptools_scm._cli:main"
 setuptools_scm = "setuptools_scm._cli:main"
 [project.entry-points."setuptools.file_finders"]
 setuptools_scm = "setuptools_scm._file_finders:find_files"
