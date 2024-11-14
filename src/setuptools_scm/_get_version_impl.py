@@ -99,6 +99,9 @@ def _get_version(
     if parsed_version is None:
         return None
     version_string = _format_version(parsed_version)
+    if config.strip_dev:
+        version_string = version_string.partition(".dev")[0]
+
     if force_write_version_files is None:
         force_write_version_files = True
         warnings.warn(
