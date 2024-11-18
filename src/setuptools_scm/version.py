@@ -295,7 +295,11 @@ def release_branch_semver_version(version: ScmVersion) -> str:
             if branch_ver_up_to_minor == tag_ver_up_to_minor:
                 # We're in a release/maintenance branch, next is a patch/rc/beta bump:
                 return version.format_next_version(guess_next_version)
-    # We're in a development branch, next is a minor bump:
+
+    # We're in a development branch, next is a minor bump, but take
+    # the minor into consideration so that e.g. being five commits off
+    # 1.0.1 is greater than being 10 commits off 1.0.0.
+    version.distance += version.tag.micro * version.config.micro_version_factor
     return version.format_next_version(guess_next_simple_semver, retain=SEMVER_MINOR)
 
 
