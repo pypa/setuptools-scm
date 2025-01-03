@@ -12,6 +12,7 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
 
 `version_scheme : str | Callable[[ScmVersion], str]`
 : Configures how the local version number is constructed; either an entrypoint name or a callable.
+  See [Version number construction](extending.md#setuptools_scmversion_scheme) for predefined implementations.
 
 `local_scheme : str | Callable[[ScmVersion], str]`
 : Configures how the local component of the version is constructed
