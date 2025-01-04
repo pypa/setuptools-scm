@@ -11,11 +11,13 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
 : Relative path to the SCM root, defaults to `.` and is relative to the file path passed in `relative_to`
 
 `version_scheme : str | Callable[[ScmVersion], str]`
-: Configures how the local version number is constructed; either an entrypoint name or a callable.
+: Configures how the version number is constructed; either an entrypoint name or a callable.
+  See [Version number construction](extending.md#setuptools_scmversion_scheme) for predefined implementations.
 
 `local_scheme : str | Callable[[ScmVersion], str]`
-: Configures how the local component of the version is constructed
+: Configures how the local component of the version (the optional part after the `+`) is constructed;
   either an entrypoint name or a callable.
+  See [Version number construction](extending.md#setuptools_scmlocal_scheme) for predefined implementations.
 
 
 `version_file: Path | PathLike[str] | None = None`
