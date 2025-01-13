@@ -381,8 +381,7 @@ def guess_next_date_ver(
         if tag_date > head_date and match is not None:
             # warn on future times
             warnings.warn(
-                f"your previous tag  ({tag_date})"
-                f" is ahead your node date ({head_date})"
+                f"your previous tag  ({tag_date}) is ahead your node date ({head_date})"
             )
         patch = 0
     next_version = "{node_date:{date_fmt}}.{patch}".format(

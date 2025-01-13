@@ -24,16 +24,16 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 ]
 dynamic = [
   "version",
 ]
 dependencies = [
 ]
-[project.urls]
-Documentation = "https://github.com/unknown/vcs-versioning#readme"
-Issues = "https://github.com/unknown/vcs-versioning/issues"
-Source = "https://github.com/unknown/vcs-versioning"
+urls.Documentation = "https://github.com/unknown/vcs-versioning#readme"
+urls.Issues = "https://github.com/unknown/vcs-versioning/issues"
+urls.Source = "https://github.com/unknown/vcs-versioning"
 
 [tool.hatch.version]
 path = "vcs_versioning/__about__.py"
@@ -48,7 +48,7 @@ cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=vcs_ve
 no-cov = "cov --no-cov {args}"
 
 [[tool.hatch.envs.test.matrix]]
-python = ["38", "39", "310", "311"]
+python = [ "38", "39", "310", "311" ]
 
 [tool.coverage.run]
 branch = true

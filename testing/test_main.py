@@ -20,7 +20,7 @@ def test_main() -> None:
     exec(code, ns)
 
 
-@pytest.fixture()
+@pytest.fixture
 def repo(wd: WorkDir) -> WorkDir:
     wd("git init")
     wd("git config user.email user@host")

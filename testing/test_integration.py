@@ -23,7 +23,7 @@ from .wd_wrapper import WorkDir
 c = Configuration()
 
 
-@pytest.fixture()
+@pytest.fixture
 def wd(wd: WorkDir) -> WorkDir:
     wd("git init")
     wd("git config user.email test@example.com")
