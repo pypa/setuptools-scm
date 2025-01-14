@@ -3,10 +3,10 @@
 ## providing project local version schemes
 
 As PEP 621 provides no way to specify local code as a build backend plugin,
-setuptools_scm has to piggyback on setuptools for passing functions over.
+setuptools-scm has to piggyback on setuptools for passing functions over.
 
 To facilitate that one needs to write a `setup.py` file and
-pass partial setuptools_scm configuration in via the use_scm_version keyword.
+pass partial setuptools-scm configuration in via the use_scm_version keyword.
 
 It's strongly recommended to experiment with using stock version schemes or creating plugins as package.
 (This recommendation will change if there ever is something like build-time entrypoints).
@@ -33,7 +33,7 @@ setup(use_scm_version={"version_scheme": myversion_func})
 
 ``` { .toml title="pyproject.toml" file="docs/examples/version_scheme_code/pyproject.toml" }
 [build-system]
-requires = ["setuptools>=64", "setuptools_scm>=8"]
+requires = ["setuptools>=64", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -52,7 +52,7 @@ dynamic = [
 
 ##  Importing in setup.py
 
-With the pep 517/518 build backend, setuptools_scm is importable from `setup.py`
+With the pep 517/518 build backend, setuptools-scm is importable from `setup.py`
 
 ``` { .python title="setup.py" }
 import setuptools

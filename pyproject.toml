@@ -4,7 +4,7 @@
 build-backend = "_own_version_helper:build_meta"
 requires = [
   "setuptools>=61",
-  'tomli; python_version < "3.11"',
+  'tomli<=2.0.2; python_version < "3.11"',
 ]
 backend-path = [
   ".",
@@ -41,7 +41,7 @@ dynamic = [
 ]
 dependencies = [
   "packaging>=20",
-  "setuptools",
+  "setuptools>=61",
   'tomli>=1; python_version < "3.11"',
   'typing-extensions; python_version < "3.10"',
 ]
@@ -68,7 +68,7 @@ toml = [
 ]
 [project.urls]
 documentation = "https://setuptools-scm.readthedocs.io/"
-repository = "https://github.com/pypa/setuptools_scm/"
+repository = "https://github.com/pypa/setuptools-scm/"
 [project.entry-points."distutils.setup_keywords"]
 use_scm_version = "setuptools_scm._integration.setuptools:version_keyword"
 [project.entry-points."pipx.run"]

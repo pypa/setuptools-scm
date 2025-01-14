@@ -2,14 +2,14 @@
 
 ## At build time
 
-The preferred way to configure `setuptools_scm` is to author
+The preferred way to configure `setuptools-scm` is to author
 settings in the `tool.setuptools_scm` section of `pyproject.toml`.
 
 It's necessary to use a setuptools version released after 2022.
 
 ```toml title="pyproject.toml"
 [build-system]
-requires = ["setuptools>=64", "setuptools_scm>=8"]
+requires = ["setuptools>=64", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -17,10 +17,10 @@ build-backend = "setuptools.build_meta"
 dynamic = ["version"]
 
 [tool.setuptools_scm]
-# can be empty if no extra settings are needed, presence enables setuptools_scm
+# can be empty if no extra settings are needed, presence enables setuptools-scm
 ```
 
-That will be sufficient to require `setuptools_scm` for projects
+That will be sufficient to require `setuptools-scm` for projects
 that support PEP 518 ([pip](https://pypi.org/project/pip) and
 [pep517](https://pypi.org/project/pep517/)).
 Tools that still invoke `setup.py` must ensure build requirements are installed
@@ -46,7 +46,7 @@ the runtime discussion below for more details.
 
 If you need to confirm which version string is being generated
 or debug the configuration, you can install
-[setuptools-scm](https://github.com/pypa/setuptools_scm)
+[setuptools-scm](https://github.com/pypa/setuptools-scm)
 directly in your working environment and run:
 
 ```commandline
@@ -79,7 +79,6 @@ To explore other options, try
 
 ```commandline
 $ python -m setuptools_scm --help
-```
 
 ## At runtime
 
@@ -192,7 +191,7 @@ is preferred over `SETUPTOOLS_SCM_PRETEND_VERSION`.
 
 ## Default versioning scheme
 
-In the standard configuration `setuptools_scm` takes a look at three things:
+In the standard configuration `setuptools-scm` takes a look at three things:
 
 1. latest tag (with a version number)
 2. the distance to this tag (e.g. number of revisions since latest tag)
@@ -281,14 +280,14 @@ $ git add .git_archival.txt .gitattributes && git commit -m "add export config"
 Note that if you are creating a `_version.py` file, note that it should not
 be kept in version control. It's strongly recommended to be put into gitignore.
 
-[git-archive-issue]: https://github.com/pypa/setuptools_scm/issues/806
+[git-archive-issue]: https://github.com/pypa/setuptools-scm/issues/806
 
 ### File finders hook makes most of `MANIFEST.in` unnecessary
 
-`setuptools_scm` implements a [file_finders] entry point
+`setuptools-scm` implements a [file_finders] entry point
 which returns all files tracked by your SCM.
 This eliminates the need for a manually constructed `MANIFEST.in` in most cases where this
-would be required when not using `setuptools_scm`, namely:
+would be required when not using `setuptools-scm`, namely:
 
 * To ensure all relevant files are packaged when running the `sdist` command.
   * When using [include_package_data] to include package data as part of the `build` or `bdist_wheel`.

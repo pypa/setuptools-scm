@@ -11,11 +11,13 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
 : Relative path to the SCM root, defaults to `.` and is relative to the file path passed in `relative_to`
 
 `version_scheme : str | Callable[[ScmVersion], str]`
-: Configures how the local version number is constructed; either an entrypoint name or a callable.
+: Configures how the version number is constructed; either an entrypoint name or a callable.
+  See [Version number construction](extending.md#setuptools_scmversion_scheme) for predefined implementations.
 
 `local_scheme : str | Callable[[ScmVersion], str]`
-: Configures how the local component of the version is constructed
+: Configures how the local component of the version (the optional part after the `+`) is constructed;
   either an entrypoint name or a callable.
+  See [Version number construction](extending.md#setuptools_scmlocal_scheme) for predefined implementations.
 
 
 `version_file: Path | PathLike[str] | None = None`
@@ -69,14 +71,14 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
 `fallback_version: str | None = None`
  :  A version string that will be used if no other method for detecting the
     version worked (e.g., when using a tarball with no metadata). If this is
-    unset (the default), `setuptools_scm` will error if it fails to detect the
+    unset (the default), `setuptools-scm` will error if it fails to detect the
     version.
 
 `parse: Callable[[Path, Config], ScmVersion] | None = None`
 :   A function that will be used instead of the discovered SCM
     for parsing the version. Use with caution,
     this is a function for advanced use and you should be
-    familiar with the `setuptools_scm` internals to use it.
+    familiar with the `setuptools-scm` internals to use it.
 
 `git_describe_command`
 :   This command will be used instead the default `git describe --long` command.
@@ -96,7 +98,7 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
 
     The [setuptools_scm.NonNormalizedVersion][] convenience class is
     provided to disable the normalization step done by
-    `packaging.version.Version`. If this is used while `setuptools_scm`
+    `packaging.version.Version`. If this is used while `setuptools-scm`
     is integrated in a setuptools packaging process, the non-normalized
     version number will appear in all files (see `version_file` note).
 
@@ -121,7 +123,7 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
     in which case it will be an unparsed string.
     Specifying distribution-specific pretend versions will
     avoid possible collisions with third party distributions
-    also using ``setuptools_scm``
+    also using ``setuptools-scm``
 
     the dist name normalization follows adapted PEP 503 semantics, with one or
     more of ".-\_" being replaced by a single "\_", and the name being upper-cased
