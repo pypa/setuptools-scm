@@ -118,7 +118,6 @@ version = { attr = "_own_version_helper.version"}
 
 [tool.ruff]
 src = ["src"]
-fix = true
 lint.select = ["E", "F", "B", "UP", "YTT", "C", "DTZ", "PYI", "PT", "I", "FURB", "RUF"]
 lint.ignore = ["B028"]
 lint.preview = true
