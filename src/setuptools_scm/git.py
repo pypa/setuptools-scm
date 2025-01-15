@@ -145,12 +145,12 @@ class GitWorkdir(Workdir):
         run_git(["fetch", "--unshallow"], self.path, check=True, timeout=240)
 
     def node(self) -> str | None:
-        _unsafe_short_node = operator.itemgetter(slice(7))
+        unsafe_short_node = operator.itemgetter(slice(7))
 
         return run_git(
             ["rev-parse", "--verify", "--quiet", "HEAD"], self.path
         ).parse_success(
-            parse=_unsafe_short_node,
+            parse=unsafe_short_node,
         )
 
     def count_all_nodes(self) -> int:
