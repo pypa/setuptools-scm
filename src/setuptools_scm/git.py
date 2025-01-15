@@ -250,7 +250,7 @@ def version_from_describe(
 def _git_parse_inner(
     config: Configuration,
     wd: GitWorkdir | hg_git.GitWorkdirHgClient,
-    pre_parse: None | (Callable[[GitWorkdir | hg_git.GitWorkdirHgClient], None]) = None,
+    pre_parse: (Callable[[GitWorkdir | hg_git.GitWorkdirHgClient], None]) | None = None,
     describe_command: _t.CMD_TYPE | None = None,
 ) -> ScmVersion:
     if pre_parse:
