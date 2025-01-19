@@ -16,11 +16,52 @@ env:
   FORCE_COLOR: 1
 
 jobs:
+  commit-meta:
+    name: fetch tags and play with them
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/github-script@main
+      id: set-result
+      with:
+        script:  |
+
+            const {repo, owner} = context.repo;
+
+            const { data: tags } = await github.rest.repos.listTags({
+              owner,
+              repo,
+              per_page: 10,
+            });
+            const tagCommitSha = new Map(tags.map(tag => [tag.name, tag.commit.sha]));
+            console.log(tagCommitSha)
+
+            const with_distances = [];
+            for (const [tag, tag_sha] of tagCommitSha) {
+              const { data: compare } = await github.rest.repos.compareCommits({
+                owner,
+                repo,
+                base: tag_sha,
+                head: context.sha,
+                per_page: 0              });
+              console.log(tag, compare.total_commits)
+              with_distances.push({tag, tag_sha, distance:compare.total_commits});
+            }
+            await core.summary
+                 .addHeading('Tag Distances')
+                 .addTable(with_distances.map(({tag, tag_sha, distance}) => [tag, tag_sha, distance.toString()] ))
+                 .write()
+            await core.setOutput("distances", JSON.stringify(with_distances));
+            return with_distances;
+
+
+
+
+
 
   package:
     name: Build & inspect our package.
     runs-on: ubuntu-latest
-
+    if: false # temporary disable
     steps:
       - uses: actions/checkout@v4
         with:
