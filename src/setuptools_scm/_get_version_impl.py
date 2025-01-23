@@ -122,7 +122,10 @@ def _version_missing(config: Configuration) -> NoReturn:
         "metadata and will not work.\n\n"
         "For example, if you're using pip, instead of "
         "https://github.com/user/proj/archive/master.zip "
-        "use git+https://github.com/user/proj.git#egg=proj"
+        "use git+https://github.com/user/proj.git#egg=proj\n\n"
+        "Alternatively, set the version with the environment variable "
+        "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME} as described "
+        "in https://setuptools-scm.readthedocs.io/en/latest/config."
     )
 
 
