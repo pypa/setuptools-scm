@@ -82,9 +82,9 @@ def version_keyword(
         assert isinstance(value, dict), "version_keyword expects a dict or True"
         overrides = value
 
-    assert (
-        "dist_name" not in overrides
-    ), "dist_name may not be specified in the setup keyword "
+    assert "dist_name" not in overrides, (
+        "dist_name may not be specified in the setup keyword "
+    )
     dist_name: str | None = dist.metadata.name
     _log_hookstart("version_keyword", dist)
 
