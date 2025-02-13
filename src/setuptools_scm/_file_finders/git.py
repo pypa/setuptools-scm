@@ -19,33 +19,8 @@ log = logging.getLogger(__name__)
 
 def _git_toplevel(path: str) -> str | None:
     try:
-        cwd = os.path.abspath(path or ".")
-        res = _run(["git", "rev-parse", "HEAD"], cwd=cwd)
-        if res.returncode:
-            # BAIL if there is no commit
-            log.error("listing git files failed - pretending there aren't any")
-            return None
-        res = _run(
-            ["git", "rev-parse", "--show-prefix"],
-            cwd=cwd,
-        )
-        if res.returncode:
-            return None
-        out = res.stdout[:-1]  # remove the trailing pathsep
-        if not out:
-            out = cwd
-        else:
-            # Here, ``out`` is a relative path to root of git.
-            # ``cwd`` is absolute path to current working directory.
-            # the below method removes the length of ``out`` from
-            # ``cwd``, which gives the git toplevel
-            assert cwd.replace("\\", "/").endswith(out), f"cwd={cwd!r}\nout={out!r}"
-            # In windows cwd contains ``\`` which should be replaced by ``/``
-            # for this assertion to work. Length of string isn't changed by replace
-            # ``\\`` is just and escape for `\`
-            out = cwd[: -len(out)]
-        log.debug("find files toplevel %s", out)
-        return norm_real(out)
+        res = _run(["git", "rev-parse", "--show-toplevel"], cwd=path, check=True)
+        return res.stdout
     except subprocess.CalledProcessError:
         # git returned error, we are not in a git repo
         return None
