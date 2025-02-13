@@ -98,7 +98,8 @@ def no_git_env(env: Mapping[str, str]) -> dict[str, str]:
         k: v
         for k, v in env.items()
         if not k.startswith("GIT_")
-        or k in ("GIT_CEILING_DIRECTORIES", "GIT_EXEC_PATH", "GIT_SSH", "GIT_SSH_COMMAND")
+        or k
+        in ("GIT_CEILING_DIRECTORIES", "GIT_EXEC_PATH", "GIT_SSH", "GIT_SSH_COMMAND")
     }
 
 
