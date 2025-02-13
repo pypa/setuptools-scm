@@ -79,6 +79,7 @@ To explore other options, try
 
 ```commandline
 $ python -m setuptools_scm --help
+```
 
 ## At runtime
 
