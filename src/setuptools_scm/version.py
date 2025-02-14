@@ -62,15 +62,21 @@ def _parse_version_tag(
         log.debug(
             "key %s data %s, %s, %r", key, match.groupdict(), match.groups(), full
         )
-        result = _TagDict(
-            version=match.group(key),
-            prefix=full[: match.start(key)],
-            suffix=full[match.end(key) :],
-        )
 
-        log.debug("tag %r parsed to %r", tag, result)
-        assert result["version"]
-        return result
+        if version := match.group(key):
+            result = _TagDict(
+                version=version,
+                prefix=full[: match.start(key)],
+                suffix=full[match.end(key) :],
+            )
+
+            log.debug("tag %r parsed to %r", tag, result)
+            return result
+
+        raise ValueError(
+            f'The tag_regex "{config.tag_regex.pattern}" matched tag "{tag}", '
+            "however the matched group has no value."
+        )
     else:
         log.debug("tag %r did not parse", tag)
 
@@ -442,8 +448,9 @@ def format_version(version: ScmVersion) -> str:
     if version.preformatted:
         assert isinstance(version.tag, str)
         return version.tag
+
     main_version = _entrypoints._call_version_scheme(
-        version, "setuptools_scm.version_scheme", version.config.version_scheme, None
+        version, "setuptools_scm.version_scheme", version.config.version_scheme
     )
     log.debug("version %s", main_version)
     assert main_version is not None
