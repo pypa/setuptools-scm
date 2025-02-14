@@ -127,6 +127,6 @@ def test_write_to_absolute_path_passes_when_subdir_of_root(tmp_path: Path) -> No
     with pytest.raises(
         # todo: python version specific error list
         ValueError,
-        match=".*VERSION.py' .* .*subdir.*",
+        match=r".*VERSION.py' .* .*subdir.*",
     ):
         write_version_files(replace(c, root=subdir), "1.0", v)

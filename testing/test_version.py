@@ -235,7 +235,7 @@ def test_version_bump_bad() -> None:
     config = Configuration(version_cls=YikesVersion)  # type: ignore[arg-type]
     with pytest.raises(
         ValueError,
-        match=".*does not end with a number to bump, "
+        match=r".*does not end with a number to bump, "
         "please correct or use a custom version scheme",
     ):
         guess_next_version(tag_version=meta("2.0.0-alpha.5-PMC", config=config))
