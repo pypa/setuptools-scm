@@ -32,7 +32,12 @@ def wd(wd: WorkDir) -> WorkDir:
 archival_mapping = {
     "1.0": {"tag": "1.0"},
     "1.1.0.dev3+h000000000000": {
-        "latesttag": "1.0",
+        "latesttag": "1.0.0",
+        "latesttagdistance": "3",
+        "node": "0" * 20,
+    },
+    "1.1.0.dev103+h000000000000": {
+        "latesttag": "1.0.1",
         "latesttagdistance": "3",
         "node": "0" * 20,
     },
@@ -51,7 +56,9 @@ archival_mapping = {
 @pytest.mark.parametrize(("expected", "data"), sorted(archival_mapping.items()))
 def test_archival_to_version(expected: str, data: dict[str, str]) -> None:
     config = Configuration(
-        version_scheme="release-branch-semver", local_scheme="node-and-date"
+        version_scheme="release-branch-semver",
+        local_scheme="node-and-date",
+        micro_version_factor=100,
     )
     version = archival_to_version(data, config=config)
     assert format_version(version) == expected
