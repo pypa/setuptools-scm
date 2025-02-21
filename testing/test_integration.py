@@ -23,7 +23,7 @@ from .wd_wrapper import WorkDir
 c = Configuration()
 
 
-@pytest.fixture()
+@pytest.fixture
 def wd(wd: WorkDir) -> WorkDir:
     wd("git init")
     wd("git config user.email test@example.com")
@@ -34,7 +34,7 @@ def wd(wd: WorkDir) -> WorkDir:
 
 
 def test_pyproject_support(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    if sys.version_info <= (3, 10):
+    if sys.version_info < (3, 11):
         pytest.importorskip("tomli")
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
     pkg = tmp_path / "package"
@@ -97,7 +97,7 @@ with_metadata_in = pytest.mark.parametrize(
 
 @with_metadata_in
 def test_pyproject_support_with_git(wd: WorkDir, metadata_in: str) -> None:
-    if sys.version_info <= (3, 10):
+    if sys.version_info < (3, 11):
         pytest.importorskip("tomli")
     wd.write("pyproject.toml", PYPROJECT_FILES[metadata_in])
     wd.write("setup.py", SETUP_PY_FILES[metadata_in])

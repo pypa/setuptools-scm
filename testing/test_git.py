@@ -307,7 +307,7 @@ def test_git_worktree_support(wd: WorkDir, tmp_path: Path) -> None:
     assert str(worktree) in res.stdout
 
 
-@pytest.fixture()
+@pytest.fixture
 def shallow_wd(wd: WorkDir, tmp_path: Path) -> Path:
     wd.commit_testfile()
     wd.commit_testfile()
@@ -515,7 +515,7 @@ def test_git_getdate_git_2_45_0_plus(
         assert git_wd.get_head_date() == date(2024, 4, 30)
 
 
-@pytest.fixture()
+@pytest.fixture
 def signed_commit_wd(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> WorkDir:
     if not has_command("gpg", args=["--version"], warn=False):
         pytest.skip("gpg executable not found")

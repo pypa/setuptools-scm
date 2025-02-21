@@ -10,7 +10,7 @@ from . import _types as _t
 log = logging.getLogger(__name__)
 
 
-def data_from_mime(path: _t.PathT, content: None | str = None) -> dict[str, str]:
+def data_from_mime(path: _t.PathT, content: str | None = None) -> dict[str, str]:
     """return a mapping from mime/pseudo-mime content
     :param path: path to the mime file
     :param content: content of the mime file, if None, read from path

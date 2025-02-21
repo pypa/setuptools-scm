@@ -79,14 +79,14 @@ def debug_mode() -> Iterator[DebugMode]:
         yield debug_mode
 
 
-@pytest.fixture()
+@pytest.fixture
 def wd(tmp_path: Path) -> WorkDir:
     target_wd = tmp_path.resolve() / "wd"
     target_wd.mkdir()
     return WorkDir(target_wd)
 
 
-@pytest.fixture()
+@pytest.fixture
 def repositories_hg_git(tmp_path: Path) -> tuple[WorkDir, WorkDir]:
     tmp_path = tmp_path.resolve()
     path_git = tmp_path / "repo_git"
