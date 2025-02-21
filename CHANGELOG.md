@@ -9,11 +9,15 @@
 
 - fix #950: ensure to pass encodings to io usage
 - fix #957 - add subprocess timeout control env var
+- add sp-repo-review pre-commit hook
 
 ## Fixed
 
 - fix #1018: allow non-normalized versions for semver
-
+- fix #1103: respect GIT_CEILING_DIRECTORIES when trying to find git toplevels
+- fix #1081: add name normalized pipx entrypoint
+- fix #1080: clean pdm from PYTHONPATH to protect mercurial
+-
 
 # 8.1.0
 
