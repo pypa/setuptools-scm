@@ -72,7 +72,7 @@ def _git_ls_files_and_dirs(toplevel: str) -> tuple[set[str], set[str]]:
     # export-ignore git attribute
 
     cmd = ["git", "archive", "--prefix", toplevel + os.path.sep, "HEAD"]
-    log.info("running %s" % " ".join(str(x) for x in cmd))
+    log.info("running %s", " ".join(str(x) for x in cmd))
     proc = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, cwd=toplevel, stderr=subprocess.DEVNULL
     )

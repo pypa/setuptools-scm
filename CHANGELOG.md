@@ -1,4 +1,21 @@
-# Unreleased
+
+# v8.2.0
+
+## Added
+
+- fix #960: add a ``--force-write-version-files`` flag for the cli
+
+## Changed
+
+- fix #950: ensure to pass encodings to io usage
+- fix #957 - add subprocess timeout control env var
+
+## Fixed
+
+- fix #1018: allow non-normalized versions for semver
+
+
+# 8.1.0
 
 ## Changed
 
