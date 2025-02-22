@@ -44,8 +44,7 @@ def parse(root: str, config: Configuration) -> ScmVersion | None:
         else:
             if parsed is not None:
                 return parsed
-    else:
-        return None
+    return None
 
 
 def scm_version() -> str:

@@ -321,15 +321,14 @@ def archival_to_version(
         version = tag_to_version(ref, config)
         if version is not None:
             return meta(version, config=config)
+    node = data.get("node")
+    if node is None:
+        return None
+    elif "$FORMAT" in node.upper():
+        warnings.warn("unprocessed git archival found (no export subst applied)")
+        return None
     else:
-        node = data.get("node")
-        if node is None:
-            return None
-        elif "$FORMAT" in node.upper():
-            warnings.warn("unprocessed git archival found (no export subst applied)")
-            return None
-        else:
-            return meta("0.0", node=node, config=config)
+        return meta("0.0", node=node, config=config)
 
 
 def parse_archival(root: _t.PathT, config: Configuration) -> ScmVersion | None:

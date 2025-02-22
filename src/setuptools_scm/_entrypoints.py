@@ -72,8 +72,7 @@ def _get_ep(group: str, name: str) -> Any | None:
     for ep in iter_entry_points(group, name):
         log.debug("ep found: %s", ep.name)
         return ep.load()
-    else:
-        return None
+    return None
 
 
 def _get_from_object_reference_str(path: str, group: str) -> Any | None:
