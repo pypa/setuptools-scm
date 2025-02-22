@@ -8,8 +8,12 @@ try:
     from packaging.version import InvalidVersion
     from packaging.version import Version as Version
 except ImportError:
-    from setuptools.extern.packaging.version import InvalidVersion  # type: ignore
-    from setuptools.extern.packaging.version import Version as Version  # type: ignore
+    from setuptools.extern.packaging.version import (  # type: ignore[import-untyped, no-redef]
+        InvalidVersion,
+    )
+    from setuptools.extern.packaging.version import (  # type: ignore[no-redef]
+        Version as Version,
+    )
 from . import _log
 
 log = _log.log.getChild("version_cls")
