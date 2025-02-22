@@ -3,6 +3,7 @@ from __future__ import annotations
 import pprint
 import subprocess
 import sys
+import textwrap
 
 from dataclasses import replace
 from importlib.metadata import EntryPoint
@@ -16,6 +17,8 @@ from setuptools_scm._run_cmd import run
 from setuptools_scm.git import parse
 from setuptools_scm.integration import data_from_mime
 from setuptools_scm.version import meta
+
+from .wd_wrapper import WorkDir
 
 
 def test_data_from_mime_ignores_body() -> None:
@@ -98,6 +101,52 @@ def test_case_mismatch_on_windows_git(tmp_path: Path) -> None:
     run("git init", camel_case_path)
     res = parse(str(camel_case_path).lower(), Configuration())
     assert res is not None
+
+
+def test_fallback_message(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Check that no warning/error messages are normally outputted"""
+    # setup a basic project that would not trigger any (other) warning/errors
+    pyproject = """\
+        [build-system]
+        requires = ["setuptools", "setuptools_scm"]
+        build-backend = "setuptools.build_meta"
+
+        [project]
+        name = "example"
+        dynamic = ["version"]
+
+        [tool.setuptools_scm]
+        """
+    git_archival = """\
+        node: $Format:%H$
+        node-date: $Format:%cI$
+        describe-name: $Format:%(describe:tags=true,match=*[0-9]*)$
+        """
+    wd.write("pyproject.toml", textwrap.dedent(pyproject))
+    wd.write(".git_archival.txt", textwrap.dedent(git_archival))
+    wd.write(".gitattributes", ".git_archival.txt  export-subst")
+    wd.write("README.md", "")
+    wd("git init")
+    wd("git config user.email user@host")
+    wd("git config user.name user")
+    wd.add_command = "git add ."
+    wd.commit_command = "git commit -m test-{reason}"
+    wd.add_and_commit()
+    wd("git tag v0.1.0")
+    version = wd.get_version()
+    assert version == "0.1.0"
+
+    # Run build and check messages
+    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
+    # with caplog.at_level(logging.WARN):
+    res_build = subprocess.run(
+        [sys.executable, "-m", "build", "-nx"],
+        cwd=wd.cwd,
+        capture_output=True,
+    )
+    assert res_build.returncode == 0
+    # Maybe there is a cleaner way to use caplog?
+    assert not res_build.stderr
 
 
 def test_entrypoints_load() -> None:
