@@ -87,7 +87,7 @@ def _validate_version_cls(
         elif isinstance(version_cls, str):
             try:
                 return cast(Type[_VersionT], import_name(version_cls))
-            except:  # noqa
+            except Exception:
                 raise ValueError(
                     f"Unable to import version_cls='{version_cls}'"
                 ) from None
