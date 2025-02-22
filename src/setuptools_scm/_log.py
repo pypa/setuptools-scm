@@ -18,7 +18,7 @@ log.propagate = False
 
 
 class AlwaysStdErrHandler(logging.StreamHandler):  # type: ignore[type-arg]
-    def __init___(self) -> None:
+    def __init__(self) -> None:
         super().__init__(sys.stderr)
 
     @property  # type: ignore [override]
