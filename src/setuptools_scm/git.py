@@ -224,8 +224,6 @@ def version_from_describe(
     config: Configuration,
     describe_command: _t.CMD_TYPE | None,
 ) -> ScmVersion | None:
-    pass
-
     if config.git_describe_command is not None:
         describe_command = config.git_describe_command
 
