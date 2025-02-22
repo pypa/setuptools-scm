@@ -80,16 +80,13 @@ def _validate_version_cls(
                 "`normalize=False`"
             )
         return NonNormalizedVersion
+    # Use `version_cls` if provided, default to packaging or pkg_resources
+    elif version_cls is None:
+        return Version
+    elif isinstance(version_cls, str):
+        try:
+            return cast(Type[_VersionT], import_name(version_cls))
+        except Exception:
+            raise ValueError(f"Unable to import version_cls='{version_cls}'") from None
     else:
-        # Use `version_cls` if provided, default to packaging or pkg_resources
-        if version_cls is None:
-            return Version
-        elif isinstance(version_cls, str):
-            try:
-                return cast(Type[_VersionT], import_name(version_cls))
-            except Exception:
-                raise ValueError(
-                    f"Unable to import version_cls='{version_cls}'"
-                ) from None
-        else:
-            return version_cls
+        return version_cls
