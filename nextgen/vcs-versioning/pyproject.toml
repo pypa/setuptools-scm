@@ -48,7 +48,7 @@ cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=vcs_ve
 no-cov = "cov --no-cov {args}"
 
 [[tool.hatch.envs.test.matrix]]
-python = ["38", "39", "310", "311"]
+python = [ "38", "39", "310", "311", "312", "313" ]
 
 [tool.coverage.run]
 branch = true

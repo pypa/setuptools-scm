@@ -213,7 +213,7 @@ def test_only_version(version: str) -> None:
 def test_tag_regex1(tag: str, expected: str) -> None:
     if "+" in tag:
         # pytest bug wrt cardinality
-        with pytest.warns(UserWarning):
+        with pytest.warns(UserWarning):  # noqa: PT030
             result = meta(tag, config=c)
     else:
         result = meta(tag, config=c)
