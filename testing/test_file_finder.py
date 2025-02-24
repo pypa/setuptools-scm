@@ -16,7 +16,7 @@ from .wd_wrapper import WorkDir
 def inwd(
     request: pytest.FixtureRequest, wd: WorkDir, monkeypatch: pytest.MonkeyPatch
 ) -> WorkDir:
-    param: str = request.param  # type: ignore
+    param: str = request.param  # type: ignore[attr-defined]
     if param == "git":
         try:
             wd("git init")

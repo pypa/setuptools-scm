@@ -8,8 +8,12 @@ try:
     from packaging.version import InvalidVersion
     from packaging.version import Version as Version
 except ImportError:
-    from setuptools.extern.packaging.version import InvalidVersion  # type: ignore
-    from setuptools.extern.packaging.version import Version as Version  # type: ignore
+    from setuptools.extern.packaging.version import (  # type: ignore[import-untyped, no-redef]
+        InvalidVersion,
+    )
+    from setuptools.extern.packaging.version import (  # type: ignore[no-redef]
+        Version as Version,
+    )
 from . import _log
 
 log = _log.log.getChild("version_cls")
@@ -76,16 +80,13 @@ def _validate_version_cls(
                 "`normalize=False`"
             )
         return NonNormalizedVersion
+    # Use `version_cls` if provided, default to packaging or pkg_resources
+    elif version_cls is None:
+        return Version
+    elif isinstance(version_cls, str):
+        try:
+            return cast(Type[_VersionT], import_name(version_cls))
+        except Exception:
+            raise ValueError(f"Unable to import version_cls='{version_cls}'") from None
     else:
-        # Use `version_cls` if provided, default to packaging or pkg_resources
-        if version_cls is None:
-            return Version
-        elif isinstance(version_cls, str):
-            try:
-                return cast(Type[_VersionT], import_name(version_cls))
-            except:  # noqa
-                raise ValueError(
-                    f"Unable to import version_cls='{version_cls}'"
-                ) from None
-        else:
-            return version_cls
+        return version_cls

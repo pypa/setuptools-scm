@@ -18,7 +18,7 @@ log.propagate = False
 
 
 class AlwaysStdErrHandler(logging.StreamHandler):  # type: ignore[type-arg]
-    def __init___(self) -> None:
+    def __init__(self) -> None:
         super().__init__(sys.stderr)
 
     @property  # type: ignore [override]
@@ -51,7 +51,7 @@ log.addHandler(_default_handler)
 
 def _default_log_level(_env: Mapping[str, str] = os.environ) -> int:
     val: str | None = _env.get("SETUPTOOLS_SCM_DEBUG")
-    return logging.WARN if val is None else logging.DEBUG
+    return logging.WARNING if val is None else logging.DEBUG
 
 
 log.setLevel(_default_log_level())

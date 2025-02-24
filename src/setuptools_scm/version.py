@@ -263,15 +263,14 @@ def guess_next_simple_semver(
 def simplified_semver_version(version: ScmVersion) -> str:
     if version.exact:
         return guess_next_simple_semver(version, retain=SEMVER_LEN, increment=False)
+    elif version.branch is not None and "feature" in version.branch:
+        return version.format_next_version(
+            guess_next_simple_semver, retain=SEMVER_MINOR
+        )
     else:
-        if version.branch is not None and "feature" in version.branch:
-            return version.format_next_version(
-                guess_next_simple_semver, retain=SEMVER_MINOR
-            )
-        else:
-            return version.format_next_version(
-                guess_next_simple_semver, retain=SEMVER_PATCH
-            )
+        return version.format_next_version(
+            guess_next_simple_semver, retain=SEMVER_PATCH
+        )
 
 
 def release_branch_semver_version(version: ScmVersion) -> str:
