@@ -13,12 +13,6 @@ repos:
       args: [--fix, --exit-non-zero-on-fix, --show-fixes]
     - id: ruff-format
 
-- repo: https://github.com/tox-dev/pyproject-fmt
-  rev: v1.8.0
-  hooks:
-    - id: pyproject-fmt
-      exclude: docs/examples/
-
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.15.0
     hooks:
