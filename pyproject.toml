@@ -118,8 +118,8 @@ version = { attr = "_own_version_helper.version"}
 [tool.setuptools_scm]
 
 [tool.ruff]
-lint.select = ["E", "F", "B", "UP", "YTT", "C", "DTZ", "PYI", "PT", "I", "FURB", "RUF"]
-lint.ignore = ["B028"]
+lint.extend-select = ["YTT", "B", "C4", "DTZ", "ISC", "LOG", "G", "PIE", "PYI", "PT", "FLY", "I", "C90", "PERF", "W", "PGH", "PLE", "UP", "FURB", "RUF"]
+lint.ignore = ["B028", "LOG015", "PERF203"]
 lint.preview = true
 
 [tool.ruff.lint.isort]

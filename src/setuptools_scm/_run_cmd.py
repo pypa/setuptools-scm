@@ -190,7 +190,7 @@ def has_command(
     try:
         p = run([name, *args], cwd=".")
         if p.returncode != 0:
-            log.error(f"Command '{name}' returned non-zero. This is stderr:")
+            log.error("Command '%s' returned non-zero. This is stderr:", name)
             log.error(p.stderr)
     except OSError as e:
         log.warning("command %s missing: %s", name, e)
