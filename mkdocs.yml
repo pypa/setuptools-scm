@@ -7,6 +7,7 @@ nav:
   - config.md
   - extending.md
   - overrides.md
+  - changelog.md
 theme:
   name: material
 
@@ -24,6 +25,7 @@ markdown_extensions:
 plugins:
 - entangled
 - search
+- include-markdown
 - mkdocstrings:
     default_handler: python
     handlers:

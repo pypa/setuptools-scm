@@ -50,6 +50,7 @@ docs = [
   "entangled-cli~=2.0",
   "mkdocs",
   "mkdocs-entangled-plugin",
+  "mkdocs-include-markdown-plugin",
   "mkdocs-material",
   "mkdocstrings[python]",
   "pygments",
