@@ -8,7 +8,7 @@ try:
     from packaging.version import InvalidVersion
     from packaging.version import Version as Version
 except ImportError:
-    from setuptools.extern.packaging.version import (  # type: ignore[import-untyped, no-redef]
+    from setuptools.extern.packaging.version import (  # type: ignore[import-not-found, no-redef]
         InvalidVersion,
     )
     from setuptools.extern.packaging.version import (  # type: ignore[no-redef]
