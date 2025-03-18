@@ -8,6 +8,7 @@ from dataclasses import replace
 from importlib.metadata import EntryPoint
 from importlib.metadata import distribution
 from pathlib import Path
+from typing import Sequence
 
 import pytest
 
@@ -130,3 +131,18 @@ def test_write_to_absolute_path_passes_when_subdir_of_root(tmp_path: Path) -> No
         match=r".*VERSION.py' .* .*subdir.*",
     ):
         write_version_files(replace(c, root=subdir), "1.0", v)
+
+
+@pytest.mark.parametrize(
+    ("input", "expected"),
+    [
+        ("1.0", (1, 0)),
+        ("1.0a2", (1, 0, "a2")),
+        ("1.0.b2dev1", (1, 0, "b2", "dev1")),
+        ("1.0.dev1", (1, 0, "dev1")),
+    ],
+)
+def test_version_as_tuple(input: str, expected: Sequence[int | str]) -> None:
+    from setuptools_scm._version_cls import _version_as_tuple
+
+    assert _version_as_tuple(input) == expected

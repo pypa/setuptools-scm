@@ -1,5 +1,12 @@
 # Changelog
 
+## v8.2.1
+
+### Fixed
+
+- fix #1119: also include pre/post release details in version_tuple
+
+
 ## v8.2.0
 
 ### Added

@@ -52,8 +52,17 @@ def _version_as_tuple(version_str: str) -> tuple[int | str, ...]:
         return (version_str,)
     else:
         version_fields: tuple[int | str, ...] = parsed_version.release
+        if parsed_version.epoch:
+            version_fields = (f"{parsed_version.epoch}!", *version_fields)
+        if parsed_version.pre is not None:
+            version_fields += (f"{parsed_version.pre[0]}{parsed_version.pre[1]}",)
+
+        if parsed_version.post is not None:
+            version_fields += (f"post{parsed_version.post}",)
+
         if parsed_version.dev is not None:
             version_fields += (f"dev{parsed_version.dev}",)
+
         if parsed_version.local is not None:
             version_fields += (parsed_version.local,)
         return version_fields
