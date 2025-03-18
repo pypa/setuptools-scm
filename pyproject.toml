@@ -128,7 +128,6 @@ force-single-line = true
 from-first = false
 lines-between-types = 1
 order-by-type = true
-
 [tool.repo-review]
 ignore = ["PP305", "GH103", "GH212", "MY100", "PC111", "PC160", "PC170", "PC180", "PC901"]
 
