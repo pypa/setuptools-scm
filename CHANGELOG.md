@@ -5,6 +5,7 @@
 ### Fixed
 
 - fix #1119: also include pre/post release details in version_tuple
+- fix #1112: unpin setuptools for own dependencies due to ubuntu lts bugs
 
 
 ## v8.2.0
