@@ -6,7 +6,7 @@
 
 - fix #1119: also include pre/post release details in version_tuple
 - fix #1112: unpin setuptools for own dependencies due to ubuntu lts bugs
-
+- add python 3.13 to the support matrix
 
 ## v8.2.0
 
