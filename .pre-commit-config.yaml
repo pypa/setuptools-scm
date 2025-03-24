@@ -26,6 +26,7 @@ repos:
             - importlib_metadata
             - typing-extensions>=4.5
             - rich
+            - build
 
 -   repo: https://github.com/scientific-python/cookie
     rev: 2025.01.22
