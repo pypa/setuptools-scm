@@ -93,8 +93,23 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
       # this hopefully helps with os caches, hg init sometimes gets 20s timeouts
       - run: hg version
-      - run: pytest
+      - run: pytest -k not\ test_pep518
         timeout-minutes: 15
+
+  test_regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup python
+        uses: actions/setup-python@v5
+
+        with:
+          python-version: "3.12"
+          architecture: x64
+
+      - run: pytest -k test_pep518
 
   dist_upload:
 
