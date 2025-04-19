@@ -93,7 +93,7 @@
 - use normalized dist names for the `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DIST_NAME}` env var
 - drop support for python 3.7
 - introduce `version_file` as replacement for `write_to`
-- renameed the project from `setuptools_scm` to `setuptools-scm`
+- renamed the project from `setuptools_scm` to `setuptools-scm`
 
 ### Added
 
