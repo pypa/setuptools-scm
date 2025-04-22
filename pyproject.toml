@@ -44,7 +44,7 @@ dynamic = [
 dependencies = [
   "packaging>=20",
   # https://github.com/pypa/setuptools-scm/issues/1112 - re-pin in a breaking release
-  "setuptools >= 61",
+  "setuptools", # >= 61",
   'tomli>=1; python_version < "3.11"',
   'typing-extensions; python_version < "3.10"',
   'importlib-metadata>=4.6; python_version < "3.10"',
