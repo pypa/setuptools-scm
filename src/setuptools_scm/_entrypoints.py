@@ -17,28 +17,12 @@ if TYPE_CHECKING:
     from ._config import Configuration
     from ._config import ParseFunction
 
-
-from importlib.metadata import EntryPoint as EntryPoint
-
 if sys.version_info[:2] < (3, 10):
-    from importlib.metadata import entry_points as legacy_entry_points
-
-    class EntryPoints:
-        _groupdata: list[EntryPoint]
-
-        def __init__(self, groupdata: list[EntryPoint]) -> None:
-            self._groupdata = groupdata
-
-        def select(self, name: str) -> EntryPoints:
-            return EntryPoints([x for x in self._groupdata if x.name == name])
-
-        def __iter__(self) -> Iterator[EntryPoint]:
-            return iter(self._groupdata)
-
-    def entry_points(group: str) -> EntryPoints:
-        return EntryPoints(legacy_entry_points()[group])
-
+    from importlib_metadata import EntryPoint as EntryPoint
+    from importlib_metadata import EntryPoints
+    from importlib_metadata import entry_points
 else:
+    from importlib.metadata import EntryPoint as EntryPoint
     from importlib.metadata import EntryPoints
     from importlib.metadata import entry_points
 
