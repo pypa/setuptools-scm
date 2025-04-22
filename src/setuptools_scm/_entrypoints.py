@@ -17,30 +17,12 @@ if TYPE_CHECKING:
     from ._config import Configuration
     from ._config import ParseFunction
 
-
-from importlib.metadata import EntryPoint as EntryPoint
-
 if sys.version_info[:2] < (3, 10):
-    from importlib.metadata import entry_points as legacy_entry_points
-
-    class EntryPoints:
-        _groupdata: list[EntryPoint]
-
-        def __init__(self, groupdata: list[EntryPoint]) -> None:
-            self._groupdata = groupdata
-
-        def select(self, name: str) -> EntryPoints:
-            return EntryPoints([x for x in self._groupdata if x.name == name])
-
-        def __iter__(self) -> Iterator[EntryPoint]:
-            return iter(self._groupdata)
-
-    def entry_points(group: str) -> EntryPoints:
-        return EntryPoints(legacy_entry_points()[group])
-
+    from importlib_metadata import EntryPoint as EntryPoint
+    from importlib_metadata import entry_points as entry_points
 else:
-    from importlib.metadata import EntryPoints
-    from importlib.metadata import entry_points
+    from importlib.metadata import EntryPoint as EntryPoint
+    from importlib.metadata import entry_points as entry_points
 
 
 log = _log.log.getChild("entrypoints")
@@ -61,15 +43,8 @@ def version_from_entrypoint(
     return None
 
 
-def iter_entry_points(group: str, name: str | None = None) -> Iterator[EntryPoint]:
-    eps: EntryPoints = entry_points(group=group)
-    res = eps if name is None else eps.select(name=name)
-
-    return iter(res)
-
-
 def _get_ep(group: str, name: str) -> Any | None:
-    for ep in iter_entry_points(group, name):
+    for ep in entry_points(group=group, name=name):
         log.debug("ep found: %s", ep.name)
         return ep.load()
     return None

@@ -58,10 +58,9 @@ def iter_matching_entrypoints(
     """
 
     log.debug("looking for ep %s in %s", entrypoint, root)
-    from ._entrypoints import iter_entry_points
 
     for wd in walk_potential_roots(root, config.search_parent_directories):
-        for ep in iter_entry_points(entrypoint):
+        for ep in _entrypoints.entry_points(group=entrypoint):
             if ep.value in _BLOCKED_EP_TARGETS:
                 continue
             if match_entrypoint(wd, ep.name):
