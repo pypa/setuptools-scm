@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 import os
 
 from typing import TYPE_CHECKING
@@ -8,7 +7,8 @@ from typing import Callable
 
 from .. import _log
 from .. import _types as _t
-from .._entrypoints import iter_entry_points
+from .._entrypoints import EntryPoint
+from .._entrypoints import entry_points
 from .pathtools import norm_real
 
 if TYPE_CHECKING:
@@ -102,10 +102,11 @@ def is_toplevel_acceptable(toplevel: str | None) -> TypeGuard[str]:
 
 
 def find_files(path: _t.PathT = "") -> list[str]:
-    for ep in itertools.chain(
-        iter_entry_points("setuptools_scm.files_command"),
-        iter_entry_points("setuptools_scm.files_command_fallback"),
-    ):
+    eps: list[EntryPoint] = [
+        *entry_points(group="setuptools_scm.files_command"),
+        *entry_points(group="setuptools_scm.files_command_fallback"),
+    ]
+    for ep in eps:
         command: Callable[[_t.PathT], list[str]] = ep.load()
         res: list[str] = command(path)
         if res:

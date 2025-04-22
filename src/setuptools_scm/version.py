@@ -82,11 +82,10 @@ def callable_or_entrypoint(group: str, callable_or_name: str | Any) -> Any:
 
     if callable(callable_or_name):
         return callable_or_name
-    from ._entrypoints import iter_entry_points
 
-    for ep in iter_entry_points(group, callable_or_name):
-        log.debug("ep found: %s", ep.name)
-        return ep.load()
+    from ._entrypoints import _get_ep
+
+    return _get_ep(group, callable_or_name)
 
 
 def tag_to_version(

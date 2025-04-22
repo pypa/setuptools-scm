@@ -19,12 +19,10 @@ if TYPE_CHECKING:
 
 if sys.version_info[:2] < (3, 10):
     from importlib_metadata import EntryPoint as EntryPoint
-    from importlib_metadata import EntryPoints
-    from importlib_metadata import entry_points
+    from importlib_metadata import entry_points as entry_points
 else:
     from importlib.metadata import EntryPoint as EntryPoint
-    from importlib.metadata import EntryPoints
-    from importlib.metadata import entry_points
+    from importlib.metadata import entry_points as entry_points
 
 
 log = _log.log.getChild("entrypoints")
@@ -45,15 +43,8 @@ def version_from_entrypoint(
     return None
 
 
-def iter_entry_points(group: str, name: str | None = None) -> Iterator[EntryPoint]:
-    eps: EntryPoints = entry_points(group=group)
-    res = eps if name is None else eps.select(name=name)
-
-    return iter(res)
-
-
 def _get_ep(group: str, name: str) -> Any | None:
-    for ep in iter_entry_points(group, name):
+    for ep in entry_points(group=group, name=name):
         log.debug("ep found: %s", ep.name)
         return ep.load()
     return None
