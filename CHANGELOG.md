@@ -1,6 +1,13 @@
 # Changelog
 
-## v8.2.1
+## v8.3.0
+
+### Fixed
+
+- fix #1013: use modern importlib_metadata in all cases to dedup distribution objects that must shadow based on pythonpath priority
+  starting with python 3.10 this is part of python itself
+
+## v8.2.1 (yanked due to legacy python issues)
 
 ### Fixed
 
