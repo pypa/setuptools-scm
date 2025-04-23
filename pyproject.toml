@@ -2,6 +2,8 @@
 
 [build-system]
 build-backend = "_own_version_helper:build_meta"
+# Be careful that dependencies added here do not also depend upon setuptools-scm,
+# otherwise it'll cause problems with builds from source (e.g. #722, #918, #1131)
 requires = [
   "setuptools>=61",
   'tomli<=2.0.2; python_version < "3.11"',
