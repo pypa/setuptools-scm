@@ -1,5 +1,11 @@
 # Changelog
 
+## v8.3.1
+
+### Fixed
+
+- fixed #1131: allow self-build without importlib_metadata avaliable on python3.9
+
 ## v8.3.0
 
 ### Fixed

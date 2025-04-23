@@ -7,7 +7,6 @@ from typing import Callable
 
 from .. import _log
 from .. import _types as _t
-from .._entrypoints import EntryPoint
 from .._entrypoints import entry_points
 from .pathtools import norm_real
 
@@ -102,7 +101,7 @@ def is_toplevel_acceptable(toplevel: str | None) -> TypeGuard[str]:
 
 
 def find_files(path: _t.PathT = "") -> list[str]:
-    eps: list[EntryPoint] = [
+    eps = [
         *entry_points(group="setuptools_scm.files_command"),
         *entry_points(group="setuptools_scm.files_command_fallback"),
     ]
