@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Iterable
 from typing import Iterator
 
@@ -10,6 +11,10 @@ from . import _entrypoints
 from . import _log
 from . import _types as _t
 from ._config import Configuration
+
+if TYPE_CHECKING:
+    from ._entrypoints import im
+
 
 log = _log.log.getChild("discover")
 
@@ -48,7 +53,7 @@ _BLOCKED_EP_TARGETS = {"setuptools_scm_git_archive:parse"}
 
 def iter_matching_entrypoints(
     root: _t.PathT, entrypoint: str, config: Configuration
-) -> Iterable[_entrypoints.EntryPoint]:
+) -> Iterable[im.EntryPoint]:
     """
     Consider different entry-points in ``root`` and optionally its parents.
     :param root: File path.

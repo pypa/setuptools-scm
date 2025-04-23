@@ -12,20 +12,31 @@ from typing import overload
 from . import _log
 from . import version
 
+__all__ = [
+    "entry_points",
+    "im",
+]
 if TYPE_CHECKING:
     from . import _types as _t
     from ._config import Configuration
     from ._config import ParseFunction
 
-if sys.version_info[:2] < (3, 10):
-    from importlib_metadata import EntryPoint as EntryPoint
-    from importlib_metadata import entry_points as entry_points
-else:
-    from importlib.metadata import EntryPoint as EntryPoint
-    from importlib.metadata import entry_points as entry_points
+    if sys.version_info[:2] < (3, 10):
+        import importlib_metadata as im
+    else:
+        from importlib import metadata as im
 
 
 log = _log.log.getChild("entrypoints")
+
+
+def entry_points(**kw: Any) -> im.EntryPoints:
+    if sys.version_info[:2] < (3, 10):
+        import importlib_metadata as im
+    else:
+        import importlib.metadata as im
+
+    return im.entry_points(**kw)
 
 
 def version_from_entrypoint(
@@ -52,6 +63,8 @@ def _get_ep(group: str, name: str) -> Any | None:
 
 def _get_from_object_reference_str(path: str, group: str) -> Any | None:
     # todo: remove for importlib native spelling
+    from importlib.metadata import EntryPoint  # hack
+
     ep = EntryPoint(path, path, group)
     try:
         return ep.load()
