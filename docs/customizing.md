@@ -55,7 +55,7 @@ dynamic = [
 With the pep 517/518 build backend, setuptools-scm is importable from `setup.py`
 
 ``` { .python title="setup.py" }
-import setuptools
+from setuptools import setup
 from setuptools_scm.version import get_local_dirty_tag
 
 def clean_scheme(version):
