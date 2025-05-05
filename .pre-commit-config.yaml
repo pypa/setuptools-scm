@@ -7,7 +7,7 @@ repos:
     -   id: debug-statements
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.11.7
+  rev: v0.11.8
   hooks:
     - id: ruff
       args: [--fix, --exit-non-zero-on-fix, --show-fixes]
@@ -28,6 +28,6 @@ repos:
             - rich
 
 -   repo: https://github.com/scientific-python/cookie
-    rev: 2025.01.22
+    rev: 2025.05.02
     hooks:
       - id: sp-repo-review
