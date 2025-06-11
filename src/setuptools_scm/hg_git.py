@@ -42,9 +42,9 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         return res.stdout
 
     def get_head_date(self) -> date | None:
-        return _run('hg log -r . -T "{shortdate(date)}"', cwd=self.path).parse_success(
-            parse=date.fromisoformat, error_msg="head date err"
-        )
+        return _run(
+            ["hg", "log", "-r", ".", "-T", "{shortdate(date)}"], cwd=self.path
+        ).parse_success(parse=date.fromisoformat, error_msg="head date err")
 
     def is_shallow(self) -> bool:
         return False
@@ -53,7 +53,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         pass
 
     def get_hg_node(self) -> str | None:
-        res = _run('hg log -r . -T "{node}"', cwd=self.path)
+        res = _run(["hg", "log", "-r", ".", "-T", "{node}"], cwd=self.path)
         if res.returncode:
             return None
         else:
