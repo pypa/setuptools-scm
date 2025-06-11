@@ -9,7 +9,6 @@ from pathlib import Path
 
 from . import _types as _t
 from ._run_cmd import CompletedProcess as _CompletedProcess
-from ._run_cmd import require_command
 from ._run_cmd import run as _run
 from .git import GitWorkdir
 from .hg import HgWorkdir
@@ -28,7 +27,6 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
 
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdirHgClient | None:
-        require_command("hg")
         res = _run(["hg", "root"], cwd=wd).parse_success(parse=Path)
         if res is None:
             return None
