@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import os
 
 from pathlib import Path
@@ -9,6 +10,7 @@ import pytest
 import setuptools_scm._file_finders
 
 from setuptools_scm import Configuration
+from setuptools_scm import hg
 from setuptools_scm._run_cmd import CommandNotFoundError
 from setuptools_scm._run_cmd import has_command
 from setuptools_scm.hg import archival_to_version
@@ -65,6 +67,36 @@ def test_hg_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
         parse(wd.cwd, config=config)
 
     assert wd.get_version(fallback_version="1.0") == "1.0"
+
+
+def test_hg_command_from_env(
+    wd: WorkDir,
+    monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
+    hg_exe: str,
+) -> None:
+    with monkeypatch.context() as m:
+        m.setenv("SETUPTOOLS_SCM_HG_COMMAND", hg_exe)
+        m.setenv("PATH", str(wd.cwd / "not-existing"))
+        request.addfinalizer(lambda: importlib.reload(hg))
+        importlib.reload(hg)
+        wd.write("pyproject.toml", "[tool.setuptools_scm]")
+        assert wd.get_version() == "0.0"
+
+
+def test_hg_command_from_env_is_invalid(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
+) -> None:
+    with monkeypatch.context() as m:
+        m.setenv("SETUPTOOLS_SCM_HG_COMMAND", str(wd.cwd / "not-existing"))
+        request.addfinalizer(lambda: importlib.reload(hg))
+        importlib.reload(hg)
+        config = Configuration()
+        wd.write("pyproject.toml", "[tool.setuptools_scm]")
+        with pytest.raises(CommandNotFoundError, match=r"hg"):
+            parse(wd.cwd, config=config)
+
+        assert wd.get_version(fallback_version="1.0") == "1.0"
 
 
 def test_find_files_stop_at_root_hg(
