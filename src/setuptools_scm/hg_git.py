@@ -23,8 +23,6 @@ _FAKE_GIT_DESCRIBE_ERROR = _CompletedProcess(
 
 
 class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
-    COMMAND = "hg"
-
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdirHgClient | None:
         res = _run(["hg", "root"], cwd=wd).parse_success(parse=Path)
