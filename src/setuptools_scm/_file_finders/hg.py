@@ -13,11 +13,13 @@ from .pathtools import norm_real
 
 log = logging.getLogger(__name__)
 
+HG_COMMAND = os.environ.get("SETUPTOOLS_SCM_HG_COMMAND", "hg")
+
 
 def _hg_toplevel(path: str) -> str | None:
     try:
         return _run(
-            ["hg", "root"],
+            [HG_COMMAND, "root"],
             cwd=(path or "."),
             check=True,
         ).parse_success(norm_real)
@@ -32,7 +34,7 @@ def _hg_toplevel(path: str) -> str | None:
 def _hg_ls_files_and_dirs(toplevel: str) -> tuple[set[str], set[str]]:
     hg_files: set[str] = set()
     hg_dirs = {toplevel}
-    res = _run(["hg", "files"], cwd=toplevel)
+    res = _run([HG_COMMAND, "files"], cwd=toplevel)
     if res.returncode:
         return set(), set()
     for name in res.stdout.splitlines():
