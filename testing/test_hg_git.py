@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import importlib
+
 import pytest
 
+from setuptools_scm import Configuration
+from setuptools_scm import hg
+from setuptools_scm import hg_git
+from setuptools_scm._run_cmd import CommandNotFoundError
 from setuptools_scm._run_cmd import has_command
 from setuptools_scm._run_cmd import run
+from setuptools_scm.hg import parse
 from testing.wd_wrapper import WorkDir
 
 
@@ -81,3 +88,34 @@ def test_base(repositories_hg_git: tuple[WorkDir, WorkDir]) -> None:
     wd("hg pull -u")
     assert wd_git.get_version() == "17.33.0rc0"
     assert wd.get_version() == "17.33.0rc0"
+
+
+def test_hg_gone(
+    repositories_hg_git: tuple[WorkDir, WorkDir], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    wd = repositories_hg_git[0]
+    monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
+    config = Configuration()
+    wd.write("pyproject.toml", "[tool.setuptools_scm]")
+    with pytest.raises(CommandNotFoundError, match=r"hg"):
+        parse(wd.cwd, config=config)
+
+    assert wd.get_version(fallback_version="1.0") == "1.0"
+
+
+def test_hg_command_from_env(
+    repositories_hg_git: tuple[WorkDir, WorkDir],
+    monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
+    hg_exe: str,
+) -> None:
+    wd = repositories_hg_git[0]
+    with monkeypatch.context() as m:
+        m.setenv("SETUPTOOLS_SCM_HG_COMMAND", hg_exe)
+        m.setenv("PATH", str(wd.cwd / "not-existing"))
+        request.addfinalizer(lambda: importlib.reload(hg))
+        request.addfinalizer(lambda: importlib.reload(hg_git))
+        importlib.reload(hg)
+        importlib.reload(hg_git)
+        wd.write("pyproject.toml", "[tool.setuptools_scm]")
+        assert wd.get_version().startswith("0.1.dev0+")

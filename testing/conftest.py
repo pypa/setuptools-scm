@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import shutil
 import sys
 
 from pathlib import Path
@@ -84,6 +85,14 @@ def wd(tmp_path: Path) -> WorkDir:
     target_wd = tmp_path.resolve() / "wd"
     target_wd.mkdir()
     return WorkDir(target_wd)
+
+
+@pytest.fixture(scope="session")
+def hg_exe() -> str:
+    hg = shutil.which("hg")
+    if hg is None:
+        pytest.skip("hg executable not found")
+    return hg
 
 
 @pytest.fixture
