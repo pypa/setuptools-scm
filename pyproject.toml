@@ -62,6 +62,7 @@ rich = [
   "rich",
 ]
 test = [
+  "pip",
   "build",
   "pytest",
   "rich",
