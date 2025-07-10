@@ -62,6 +62,7 @@ rich = [
   "rich",
 ]
 test = [
+  "pip",
   "build",
   "pytest",
   "rich",
@@ -74,6 +75,9 @@ toml = [
 [project.urls]
 documentation = "https://setuptools-scm.readthedocs.io/"
 repository = "https://github.com/pypa/setuptools-scm/"
+
+[project.entry-points.console_scripts]
+setuptools-scm = "setuptools_scm._cli:main"
 
 [project.entry-points."distutils.setup_keywords"]
 use_scm_version = "setuptools_scm._integration.setuptools:version_keyword"
