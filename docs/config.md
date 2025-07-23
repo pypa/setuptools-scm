@@ -143,6 +143,11 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
 :   a ``os.pathsep`` separated list
     of directory names to ignore for root finding
 
+`SETUPTOOLS_SCM_HG_COMMAND`
+:   command used for running Mercurial (defaults to ``hg``)
+
+    for example, set this to ``chg`` to reduce start-up overhead of Mercurial
+
 
 
 

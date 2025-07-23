@@ -23,11 +23,13 @@ from ._run_cmd import run as _run
 
 log = logging.getLogger(__name__)
 
+HG_COMMAND = os.environ.get("SETUPTOOLS_SCM_HG_COMMAND", "hg")
+
 
 class HgWorkdir(Workdir):
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> HgWorkdir | None:
-        res = _run(["hg", "root"], wd)
+        res = _run([HG_COMMAND, "root"], wd)
         if res.returncode:
             return None
         return cls(Path(res.stdout))
@@ -45,7 +47,7 @@ class HgWorkdir(Workdir):
         # the dedicated class GitWorkdirHgClient)
 
         branch, dirty_str, dirty_date = _run(
-            ["hg", "id", "-T", "{branch}\n{if(dirty, 1, 0)}\n{date|shortdate}"],
+            [HG_COMMAND, "id", "-T", "{branch}\n{if(dirty, 1, 0)}\n{date|shortdate}"],
             cwd=self.path,
             check=True,
         ).stdout.split("\n")
@@ -108,7 +110,7 @@ class HgWorkdir(Workdir):
         return None
 
     def hg_log(self, revset: str, template: str) -> str:
-        cmd = ["hg", "log", "-r", revset, "-T", template]
+        cmd = [HG_COMMAND, "log", "-r", revset, "-T", template]
 
         return _run(cmd, cwd=self.path, check=True).stdout
 
@@ -144,9 +146,9 @@ class HgWorkdir(Workdir):
 
 
 def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
-    _require_command("hg")
+    _require_command(HG_COMMAND)
     if os.path.exists(os.path.join(root, ".hg/git")):
-        res = _run(["hg", "path"], root)
+        res = _run([HG_COMMAND, "path"], root)
         if not res.returncode:
             for line in res.stdout.split("\n"):
                 if line.startswith("default ="):
