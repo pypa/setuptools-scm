@@ -19,6 +19,7 @@
 - fix #687: ensure calendar versioning tests use consistent time context to prevent failures around midnight in non-UTC timezones
 - reintroduce Python 3.9 entrypoints shim for compatibility
 - fix #1136: update customizing.md to fix missing import
+- fix #1001: document the missing version schemes and add examples in the docs
 
 ## v8.3.1
 
