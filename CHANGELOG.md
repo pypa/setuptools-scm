@@ -16,6 +16,7 @@
 ### Fixed
 
 - fix #1145: ensure GitWorkdir.get_head_date returns consistent UTC dates regardless of local timezone
+- fix #687: ensure calendar versioning tests use consistent time context to prevent failures around midnight in non-UTC timezones
 - reintroduce Python 3.9 entrypoints shim for compatibility
 - fix #1136: update customizing.md to fix missing import
 
