@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-import importlib
-
 import pytest
 
 from setuptools_scm import Configuration
-from setuptools_scm import hg
-from setuptools_scm import hg_git
 from setuptools_scm._run_cmd import CommandNotFoundError
 from setuptools_scm._run_cmd import has_command
 from setuptools_scm._run_cmd import run
@@ -113,9 +109,6 @@ def test_hg_command_from_env(
     with monkeypatch.context() as m:
         m.setenv("SETUPTOOLS_SCM_HG_COMMAND", hg_exe)
         m.setenv("PATH", str(wd.cwd / "not-existing"))
-        request.addfinalizer(lambda: importlib.reload(hg))
-        request.addfinalizer(lambda: importlib.reload(hg_git))
-        importlib.reload(hg)
-        importlib.reload(hg_git)
+        # No module reloading needed - runtime configuration works immediately
         wd.write("pyproject.toml", "[tool.setuptools_scm]")
         assert wd.get_version().startswith("0.1.dev0+")

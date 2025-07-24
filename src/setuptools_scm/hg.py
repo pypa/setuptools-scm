@@ -6,6 +6,7 @@ import os
 
 from pathlib import Path
 from typing import TYPE_CHECKING
+from typing import Any
 
 from . import Configuration
 from ._version_cls import Version
@@ -19,18 +20,28 @@ from .version import tag_to_version
 if TYPE_CHECKING:
     from . import _types as _t
 
+from ._run_cmd import CompletedProcess
 from ._run_cmd import require_command as _require_command
 from ._run_cmd import run as _run
 
 log = logging.getLogger(__name__)
 
-HG_COMMAND = os.environ.get("SETUPTOOLS_SCM_HG_COMMAND", "hg")
+
+def _get_hg_command() -> str:
+    """Get the hg command from environment, allowing runtime configuration."""
+    return os.environ.get("SETUPTOOLS_SCM_HG_COMMAND", "hg")
+
+
+def run_hg(args: list[str], cwd: _t.PathT, **kwargs: Any) -> CompletedProcess:
+    """Run mercurial command with the configured hg executable."""
+    cmd = [_get_hg_command(), *args]
+    return _run(cmd, cwd=cwd, **kwargs)
 
 
 class HgWorkdir(Workdir):
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> HgWorkdir | None:
-        res = _run([HG_COMMAND, "root"], wd)
+        res = run_hg(["root"], wd)
         if res.returncode:
             return None
         return cls(Path(res.stdout))
@@ -79,8 +90,8 @@ class HgWorkdir(Workdir):
 
     def _get_branch_info(self) -> tuple[str, bool, str]:
         """Get branch name, dirty status, and dirty date."""
-        branch, dirty_str, dirty_date = _run(
-            [HG_COMMAND, "id", "-T", "{branch}\n{if(dirty, 1, 0)}\n{date|shortdate}"],
+        branch, dirty_str, dirty_date = run_hg(
+            ["id", "-T", "{branch}\n{if(dirty, 1, 0)}\n{date|shortdate}"],
             cwd=self.path,
             check=True,
         ).stdout.split("\n")
@@ -181,9 +192,9 @@ class HgWorkdir(Workdir):
             return None
 
     def hg_log(self, revset: str, template: str) -> str:
-        cmd = [HG_COMMAND, "log", "-r", revset, "-T", template]
-
-        return _run(cmd, cwd=self.path, check=True).stdout
+        return run_hg(
+            ["log", "-r", revset, "-T", template], cwd=self.path, check=True
+        ).stdout
 
     def get_latest_normalizable_tag(self) -> str | None:
         # Gets all tags containing a '.' (see #229) from oldest to newest
@@ -223,12 +234,12 @@ class HgWorkdir(Workdir):
         """
         try:
             # Check if working directory is dirty first
-            res = _run([HG_COMMAND, "id", "-T", "{dirty}"], cwd=self.path)
+            res = run_hg(["id", "-T", "{dirty}"], cwd=self.path)
             if res.returncode != 0 or not bool(res.stdout):
                 return None
 
             # Get list of changed files using hg status
-            status_res = _run([HG_COMMAND, "status", "-m", "-a", "-r"], cwd=self.path)
+            status_res = run_hg(["status", "-m", "-a", "-r"], cwd=self.path)
             if status_res.returncode != 0:
                 return None
 
@@ -248,9 +259,10 @@ class HgWorkdir(Workdir):
 
 
 def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
-    _require_command(HG_COMMAND)
+    hg_cmd = _get_hg_command()
+    _require_command(hg_cmd)
     if os.path.exists(os.path.join(root, ".hg/git")):
-        res = _run([HG_COMMAND, "path"], root)
+        res = run_hg(["path"], root)
         if not res.returncode:
             for line in res.stdout.split("\n"):
                 if line.startswith("default ="):

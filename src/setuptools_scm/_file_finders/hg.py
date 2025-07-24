@@ -7,19 +7,17 @@ import subprocess
 from .. import _types as _t
 from .._file_finders import is_toplevel_acceptable
 from .._file_finders import scm_find_files
-from .._run_cmd import run as _run
+from ..hg import run_hg
 from ..integration import data_from_mime
 from .pathtools import norm_real
 
 log = logging.getLogger(__name__)
 
-HG_COMMAND = os.environ.get("SETUPTOOLS_SCM_HG_COMMAND", "hg")
-
 
 def _hg_toplevel(path: str) -> str | None:
     try:
-        return _run(
-            [HG_COMMAND, "root"],
+        return run_hg(
+            ["root"],
             cwd=(path or "."),
             check=True,
         ).parse_success(norm_real)
@@ -34,7 +32,7 @@ def _hg_toplevel(path: str) -> str | None:
 def _hg_ls_files_and_dirs(toplevel: str) -> tuple[set[str], set[str]]:
     hg_files: set[str] = set()
     hg_dirs = {toplevel}
-    res = _run([HG_COMMAND, "files"], cwd=toplevel)
+    res = run_hg(["files"], cwd=toplevel)
     if res.returncode:
         return set(), set()
     for name in res.stdout.splitlines():

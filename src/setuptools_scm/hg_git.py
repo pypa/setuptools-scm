@@ -9,10 +9,9 @@ from pathlib import Path
 
 from . import _types as _t
 from ._run_cmd import CompletedProcess as _CompletedProcess
-from ._run_cmd import run as _run
 from .git import GitWorkdir
-from .hg import HG_COMMAND
 from .hg import HgWorkdir
+from .hg import run_hg
 from .scm_workdir import get_latest_file_mtime
 
 log = logging.getLogger(__name__)
@@ -27,25 +26,25 @@ _FAKE_GIT_DESCRIBE_ERROR = _CompletedProcess(
 class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
     @classmethod
     def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdirHgClient | None:
-        res = _run([HG_COMMAND, "root"], cwd=wd).parse_success(parse=Path)
+        res = run_hg(["root"], cwd=wd).parse_success(parse=Path)
         if res is None:
             return None
         return cls(res)
 
     def is_dirty(self) -> bool:
-        res = _run([HG_COMMAND, "id", "-T", "{dirty}"], cwd=self.path, check=True)
+        res = run_hg(["id", "-T", "{dirty}"], cwd=self.path, check=True)
         return bool(res.stdout)
 
     def get_branch(self) -> str | None:
-        res = _run([HG_COMMAND, "id", "-T", "{bookmarks}"], cwd=self.path)
+        res = run_hg(["id", "-T", "{bookmarks}"], cwd=self.path)
         if res.returncode:
             log.info("branch err %s", res)
             return None
         return res.stdout
 
     def get_head_date(self) -> date | None:
-        return _run(
-            [HG_COMMAND, "log", "-r", ".", "-T", "{shortdate(date)}"], cwd=self.path
+        return run_hg(
+            ["log", "-r", ".", "-T", "{shortdate(date)}"], cwd=self.path
         ).parse_success(parse=date.fromisoformat, error_msg="head date err")
 
     def get_dirty_tag_date(self) -> date | None:
@@ -59,7 +58,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
 
         try:
             # Get list of changed files using hg status
-            status_res = _run([HG_COMMAND, "status", "-m", "-a", "-r"], cwd=self.path)
+            status_res = run_hg(["status", "-m", "-a", "-r"], cwd=self.path)
             if status_res.returncode != 0:
                 return None
 
@@ -84,7 +83,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         pass
 
     def get_hg_node(self) -> str | None:
-        res = _run([HG_COMMAND, "log", "-r", ".", "-T", "{node}"], cwd=self.path)
+        res = run_hg(["log", "-r", ".", "-T", "{node}"], cwd=self.path)
         if res.returncode:
             return None
         else:
@@ -108,7 +107,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
 
         if git_node is None:
             # trying again after hg -> git
-            _run([HG_COMMAND, "gexport"], cwd=self.path)
+            run_hg(["gexport"], cwd=self.path)
             git_node = self._hg2git(hg_node)
 
             if git_node is None:
@@ -123,7 +122,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         return git_node[:7]
 
     def count_all_nodes(self) -> int:
-        res = _run([HG_COMMAND, "log", "-r", "ancestors(.)", "-T", "."], cwd=self.path)
+        res = run_hg(["log", "-r", "ancestors(.)", "-T", "."], cwd=self.path)
         return len(res.stdout)
 
     def default_describe(self) -> _CompletedProcess:
@@ -133,9 +132,8 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         `git describe --dirty --tags --long --match *[0-9]*`
 
         """
-        res = _run(
+        res = run_hg(
             [
-                HG_COMMAND,
                 "log",
                 "-r",
                 "(reverse(ancestors(.)) and tag(r're:v?[0-9].*'))",
@@ -163,7 +161,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
             logging.warning("tag not found hg=%s git=%s", hg_tags, git_tags)
             return _FAKE_GIT_DESCRIBE_ERROR
 
-        res = _run([HG_COMMAND, "log", "-r", f"'{tag}'::.", "-T", "."], cwd=self.path)
+        res = run_hg(["log", "-r", f"'{tag}'::.", "-T", "."], cwd=self.path)
         if res.returncode:
             return _FAKE_GIT_DESCRIBE_ERROR
         distance = len(res.stdout) - 1
