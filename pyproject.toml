@@ -67,7 +67,7 @@ test = [
   "rich",
   'typing-extensions; python_version < "3.11"',
   "wheel",
-  "mercurial"
+  'mercurial; platform_python_implementation != "PyPy"'
 ]
 toml = [
 ]
