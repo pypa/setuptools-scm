@@ -77,6 +77,9 @@ def test_hg_command_from_env(
         m.setenv("SETUPTOOLS_SCM_HG_COMMAND", hg_exe)
         m.setenv("PATH", str(wd.cwd / "not-existing"))
         wd.write("pyproject.toml", "[tool.setuptools_scm]")
+        # Use the configured hg command for test operations
+        wd.add_command = f"{hg_exe} add ."
+        wd.commit_command = f'{hg_exe} commit -m test-{{reason}} -u test -d "0 0"'
         # Need to commit something first for versioning to work
         wd.commit_testfile()
         version = wd.get_version()
