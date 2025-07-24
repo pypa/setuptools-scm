@@ -212,11 +212,12 @@ def meta(
     branch: str | None = None,
     config: _config.Configuration,
     node_date: date | None = None,
+    time: datetime | None = None,
 ) -> ScmVersion:
     parsed_version = _parse_tag(tag, preformatted, config)
     log.info("version %s -> %s", tag, parsed_version)
     assert parsed_version is not None, f"Can't parse version {tag}"
-    return ScmVersion(
+    scm_version = ScmVersion(
         parsed_version,
         distance=distance,
         node=node,
@@ -226,6 +227,9 @@ def meta(
         config=config,
         node_date=node_date,
     )
+    if time is not None:
+        scm_version = dataclasses.replace(scm_version, time=time)
+    return scm_version
 
 
 def guess_next_version(tag_version: ScmVersion) -> str:
@@ -365,7 +369,11 @@ def guess_next_date_ver(
     head_date = node_date or today
     # compute patch
     if match is None:
-        tag_date = today
+        # For legacy non-date tags, always use patch=0 (treat as "other day")
+        # Use yesterday to ensure tag_date != head_date
+        from datetime import timedelta
+
+        tag_date = head_date - timedelta(days=1)
     else:
         tag_date = (
             datetime.strptime(match.group("date"), date_fmt)
@@ -373,11 +381,13 @@ def guess_next_date_ver(
             .date()
         )
     if tag_date == head_date:
-        patch = "0" if match is None else (match.group("patch") or "0")
-        patch = int(patch) + 1
+        assert match is not None
+        # Same day as existing date tag - increment patch
+        patch = int(match.group("patch") or "0") + 1
     else:
+        # Different day or legacy non-date tag - use patch 0
         if tag_date > head_date and match is not None:
-            # warn on future times
+            # warn on future times (only for actual date tags, not legacy)
             warnings.warn(
                 f"your previous tag  ({tag_date}) is ahead your node date ({head_date})"
             )

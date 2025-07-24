@@ -123,7 +123,13 @@ class GitWorkdir(Workdir):
                 return None
             if sys.version_info < (3, 11) and timestamp_text.endswith("Z"):
                 timestamp_text = timestamp_text[:-1] + "+00:00"
-            return datetime.fromisoformat(timestamp_text).date()
+
+            # Convert to UTC to ensure consistent date regardless of local timezone
+            dt = datetime.fromisoformat(timestamp_text)
+            log.debug("dt: %s", dt)
+            dt_utc = dt.astimezone(timezone.utc).date()
+            log.debug("dt utc: %s", dt_utc)
+            return dt_utc
 
         res = run_git(
             [

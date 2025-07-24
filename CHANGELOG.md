@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- add `setuptools-scm` console_scripts entry point to make the CLI directly executable
+- make Mercurial command configurable by environment variable `SETUPTOOLS_SCM_HG_COMMAND`
+
+### Changed
+
+- add `pip` to test optional dependencies for improved uv venv compatibility
+- migrate to selectable entrypoints for better extensibility
+- improve typing for entry_points
+
+### Fixed
+
+- fix #1145: ensure GitWorkdir.get_head_date returns consistent UTC dates regardless of local timezone
+- fix #687: ensure calendar versioning tests use consistent time context to prevent failures around midnight in non-UTC timezones
+- reintroduce Python 3.9 entrypoints shim for compatibility
+- fix #1136: update customizing.md to fix missing import
+
 ## v8.3.1
 
 ### Fixed

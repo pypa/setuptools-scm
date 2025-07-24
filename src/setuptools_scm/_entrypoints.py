@@ -21,22 +21,29 @@ if TYPE_CHECKING:
     from ._config import Configuration
     from ._config import ParseFunction
 
-    if sys.version_info[:2] < (3, 10):
-        import importlib_metadata as im
-    else:
-        from importlib import metadata as im
-
+from importlib import metadata as im
 
 log = _log.log.getChild("entrypoints")
 
 
-def entry_points(**kw: Any) -> im.EntryPoints:
-    if sys.version_info[:2] < (3, 10):
-        import importlib_metadata as im
-    else:
-        import importlib.metadata as im
+if sys.version_info[:2] < (3, 10):
 
-    return im.entry_points(**kw)
+    def entry_points(*, group: str, name: str | None = None) -> list[im.EntryPoint]:
+        # Python 3.9: entry_points() returns dict, need to handle filtering manually
+
+        eps = im.entry_points()  # Returns dict
+
+        group_eps = eps.get(group, [])
+        if name is not None:
+            return [ep for ep in group_eps if ep.name == name]
+        return group_eps
+else:
+
+    def entry_points(*, group: str, name: str | None = None) -> im.EntryPoints:
+        kw = {"group": group}
+        if name is not None:
+            kw["name"] = name
+        return im.entry_points(**kw)
 
 
 def version_from_entrypoint(

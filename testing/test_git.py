@@ -515,6 +515,36 @@ def test_git_getdate_git_2_45_0_plus(
         assert git_wd.get_head_date() == date(2024, 4, 30)
 
 
+def test_git_getdate_timezone_consistency(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that get_head_date returns consistent UTC dates regardless of local timezone.
+
+    This test forces a git commit with a timestamp that represents a time
+    after midnight in a positive timezone offset but still the previous day in UTC.
+    This is the exact scenario that was causing test failures in issue #1145.
+    """
+    # Create a timestamp that's problematic:
+    # - In Europe/Berlin (UTC+2): 2025-06-12 00:30:00 (June 12th)
+    # - In UTC: 2025-06-11 22:30:00 (June 11th)
+    problematic_timestamp = "2025-06-12T00:30:00+02:00"
+
+    # Force git to use this specific timestamp for the commit
+    monkeypatch.setenv("GIT_AUTHOR_DATE", problematic_timestamp)
+    monkeypatch.setenv("GIT_COMMITTER_DATE", problematic_timestamp)
+
+    wd.commit_testfile()
+
+    git_wd = git.GitWorkdir(wd.cwd)
+    result_date = git_wd.get_head_date()
+
+    # The correct behavior is to return the UTC date (2025-06-11)
+    # If the bug is present, it would return the timezone-local date (2025-06-12)
+    expected_utc_date = date(2025, 6, 11)
+
+    assert result_date == expected_utc_date
+
+
 @pytest.fixture
 def signed_commit_wd(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> WorkDir:
     if not has_command("gpg", args=["--version"], warn=False):

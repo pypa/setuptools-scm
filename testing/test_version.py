@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import date
+from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
 from typing import Any
 
 import pytest
@@ -269,11 +271,14 @@ def test_custom_version_schemes() -> None:
     assert custom_computed == no_guess_dev_version(version)
 
 
+# Fixed time for consistent test behavior across timezone boundaries
+# This prevents issue #687 where tests failed around midnight in non-UTC timezones
+_TEST_TIME = datetime(2023, 12, 15, 12, 0, 0, tzinfo=timezone.utc)
+
+
 def date_offset(base_date: date | None = None, days_offset: int = 0) -> date:
     if base_date is None:
-        from setuptools_scm.version import _source_epoch_or_utc_now
-
-        base_date = _source_epoch_or_utc_now().date()
+        base_date = _TEST_TIME.date()
     return base_date - timedelta(days=days_offset)
 
 
@@ -304,12 +309,23 @@ def date_to_str(
             id="leading 0s",
         ),
         pytest.param(
-            meta(date_to_str(days_offset=3), config=c_non_normalize, dirty=True),
+            meta(
+                date_to_str(days_offset=3),
+                config=c_non_normalize,
+                dirty=True,
+                time=_TEST_TIME,
+            ),
             date_to_str() + ".0.dev0",
             id="dirty other day",
         ),
         pytest.param(
-            meta(date_to_str(), config=c_non_normalize, distance=2, branch="default"),
+            meta(
+                date_to_str(),
+                config=c_non_normalize,
+                distance=2,
+                branch="default",
+                time=_TEST_TIME,
+            ),
             date_to_str() + ".1.dev2",
             id="normal branch",
         ),
@@ -382,8 +398,8 @@ def test_calver_by_date(version: ScmVersion, expected_next: str) -> None:
     [
         pytest.param(meta("1.0.0", config=c), "1.0.0", id="SemVer exact stays"),
         pytest.param(
-            meta("1.0.0", config=c_non_normalize, dirty=True),
-            "09.02.13.1.dev0",
+            meta("1.0.0", config=c_non_normalize, dirty=True, time=_TEST_TIME),
+            "23.12.15.0.dev0",
             id="SemVer dirty is replaced by date",
             marks=pytest.mark.filterwarnings("ignore:.*legacy version.*:UserWarning"),
         ),
@@ -397,7 +413,12 @@ def test_calver_by_date_semver(version: ScmVersion, expected_next: str) -> None:
 def test_calver_by_date_future_warning() -> None:
     with pytest.warns(UserWarning, match="your previous tag*"):
         calver_by_date(
-            meta(date_to_str(days_offset=-2), config=c_non_normalize, distance=2)
+            meta(
+                date_to_str(days_offset=-2),
+                config=c_non_normalize,
+                distance=2,
+                time=_TEST_TIME,
+            )
         )
 
 
