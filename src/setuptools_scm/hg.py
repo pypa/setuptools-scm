@@ -11,6 +11,7 @@ from . import Configuration
 from ._version_cls import Version
 from .integration import data_from_mime
 from .scm_workdir import Workdir
+from .scm_workdir import get_latest_file_mtime
 from .version import ScmVersion
 from .version import meta
 from .version import tag_to_version
@@ -178,25 +179,7 @@ class HgWorkdir(Workdir):
                     filepath = line[2:]  # Skip status char and space
                     changed_files.append(filepath)
 
-            if not changed_files:
-                return None
-
-            latest_mtime = 0.0
-            for filepath in changed_files:
-                full_path = self.path / filepath
-                try:
-                    file_stat = full_path.stat()
-                    latest_mtime = max(latest_mtime, file_stat.st_mtime)
-                except OSError:
-                    # File might not exist or be accessible, skip it
-                    continue
-
-            if latest_mtime > 0:
-                # Convert to UTC date
-                dt = datetime.datetime.fromtimestamp(
-                    latest_mtime, datetime.timezone.utc
-                )
-                return dt.date()
+            return get_latest_file_mtime(changed_files, self.path)
 
         except Exception as e:
             log.debug("Failed to get dirty tag date: %s", e)

@@ -13,6 +13,7 @@ from ._run_cmd import run as _run
 from .git import GitWorkdir
 from .hg import HG_COMMAND
 from .hg import HgWorkdir
+from .scm_workdir import get_latest_file_mtime
 
 log = logging.getLogger(__name__)
 
@@ -57,9 +58,6 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
             return None
 
         try:
-            from datetime import datetime
-            from datetime import timezone
-
             # Get list of changed files using hg status
             status_res = _run([HG_COMMAND, "status", "-m", "-a", "-r"], cwd=self.path)
             if status_res.returncode != 0:
@@ -72,29 +70,9 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
                     filepath = line[2:]  # Skip status char and space
                     changed_files.append(filepath)
 
-            if not changed_files:
-                return None
-
-            latest_mtime = 0.0
-            for filepath in changed_files:
-                full_path = self.path / filepath
-                try:
-                    file_stat = full_path.stat()
-                    latest_mtime = max(latest_mtime, file_stat.st_mtime)
-                except OSError:
-                    # File might not exist or be accessible, skip it
-                    continue
-
-            if latest_mtime > 0:
-                # Convert to UTC date
-                dt = datetime.fromtimestamp(latest_mtime, timezone.utc)
-                return dt.date()
+            return get_latest_file_mtime(changed_files, self.path)
 
         except Exception as e:
-            # Use the parent's log module
-            import logging
-
-            log = logging.getLogger(__name__)
             log.debug("Failed to get dirty tag date: %s", e)
 
         return None

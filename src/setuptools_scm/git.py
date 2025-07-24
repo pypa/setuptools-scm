@@ -26,6 +26,7 @@ from ._run_cmd import require_command as _require_command
 from ._run_cmd import run as _run
 from .integration import data_from_mime
 from .scm_workdir import Workdir
+from .scm_workdir import get_latest_file_mtime
 from .version import ScmVersion
 from .version import meta
 from .version import tag_to_version
@@ -160,28 +161,11 @@ class GitWorkdir(Workdir):
                 return None
 
             changed_files = changed_files_res.stdout.strip().split("\n")
-            if not changed_files or changed_files == [""]:
-                return None
-
-            latest_mtime = 0.0
-            for filepath in changed_files:
-                full_path = self.path / filepath
-                try:
-                    file_stat = full_path.stat()
-                    latest_mtime = max(latest_mtime, file_stat.st_mtime)
-                except OSError:
-                    # File might not exist or be accessible, skip it
-                    continue
-
-            if latest_mtime > 0:
-                # Convert to UTC date
-                dt = datetime.fromtimestamp(latest_mtime, timezone.utc)
-                return dt.date()
+            return get_latest_file_mtime(changed_files, self.path)
 
         except Exception as e:
             log.debug("Failed to get dirty tag date: %s", e)
-
-        return None
+            return None
 
     def is_shallow(self) -> bool:
         return self.path.joinpath(".git/shallow").is_file()
