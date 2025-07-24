@@ -285,6 +285,12 @@ be kept in version control. It's strongly recommended to be put into gitignore.
 
 ### File finders hook makes most of `MANIFEST.in` unnecessary
 
+!!! warning "Automatic File Inclusion"
+
+    **`setuptools-scm` automatically provides a setuptools file finder by default.** This means that when you install setuptools-scm, it will automatically include **all SCM-tracked files** in your source distributions (sdist) without requiring a `MANIFEST.in` file.
+
+    This automatic behavior can be surprising if you're not expecting it. The file finder is active as soon as setuptools-scm is installed in your build environment.
+
 `setuptools-scm` implements a [file_finders] entry point
 which returns all files tracked by your SCM.
 This eliminates the need for a manually constructed `MANIFEST.in` in most cases where this
@@ -292,6 +298,63 @@ would be required when not using `setuptools-scm`, namely:
 
 * To ensure all relevant files are packaged when running the `sdist` command.
   * When using [include_package_data] to include package data as part of the `build` or `bdist_wheel`.
+
+#### How it works
+
+The file finder integration works through setuptools' plugin system:
+
+1. **Entry Point Registration**: setuptools-scm registers itself as a file finder via the `setuptools.file_finders` entry point
+2. **Automatic Discovery**: When setuptools builds a source distribution, it automatically calls setuptools-scm to get the list of files
+3. **SCM Integration**: setuptools-scm queries your SCM (Git, Mercurial) to get all tracked files
+4. **File Inclusion**: All SCM-tracked files are automatically included in the sdist
+
+#### Controlling file inclusion
+
+**Using MANIFEST.in**: You can still use `MANIFEST.in` to override the automatic behavior:
+
+- **Exclude files**: Use `global-exclude` or `exclude` to remove files that are SCM-tracked but shouldn't be in the package
+- **Include additional files**: Use `include` to add files that aren't SCM-tracked
+
+```text title="MANIFEST.in"
+# Exclude development files
+exclude *.nix
+exclude .pre-commit-config.yaml
+global-exclude *.pyc
+
+# Include additional files not in SCM
+include data/special-file.dat
+```
+
+**Example of what gets included automatically**:
+
+- All files tracked by Git/Mercurial in your repository
+- Includes source code, data files, documentation, etc.
+- Excludes untracked files and files ignored by your SCM
+
+#### Troubleshooting
+
+**Too many files in your sdist?**
+
+1. Check what's being included: `python -m setuptools_scm ls`
+2. Use `MANIFEST.in` to exclude unwanted files:
+   ```text
+   exclude development-file.txt
+   global-exclude *.log
+   prune unnecessary-directory/
+   ```
+
+**Files missing from your sdist?**
+
+1. Ensure files are tracked by your SCM: `git add` or `hg add`
+2. For non-SCM files, add them via `MANIFEST.in`:
+   ```text
+   include important-file.txt
+   recursive-include data *.json
+   ```
+
+**Disable automatic file finding** (not recommended):
+
+If you need to completely disable setuptools-scm's file finder (not recommended), you would need to uninstall setuptools-scm from your build environment and handle versioning differently.
 
 `MANIFEST.in` may still be used: anything defined there overrides the hook.
 This is mostly useful to exclude files tracked in your SCM from packages,

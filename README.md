@@ -17,6 +17,8 @@ files that are managed by the SCM
 Unwanted files must be excluded via `MANIFEST.in`
 or [configuring Git archive][git-archive-docs].
 
+> **⚠️ Important:** Installing setuptools-scm automatically enables a file finder that includes **all SCM-tracked files** in your source distributions. This can be surprising if you have development files tracked in Git/Mercurial that you don't want in your package. Use `MANIFEST.in` to exclude unwanted files. See the [documentation] for details.
+
 ## `pyproject.toml` usage
 
 The preferred way to configure [setuptools-scm] is to author

@@ -20,6 +20,7 @@
 - reintroduce Python 3.9 entrypoints shim for compatibility
 - fix #1136: update customizing.md to fix missing import
 - fix #1001: document the missing version schemes and add examples in the docs
+- fix #1115: explicitly document file finder behaviour
 
 ## v8.3.1
 
