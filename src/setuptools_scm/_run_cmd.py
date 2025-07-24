@@ -81,6 +81,16 @@ class CompletedProcess(BaseCompletedProcess):
             return parse(self.stdout)
 
 
+KEEP_GIT_ENV = (
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_EXEC_PATH",
+    "GIT_SSH",
+    "GIT_SSH_COMMAND",
+    "GIT_AUTHOR_DATE",
+    "GIT_COMMITTER_DATE",
+)
+
+
 def no_git_env(env: Mapping[str, str]) -> dict[str, str]:
     # adapted from pre-commit
     # Too many bugs dealing with environment variables and GIT:
@@ -95,11 +105,7 @@ def no_git_env(env: Mapping[str, str]) -> dict[str, str]:
         if k.startswith("GIT_"):
             log.debug("%s: %s", k, v)
     return {
-        k: v
-        for k, v in env.items()
-        if not k.startswith("GIT_")
-        or k
-        in ("GIT_CEILING_DIRECTORIES", "GIT_EXEC_PATH", "GIT_SSH", "GIT_SSH_COMMAND")
+        k: v for k, v in env.items() if not k.startswith("GIT_") or k in KEEP_GIT_ENV
     }
 
 
