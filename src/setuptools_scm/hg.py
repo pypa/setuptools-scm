@@ -36,57 +36,113 @@ class HgWorkdir(Workdir):
         return cls(Path(res.stdout))
 
     def get_meta(self, config: Configuration) -> ScmVersion | None:
-        node: str
-        tags_str: str
-        node_date_str: str
-        node, tags_str, node_date_str = self.hg_log(
-            ".", "{node}\n{tag}\n{date|shortdate}"
-        ).split("\n")
-
         # TODO: support bookmarks and topics (but nowadays bookmarks are
         # mainly used to emulate Git branches, which is already supported with
         # the dedicated class GitWorkdirHgClient)
 
+        node_info = self._get_node_info()
+        if node_info is None:
+            return None
+
+        node, tags_str, node_date_str = node_info
+        branch_info = self._get_branch_info()
+        branch, dirty, dirty_date = branch_info
+
+        # Determine the appropriate node date
+        node_date = self._get_node_date(dirty, node_date_str, dirty_date)
+
+        # Handle initial/empty repository
+        if self._is_initial_node(node):
+            return self._create_initial_meta(config, dirty, branch, node_date)
+
+        node = "h" + node[:7]
+        tags = self._parse_tags(tags_str)
+
+        # Try to get version from current tags
+        tag_version = self._get_version_from_tags(tags, config)
+        if tag_version:
+            return meta(tag_version, dirty=dirty, branch=branch, config=config)
+
+        # Fall back to distance-based versioning
+        return self._get_distance_based_version(config, dirty, branch, node, node_date)
+
+    def _get_node_info(self) -> tuple[str, str, str] | None:
+        """Get node, tags, and date information from mercurial log."""
+        try:
+            node, tags_str, node_date_str = self.hg_log(
+                ".", "{node}\n{tag}\n{date|shortdate}"
+            ).split("\n")
+            return node, tags_str, node_date_str
+        except ValueError:
+            log.exception("Failed to get node info")
+            return None
+
+    def _get_branch_info(self) -> tuple[str, bool, str]:
+        """Get branch name, dirty status, and dirty date."""
         branch, dirty_str, dirty_date = _run(
             [HG_COMMAND, "id", "-T", "{branch}\n{if(dirty, 1, 0)}\n{date|shortdate}"],
             cwd=self.path,
             check=True,
         ).stdout.split("\n")
         dirty = bool(int(dirty_str))
+        return branch, dirty, dirty_date
 
-        # For dirty working directories, try to use the latest file modification time
-        # before falling back to the hg id date
+    def _get_node_date(
+        self, dirty: bool, node_date_str: str, dirty_date: str
+    ) -> datetime.date:
+        """Get the appropriate node date, preferring file modification times for dirty repos."""
         if dirty:
             file_mod_date = self.get_dirty_tag_date()
             if file_mod_date is not None:
-                node_date = file_mod_date
-            else:
-                node_date = datetime.date.fromisoformat(dirty_date)
+                return file_mod_date
+            # Fall back to hg id date for dirty repos
+            return datetime.date.fromisoformat(dirty_date)
         else:
-            node_date = datetime.date.fromisoformat(node_date_str)
+            return datetime.date.fromisoformat(node_date_str)
 
-        if node == "0" * len(node):
-            log.debug("initial node %s", self.path)
-            return meta(
-                Version("0.0"),
-                config=config,
-                dirty=dirty,
-                branch=branch,
-                node_date=node_date,
-            )
+    def _is_initial_node(self, node: str) -> bool:
+        """Check if this is an initial/empty repository node."""
+        return node == "0" * len(node)
 
-        node = "h" + node[:7]
+    def _create_initial_meta(
+        self, config: Configuration, dirty: bool, branch: str, node_date: datetime.date
+    ) -> ScmVersion:
+        """Create metadata for initial/empty repository."""
+        log.debug("initial node %s", self.path)
+        return meta(
+            Version("0.0"),
+            config=config,
+            dirty=dirty,
+            branch=branch,
+            node_date=node_date,
+        )
 
+    def _parse_tags(self, tags_str: str) -> list[str]:
+        """Parse and filter tags from mercurial output."""
         tags = tags_str.split()
         if "tip" in tags:
             # tip is not a real tag
             tags.remove("tip")
+        return tags
 
+    def _get_version_from_tags(
+        self, tags: list[str], config: Configuration
+    ) -> Version | None:
+        """Try to get a version from the current tags."""
         if tags:
             tag = tag_to_version(tags[0], config)
-            if tag:
-                return meta(tag, dirty=dirty, branch=branch, config=config)
+            return tag
+        return None
 
+    def _get_distance_based_version(
+        self,
+        config: Configuration,
+        dirty: bool,
+        branch: str,
+        node: str,
+        node_date: datetime.date,
+    ) -> ScmVersion | None:
+        """Get version based on distance from latest tag."""
         try:
             tag_str = self.get_latest_normalizable_tag()
             if tag_str is None:
@@ -98,8 +154,13 @@ class HgWorkdir(Workdir):
                 tag = Version("0.0")
                 dist += 1
             else:
-                tag = tag_to_version(tag_str, config=config)
-                assert tag is not None
+                maybe_tag = tag_to_version(tag_str, config=config)
+                if maybe_tag is None:
+                    # If tag conversion fails, treat as no tag found
+                    tag = Version("0.0")
+                    dist += 1
+                else:
+                    tag = maybe_tag
 
             if self.check_changes_since_tag(tag_str) or dirty:
                 return meta(
@@ -117,8 +178,7 @@ class HgWorkdir(Workdir):
         except ValueError:
             # unpacking failed, old hg
             log.exception("error")
-
-        return None
+            return None
 
     def hg_log(self, revset: str, template: str) -> str:
         cmd = [HG_COMMAND, "log", "-r", revset, "-T", template]
