@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- add `setuptools-scm` console_scripts entry point to make the CLI directly executable
+- make Mercurial command configurable by environment variable `SETUPTOOLS_SCM_HG_COMMAND`
+
+### Changed
+
+- add `pip` to test optional dependencies for improved uv venv compatibility
+- migrate to selectable entrypoints for better extensibility
+- improve typing for entry_points
+
+### Fixed
+
+- reintroduce Python 3.9 entrypoints shim for compatibility
+- fix #1136: update customizing.md to fix missing import
+
 ## v8.3.1
 
 ### Fixed
