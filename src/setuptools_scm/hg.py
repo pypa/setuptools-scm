@@ -52,7 +52,17 @@ class HgWorkdir(Workdir):
             check=True,
         ).stdout.split("\n")
         dirty = bool(int(dirty_str))
-        node_date = datetime.date.fromisoformat(dirty_date if dirty else node_date_str)
+
+        # For dirty working directories, try to use the latest file modification time
+        # before falling back to the hg id date
+        if dirty:
+            file_mod_date = self.get_dirty_tag_date()
+            if file_mod_date is not None:
+                node_date = file_mod_date
+            else:
+                node_date = datetime.date.fromisoformat(dirty_date)
+        else:
+            node_date = datetime.date.fromisoformat(node_date_str)
 
         if node == "0" * len(node):
             log.debug("initial node %s", self.path)
@@ -143,6 +153,55 @@ class HgWorkdir(Workdir):
         )
 
         return bool(self.hg_log(revset, "."))
+
+    def get_dirty_tag_date(self) -> datetime.date | None:
+        """Get the latest modification time of changed files in the working directory.
+
+        Returns the date of the most recently modified file that has changes,
+        or None if no files are changed or if an error occurs.
+        """
+        try:
+            # Check if working directory is dirty first
+            res = _run([HG_COMMAND, "id", "-T", "{dirty}"], cwd=self.path)
+            if res.returncode != 0 or not bool(res.stdout):
+                return None
+
+            # Get list of changed files using hg status
+            status_res = _run([HG_COMMAND, "status", "-m", "-a", "-r"], cwd=self.path)
+            if status_res.returncode != 0:
+                return None
+
+            changed_files = []
+            for line in status_res.stdout.strip().split("\n"):
+                if line and len(line) > 2:
+                    # Format is "M filename" or "A filename" etc.
+                    filepath = line[2:]  # Skip status char and space
+                    changed_files.append(filepath)
+
+            if not changed_files:
+                return None
+
+            latest_mtime = 0.0
+            for filepath in changed_files:
+                full_path = self.path / filepath
+                try:
+                    file_stat = full_path.stat()
+                    latest_mtime = max(latest_mtime, file_stat.st_mtime)
+                except OSError:
+                    # File might not exist or be accessible, skip it
+                    continue
+
+            if latest_mtime > 0:
+                # Convert to UTC date
+                dt = datetime.datetime.fromtimestamp(
+                    latest_mtime, datetime.timezone.utc
+                )
+                return dt.date()
+
+        except Exception as e:
+            log.debug("Failed to get dirty tag date: %s", e)
+
+        return None
 
 
 def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:

@@ -47,6 +47,58 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
             [HG_COMMAND, "log", "-r", ".", "-T", "{shortdate(date)}"], cwd=self.path
         ).parse_success(parse=date.fromisoformat, error_msg="head date err")
 
+    def get_dirty_tag_date(self) -> date | None:
+        """Get the latest modification time of changed files in the working directory.
+
+        Returns the date of the most recently modified file that has changes,
+        or None if no files are changed or if an error occurs.
+        """
+        if not self.is_dirty():
+            return None
+
+        try:
+            from datetime import datetime
+            from datetime import timezone
+
+            # Get list of changed files using hg status
+            status_res = _run([HG_COMMAND, "status", "-m", "-a", "-r"], cwd=self.path)
+            if status_res.returncode != 0:
+                return None
+
+            changed_files = []
+            for line in status_res.stdout.strip().split("\n"):
+                if line and len(line) > 2:
+                    # Format is "M filename" or "A filename" etc.
+                    filepath = line[2:]  # Skip status char and space
+                    changed_files.append(filepath)
+
+            if not changed_files:
+                return None
+
+            latest_mtime = 0.0
+            for filepath in changed_files:
+                full_path = self.path / filepath
+                try:
+                    file_stat = full_path.stat()
+                    latest_mtime = max(latest_mtime, file_stat.st_mtime)
+                except OSError:
+                    # File might not exist or be accessible, skip it
+                    continue
+
+            if latest_mtime > 0:
+                # Convert to UTC date
+                dt = datetime.fromtimestamp(latest_mtime, timezone.utc)
+                return dt.date()
+
+        except Exception as e:
+            # Use the parent's log module
+            import logging
+
+            log = logging.getLogger(__name__)
+            log.debug("Failed to get dirty tag date: %s", e)
+
+        return None
+
     def is_shallow(self) -> bool:
         return False
 

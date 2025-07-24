@@ -294,71 +294,68 @@ be kept in version control. It's strongly recommended to be put into gitignore.
 `setuptools-scm` implements a [file_finders] entry point
 which returns all files tracked by your SCM.
 This eliminates the need for a manually constructed `MANIFEST.in` in most cases where this
-would be required when not using `setuptools-scm`, namely:
+would be required when not using `setuptools-scm`.
 
-* To ensure all relevant files are packaged when running the `sdist` command.
-  * When using [include_package_data] to include package data as part of the `build` or `bdist_wheel`.
+[file_finders]: https://setuptools.pypa.io/en/stable/userguide/extension.html
 
 #### How it works
 
-The file finder integration works through setuptools' plugin system:
-
-1. **Entry Point Registration**: setuptools-scm registers itself as a file finder via the `setuptools.file_finders` entry point
-2. **Automatic Discovery**: When setuptools builds a source distribution, it automatically calls setuptools-scm to get the list of files
-3. **SCM Integration**: setuptools-scm queries your SCM (Git, Mercurial) to get all tracked files
-4. **File Inclusion**: All SCM-tracked files are automatically included in the sdist
+1. **Automatic Discovery**: When building source distributions (`python -m build --sdist`), setuptools automatically calls the `setuptools-scm` file finder
+2. **SCM Integration**: The file finder queries your SCM (Git/Mercurial) for all tracked files
+3. **Inclusion**: All tracked files are automatically included in the sdist
 
 #### Controlling file inclusion
 
-**Using MANIFEST.in**: You can still use `MANIFEST.in` to override the automatic behavior:
+**To exclude unwanted files:**
 
-- **Exclude files**: Use `global-exclude` or `exclude` to remove files that are SCM-tracked but shouldn't be in the package
-- **Include additional files**: Use `include` to add files that aren't SCM-tracked
+1. **Use `MANIFEST.in`** to exclude specific files/patterns:
+   ```
+   exclude development.txt
+   recursive-exclude tests *.pyc
+   ```
 
-```text title="MANIFEST.in"
-# Exclude development files
-exclude *.nix
-exclude .pre-commit-config.yaml
-global-exclude *.pyc
+2. **Configure Git archive** (for Git repositories):
+   ```bash
+   # Add to .gitattributes
+   tests/ export-ignore
+   *.md export-ignore
+   ```
 
-# Include additional files not in SCM
-include data/special-file.dat
-```
-
-**Example of what gets included automatically**:
-
-- All files tracked by Git/Mercurial in your repository
-- Includes source code, data files, documentation, etc.
-- Excludes untracked files and files ignored by your SCM
+3. **Use `.hgignore`** or **Mercurial archive configuration** (for Mercurial repositories)
 
 #### Troubleshooting
 
-**Too many files in your sdist?**
+**Problem: Unwanted files in my package**
+- ✅ **Solution**: Add exclusions to `MANIFEST.in`
+- ✅ **Alternative**: Use Git/Mercurial archive configuration
 
-1. Check what's being included: `python -m setuptools_scm ls`
-2. Use `MANIFEST.in` to exclude unwanted files:
-   ```text
-   exclude development-file.txt
-   global-exclude *.log
-   prune unnecessary-directory/
-   ```
+**Problem: Missing files in package**
+- ✅ **Check**: Are the files tracked in your SCM?
+- ✅ **Solution**: `git add` missing files or override with `MANIFEST.in`
 
-**Files missing from your sdist?**
+**Problem: File finder not working**
+- ✅ **Check**: Is setuptools-scm installed in your build environment?
+- ✅ **Check**: Are you in a valid SCM repository?
 
-1. Ensure files are tracked by your SCM: `git add` or `hg add`
-2. For non-SCM files, add them via `MANIFEST.in`:
-   ```text
-   include important-file.txt
-   recursive-include data *.json
-   ```
+### Timestamps for Local Development Versions
 
-**Disable automatic file finding** (not recommended):
+!!! info "Improved Timestamp Behavior"
 
-If you need to completely disable setuptools-scm's file finder (not recommended), you would need to uninstall setuptools-scm from your build environment and handle versioning differently.
+    When your working directory has uncommitted changes (dirty), setuptools-scm now uses the **actual modification time of changed files** instead of the current time for local version schemes like `node-and-date`.
 
-`MANIFEST.in` may still be used: anything defined there overrides the hook.
-This is mostly useful to exclude files tracked in your SCM from packages,
-although in principle it can be used to explicitly include non-tracked files too.
+    **Before**: Dirty working directories always used current time (`now`)
+    **Now**: Uses the latest modification time of changed files, falling back to current time only if no changed files are found
 
-[file_finders]: https://setuptools.pypa.io/en/latest/userguide/extension.html#adding-support-for-revision-control-systems
-[include_package_data]: https://setuptools.readthedocs.io/en/latest/setuptools.html#including-data-files
+    This provides more stable and meaningful timestamps that reflect when you actually made changes to your code.
+
+**How it works:**
+
+1. **Clean repository**: Uses commit timestamp from SCM
+2. **Dirty repository**: Uses latest modification time of changed files
+3. **Fallback**: Uses current time if no modification times can be determined
+
+**Benefits:**
+
+- More stable builds during development
+- Timestamps reflect actual change times
+- Better for reproducible development workflows
