@@ -188,7 +188,7 @@ def test_dump_version(tmp_path: Path) -> None:
         "__version__ = version = '1.0.dev42'",
         "__version_tuple__ = version_tuple = (1, 0, 'dev42')",
         "",
-        "__commit_id__ = commit_id = None"
+        "__commit_id__ = commit_id = None",
     ]
 
     version = "1.0.1"
@@ -199,7 +199,7 @@ def test_dump_version(tmp_path: Path) -> None:
         "__version__ = version = '1.0.1'",
         "__version_tuple__ = version_tuple = (1, 0, 1)",
         "",
-        "__commit_id__ = commit_id = 'g4ac9d2c'"
+        "__commit_id__ = commit_id = 'g4ac9d2c'",
     ]
 
     version = "1.0.1+g4ac9d2c"
