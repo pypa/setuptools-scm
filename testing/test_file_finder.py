@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib
 import os
 import sys
 
@@ -9,7 +8,6 @@ from typing import Iterable
 import pytest
 
 from setuptools_scm._file_finders import find_files
-from setuptools_scm._file_finders import hg
 
 from .wd_wrapper import WorkDir
 
@@ -275,6 +273,5 @@ def test_hg_command_from_env(
     with monkeypatch.context() as m:
         m.setenv("SETUPTOOLS_SCM_HG_COMMAND", hg_exe)
         m.setenv("PATH", str(hg_wd.cwd / "not-existing"))
-        request.addfinalizer(lambda: importlib.reload(hg))
-        importlib.reload(hg)
+        # No module reloading needed - runtime configuration works immediately
         assert set(find_files()) == {"file"}

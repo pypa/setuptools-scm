@@ -152,6 +152,66 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
 
 
 
+## automatic file inclusion
+
+!!! warning "Setuptools File Finder Integration"
+
+    `setuptools-scm` automatically registers a setuptools file finder that includes all SCM-tracked files in source distributions. This behavior is **always active** when setuptools-scm is installed, regardless of whether you use it for versioning.
+
+**How it works:**
+
+`setuptools-scm` provides a `setuptools.file_finders` entry point that:
+
+1. Automatically discovers SCM-managed files (Git, Mercurial)
+2. Includes them in source distributions (`python -m build --sdist`)
+3. Works for `include_package_data = True` in package building
+
+**Entry point registration:**
+```toml
+[project.entry-points."setuptools.file_finders"]
+setuptools_scm = "setuptools_scm._file_finders:find_files"
+```
+
+**Files included by default:**
+- All files tracked by Git (`git ls-files`)
+- All files tracked by Mercurial (`hg files`)
+- Includes: source code, documentation, tests, config files, etc.
+- Excludes: untracked files, files in `.gitignore`/`.hgignore`
+
+**Controlling inclusion:**
+
+Use `MANIFEST.in` to override the automatic behavior:
+
+```text title="MANIFEST.in"
+# Exclude development files
+exclude .pre-commit-config.yaml
+exclude tox.ini
+global-exclude *.pyc __pycache__/
+
+# Exclude entire directories
+prune docs/
+prune testing/
+
+# Include non-SCM files
+include data/important.json
+```
+
+**Debugging file inclusion:**
+
+```bash
+# List files that will be included
+python -m setuptools_scm ls
+
+# Build and inspect sdist contents
+python -m build --sdist
+tar -tzf dist/package-*.tar.gz
+```
+
+!!! note "Cannot be disabled"
+
+    The file finder cannot be disabled through configuration - it's automatically active when setuptools-scm is installed. If you need to disable it completely, you must remove setuptools-scm from your build environment (which also means you can't use it for versioning).
+
+
 ## api reference
 
 ### constants

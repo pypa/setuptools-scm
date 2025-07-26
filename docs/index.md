@@ -10,6 +10,16 @@ files that are managed by the SCM
 Unwanted files must be excluded via `MANIFEST.in`
 or [configuring Git archive][git-archive-docs].
 
+!!! warning "Automatic File Inclusion Behavior"
+
+    **Important:** Simply installing `setuptools-scm` as a build dependency will automatically enable its file finder, which includes **all SCM-tracked files** in your source distributions. This happens even if you're not using setuptools-scm for versioning.
+
+    - ✅ **Expected**: All Git/Mercurial tracked files will be included in your sdist
+    - ⚠️ **Surprise**: This includes development files, configs, tests, docs, etc.
+    - 🛠️ **Control**: Use `MANIFEST.in` to exclude unwanted files
+
+    See the [File Finder Documentation](usage.md#file-finders-hook-makes-most-of-manifestin-unnecessary) for details.
+
 [git-archive-docs]: usage.md#builtin-mechanisms-for-obtaining-version-numbers
 
 ## Basic usage

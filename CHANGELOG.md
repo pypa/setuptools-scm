@@ -6,12 +6,15 @@
 
 - add `setuptools-scm` console_scripts entry point to make the CLI directly executable
 - make Mercurial command configurable by environment variable `SETUPTOOLS_SCM_HG_COMMAND`
+- fix #1099 use file modification times for dirty working directory timestamps instead of current time
 
 ### Changed
 
 - add `pip` to test optional dependencies for improved uv venv compatibility
 - migrate to selectable entrypoints for better extensibility
 - improve typing for entry_points
+- refactor file modification time logic into shared helper function for better maintainability
+- reduce complexity of HgWorkdir.get_meta method by extracting focused helper methods
 
 ### Fixed
 
@@ -19,6 +22,8 @@
 - fix #687: ensure calendar versioning tests use consistent time context to prevent failures around midnight in non-UTC timezones
 - reintroduce Python 3.9 entrypoints shim for compatibility
 - fix #1136: update customizing.md to fix missing import
+- fix #1001: document the missing version schemes and add examples in the docs
+- fix #1115: explicitly document file finder behaviour
 
 ## v8.3.1
 

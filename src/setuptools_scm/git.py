@@ -26,6 +26,7 @@ from ._run_cmd import require_command as _require_command
 from ._run_cmd import run as _run
 from .integration import data_from_mime
 from .scm_workdir import Workdir
+from .scm_workdir import get_latest_file_mtime
 from .version import ScmVersion
 from .version import meta
 from .version import tag_to_version
@@ -143,6 +144,28 @@ class GitWorkdir(Workdir):
             parse=parse_timestamp,
             error_msg="logging the iso date for head failed",
         )
+
+    def get_dirty_tag_date(self) -> date | None:
+        """Get the latest modification time of changed files in the working directory.
+
+        Returns the date of the most recently modified file that has changes,
+        or None if no files are changed or if an error occurs.
+        """
+        if not self.is_dirty():
+            return None
+
+        try:
+            # Get list of changed files
+            changed_files_res = run_git(["diff", "--name-only"], self.path)
+            if changed_files_res.returncode != 0:
+                return None
+
+            changed_files = changed_files_res.stdout.strip().split("\n")
+            return get_latest_file_mtime(changed_files, self.path)
+
+        except Exception as e:
+            log.debug("Failed to get dirty tag date: %s", e)
+            return None
 
     def is_shallow(self) -> bool:
         return self.path.joinpath(".git/shallow").is_file()
@@ -277,7 +300,20 @@ def _git_parse_inner(
             tag=tag, distance=distance, dirty=dirty, node=node, config=config
         )
     branch = wd.get_branch()
-    node_date = wd.get_head_date() or datetime.now(timezone.utc).date()
+    node_date = wd.get_head_date()
+
+    # If we can't get node_date from HEAD (e.g., no commits yet),
+    # and the working directory is dirty, try to use the latest
+    # modification time of changed files instead of current time
+    if node_date is None and wd.is_dirty():
+        dirty_date = wd.get_dirty_tag_date()
+        if dirty_date is not None:
+            node_date = dirty_date
+
+    # Final fallback to current time
+    if node_date is None:
+        node_date = datetime.now(timezone.utc).date()
+
     return dataclasses.replace(version, branch=branch, node_date=node_date)
 
 

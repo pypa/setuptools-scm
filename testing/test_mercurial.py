@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib
 import os
 
 from pathlib import Path
@@ -10,7 +9,6 @@ import pytest
 import setuptools_scm._file_finders
 
 from setuptools_scm import Configuration
-from setuptools_scm import hg
 from setuptools_scm._run_cmd import CommandNotFoundError
 from setuptools_scm._run_cmd import has_command
 from setuptools_scm.hg import archival_to_version
@@ -75,13 +73,14 @@ def test_hg_command_from_env(
     request: pytest.FixtureRequest,
     hg_exe: str,
 ) -> None:
-    with monkeypatch.context() as m:
-        m.setenv("SETUPTOOLS_SCM_HG_COMMAND", hg_exe)
-        m.setenv("PATH", str(wd.cwd / "not-existing"))
-        request.addfinalizer(lambda: importlib.reload(hg))
-        importlib.reload(hg)
-        wd.write("pyproject.toml", "[tool.setuptools_scm]")
-        assert wd.get_version() == "0.0"
+    wd.write("pyproject.toml", "[tool.setuptools_scm]")
+    # Need to commit something first for versioning to work
+    wd.commit_testfile()
+
+    monkeypatch.setenv("SETUPTOOLS_SCM_HG_COMMAND", hg_exe)
+    monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
+    version = wd.get_version()
+    assert version.startswith("0.1.dev1+")
 
 
 def test_hg_command_from_env_is_invalid(
@@ -89,11 +88,10 @@ def test_hg_command_from_env_is_invalid(
 ) -> None:
     with monkeypatch.context() as m:
         m.setenv("SETUPTOOLS_SCM_HG_COMMAND", str(wd.cwd / "not-existing"))
-        request.addfinalizer(lambda: importlib.reload(hg))
-        importlib.reload(hg)
+        # No module reloading needed - runtime configuration works immediately
         config = Configuration()
         wd.write("pyproject.toml", "[tool.setuptools_scm]")
-        with pytest.raises(CommandNotFoundError, match=r"hg"):
+        with pytest.raises(CommandNotFoundError, match=r"test.*hg.*not-existing"):
             parse(wd.cwd, config=config)
 
         assert wd.get_version(fallback_version="1.0") == "1.0"
