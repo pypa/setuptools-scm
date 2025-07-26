@@ -184,17 +184,30 @@ def test_dump_version(tmp_path: Path) -> None:
     scm_version = meta("1.0", distance=42, config=c)
     dump_version(tmp_path, version, "first.py", scm_version=scm_version)
     lines = read("first.py").splitlines()
-    assert lines[-2:] == [
+    assert lines[-4:] == [
         "__version__ = version = '1.0.dev42'",
         "__version_tuple__ = version_tuple = (1, 0, 'dev42')",
+        "",
+        "__commit_id__ = commit_id = None",
+    ]
+
+    version = "1.0.1"
+    scm_version = meta("1.0.1", node="g4ac9d2c", config=c)
+    dump_version(tmp_path, version, "second.py", scm_version=scm_version)
+    lines = read("second.py").splitlines()
+    assert lines[-4:] == [
+        "__version__ = version = '1.0.1'",
+        "__version_tuple__ = version_tuple = (1, 0, 1)",
+        "",
+        "__commit_id__ = commit_id = 'g4ac9d2c'",
     ]
 
     version = "1.0.1+g4ac9d2c"
     scm_version = meta("1.0.1", node="g4ac9d2c", config=c)
     dump_version(
-        tmp_path, version, "second.py", scm_version=scm_version, template=template
+        tmp_path, version, "third.py", scm_version=scm_version, template=template
     )
-    lines = read("second.py").splitlines()
+    lines = read("third.py").splitlines()
     assert "__version__ = version = '1.0.1+g4ac9d2c'" in lines
     assert "__version_tuple__ = version_tuple = (1, 0, 1, 'g4ac9d2c')" in lines
     assert "__sha__ = 'g4ac9d2c'" in lines
@@ -204,9 +217,9 @@ def test_dump_version(tmp_path: Path) -> None:
         "1.2.3", node="gb366d8b", distance=18, node_date=date(2021, 4, 15), config=c
     )
     dump_version(
-        tmp_path, version, "third.py", scm_version=scm_version, template=template
+        tmp_path, version, "fourth.py", scm_version=scm_version, template=template
     )
-    lines = read("third.py").splitlines()
+    lines = read("fourth.py").splitlines()
     assert "__version__ = version = '1.2.3.dev18+gb366d8b.d20210415'" in lines
     assert (
         "__version_tuple__ = version_tuple = (1, 2, 3, 'dev18', 'gb366d8b.d20210415')"
@@ -216,7 +229,7 @@ def test_dump_version(tmp_path: Path) -> None:
 
     import ast
 
-    ast.parse(read("third.py"))
+    ast.parse(read("fourth.py"))
 
 
 def test_parse_plain_fails(recwarn: pytest.WarningsRecorder) -> None:
