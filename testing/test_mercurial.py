@@ -73,17 +73,14 @@ def test_hg_command_from_env(
     request: pytest.FixtureRequest,
     hg_exe: str,
 ) -> None:
-    with monkeypatch.context() as m:
-        m.setenv("SETUPTOOLS_SCM_HG_COMMAND", hg_exe)
-        m.setenv("PATH", str(wd.cwd / "not-existing"))
-        wd.write("pyproject.toml", "[tool.setuptools_scm]")
-        # Use the configured hg command for test operations
-        wd.add_command = f"{hg_exe} add ."
-        wd.commit_command = f'{hg_exe} commit -m test-{{reason}} -u test -d "0 0"'
-        # Need to commit something first for versioning to work
-        wd.commit_testfile()
-        version = wd.get_version()
-        assert version.startswith("0.1.dev1+")
+    wd.write("pyproject.toml", "[tool.setuptools_scm]")
+    # Need to commit something first for versioning to work
+    wd.commit_testfile()
+
+    monkeypatch.setenv("SETUPTOOLS_SCM_HG_COMMAND", hg_exe)
+    monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
+    version = wd.get_version()
+    assert version.startswith("0.1.dev1+")
 
 
 def test_hg_command_from_env_is_invalid(
@@ -94,7 +91,7 @@ def test_hg_command_from_env_is_invalid(
         # No module reloading needed - runtime configuration works immediately
         config = Configuration()
         wd.write("pyproject.toml", "[tool.setuptools_scm]")
-        with pytest.raises(CommandNotFoundError, match=r"hg"):
+        with pytest.raises(CommandNotFoundError, match=r"test.*hg.*not-existing"):
             parse(wd.cwd, config=config)
 
         assert wd.get_version(fallback_version="1.0") == "1.0"
