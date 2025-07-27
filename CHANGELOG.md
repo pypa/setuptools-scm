@@ -16,6 +16,8 @@
 - refactor file modification time logic into shared helper function for better maintainability
 - reduce complexity of HgWorkdir.get_meta method by extracting focused helper methods
 - fix #1150: enable setuptools-scm when we are a build requirement
+- feature #1154: add the commit id the the default version file template
+
 
 ### Fixed
 
