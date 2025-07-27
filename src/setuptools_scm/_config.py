@@ -14,6 +14,7 @@ from typing import Protocol
 
 from . import _log
 from . import _types as _t
+from ._integration.pyproject_reading import PyProjectData
 from ._integration.pyproject_reading import (
     get_args_for_pyproject as _get_args_for_pyproject,
 )
@@ -115,17 +116,31 @@ class Configuration:
         cls,
         name: str | os.PathLike[str] = "pyproject.toml",
         dist_name: str | None = None,
-        _require_section: bool = True,
+        missing_file_ok: bool = False,
         **kwargs: Any,
     ) -> Configuration:
         """
-        Read Configuration from pyproject.toml (or similar).
-        Raises exceptions when file is not found or toml is
-        not installed or the file has invalid format or does
-        not contain the [tool.setuptools_scm] section.
+                Read Configuration from pyproject.toml (or similar).
+                Raises exceptions when file is not found or toml is
+                not installed or the file has invalid format or does
+                not contain setuptools_scm configuration (either via
+        _        [tool.setuptools_scm] section or build-system.requires).
         """
 
-        pyproject_data = _read_pyproject(Path(name), require_section=_require_section)
+        try:
+            pyproject_data = _read_pyproject(Path(name))
+        except FileNotFoundError:
+            if missing_file_ok:
+                log.warning("File %s not found, using empty configuration", name)
+                pyproject_data = PyProjectData(
+                    path=Path(name),
+                    tool_name="setuptools_scm",
+                    project={},
+                    section={},
+                    is_required=False,
+                )
+            else:
+                raise
         args = _get_args_for_pyproject(pyproject_data, dist_name, kwargs)
 
         args.update(read_toml_overrides(args["dist_name"]))

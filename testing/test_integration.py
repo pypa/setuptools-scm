@@ -13,6 +13,7 @@ import pytest
 import setuptools_scm._integration.setuptools
 
 from setuptools_scm import Configuration
+from setuptools_scm._integration.setuptools import _extract_package_name
 from setuptools_scm._integration.setuptools import _warn_on_old_setuptools
 from setuptools_scm._overrides import PRETEND_KEY
 from setuptools_scm._overrides import PRETEND_KEY_NAMED
@@ -256,3 +257,238 @@ def test_git_archival_plugin_ignored(tmp_path: Path, ep_name: str) -> None:
     found = list(iter_matching_entrypoints(tmp_path, config=c, entrypoint=ep_name))
     imports = [item.value for item in found]
     assert "setuptools_scm_git_archive:parse" not in imports
+
+
+def test_pyproject_build_system_requires_setuptools_scm(wd: WorkDir) -> None:
+    """Test that setuptools_scm is enabled when present in build-system.requires"""
+    if sys.version_info < (3, 11):
+        pytest.importorskip("tomli")
+
+    # Test with setuptools_scm in build-system.requires but no [tool.setuptools_scm] section
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent(
+            """
+            [build-system]
+            requires = ["setuptools>=64", "setuptools_scm>=8"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "test-package"
+            dynamic = ["version"]
+            """
+        ),
+    )
+    wd.write("setup.py", "__import__('setuptools').setup()")
+
+    res = wd([sys.executable, "setup.py", "--version"])
+    assert res.endswith("0.1.dev0+d20090213")
+
+
+def test_pyproject_build_system_requires_setuptools_scm_dash_variant(
+    wd: WorkDir,
+) -> None:
+    """Test that setuptools-scm (dash variant) is also detected in build-system.requires"""
+    if sys.version_info < (3, 11):
+        pytest.importorskip("tomli")
+
+    # Test with setuptools-scm (dash variant) in build-system.requires
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent(
+            """
+            [build-system]
+            requires = ["setuptools>=64", "setuptools-scm>=8"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "test-package"
+            dynamic = ["version"]
+            """
+        ),
+    )
+    wd.write("setup.py", "__import__('setuptools').setup()")
+
+    res = wd([sys.executable, "setup.py", "--version"])
+    assert res.endswith("0.1.dev0+d20090213")
+
+
+def test_pyproject_build_system_requires_with_extras(wd: WorkDir) -> None:
+    """Test that setuptools_scm[toml] is detected in build-system.requires"""
+    if sys.version_info < (3, 11):
+        pytest.importorskip("tomli")
+
+    # Test with setuptools_scm[toml] (with extras) in build-system.requires
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent(
+            """
+            [build-system]
+            requires = ["setuptools>=64", "setuptools_scm[toml]>=8"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "test-package"
+            dynamic = ["version"]
+            """
+        ),
+    )
+    wd.write("setup.py", "__import__('setuptools').setup()")
+
+    res = wd([sys.executable, "setup.py", "--version"])
+    assert res.endswith("0.1.dev0+d20090213")
+
+
+def test_pyproject_build_system_requires_not_present(wd: WorkDir) -> None:
+    """Test that version is not set when setuptools_scm is not in build-system.requires and no [tool.setuptools_scm] section"""
+    if sys.version_info < (3, 11):
+        pytest.importorskip("tomli")
+
+    # Test without setuptools_scm in build-system.requires and no [tool.setuptools_scm] section
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent(
+            """
+            [build-system]
+            requires = ["setuptools>=64", "wheel"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "test-package"
+            dynamic = ["version"]
+            """
+        ),
+    )
+    wd.write("setup.py", "__import__('setuptools').setup()")
+
+    res = wd([sys.executable, "setup.py", "--version"])
+    assert res == "0.0.0"
+
+
+def test_pyproject_build_system_requires_priority_over_tool_section(
+    wd: WorkDir,
+) -> None:
+    """Test that both build-system.requires and [tool.setuptools_scm] section work together"""
+    if sys.version_info < (3, 11):
+        pytest.importorskip("tomli")
+
+    # Test with both setuptools_scm in build-system.requires AND [tool.setuptools_scm] section
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent(
+            """
+            [build-system]
+            requires = ["setuptools>=64", "setuptools_scm>=8"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "test-package"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            # empty section, should work with build-system detection
+            """
+        ),
+    )
+    wd.write("setup.py", "__import__('setuptools').setup()")
+
+    res = wd([sys.executable, "setup.py", "--version"])
+    assert res.endswith("0.1.dev0+d20090213")
+
+
+def test_extract_package_name() -> None:
+    """Test the _extract_package_name helper function"""
+    assert _extract_package_name("setuptools_scm") == "setuptools_scm"
+    assert _extract_package_name("setuptools-scm") == "setuptools-scm"
+    assert _extract_package_name("setuptools_scm>=8") == "setuptools_scm"
+    assert _extract_package_name("setuptools-scm>=8") == "setuptools-scm"
+    assert _extract_package_name("setuptools_scm[toml]>=7.0") == "setuptools_scm"
+    assert _extract_package_name("setuptools-scm[toml]>=7.0") == "setuptools-scm"
+    assert _extract_package_name("setuptools_scm==8.0.0") == "setuptools_scm"
+    assert _extract_package_name("setuptools_scm~=8.0") == "setuptools_scm"
+    assert _extract_package_name("setuptools_scm[rich,toml]>=8") == "setuptools_scm"
+
+
+def test_build_requires_integration_with_config_reading(wd: WorkDir) -> None:
+    """Test that Configuration.from_file handles build-system.requires automatically"""
+    if sys.version_info < (3, 11):
+        pytest.importorskip("tomli")
+
+    from setuptools_scm._config import Configuration
+
+    # Test: pyproject.toml with setuptools_scm in build-system.requires but no tool section
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent(
+            """
+            [build-system]
+            requires = ["setuptools>=64", "setuptools_scm>=8"]
+
+            [project]
+            name = "test-package"
+            """
+        ),
+    )
+
+    # This should NOT raise an error because setuptools_scm is in build-system.requires
+    config = Configuration.from_file(
+        name=wd.cwd.joinpath("pyproject.toml"), dist_name="test-package"
+    )
+    assert config.dist_name == "test-package"
+
+    # Test: pyproject.toml with setuptools-scm (dash variant) in build-system.requires
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent(
+            """
+            [build-system]
+            requires = ["setuptools>=64", "setuptools-scm>=8"]
+
+            [project]
+            name = "test-package"
+            """
+        ),
+    )
+
+    # This should also NOT raise an error
+    config = Configuration.from_file(
+        name=wd.cwd.joinpath("pyproject.toml"), dist_name="test-package"
+    )
+    assert config.dist_name == "test-package"
+
+
+def test_improved_error_message_mentions_both_config_options(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that the error message mentions both configuration options"""
+    if sys.version_info < (3, 11):
+        pytest.importorskip("tomli")
+
+    # Create pyproject.toml without setuptools_scm configuration
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent(
+            """
+            [project]
+            name = "test-package"
+
+            [build-system]
+            requires = ["setuptools>=64"]
+            """
+        ),
+    )
+
+    from setuptools_scm._config import Configuration
+
+    with pytest.raises(LookupError) as exc_info:
+        Configuration.from_file(
+            name=wd.cwd.joinpath("pyproject.toml"),
+            dist_name="test-package",
+            missing_file_ok=False,
+        )
+
+    error_msg = str(exc_info.value)
+    # Check that the error message mentions both configuration options
+    assert "tool.setuptools_scm" in error_msg
+    assert "build-system" in error_msg
+    assert "requires" in error_msg
