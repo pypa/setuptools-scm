@@ -1,5 +1,17 @@
 # Configuration
 
+## When is configuration needed?
+
+Starting with setuptools-scm 8.1+, explicit configuration is **optional** in many cases:
+
+- **No configuration needed**: If `setuptools_scm` (or `setuptools-scm`) is in your `build-system.requires`, setuptools-scm will automatically activate with sensible defaults.
+
+- **Configuration recommended**: Use the `[tool.setuptools_scm]` section when you need to:
+  - Write version files (`version_file`)
+  - Customize version schemes (`version_scheme`, `local_scheme`)
+  - Set custom tag patterns (`tag_regex`)
+  - Configure fallback behavior (`fallback_version`)
+  - Or any other non-default behavior
 
 ## configuration parameters
 
