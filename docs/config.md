@@ -97,6 +97,20 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
 
     Defaults to the value set by [setuptools_scm.git.DEFAULT_DESCRIBE][]
 
+`scm.git.pre_parse`
+:   A string specifying which git pre-parse function to use before parsing version information.
+    Available options:
+
+    - `"warn_on_shallow"` (default): Warns when the repository is shallow
+    - `"fail_on_shallow"`: Fails with an error when the repository is shallow
+    - `"fetch_on_shallow"`: Automatically fetches to rectify shallow repositories
+    - `"fail_on_missing_submodules"`: Fails when submodules are defined but not initialized
+
+    The `"fail_on_missing_submodules"` option is useful to prevent packaging incomplete
+    projects when submodules are required for a complete build.
+
+    Note: This setting is overridden by any explicit `pre_parse` parameter passed to the git parse function.
+
 `normalize`
 :   A boolean flag indicating if the version string should be normalized.
     Defaults to `True`. Setting this to `False` is equivalent to setting

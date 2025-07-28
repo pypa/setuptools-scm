@@ -8,9 +8,13 @@ import re
 import warnings
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Pattern
 from typing import Protocol
+
+if TYPE_CHECKING:
+    from . import git
 
 from . import _log
 from . import _types as _t
@@ -52,6 +56,13 @@ def _check_tag_regex(value: str | Pattern[str] | None) -> Pattern[str]:
     return regex
 
 
+def _get_default_git_pre_parse() -> git.GitPreParse:
+    """Get the default git pre_parse enum value"""
+    from . import git
+
+    return git.GitPreParse.WARN_ON_SHALLOW
+
+
 class ParseFunction(Protocol):
     def __call__(
         self, root: _t.PathT, *, config: Configuration
@@ -84,6 +95,53 @@ def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
 
 
 @dataclasses.dataclass
+class GitConfiguration:
+    """Git-specific configuration options"""
+
+    pre_parse: git.GitPreParse = dataclasses.field(
+        default_factory=lambda: _get_default_git_pre_parse()
+    )
+
+    @classmethod
+    def from_data(cls, data: dict[str, Any]) -> GitConfiguration:
+        """Create GitConfiguration from configuration data, converting strings to enums"""
+        git_data = data.copy()
+
+        # Convert string pre_parse values to enum instances
+        if "pre_parse" in git_data and isinstance(git_data["pre_parse"], str):
+            from . import git
+
+            try:
+                git_data["pre_parse"] = git.GitPreParse(git_data["pre_parse"])
+            except ValueError as e:
+                valid_options = [option.value for option in git.GitPreParse]
+                raise ValueError(
+                    f"Invalid git pre_parse function '{git_data['pre_parse']}'. "
+                    f"Valid options are: {', '.join(valid_options)}"
+                ) from e
+
+        return cls(**git_data)
+
+
+@dataclasses.dataclass
+class ScmConfiguration:
+    """SCM-specific configuration options"""
+
+    git: GitConfiguration = dataclasses.field(default_factory=GitConfiguration)
+
+    @classmethod
+    def from_data(cls, data: dict[str, Any]) -> ScmConfiguration:
+        """Create ScmConfiguration from configuration data"""
+        scm_data = data.copy()
+
+        # Handle git-specific configuration
+        git_data = scm_data.pop("git", {})
+        git_config = GitConfiguration.from_data(git_data)
+
+        return cls(git=git_config, **scm_data)
+
+
+@dataclasses.dataclass
 class Configuration:
     """Global configuration model"""
 
@@ -106,6 +164,11 @@ class Configuration:
     search_parent_directories: bool = False
 
     parent: _t.PathT | None = None
+
+    # Nested SCM configurations
+    scm: ScmConfiguration = dataclasses.field(
+        default_factory=lambda: ScmConfiguration()
+    )
 
     def __post_init__(self) -> None:
         self.tag_regex = _check_tag_regex(self.tag_regex)
@@ -161,8 +224,14 @@ class Configuration:
         version_cls = _validate_version_cls(
             data.pop("version_cls", None), data.pop("normalize", True)
         )
+
+        # Handle nested SCM configuration
+        scm_data = data.pop("scm", {})
+        scm_config = ScmConfiguration.from_data(scm_data)
+
         return cls(
             relative_to=relative_to,
             version_cls=version_cls,
+            scm=scm_config,
             **data,
         )

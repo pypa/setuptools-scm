@@ -26,3 +26,6 @@ CMD_TYPE: TypeAlias = Union[Sequence[PathT], str]
 VERSION_SCHEME: TypeAlias = Union[str, Callable[["version.ScmVersion"], str]]
 VERSION_SCHEMES: TypeAlias = Union[List[str], Tuple[str, ...], VERSION_SCHEME]
 SCMVERSION: TypeAlias = "version.ScmVersion"
+
+# Git pre-parse function types
+GIT_PRE_PARSE: TypeAlias = Union[str, None]
