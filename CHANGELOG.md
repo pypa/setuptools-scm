@@ -8,6 +8,7 @@
 - make Mercurial command configurable by environment variable `SETUPTOOLS_SCM_HG_COMMAND`
 - fix #1099 use file modification times for dirty working directory timestamps instead of current time
 - fix #1059: add `SETUPTOOLS_SCM_PRETEND_METADATA` environment variable to override individual ScmVersion fields
+- add `scm` parameter support to `get_version()` function for nested SCM configuration
 ### Changed
 
 - add `pip` to test optional dependencies for improved uv venv compatibility
@@ -27,7 +28,9 @@
 - fix #1136: update customizing.md to fix missing import
 - fix #1001: document the missing version schemes and add examples in the docs
 - fix #1115: explicitly document file finder behaviour
-- fix #879: add test that validates caswe differenct behavior
+- fix #879: add test that validates case different behavior on windows
+- migrate git describe command to new scm config
+- add support for failing on missing submodules
 
 ## v8.3.1
 
