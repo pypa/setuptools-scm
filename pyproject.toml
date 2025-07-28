@@ -67,6 +67,8 @@ test = [
   "rich",
   'typing-extensions; python_version < "3.11"',
   "wheel",
+  "griffe",
+  "flake8",
 ]
 toml = [
 ]

@@ -1,0 +1,38 @@
+name: API Stability Check
+
+on:
+  pull_request:
+  push:
+    branches:
+    - "*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: 1
+
+jobs:
+  api-check:
+    name: Check API stability with griffe
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -U pip setuptools
+          pip install -e .[test]
+
+      - name: Run griffe API check
+        run: |
+          griffe check setuptools_scm -ssrc -f github
