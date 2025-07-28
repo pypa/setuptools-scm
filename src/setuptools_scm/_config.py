@@ -44,9 +44,9 @@ def _check_tag_regex(value: str | Pattern[str] | None) -> Pattern[str]:
 
     group_names = regex.groupindex.keys()
     if regex.groups == 0 or (regex.groups > 1 and "version" not in group_names):
-        warnings.warn(
-            "Expected tag_regex to contain a single match group or a group named"
-            " 'version' to identify the version part of any tag."
+        raise ValueError(
+            f"Expected tag_regex '{regex.pattern}' to contain a single match group or"
+            " a group named 'version' to identify the version part of any tag."
         )
 
     return regex
@@ -107,6 +107,9 @@ class Configuration:
 
     parent: _t.PathT | None = None
 
+    def __post_init__(self) -> None:
+        self.tag_regex = _check_tag_regex(self.tag_regex)
+
     @property
     def absolute_root(self) -> str:
         return _check_absolute_root(self.root, self.relative_to)
@@ -155,13 +158,11 @@ class Configuration:
         given configuration data
         create a config instance after validating tag regex/version class
         """
-        tag_regex = _check_tag_regex(data.pop("tag_regex", None))
         version_cls = _validate_version_cls(
             data.pop("version_cls", None), data.pop("normalize", True)
         )
         return cls(
             relative_to=relative_to,
             version_cls=version_cls,
-            tag_regex=tag_regex,
             **data,
         )
