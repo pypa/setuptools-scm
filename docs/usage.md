@@ -2,10 +2,30 @@
 
 ## At build time
 
-The preferred way to configure `setuptools-scm` is to author
-settings in the `tool.setuptools_scm` section of `pyproject.toml`.
+There are two ways to configure `setuptools-scm` at build time, depending on your needs:
 
-It's necessary to use a setuptools version released after 2022.
+### Automatic Configuration (Recommended for Simple Cases)
+
+For projects that don't need custom configuration, simply include `setuptools-scm`
+in your build requirements:
+
+```toml title="pyproject.toml"
+[build-system]
+requires = ["setuptools>=64", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# version = "0.0.1"  # Remove any existing version parameter.
+dynamic = ["version"]
+```
+
+**That's it!** Starting with setuptools-scm 8.1+, if `setuptools_scm` (or `setuptools-scm`)
+is present in your `build-system.requires`, setuptools-scm will automatically activate
+with default settings.
+
+### Explicit Configuration
+
+If you need to customize setuptools-scm behavior, use the `tool.setuptools_scm` section:
 
 ```toml title="pyproject.toml"
 [build-system]
@@ -17,13 +37,24 @@ build-backend = "setuptools.build_meta"
 dynamic = ["version"]
 
 [tool.setuptools_scm]
-# can be empty if no extra settings are needed, presence enables setuptools-scm
+# Configure custom options here (version schemes, file writing, etc.)
+version_file = "src/mypackage/_version.py"
 ```
 
-That will be sufficient to require `setuptools-scm` for projects
-that support PEP 518 ([pip](https://pypi.org/project/pip) and
+Both approaches will work with projects that support PEP 518 ([pip](https://pypi.org/project/pip) and
 [pep517](https://pypi.org/project/pep517/)).
 Tools that still invoke `setup.py` must ensure build requirements are installed
+
+!!! info "How Automatic Detection Works"
+
+    When setuptools-scm is listed in `build-system.requires`, it automatically detects this during the build process and activates with default settings. This means:
+
+    - ✅ **Automatic activation**: No `[tool.setuptools_scm]` section needed
+    - ✅ **Default behavior**: Uses standard version schemes and SCM detection
+    - ✅ **Error handling**: Provides helpful error messages if configuration is missing
+    - ⚙️ **Customization**: Add `[tool.setuptools_scm]` section when you need custom options
+
+    Both package names are detected: `setuptools_scm` and `setuptools-scm` (with dash).
 
 ### Version files
 

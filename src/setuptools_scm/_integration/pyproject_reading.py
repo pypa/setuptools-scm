@@ -4,6 +4,7 @@ import warnings
 
 from pathlib import Path
 from typing import NamedTuple
+from typing import Sequence
 
 from .. import _log
 from .setuptools import read_dist_name_from_setup_cfg
@@ -20,30 +21,56 @@ class PyProjectData(NamedTuple):
     tool_name: str
     project: TOML_RESULT
     section: TOML_RESULT
+    is_required: bool
 
     @property
     def project_name(self) -> str | None:
         return self.project.get("name")
 
 
+def has_build_package(
+    requires: Sequence[str], build_package_names: Sequence[str]
+) -> bool:
+    for requirement in requires:
+        import re
+
+        # Remove extras like [toml] first
+        clean_req = re.sub(r"\[.*?\]", "", requirement)
+        # Split on version operators and take first part
+        package_name = re.split(r"[><=!~]", clean_req)[0].strip().lower()
+        if package_name in build_package_names:
+            return True
+    return False
+
+
 def read_pyproject(
     path: Path = Path("pyproject.toml"),
     tool_name: str = "setuptools_scm",
-    require_section: bool = True,
+    build_package_names: Sequence[str] = ("setuptools_scm", "setuptools-scm"),
 ) -> PyProjectData:
-    defn = read_toml_content(path, None if require_section else {})
+    defn = read_toml_content(path)
+    requires: list[str] = defn.get("build-system", {}).get("requires", [])
+    is_required = has_build_package(requires, build_package_names)
+
     try:
         section = defn.get("tool", {})[tool_name]
     except LookupError as e:
-        error = f"{path} does not contain a tool.{tool_name} section"
-        if require_section:
+        if not is_required:
+            # Enhanced error message that mentions both configuration options
+            error = (
+                f"{path} does not contain a tool.{tool_name} section. "
+                f"setuptools_scm requires configuration via either:\n"
+                f"  1. [tool.{tool_name}] section in {path}, or\n"
+                f"  2. {tool_name} (or setuptools-scm) in [build-system] requires"
+            )
             raise LookupError(error) from e
         else:
+            error = f"{path} does not contain a tool.{tool_name} section"
             log.warning("toml section missing %r", error, exc_info=True)
             section = {}
 
     project = defn.get("project", {})
-    return PyProjectData(path, tool_name, project, section)
+    return PyProjectData(path, tool_name, project, section, is_required)
 
 
 def get_args_for_pyproject(

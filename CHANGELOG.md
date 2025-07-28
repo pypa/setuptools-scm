@@ -7,7 +7,7 @@
 - add `setuptools-scm` console_scripts entry point to make the CLI directly executable
 - make Mercurial command configurable by environment variable `SETUPTOOLS_SCM_HG_COMMAND`
 - fix #1099 use file modification times for dirty working directory timestamps instead of current time
-
+- fix #1059: add `SETUPTOOLS_SCM_PRETEND_METADATA` environment variable to override individual ScmVersion fields
 ### Changed
 
 - add `pip` to test optional dependencies for improved uv venv compatibility
@@ -15,6 +15,9 @@
 - improve typing for entry_points
 - refactor file modification time logic into shared helper function for better maintainability
 - reduce complexity of HgWorkdir.get_meta method by extracting focused helper methods
+- fix #1150: enable setuptools-scm when we are a build requirement
+- feature #1154: add the commit id the the default version file template
+
 
 ### Fixed
 

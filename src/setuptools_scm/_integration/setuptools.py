@@ -45,6 +45,25 @@ Suggested workaround if applicable:
         )
 
 
+def _extract_package_name(requirement: str) -> str:
+    """Extract the package name from a requirement string.
+
+    Examples:
+        'setuptools_scm' -> 'setuptools_scm'
+        'setuptools-scm>=8' -> 'setuptools-scm'
+        'setuptools_scm[toml]>=7.0' -> 'setuptools_scm'
+    """
+    # Split on common requirement operators and take the first part
+    # This handles: >=, <=, ==, !=, >, <, ~=
+    import re
+
+    # Remove extras like [toml] first
+    requirement = re.sub(r"\[.*?\]", "", requirement)
+    # Split on version operators
+    package_name = re.split(r"[><=!~]", requirement)[0].strip()
+    return package_name
+
+
 def _assign_version(
     dist: setuptools.Distribution, config: _config.Configuration
 ) -> None:
@@ -97,7 +116,7 @@ def version_keyword(
 
     config = _config.Configuration.from_file(
         dist_name=dist_name,
-        _require_section=False,
+        missing_file_ok=True,
         **overrides,
     )
     _assign_version(dist, config)
@@ -115,6 +134,7 @@ def infer_version(dist: setuptools.Distribution) -> None:
         return
     if dist_name == "setuptools-scm":
         return
+
     try:
         config = _config.Configuration.from_file(dist_name=dist_name)
     except LookupError as e:
