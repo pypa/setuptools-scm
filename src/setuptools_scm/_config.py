@@ -104,6 +104,7 @@ class Configuration:
     dist_name: str | None = None
     version_cls: type[_VersionT] = _Version
     search_parent_directories: bool = False
+    micro_version_factor: int = 1000
 
     parent: _t.PathT | None = None
 
