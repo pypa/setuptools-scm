@@ -6,10 +6,28 @@ from pathlib import Path
 
 from .. import _types as _t
 from .._log import log as parent_log
+from .._node_utils import _format_node_for_output
 from .._version_cls import _version_as_tuple
 from ..version import ScmVersion
 
 log = parent_log.getChild("dump_version")
+
+
+class _TemplateScmVersion:
+    """Wrapper for ScmVersion that formats node for template output."""
+
+    def __init__(self, scm_version: ScmVersion) -> None:
+        self._scm_version = scm_version
+
+    def __getattr__(self, name: str) -> object:
+        # Delegate all attribute access to the wrapped ScmVersion
+        return getattr(self._scm_version, name)
+
+    @property
+    def node(self) -> str | None:
+        """Return the node formatted for output."""
+        return _format_node_for_output(self._scm_version.node)
+
 
 TEMPLATES = {
     ".py": """\
@@ -101,10 +119,12 @@ def write_version_to_path(
     log.debug("dump %s into %s", version, target)
     version_tuple = _version_as_tuple(version)
     if scm_version is not None:
+        # Wrap ScmVersion to provide formatted node for templates
+        template_scm_version = _TemplateScmVersion(scm_version)
         content = final_template.format(
             version=version,
             version_tuple=version_tuple,
-            scm_version=scm_version,
+            scm_version=template_scm_version,
         )
     else:
         content = final_template.format(version=version, version_tuple=version_tuple)

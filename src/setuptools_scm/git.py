@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import dataclasses
 import logging
-import operator
 import os
 import re
 import shlex
@@ -47,6 +46,7 @@ DEFAULT_DESCRIBE = [
     "--dirty",
     "--tags",
     "--long",
+    "--abbrev=40",
     "--match",
     "*[0-9]*",
 ]
@@ -174,12 +174,10 @@ class GitWorkdir(Workdir):
         run_git(["fetch", "--unshallow"], self.path, check=True, timeout=240)
 
     def node(self) -> str | None:
-        unsafe_short_node = operator.itemgetter(slice(7))
-
         return run_git(
             ["rev-parse", "--verify", "--quiet", "HEAD"], self.path
         ).parse_success(
-            parse=unsafe_short_node,
+            parse=str,
         )
 
     def count_all_nodes(self) -> int:
