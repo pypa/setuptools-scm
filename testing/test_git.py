@@ -39,15 +39,22 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.fixture(name="wd")
-def wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch, debug_mode: DebugMode) -> WorkDir:
-    debug_mode.disable()
-    monkeypatch.delenv("HOME", raising=False)
+def setup_git_wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch | None = None) -> WorkDir:
+    """Set up a WorkDir with git initialized and configured for testing."""
+    if monkeypatch:
+        monkeypatch.delenv("HOME", raising=False)
     wd("git init")
     wd("git config user.email test@example.com")
     wd('git config user.name "a test"')
     wd.add_command = "git add ."
     wd.commit_command = "git commit -m test-{reason}"
+    return wd
+
+
+@pytest.fixture(name="wd")
+def wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch, debug_mode: DebugMode) -> WorkDir:
+    debug_mode.disable()
+    setup_git_wd(wd, monkeypatch)
     debug_mode.enable()
     return wd
 
@@ -428,7 +435,11 @@ def test_not_matching_tags(wd: WorkDir) -> None:
     wd.commit_testfile()
     assert wd.get_version(
         tag_regex=r"^apache-arrow-([\.0-9]+)$",
-        git_describe_command="git describe --dirty --tags --long --exclude *js* ",
+        scm={
+            "git": {
+                "describe_command": "git describe --dirty --tags --long --exclude *js* "
+            }
+        },
     ).startswith("0.11.2")
 
 
@@ -623,3 +634,192 @@ def test_git_archival_from_unfiltered() -> None:
     ):
         version = archival_to_version({"node": "$Format:%H$"}, config=config)
     assert version is None
+
+
+def test_fail_on_missing_submodules_no_gitmodules(wd: WorkDir) -> None:
+    """Test that fail_on_missing_submodules does nothing when no .gitmodules exists."""
+    wd.commit_testfile()
+    # Should not raise any exception
+    git.fail_on_missing_submodules(git.GitWorkdir(wd.cwd))
+
+
+def test_fail_on_missing_submodules_with_initialized_submodules(wd: WorkDir) -> None:
+    """Test that fail_on_missing_submodules passes when submodules are initialized."""
+    # Create a submodule directory and .gitmodules file
+    submodule_dir = wd.cwd / "external"
+    submodule_dir.mkdir()
+
+    # Initialize a git repo in the submodule directory
+    wd(["git", "-C", str(submodule_dir), "init"])
+    wd(["git", "-C", str(submodule_dir), "config", "user.email", "test@example.com"])
+    wd(["git", "-C", str(submodule_dir), "config", "user.name", "Test User"])
+
+    # Create a commit in the submodule
+    test_file = submodule_dir / "test.txt"
+    test_file.write_text("test content")
+    wd(["git", "-C", str(submodule_dir), "add", "test.txt"])
+    wd(["git", "-C", str(submodule_dir), "commit", "-m", "Initial commit"])
+
+    # Add it as a submodule to the main repo
+    wd(["git", "submodule", "add", str(submodule_dir), "external"])
+    wd.commit_testfile()
+
+    # Should not raise any exception since the submodule is initialized
+    git.fail_on_missing_submodules(git.GitWorkdir(wd.cwd))
+
+
+def test_fail_on_missing_submodules_with_uninitialized_submodules(
+    tmp_path: Path,
+) -> None:
+    """Test that fail_on_missing_submodules fails when submodules are not initialized."""
+    # Create a test repository with a .gitmodules file but no actual submodule
+    test_repo = tmp_path / "test_repo"
+    test_repo.mkdir()
+    test_wd = setup_git_wd(WorkDir(test_repo))
+
+    # Create a fake .gitmodules file (this simulates what happens after cloning without --recurse-submodules)
+    gitmodules_content = """[submodule "external"]
+	path = external
+	url = https://example.com/external.git
+"""
+    test_wd.write(".gitmodules", gitmodules_content)
+    test_wd.add_and_commit("Add-submodule-reference")
+
+    # Should raise ValueError for uninitialized submodules
+    with pytest.raises(
+        ValueError, match=r"Submodules are defined in \.gitmodules but not initialized"
+    ):
+        git.fail_on_missing_submodules(git.GitWorkdir(test_repo))
+
+
+def test_git_pre_parse_config_integration(wd: WorkDir) -> None:
+    """Test that git_pre_parse configuration is used by the parse function."""
+    wd.commit_testfile()
+
+    # Test with default (None) - should use warn_on_shallow
+    config = Configuration()
+    result = git.parse(str(wd.cwd), config)
+    assert result is not None
+
+    # Test with explicit configuration
+    from setuptools_scm._config import GitConfiguration
+    from setuptools_scm._config import ScmConfiguration
+
+    config_with_pre_parse = Configuration(
+        scm=ScmConfiguration(
+            git=GitConfiguration(pre_parse=git.GitPreParse.WARN_ON_SHALLOW)
+        )
+    )
+    result = git.parse(str(wd.cwd), config_with_pre_parse)
+    assert result is not None
+
+    # Test with different pre_parse value
+    config_fail_shallow = Configuration(
+        scm=ScmConfiguration(
+            git=GitConfiguration(pre_parse=git.GitPreParse.FAIL_ON_MISSING_SUBMODULES)
+        )
+    )
+    result = git.parse(str(wd.cwd), config_fail_shallow)
+    assert result is not None
+
+
+def test_nested_scm_git_config_from_toml(tmp_path: Path) -> None:
+    """Test that nested SCM git configuration is properly parsed from TOML."""
+    # Create a test pyproject.toml with nested SCM configuration
+    pyproject_path = tmp_path / "pyproject.toml"
+    pyproject_content = """
+[tool.setuptools_scm.scm.git]
+pre_parse = "fail_on_missing_submodules"
+"""
+    pyproject_path.write_text(pyproject_content)
+
+    # Parse the configuration from file
+    config = Configuration.from_file(pyproject_path)
+
+    # Verify the nested configuration was parsed correctly and converted to enum
+    assert config.scm.git.pre_parse == git.GitPreParse.FAIL_ON_MISSING_SUBMODULES
+
+
+def test_nested_scm_git_config_from_data() -> None:
+    """Test that nested SCM git configuration parsing works correctly with from_data."""
+    # Test configuration parsing directly without file I/O
+    config_data = {"scm": {"git": {"pre_parse": "fail_on_missing_submodules"}}}
+
+    # Parse the configuration data
+    config = Configuration.from_data(relative_to=".", data=config_data)
+
+    # Verify the nested configuration was parsed correctly and converted to enum
+    assert config.scm.git.pre_parse == git.GitPreParse.FAIL_ON_MISSING_SUBMODULES
+
+
+def test_invalid_git_pre_parse_raises_error() -> None:
+    """Test that invalid git pre_parse values raise a helpful ValueError."""
+    # Test configuration parsing directly without file I/O
+    invalid_config_data = {"scm": {"git": {"pre_parse": "invalid_function"}}}
+
+    # Parse the configuration data - should raise ValueError
+    with pytest.raises(
+        ValueError, match="Invalid git pre_parse function 'invalid_function'"
+    ):
+        Configuration.from_data(relative_to=".", data=invalid_config_data)
+
+
+def test_git_describe_command_backward_compatibility() -> None:
+    """Test backward compatibility for git_describe_command configuration."""
+    # Test old configuration style still works with deprecation warning
+    old_config_data = {
+        "git_describe_command": "git describe --dirty --tags --long --exclude *js*"
+    }
+
+    with pytest.warns(DeprecationWarning, match=r"git_describe_command.*deprecated"):
+        config = Configuration.from_data(relative_to=".", data=old_config_data)
+
+    # Verify it was migrated to the new location
+    assert (
+        config.scm.git.describe_command
+        == "git describe --dirty --tags --long --exclude *js*"
+    )
+
+
+def test_git_describe_command_from_data_conflict() -> None:
+    """Test that specifying both old and new configuration in from_data raises ValueError."""
+    # Both old and new configuration specified - should raise ValueError
+    mixed_config_data = {
+        "git_describe_command": "old command",
+        "scm": {"git": {"describe_command": "new command"}},
+    }
+
+    # The Configuration constructor should handle the conflict detection
+    with pytest.warns(DeprecationWarning, match=r"git_describe_command.*deprecated"):
+        with pytest.raises(
+            ValueError, match=r"Cannot specify both.*git_describe_command"
+        ):
+            Configuration.from_data(relative_to=".", data=mixed_config_data)
+
+
+def test_git_describe_command_init_argument_deprecation() -> None:
+    """Test that passing git_describe_command as init argument issues deprecation warning."""
+    # Test init argument
+    with pytest.warns(DeprecationWarning, match=r"git_describe_command.*deprecated"):
+        config = Configuration(git_describe_command="test command")
+
+    # Verify the value was migrated to the new location
+    assert config.scm.git.describe_command == "test command"
+
+
+def test_git_describe_command_init_conflict() -> None:
+    """Test that specifying both old and new configuration raises ValueError."""
+    from setuptools_scm._config import GitConfiguration
+    from setuptools_scm._config import ScmConfiguration
+
+    # Both old init arg and new configuration specified - should raise ValueError
+    with pytest.warns(DeprecationWarning, match=r"git_describe_command.*deprecated"):
+        with pytest.raises(
+            ValueError, match=r"Cannot specify both.*git_describe_command"
+        ):
+            Configuration(
+                git_describe_command="old command",
+                scm=ScmConfiguration(
+                    git=GitConfiguration(describe_command="new command")
+                ),
+            )
