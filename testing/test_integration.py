@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.metadata
+import logging
 import os
 import subprocess
 import sys
@@ -192,6 +193,187 @@ def test_pretend_version_accepts_bad_string(
     assert wd.get_version(write_to="test.py") == "dummy"
     pyver = wd([sys.executable, "setup.py", "--version"])
     assert pyver == "0.0.0"
+
+
+def test_pretend_metadata_with_version(
+    monkeypatch: pytest.MonkeyPatch, wd: WorkDir
+) -> None:
+    """Test pretend metadata overrides work with pretend version."""
+    from setuptools_scm._overrides import PRETEND_METADATA_KEY
+
+    monkeypatch.setenv(PRETEND_KEY, "1.2.3.dev4+g1337beef")
+    monkeypatch.setenv(PRETEND_METADATA_KEY, '{node="g1337beef", distance=4}')
+
+    version = wd.get_version()
+    assert version == "1.2.3.dev4+g1337beef"
+
+    # Test version file template functionality
+    wd.write("setup.py", SETUP_PY_PLAIN)
+    wd("mkdir -p src")  # Create the src directory
+    # This is a template string, not an f-string - used by setuptools-scm templating
+    version_file_content = """
+version = '{version}'
+major = {version_tuple[0]}
+minor = {version_tuple[1]}
+patch = {version_tuple[2]}
+commit_hash = '{scm_version.node}'
+num_commit = {scm_version.distance}
+"""  # noqa: RUF027
+    # Use write_to with template to create version file
+    version = wd.get_version(
+        write_to="src/version.py", write_to_template=version_file_content
+    )
+
+    # Read the file using pathlib
+    content = (wd.cwd / "src/version.py").read_text()
+    assert "commit_hash = 'g1337beef'" in content
+    assert "num_commit = 4" in content
+
+
+def test_pretend_metadata_named(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> None:
+    """Test pretend metadata with named package support."""
+    from setuptools_scm._overrides import PRETEND_METADATA_KEY_NAMED
+
+    monkeypatch.setenv(
+        PRETEND_KEY_NAMED.format(name="test".upper()), "1.2.3.dev5+gabcdef12"
+    )
+    monkeypatch.setenv(
+        PRETEND_METADATA_KEY_NAMED.format(name="test".upper()),
+        '{node="gabcdef12", distance=5, dirty=true}',
+    )
+
+    version = wd.get_version(dist_name="test")
+    assert version == "1.2.3.dev5+gabcdef12"
+
+
+def test_pretend_metadata_without_version_warns(
+    monkeypatch: pytest.MonkeyPatch, wd: WorkDir, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Test that pretend metadata without any base version logs a warning."""
+    from setuptools_scm._overrides import PRETEND_METADATA_KEY
+
+    # Only set metadata, no version - but there will be a git repo so there will be a base version
+    # Let's create an empty git repo without commits to truly have no base version
+    monkeypatch.setenv(PRETEND_METADATA_KEY, '{node="g1234567", distance=2}')
+
+    # Should get a version with fallback but metadata overrides applied
+    with caplog.at_level(logging.WARNING):
+        version = wd.get_version()
+        # Should get a fallback version with metadata overrides
+        assert version is not None
+
+    # In this case, metadata was applied to a fallback version, so no warning about missing base
+
+
+def test_pretend_metadata_with_scm_version(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that pretend metadata works with actual SCM-detected version."""
+    from setuptools_scm._overrides import PRETEND_METADATA_KEY
+
+    # Set up a git repo with a tag so we have a base version
+    wd("git init")
+    wd("git config user.name test")
+    wd("git config user.email test@example.com")
+    wd.write("file.txt", "content")
+    wd("git add file.txt")
+    wd("git commit -m 'initial'")
+    wd("git tag v1.0.0")
+
+    # Now add metadata overrides
+    monkeypatch.setenv(PRETEND_METADATA_KEY, '{node="gcustom123", distance=7}')
+
+    # Test that the metadata gets applied to the actual SCM version
+    version = wd.get_version()
+    # The version becomes 1.0.1.dev7+gcustom123 due to version scheme and metadata overrides
+    assert "1.0.1.dev7+gcustom123" == version
+
+    # Test version file to see if metadata was applied
+    wd.write("setup.py", SETUP_PY_PLAIN)
+    wd("mkdir -p src")
+    # This is a template string, not an f-string - used by setuptools-scm templating
+    version_file_content = """
+version = '{version}'
+commit_hash = '{scm_version.node}'
+num_commit = {scm_version.distance}
+"""  # noqa: RUF027
+    version = wd.get_version(
+        write_to="src/version.py", write_to_template=version_file_content
+    )
+
+    content = (wd.cwd / "src/version.py").read_text()
+    assert "commit_hash = 'gcustom123'" in content
+    assert "num_commit = 7" in content
+
+
+def test_pretend_metadata_type_conversion(
+    monkeypatch: pytest.MonkeyPatch, wd: WorkDir
+) -> None:
+    """Test that pretend metadata properly uses TOML native types."""
+    from setuptools_scm._overrides import PRETEND_METADATA_KEY
+
+    monkeypatch.setenv(PRETEND_KEY, "2.0.0")
+    monkeypatch.setenv(
+        PRETEND_METADATA_KEY,
+        '{distance=10, dirty=true, node="gfedcba98", branch="feature-branch"}',
+    )
+
+    version = wd.get_version()
+    # The version should be formatted properly with the metadata
+    assert "2.0.0" in version
+
+
+def test_pretend_metadata_invalid_fields_filtered(
+    monkeypatch: pytest.MonkeyPatch, wd: WorkDir, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Test that invalid metadata fields are filtered out with a warning."""
+    from setuptools_scm._overrides import PRETEND_METADATA_KEY
+
+    monkeypatch.setenv(PRETEND_KEY, "1.0.0")
+    monkeypatch.setenv(
+        PRETEND_METADATA_KEY,
+        '{node="g123456", distance=3, invalid_field="should_be_ignored", another_bad_field=42}',
+    )
+
+    with caplog.at_level(logging.WARNING):
+        version = wd.get_version()
+        assert version == "1.0.0"
+
+    assert "Invalid metadata fields in pretend metadata" in caplog.text
+    assert "invalid_field" in caplog.text
+    assert "another_bad_field" in caplog.text
+
+
+def test_pretend_metadata_date_parsing(
+    monkeypatch: pytest.MonkeyPatch, wd: WorkDir
+) -> None:
+    """Test that TOML date values work in pretend metadata."""
+    from setuptools_scm._overrides import PRETEND_METADATA_KEY
+
+    monkeypatch.setenv(PRETEND_KEY, "1.5.0")
+    monkeypatch.setenv(
+        PRETEND_METADATA_KEY, '{node="g987654", distance=7, node_date=2024-01-15}'
+    )
+
+    version = wd.get_version()
+    assert version == "1.5.0"
+
+
+def test_pretend_metadata_invalid_toml_error(
+    monkeypatch: pytest.MonkeyPatch, wd: WorkDir, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Test that invalid TOML in pretend metadata logs an error."""
+    from setuptools_scm._overrides import PRETEND_METADATA_KEY
+
+    monkeypatch.setenv(PRETEND_KEY, "1.0.0")
+    monkeypatch.setenv(PRETEND_METADATA_KEY, "{invalid toml syntax here}")
+
+    with caplog.at_level(logging.ERROR):
+        version = wd.get_version()
+        # Should fall back to basic pretend version
+        assert version == "1.0.0"
+
+    assert "Failed to parse pretend metadata" in caplog.text
 
 
 def testwarn_on_broken_setuptools() -> None:

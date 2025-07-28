@@ -56,11 +56,17 @@ def parse_fallback_version(config: Configuration) -> ScmVersion | None:
 
 
 def parse_version(config: Configuration) -> ScmVersion | None:
-    return (
+    # First try to get a version from the normal flow
+    scm_version = (
         _read_pretended_version_for(config)
         or parse_scm_version(config)
         or parse_fallback_version(config)
     )
+
+    # Apply any metadata overrides to the version we found
+    from ._overrides import _apply_metadata_overrides
+
+    return _apply_metadata_overrides(scm_version, config)
 
 
 def write_version_files(
