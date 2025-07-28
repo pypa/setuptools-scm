@@ -119,7 +119,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
 
                 return hg_node
 
-        return git_node[:7]
+        return git_node
 
     def count_all_nodes(self) -> int:
         res = run_hg(["log", "-r", "ancestors(.)", "-T", "."], cwd=self.path)

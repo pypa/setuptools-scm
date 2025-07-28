@@ -66,7 +66,7 @@ class HgWorkdir(Workdir):
         if self._is_initial_node(node):
             return self._create_initial_meta(config, dirty, branch, node_date)
 
-        node = "h" + node[:7]
+        node = "h" + node
         tags = self._parse_tags(tags_str)
 
         # Try to get version from current tags
@@ -285,7 +285,7 @@ def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
 
 def archival_to_version(data: dict[str, str], config: Configuration) -> ScmVersion:
     log.debug("data %s", data)
-    node = data.get("node", "")[:12]
+    node = data.get("node", "")
     if node:
         node = "h" + node
     if "tag" in data:

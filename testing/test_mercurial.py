@@ -31,12 +31,12 @@ def wd(wd: WorkDir) -> WorkDir:
 
 archival_mapping = {
     "1.0": {"tag": "1.0"},
-    "1.1.0.dev3+h000000000000": {
+    "1.1.0.dev3+h0000000000": {
         "latesttag": "1.0",
         "latesttagdistance": "3",
         "node": "0" * 20,
     },
-    "1.0.1.dev3+h000000000000": {
+    "1.0.1.dev3+h0000000000": {
         "latesttag": "1.0.0",
         "latesttagdistance": "3",
         "branch": "1.0",
@@ -163,7 +163,7 @@ latesttagdistance: 3
 """,
     )
 
-    assert wd.get_version() == "0.2.dev3+h000000000000"
+    assert wd.get_version() == "0.2.dev3+h0000000000"
 
 
 @pytest.mark.issue("#72")

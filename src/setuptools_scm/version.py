@@ -16,6 +16,7 @@ from typing import Match
 
 from . import _entrypoints
 from . import _modify_version
+from ._node_utils import _format_node_for_output
 
 if TYPE_CHECKING:
     import sys
@@ -170,7 +171,7 @@ class ScmVersion:
             time=self.time,
             tag=self.tag,
             distance=self.distance,
-            node=self.node,
+            node=_format_node_for_output(self.node),
             dirty=self.dirty,
             branch=self.branch,
             node_date=self.node_date,
