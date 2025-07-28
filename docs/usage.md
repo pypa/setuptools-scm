@@ -40,9 +40,10 @@ dynamic = ["version"]
 # Configure custom options here (version schemes, file writing, etc.)
 version_file = "src/mypackage/_version.py"
 
-# Example: Fail if submodules are not initialized (useful for projects requiring submodules)
+# Example: Git-specific configuration
 [tool.setuptools_scm.scm.git]
-pre_parse = "fail_on_missing_submodules"
+pre_parse = "fail_on_missing_submodules"  # Fail if submodules are not initialized
+describe_command = "git describe --dirty --tags --long --exclude *js*"  # Custom describe command
 ```
 
 Both approaches will work with projects that support PEP 518 ([pip](https://pypi.org/project/pip) and

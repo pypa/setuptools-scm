@@ -435,7 +435,11 @@ def test_not_matching_tags(wd: WorkDir) -> None:
     wd.commit_testfile()
     assert wd.get_version(
         tag_regex=r"^apache-arrow-([\.0-9]+)$",
-        git_describe_command="git describe --dirty --tags --long --exclude *js* ",
+        scm={
+            "git": {
+                "describe_command": "git describe --dirty --tags --long --exclude *js* "
+            }
+        },
     ).startswith("0.11.2")
 
 
@@ -758,3 +762,64 @@ def test_invalid_git_pre_parse_raises_error() -> None:
         ValueError, match="Invalid git pre_parse function 'invalid_function'"
     ):
         Configuration.from_data(relative_to=".", data=invalid_config_data)
+
+
+def test_git_describe_command_backward_compatibility() -> None:
+    """Test backward compatibility for git_describe_command configuration."""
+    # Test old configuration style still works with deprecation warning
+    old_config_data = {
+        "git_describe_command": "git describe --dirty --tags --long --exclude *js*"
+    }
+
+    with pytest.warns(DeprecationWarning, match=r"git_describe_command.*deprecated"):
+        config = Configuration.from_data(relative_to=".", data=old_config_data)
+
+    # Verify it was migrated to the new location
+    assert (
+        config.scm.git.describe_command
+        == "git describe --dirty --tags --long --exclude *js*"
+    )
+
+
+def test_git_describe_command_from_data_conflict() -> None:
+    """Test that specifying both old and new configuration in from_data raises ValueError."""
+    # Both old and new configuration specified - should raise ValueError
+    mixed_config_data = {
+        "git_describe_command": "old command",
+        "scm": {"git": {"describe_command": "new command"}},
+    }
+
+    # The Configuration constructor should handle the conflict detection
+    with pytest.warns(DeprecationWarning, match=r"git_describe_command.*deprecated"):
+        with pytest.raises(
+            ValueError, match=r"Cannot specify both.*git_describe_command"
+        ):
+            Configuration.from_data(relative_to=".", data=mixed_config_data)
+
+
+def test_git_describe_command_init_argument_deprecation() -> None:
+    """Test that passing git_describe_command as init argument issues deprecation warning."""
+    # Test init argument
+    with pytest.warns(DeprecationWarning, match=r"git_describe_command.*deprecated"):
+        config = Configuration(git_describe_command="test command")
+
+    # Verify the value was migrated to the new location
+    assert config.scm.git.describe_command == "test command"
+
+
+def test_git_describe_command_init_conflict() -> None:
+    """Test that specifying both old and new configuration raises ValueError."""
+    from setuptools_scm._config import GitConfiguration
+    from setuptools_scm._config import ScmConfiguration
+
+    # Both old init arg and new configuration specified - should raise ValueError
+    with pytest.warns(DeprecationWarning, match=r"git_describe_command.*deprecated"):
+        with pytest.raises(
+            ValueError, match=r"Cannot specify both.*git_describe_command"
+        ):
+            Configuration(
+                git_describe_command="old command",
+                scm=ScmConfiguration(
+                    git=GitConfiguration(describe_command="new command")
+                ),
+            )

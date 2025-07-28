@@ -330,8 +330,8 @@ def version_from_describe(
     config: Configuration,
     describe_command: _t.CMD_TYPE | None,
 ) -> ScmVersion | None:
-    if config.git_describe_command is not None:
-        describe_command = config.git_describe_command
+    if config.scm.git.describe_command is not None:
+        describe_command = config.scm.git.describe_command
 
     if describe_command is not None:
         if isinstance(describe_command, str):

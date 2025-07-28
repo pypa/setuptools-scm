@@ -92,7 +92,7 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
     this is a function for advanced use and you should be
     familiar with the `setuptools-scm` internals to use it.
 
-`git_describe_command`
+`scm.git.describe_command`
 :   This command will be used instead the default `git describe --long` command.
 
     Defaults to the value set by [setuptools_scm.git.DEFAULT_DESCRIBE][]
@@ -106,10 +106,15 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
     - `"fetch_on_shallow"`: Automatically fetches to rectify shallow repositories
     - `"fail_on_missing_submodules"`: Fails when submodules are defined but not initialized
 
-    The `"fail_on_missing_submodules"` option is useful to prevent packaging incomplete
+        The `"fail_on_missing_submodules"` option is useful to prevent packaging incomplete
     projects when submodules are required for a complete build.
 
     Note: This setting is overridden by any explicit `pre_parse` parameter passed to the git parse function.
+
+`git_describe_command` (deprecated)
+:   **Deprecated since 8.4.0**: Use `scm.git.describe_command` instead.
+
+    This field is maintained for backward compatibility but will issue a deprecation warning when used.
 
 `normalize`
 :   A boolean flag indicating if the version string should be normalized.

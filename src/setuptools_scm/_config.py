@@ -30,6 +30,57 @@ from ._version_cls import _VersionT
 
 log = _log.log.getChild("config")
 
+
+def _is_called_from_dataclasses() -> bool:
+    """Check if the current call is from the dataclasses module."""
+    import inspect
+
+    frame = inspect.currentframe()
+    try:
+        # Walk up to 7 frames to check for dataclasses calls
+        current_frame = frame
+        assert current_frame is not None
+        for _ in range(7):
+            current_frame = current_frame.f_back
+            if current_frame is None:
+                break
+            if "dataclasses.py" in current_frame.f_code.co_filename:
+                return True
+        return False
+    finally:
+        del frame
+
+
+class _GitDescribeCommandDescriptor:
+    """Data descriptor for deprecated git_describe_command field."""
+
+    def __get__(
+        self, obj: Configuration | None, objtype: type[Configuration] | None = None
+    ) -> _t.CMD_TYPE | None:
+        if obj is None:
+            return self  # type: ignore[return-value]
+
+        # Only warn if not being called by dataclasses.replace or similar introspection
+        is_from_dataclasses = _is_called_from_dataclasses()
+        if not is_from_dataclasses:
+            warnings.warn(
+                "Configuration field 'git_describe_command' is deprecated. "
+                "Use 'scm.git.describe_command' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        return obj.scm.git.describe_command
+
+    def __set__(self, obj: Configuration, value: _t.CMD_TYPE | None) -> None:
+        warnings.warn(
+            "Configuration field 'git_describe_command' is deprecated. "
+            "Use 'scm.git.describe_command' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        obj.scm.git.describe_command = value
+
+
 DEFAULT_TAG_REGEX = re.compile(
     r"^(?:[\w-]+-)?(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$"
 )
@@ -101,6 +152,7 @@ class GitConfiguration:
     pre_parse: git.GitPreParse = dataclasses.field(
         default_factory=lambda: _get_default_git_pre_parse()
     )
+    describe_command: _t.CMD_TYPE | None = None
 
     @classmethod
     def from_data(cls, data: dict[str, Any]) -> GitConfiguration:
@@ -158,7 +210,10 @@ class Configuration:
     version_file: _t.PathT | None = None
     version_file_template: str | None = None
     parse: ParseFunction | None = None
-    git_describe_command: _t.CMD_TYPE | None = None
+    git_describe_command: dataclasses.InitVar[_t.CMD_TYPE | None] = (
+        _GitDescribeCommandDescriptor()
+    )
+
     dist_name: str | None = None
     version_cls: type[_VersionT] = _Version
     search_parent_directories: bool = False
@@ -170,8 +225,41 @@ class Configuration:
         default_factory=lambda: ScmConfiguration()
     )
 
-    def __post_init__(self) -> None:
+    # Deprecated fields (handled in __post_init__)
+
+    def __post_init__(self, git_describe_command: _t.CMD_TYPE | None) -> None:
         self.tag_regex = _check_tag_regex(self.tag_regex)
+
+        # Handle deprecated git_describe_command
+        # Check if it's a descriptor object (happens when no value is passed)
+        if git_describe_command is not None and not isinstance(
+            git_describe_command, _GitDescribeCommandDescriptor
+        ):
+            # Check if this is being called from dataclasses
+            is_from_dataclasses = _is_called_from_dataclasses()
+
+            same_value = (
+                self.scm.git.describe_command is not None
+                and self.scm.git.describe_command == git_describe_command
+            )
+
+            if is_from_dataclasses and same_value:
+                # Ignore the passed value - it's from dataclasses.replace() with same value
+                pass
+            else:
+                warnings.warn(
+                    "Configuration field 'git_describe_command' is deprecated. "
+                    "Use 'scm.git.describe_command' instead.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                # Check for conflicts
+                if self.scm.git.describe_command is not None:
+                    raise ValueError(
+                        "Cannot specify both 'git_describe_command' (deprecated) and "
+                        "'scm.git.describe_command'. Please use only 'scm.git.describe_command'."
+                    )
+                self.scm.git.describe_command = git_describe_command
 
     @property
     def absolute_root(self) -> str:
@@ -227,6 +315,9 @@ class Configuration:
 
         # Handle nested SCM configuration
         scm_data = data.pop("scm", {})
+
+        # Handle nested SCM configuration
+
         scm_config = ScmConfiguration.from_data(scm_data)
 
         return cls(

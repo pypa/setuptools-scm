@@ -154,6 +154,7 @@ def get_version(
     version_cls: Any | None = None,
     normalize: bool = True,
     search_parent_directories: bool = False,
+    scm: dict[str, Any] | None = None,
 ) -> str:
     """
     If supplied, relative_to should be a file from which root may
@@ -165,7 +166,19 @@ def get_version(
     version_cls = _validate_version_cls(version_cls, normalize)
     del normalize
     tag_regex = parse_tag_regex(tag_regex)
-    config = Configuration(**locals())
+
+    # Handle scm parameter by converting it to ScmConfiguration
+    if scm is not None:
+        scm_config = _config.ScmConfiguration.from_data(scm)
+    else:
+        scm_config = _config.ScmConfiguration()
+
+    # Remove scm from locals() since we handle it separately
+    config_params = locals().copy()
+    config_params.pop("scm", None)
+    config_params.pop("scm_config", None)
+
+    config = _config.Configuration(scm=scm_config, **config_params)
     maybe_version = _get_version(config, force_write_version_files=True)
 
     if maybe_version is None:
