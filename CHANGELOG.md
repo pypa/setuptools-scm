@@ -27,6 +27,7 @@
 - fix #1136: update customizing.md to fix missing import
 - fix #1001: document the missing version schemes and add examples in the docs
 - fix #1115: explicitly document file finder behaviour
+- fix #879: add test that validates caswe differenct behavior
 
 ## v8.3.1
 

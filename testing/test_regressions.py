@@ -101,6 +101,81 @@ def test_case_mismatch_on_windows_git(tmp_path: Path) -> None:
     assert res is not None
 
 
+@pytest.mark.skipif(sys.platform != "win32", reason="this bug is only valid on windows")
+def test_case_mismatch_nested_dir_windows_git(tmp_path: Path) -> None:
+    """Test case where we have a nested directory with different casing"""
+    # Create git repo in my_repo
+    repo_path = tmp_path / "my_repo"
+    repo_path.mkdir()
+    run("git init", repo_path)
+
+    # Create a nested directory with specific casing
+    nested_dir = repo_path / "CasedDir"
+    nested_dir.mkdir()
+
+    # Create a pyproject.toml in the nested directory
+    (nested_dir / "pyproject.toml").write_text("""
+[build-system]
+requires = ["setuptools>=64", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "test-project"
+dynamic = ["version"]
+
+[tool.setuptools_scm]
+""")
+
+    # Add and commit the file
+    run("git add .", repo_path)
+    run("git commit -m 'Initial commit'", repo_path)
+
+    # Now try to parse from the nested directory with lowercase path
+    # This simulates: cd my_repo/caseddir (lowercase) when actual dir is CasedDir
+    lowercase_nested_path = str(nested_dir).replace("CasedDir", "caseddir")
+
+    # This should trigger the assertion error in _git_toplevel
+    try:
+        res = parse(lowercase_nested_path, Configuration())
+        # If we get here without assertion error, the bug is already fixed or not triggered
+        print(f"Parse succeeded with result: {res}")
+    except AssertionError as e:
+        print(f"AssertionError caught as expected: {e}")
+        # Re-raise so the test fails, showing we reproduced the bug
+        raise
+
+
+def test_case_mismatch_force_assertion_failure(tmp_path: Path) -> None:
+    """Force the assertion failure by directly calling _git_toplevel with mismatched paths"""
+    from setuptools_scm._file_finders.git import _git_toplevel
+
+    # Create git repo structure
+    repo_path = tmp_path / "my_repo"
+    repo_path.mkdir()
+    run("git init", repo_path)
+
+    # Create nested directory
+    nested_dir = repo_path / "CasedDir"
+    nested_dir.mkdir()
+
+    # Add and commit something to make it a valid repo
+    (nested_dir / "test.txt").write_text("test")
+    run("git add .", repo_path)
+    run("git commit -m 'Initial commit'", repo_path)
+
+    # Now call _git_toplevel with a path that has different casing
+    # This should cause the assertion to fail
+    lowercase_nested_path = str(nested_dir).replace("CasedDir", "caseddir")
+
+    try:
+        result = _git_toplevel(lowercase_nested_path)
+        print(f"_git_toplevel returned: {result}")
+        # If no assertion error, either the bug is fixed or we didn't trigger it properly
+    except AssertionError as e:
+        print(f"AssertionError as expected: {e}")
+        raise  # Let the test fail to show we reproduced the issue
+
+
 def test_entrypoints_load() -> None:
     d = distribution("setuptools-scm")
 

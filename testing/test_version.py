@@ -233,7 +233,7 @@ def test_regex_match_but_no_version() -> None:
             " however the matched group has no value"
         ),
     ):
-        meta("v1", config=replace(c, tag_regex=re.compile("(?P<version>).*")))
+        meta("v1", config=replace(c, tag_regex=re.compile(r"(?P<version>).*")))
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/471")
@@ -482,7 +482,7 @@ def test_custom_version_cls() -> None:
 def test_no_matching_entrypoints(config_key: str) -> None:
     version = meta(
         "1.0",
-        config=replace(c, **{config_key: "nonexistant"}),  # type: ignore
+        config=replace(c, **{config_key: "nonexistant"}),  # type: ignore[arg-type]
     )
     with pytest.raises(
         ValueError,
@@ -499,7 +499,7 @@ def test_all_entrypoints_return_none() -> None:
         "1.0",
         config=replace(
             c,
-            version_scheme=lambda v: None,  # type: ignore
+            version_scheme=lambda v: None,  # type: ignore[arg-type,return-value]
         ),
     )
     with pytest.raises(
