@@ -34,6 +34,7 @@
 - fix #279: expand errors when scm can be found upwards and relative_to wasnt used
 - fix #577: introduce explicit scmversion node and short node
 - fix #1100: add workaround for readthedocs worktress to the docs
+- fix #790: document shallow fail for rtd
 
 ## v8.3.1
 
