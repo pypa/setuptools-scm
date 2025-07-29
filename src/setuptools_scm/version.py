@@ -159,6 +159,11 @@ class ScmVersion:
         """returns true checked out exactly on a tag and no local changes apply"""
         return self.distance == 0 and not self.dirty
 
+    @property
+    def short_node(self) -> str | None:
+        """Return the node formatted for output."""
+        return _format_node_for_output(self.node)
+
     def __repr__(self) -> str:
         return (
             f"<ScmVersion {self.tag} dist={self.distance} "
