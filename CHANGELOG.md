@@ -32,6 +32,7 @@
 - migrate git describe command to new scm config
 - add support for failing on missing submodules
 - fix #279: expand errors when scm can be found upwards and relative_to wasnt used
+- fix #577: introduce explicit scmversion node and short node
 
 ## v8.3.1
 

@@ -23,7 +23,7 @@ c = Configuration()
 template = """\
 __version__ = version = {version!r}
 __version_tuple__ = version_tuple = {version_tuple!r}
-__sha__ = {scm_version.node!r}
+__sha__ = {scm_version.short_node!r}
 """
 
 
