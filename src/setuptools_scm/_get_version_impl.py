@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import logging
 import re
 import warnings
@@ -119,20 +120,72 @@ def _get_version(
     return version_string
 
 
+def _find_scm_in_parents(config: Configuration) -> Path | None:
+    """
+    Search parent directories for SCM repositories when relative_to is not set.
+    Uses the existing entrypoint system for SCM discovery.
+    """
+    if config.search_parent_directories:
+        return None
+
+    searching_config = dataclasses.replace(config, search_parent_directories=True)
+
+    from .discover import iter_matching_entrypoints
+
+    for _ep in iter_matching_entrypoints(
+        config.absolute_root, "setuptools_scm.parse_scm", searching_config
+    ):
+        # xxx: iter_matching_entrypoints should return the parent directory, we do a hack atm
+        assert searching_config.parent is not None
+        return Path(searching_config.parent)
+
+    return None
+
+
 def _version_missing(config: Configuration) -> NoReturn:
-    raise LookupError(
+    base_error = (
         f"setuptools-scm was unable to detect version for {config.absolute_root}.\n\n"
-        "Make sure you're either building from a fully intact git repository "
-        "or PyPI tarballs. Most other sources (such as GitHub's tarballs, a "
-        "git checkout without the .git folder) don't contain the necessary "
-        "metadata and will not work.\n\n"
-        "For example, if you're using pip, instead of "
-        "https://github.com/user/proj/archive/master.zip "
-        "use git+https://github.com/user/proj.git#egg=proj\n\n"
-        "Alternatively, set the version with the environment variable "
-        "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME} as described "
-        "in https://setuptools-scm.readthedocs.io/en/latest/config."
     )
+
+    # If relative_to is not set, check for SCM repositories in parent directories
+    scm_parent = None
+    if config.relative_to is None:
+        scm_parent = _find_scm_in_parents(config)
+
+    if scm_parent is not None:
+        # Found an SCM repository in a parent directory
+        error_msg = (
+            base_error
+            + f"However, a repository was found in a parent directory: {scm_parent}\n\n"
+            f"To fix this, you have a few options:\n\n"
+            f"1. Use the 'relative_to' parameter to specify the file that setuptools-scm should use as reference:\n"
+            f"   setuptools_scm.get_version(relative_to=__file__)\n\n"
+            f"2. Enable parent directory search in your configuration:\n"
+            f"   [tool.setuptools_scm]\n"
+            f"   search_parent_directories = true\n\n"
+            f"3. Change your working directory to the repository root: {scm_parent}\n\n"
+            f"4. Set the root explicitly in your configuration:\n"
+            f"   [tool.setuptools_scm]\n"
+            f'   root = "{scm_parent}"\n\n'
+            "For more information, see: https://setuptools-scm.readthedocs.io/en/latest/config/"
+        )
+    else:
+        # No SCM repository found in parent directories either
+        error_msg = (
+            base_error
+            + "Make sure you're either building from a fully intact git repository "
+            "or PyPI tarballs. Most other sources (such as GitHub's tarballs, a "
+            "git checkout without the .git folder) don't contain the necessary "
+            "metadata and will not work.\n\n"
+            "For example, if you're using pip, instead of "
+            "https://github.com/user/proj/archive/master.zip "
+            "use git+https://github.com/user/proj.git#egg=proj\n\n"
+            "Alternatively, set the version with the environment variable "
+            "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME} as described "
+            "in https://setuptools-scm.readthedocs.io/en/latest/config/"
+        )
+
+    raise LookupError(error_msg)
 
 
 def get_version(
