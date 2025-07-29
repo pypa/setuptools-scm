@@ -31,6 +31,7 @@
 - fix #879: add test that validates case different behavior on windows
 - migrate git describe command to new scm config
 - add support for failing on missing submodules
+- fix #279: expand errors when scm can be found upwards and relative_to wasnt used
 
 ## v8.3.1
 
