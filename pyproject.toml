@@ -165,6 +165,3 @@ markers = [
   "issue(id): reference to github issue",
   "skip_commit: allows to skip committing in the helpers",
 ]
-
-[tool.scriv]
-format = "md"
