@@ -95,8 +95,8 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
       # this hopefully helps with os caches, hg init sometimes gets 20s timeouts
       - run: hg version
-      - run: pytest
-        timeout-minutes: 15
+      - run: uv run pytest
+        timeout-minutes: 25
 
   dist_upload:
 
