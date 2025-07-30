@@ -1499,6 +1499,19 @@ wheels = [
 ]
 
 [[package]]
+name = "pytest-timeout"
+version = "2.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest", version = "8.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
+    { name = "pytest", version = "8.4.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ac/82/4c9ecabab13363e72d880f2fb504c5f750433b2b6f16e99f4ec21ada284c/pytest_timeout-2.4.0.tar.gz", hash = "sha256:7e68e90b01f9eff71332b25001f85c75495fc4e3a836701876183c4bcfd0540a", size = 17973, upload-time = "2025-05-05T19:44:34.99Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fa/b6/3127540ecdf1464a00e5a01ee60a1b09175f6913f0644ac748494d9c4b21/pytest_timeout-2.4.0-py3-none-any.whl", hash = "sha256:c42667e5cdadb151aeb5b26d114aff6bdf5a907f176a007a30b940d3d865b5c2", size = 14382, upload-time = "2025-05-05T19:44:33.502Z" },
+]
+
+[[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
 source = { registry = "https://pypi.org/simple" }
@@ -1734,6 +1747,11 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+rich = [
+    { name = "rich" },
+]
+
+[package.dev-dependencies]
 docs = [
     { name = "mkdocs" },
     { name = "mkdocs-entangled-plugin", version = "0.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -1744,9 +1762,6 @@ docs = [
     { name = "mkdocstrings", version = "0.26.1", source = { registry = "https://pypi.org/simple" }, extra = ["python"], marker = "python_full_version < '3.9'" },
     { name = "mkdocstrings", version = "0.30.0", source = { registry = "https://pypi.org/simple" }, extra = ["python"], marker = "python_full_version >= '3.9'" },
     { name = "pygments" },
-]
-rich = [
-    { name = "rich" },
 ]
 test = [
     { name = "build" },
@@ -1759,6 +1774,7 @@ test = [
     { name = "pip", version = "25.1.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
     { name = "pytest", version = "8.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "pytest", version = "8.4.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
+    { name = "pytest-timeout" },
     { name = "rich" },
     { name = "typing-extensions", version = "4.13.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "typing-extensions", version = "4.14.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9' and python_full_version < '3.11'" },
@@ -1767,27 +1783,34 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "build", marker = "extra == 'test'" },
-    { name = "flake8", marker = "extra == 'test'" },
-    { name = "griffe", marker = "extra == 'test'" },
-    { name = "mkdocs", marker = "extra == 'docs'" },
-    { name = "mkdocs-entangled-plugin", marker = "extra == 'docs'" },
-    { name = "mkdocs-include-markdown-plugin", marker = "extra == 'docs'" },
-    { name = "mkdocs-material", marker = "extra == 'docs'" },
-    { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'" },
     { name = "packaging", specifier = ">=20" },
-    { name = "pip", marker = "extra == 'test'" },
-    { name = "pygments", marker = "extra == 'docs'" },
-    { name = "pytest", marker = "extra == 'test'" },
     { name = "rich", marker = "extra == 'rich'" },
-    { name = "rich", marker = "extra == 'test'" },
     { name = "setuptools" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=1" },
     { name = "typing-extensions", marker = "python_full_version < '3.10'" },
-    { name = "typing-extensions", marker = "python_full_version < '3.11' and extra == 'test'" },
-    { name = "wheel", marker = "extra == 'test'" },
 ]
-provides-extras = ["docs", "rich", "test", "toml"]
+provides-extras = ["rich", "toml"]
+
+[package.metadata.requires-dev]
+docs = [
+    { name = "mkdocs" },
+    { name = "mkdocs-entangled-plugin" },
+    { name = "mkdocs-include-markdown-plugin" },
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings", extras = ["python"] },
+    { name = "pygments" },
+]
+test = [
+    { name = "build" },
+    { name = "flake8" },
+    { name = "griffe" },
+    { name = "pip" },
+    { name = "pytest" },
+    { name = "pytest-timeout" },
+    { name = "rich" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+    { name = "wheel" },
+]
 
 [[package]]
 name = "six"
