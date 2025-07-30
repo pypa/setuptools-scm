@@ -35,6 +35,7 @@
 - fix #577: introduce explicit scmversion node and short node
 - fix #1100: add workaround for readthedocs worktress to the docs
 - fix #790: document shallow fail for rtd
+- fix #474: expand version not found error message to provide clearer guidance about SETUPTOOLS_SCM_PRETEND_VERSION_FOR_* environment variables
 
 ## v8.3.1
 
