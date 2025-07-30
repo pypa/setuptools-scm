@@ -50,6 +50,15 @@ Use with a specific package:
 export SETUPTOOLS_SCM_PRETEND_METADATA_FOR_MY_PACKAGE='{node="g1234567", distance=2}'
 ```
 
+!!! note "Node ID Prefixes"
+
+    Node IDs must include the appropriate SCM prefix:
+
+    - Use `g` prefix for git repositories (e.g., `g1a2b3c4d5`)
+    - Use `h` prefix for mercurial repositories (e.g., `h1a2b3c4d5`)
+
+    This ensures consistency with setuptools-scm's automatic node ID formatting.
+
 ### Use case: CI/CD environments
 
 This is particularly useful for solving issues where version file templates need access to

@@ -253,6 +253,100 @@ For Git projects, the version relies on  [git describe](https://git-scm.com/docs
 so you will see an additional `g` prepended to the `{revision hash}`.
 
 
+## Version Tag Formats
+
+setuptools-scm automatically detects version information from SCM tags. The default tag regex
+supports a wide variety of tag formats, with the **"v" prefix being recommended** for clarity
+and consistency.
+
+### Recommended Tag Format
+
+**Use the "v" prefix for version tags:**
+
+```bash
+git tag v1.0.0        # Recommended
+git tag v2.1.3
+git tag v1.0.0-alpha1
+git tag v1.0.0-rc1
+```
+
+### Supported Tag Formats
+
+setuptools-scm's default tag regex supports:
+
+- **Version prefix**: `v` or `V` (optional, but recommended)
+- **Project prefix**: Optional project name followed by dashes (e.g., `myproject-v1.0.0`)
+- **Version number**: Standard semantic versioning patterns
+- **Pre-release suffixes**: Alpha, beta, RC versions
+- **Build metadata**: Anything after `+` is ignored
+
+**Examples of valid tags:**
+```bash
+# Recommended formats (with v prefix)
+v1.0.0
+v2.1.3
+v1.0.0-alpha1
+v1.0.0-beta2
+v1.0.0-rc1
+v1.2.3-dev
+V1.0.0              # Capital V also works
+
+# Project-prefixed formats
+myproject-v1.0.0
+my-lib-v2.1.0
+
+# Without v prefix (supported but not recommended)
+1.0.0
+2.1.3
+1.0.0-alpha1
+
+# With build metadata (metadata after + is ignored)
+v1.0.0+build.123
+v1.0.0+20240115
+```
+
+### Why Use the "v" Prefix?
+
+1. **Clarity**: Makes it immediately obvious that the tag represents a version
+2. **Convention**: Widely adopted standard across the software industry
+3. **Git compatibility**: Works well with git's tag sorting and filtering
+4. **Tool compatibility**: Many other tools expect version tags to have a "v" prefix
+
+### Custom Tag Patterns
+
+If you need different tag patterns, you can customize the tag regex:
+
+```toml title="pyproject.toml"
+[tool.setuptools_scm]
+tag_regex = "^release-(?P<version>[0-9]+\\.[0-9]+\\.[0-9]+)$"
+```
+
+## Node ID Prefixes
+
+setuptools-scm automatically prepends identifying characters to node IDs (commit/revision hashes)
+to distinguish between different SCM systems:
+
+- **Git repositories**: Node IDs are prefixed with `g` (e.g., `g1a2b3c4d5`)
+- **Mercurial repositories**: Node IDs are prefixed with `h` (e.g., `h1a2b3c4d5`)
+
+This prefixing serves several purposes:
+
+1. **SCM identification**: Makes it clear which version control system was used
+2. **Consistency**: Ensures predictable node ID format across different SCM backends
+3. **Debugging**: Helps identify the source SCM when troubleshooting version issues
+
+The prefixes are automatically added by setuptools-scm and should be included when manually
+specifying node IDs in environment variables like `SETUPTOOLS_SCM_PRETEND_METADATA`.
+
+**Examples:**
+```bash
+# Git node ID
+1.0.0.dev5+g1a2b3c4d5
+
+# Mercurial node ID
+1.0.0.dev5+h1a2b3c4d5
+```
+
 !!! note
 
     According to [PEP 440](https://peps.python.org/pep-0440/#local-version-identifiers>),

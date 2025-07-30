@@ -67,6 +67,14 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
     named `version`, that captures the actual version information.
 
     Defaults to the value of [setuptools_scm._config.DEFAULT_TAG_REGEX][]
+    which supports tags with optional "v" prefix (recommended), project prefixes,
+    and various version formats.
+
+    !!! tip
+
+        The default regex supports common tag formats like `v1.0.0`, `myproject-v1.0.0`,
+        and `1.0.0`. For best practices on tag naming, see
+        [Version Tag Formats](usage.md#version-tag-formats).
 
 `parentdir_prefix_version: str|None = None`
 :   If the normal methods for detecting the version (SCM version,
