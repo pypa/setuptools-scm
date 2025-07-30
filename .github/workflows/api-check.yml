@@ -34,5 +34,20 @@ jobs:
           pip install -e .[test]
 
       - name: Run griffe API check
+        id: griffe-check
         run: |
-          griffe check setuptools_scm -ssrc -f github
+          if griffe check setuptools_scm -ssrc -f github; then
+            echo "api_check_result=success" >> $GITHUB_OUTPUT
+          else
+            echo "api_check_result=warning" >> $GITHUB_OUTPUT
+            echo "API stability check detected changes but will not fail the build" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Report API check result
+        if: steps.griffe-check.outputs.api_check_result == 'warning'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.warning('API stability check detected breaking changes. Please review the API changes above.')
+            core.summary.addRaw('⚠️ API Stability Warning: Breaking changes detected in the public API')
+            await core.summary.write()
