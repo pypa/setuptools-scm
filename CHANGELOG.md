@@ -18,7 +18,7 @@
 - reduce complexity of HgWorkdir.get_meta method by extracting focused helper methods
 - fix #1150: enable setuptools-scm when we are a build requirement
 - feature #1154: add the commit id the the default version file template
-
+- drop scriv
 
 ### Fixed
 
@@ -36,6 +36,9 @@
 - fix #1100: add workaround for readthedocs worktress to the docs
 - fix #790: document shallow fail for rtd
 - fix #474: expand version not found error message to provide clearer guidance about SETUPTOOLS_SCM_PRETEND_VERSION_FOR_* environment variables
+- fix #324: document/recommend the v tag prefix
+- fix #501: add py.typed
+- fix #804: git - use fallback version instead of 0.0 when no version is found at all
 
 ## v8.3.1
 

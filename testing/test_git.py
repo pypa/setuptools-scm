@@ -823,3 +823,31 @@ def test_git_describe_command_init_conflict() -> None:
                     git=GitConfiguration(describe_command="new command")
                 ),
             )
+
+
+def test_git_no_commits_uses_fallback_version(wd: WorkDir) -> None:
+    """Test that when git describe fails (no commits), fallback_version is used instead of 0.0."""
+    # Reinitialize as empty repo to remove any existing commits
+    wd("rm -rf .git")
+    wd("git init")
+    wd("git config user.email test@example.com")
+    wd('git config user.name "a test"')
+
+    # Test with fallback_version set - should use the fallback instead of "0.0"
+    config = Configuration(fallback_version="1.2.3")
+    version = git.parse(str(wd.cwd), config)
+
+    # Should get a version starting with the fallback version
+    assert version is not None
+    assert str(version.tag) == "1.2.3"
+    assert version.distance == 0
+    assert version.dirty is True  # No commits means dirty
+
+    # Test without fallback_version - should default to "0.0"
+    config_no_fallback = Configuration()
+    version_no_fallback = git.parse(str(wd.cwd), config_no_fallback)
+
+    assert version_no_fallback is not None
+    assert str(version_no_fallback.tag) == "0.0"
+    assert version_no_fallback.distance == 0
+    assert version_no_fallback.dirty is True

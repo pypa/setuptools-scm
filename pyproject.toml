@@ -48,6 +48,13 @@ dependencies = [
   'typing-extensions; python_version < "3.10"',
 ]
 [project.optional-dependencies]
+rich = [
+  "rich",
+]
+toml = [
+]
+
+[dependency-groups]
 docs = [
   #"entangled-cli~=2.0",
   "mkdocs",
@@ -57,20 +64,16 @@ docs = [
   "mkdocstrings[python]",
   "pygments",
 ]
-rich = [
-  "rich",
-]
 test = [
   "pip",
   "build",
   "pytest",
+  "pytest-timeout",  # Timeout protection for CI/CD
   "rich",
   'typing-extensions; python_version < "3.11"',
   "wheel",
   "griffe",
   "flake8",
-]
-toml = [
 ]
 
 [project.urls]
@@ -152,6 +155,7 @@ ignore = ["PP305", "GH103", "GH212", "MY100", "PC111", "PC160", "PC170", "PC180"
 [tool.pytest.ini_options]
 minversion = "8"
 testpaths = ["testing"]
+timeout = 300  # 5 minutes timeout per test for CI protection
 filterwarnings = [
   "error",
   "ignore:.*tool\\.setuptools_scm.*",
@@ -166,5 +170,5 @@ markers = [
   "skip_commit: allows to skip committing in the helpers",
 ]
 
-[tool.scriv]
-format = "md"
+[tool.uv]
+default-groups = ["test", "docs"]

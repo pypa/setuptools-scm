@@ -31,9 +31,8 @@ def setup_hg_repo(wd: WorkDir) -> WorkDir:
     """Set up a mercurial repository for testing."""
     try:
         wd("hg init")
-        wd("hg config --local ui.username 'test <test@example.com>'")
         wd.add_command = "hg add ."
-        wd.commit_command = "hg commit -m test-{reason}"
+        wd.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
         return wd
     except Exception:
         pytest.skip("hg not available")

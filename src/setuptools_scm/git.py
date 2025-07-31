@@ -364,7 +364,7 @@ def _git_parse_inner(
 
     if version is None:
         # If 'git git_describe_command' failed, try to get the information otherwise.
-        tag = config.version_cls("0.0")
+        tag = config.version_cls(config.fallback_version or "0.0")
         node = wd.node()
         if node is None:
             distance = 0

@@ -43,8 +43,21 @@ dynamic = ["version"]
 # more missing
 
 [tool.setuptools_scm]
+´´´
 
-```
+
+!!! tip "Recommended Tag Format"
+
+    Use the **"v" prefix** for your version tags for best compatibility:
+
+    ```bash
+    git tag v1.0.0
+    git tag v1.1.0
+    git tag v2.0.0-rc1
+    ```
+
+    This is a widely adopted convention that works well with setuptools-scm and other tools.
+    See the [Version Tag Formats](usage.md#version-tag-formats) section for more details.
 
 
 ### With hatch

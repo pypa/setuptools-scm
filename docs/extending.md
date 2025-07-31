@@ -58,8 +58,8 @@ representing the version.
     and custom `.devN` versions will trigger an error.
 
     **Examples:**
-    - Tag `1.0.0` → version `1.0.1.dev0` (if dirty or distance > 0)
-    - Tag `1.0.0` → version `1.0.0` (if exact match)
+    - Tag `v1.0.0` → version `1.0.1.dev0` (if dirty or distance > 0)
+    - Tag `v1.0.0` → version `1.0.0` (if exact match)
 
 `calver-by-date`
 :   Calendar versioning scheme that generates versions based on dates.
@@ -69,17 +69,17 @@ representing the version.
     for release branches.
 
     **Examples:**
-    - Tag `23.01.15.0` on same day → version `23.01.15.1.devN`
-    - Tag `23.01.15.0` on different day (e.g., 2023-01-16) → version `23.01.16.0.devN`
-    - Tag `2023.01.15.0` → uses 4-digit year format for new versions
+    - Tag `v23.01.15.0` on same day → version `23.01.15.1.devN`
+    - Tag `v23.01.15.0` on different day (e.g., 2023-01-16) → version `23.01.16.0.devN`
+    - Tag `v2023.01.15.0` → uses 4-digit year format for new versions
 
 `no-guess-dev`
 :   Does no next version guessing, just adds `.post1.devN`.
     This is the recommended replacement for the deprecated `post-release` scheme.
 
     **Examples:**
-    - Tag `1.0.0` → version `1.0.0.post1.devN` (if distance > 0)
-    - Tag `1.0.0` → version `1.0.0` (if exact match)
+    - Tag `v1.0.0` → version `1.0.0.post1.devN` (if distance > 0)
+    - Tag `v1.0.0` → version `1.0.0` (if exact match)
 
 `only-version`
 :   Only use the version from the tag, as given.
@@ -87,7 +87,7 @@ representing the version.
     !!! warning "This means version is no longer pseudo unique per commit"
 
     **Examples:**
-    - Tag `1.0.0` → version `1.0.0` (always, regardless of distance or dirty state)
+    - Tag `v1.0.0` → version `1.0.0` (always, regardless of distance or dirty state)
 
 `post-release (deprecated)`
 :   Generates post release versions (adds `.postN`)

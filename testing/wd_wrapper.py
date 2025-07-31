@@ -20,13 +20,13 @@ class WorkDir:
         self.cwd = cwd
         self.__counter = itertools.count()
 
-    def __call__(self, cmd: list[str] | str, **kw: object) -> str:
+    def __call__(self, cmd: list[str] | str, *, timeout: int = 10, **kw: object) -> str:
         if kw:
             assert isinstance(cmd, str), "formatting the command requires text input"
             cmd = cmd.format(**kw)
         from setuptools_scm._run_cmd import run
 
-        return run(cmd, cwd=self.cwd).stdout
+        return run(cmd, cwd=self.cwd, timeout=timeout).stdout
 
     def write(self, name: str, content: str | bytes) -> Path:
         path = self.cwd / name
