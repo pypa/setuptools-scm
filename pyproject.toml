@@ -16,7 +16,6 @@ name = "setuptools-scm"
 description = "the blessed package to manage your versions by scm tags"
 readme = "README.md"
 license = "MIT"
-license-files = ["LICENSE"]
 authors = [
     {name="Ronny Pfannschmidt", email="opensource@ronnypfannschmidt.de"}
 ]
