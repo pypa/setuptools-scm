@@ -376,15 +376,41 @@ accordingly.
 
 ### Git archives
 
-Git archives are supported, but a few changes to your repository are required.
+Git archives are supported, but require specific setup and understanding of how they work with package building.
 
-Ensure the content of the following files:
+#### Overview
 
+When you create a `.git_archival.txt` file in your repository, it enables setuptools-scm to extract version information from git archives (e.g., GitHub's source downloads). However, this file contains template placeholders that must be expanded by `git archive` - they won't work when building directly from your working directory.
+
+#### Setting up git archival support
+
+You can generate a `.git_archival.txt` file using the setuptools-scm CLI:
+
+```commandline
+# Generate a stable archival file (recommended for releases)
+$ python -m setuptools_scm create-archival-file --stable
+
+# Generate a full archival file with all metadata (use with caution)
+$ python -m setuptools_scm create-archival-file --full
+```
+
+Alternatively, you can create the file manually:
+
+**Stable version (recommended):**
 ```{ .text file=".git_archival.txt"}
-
 node: $Format:%H$
 node-date: $Format:%cI$
 describe-name: $Format:%(describe:tags=true,match=*[0-9]*)$
+```
+
+**Full version (with branch information - can cause instability):**
+```{ .text file=".git_archival.txt"}
+# WARNING: Including ref-names can make archive checksums unstable
+# after commits are added post-release. Use only if describe-name is insufficient.
+node: $Format:%H$
+node-date: $Format:%cI$
+describe-name: $Format:%(describe:tags=true,match=*[0-9]*)$
+ref-names: $Format:%D$
 ```
 
 Feel free to alter the `match` field in `describe-name` to match your project's
@@ -402,14 +428,92 @@ tagging style.
 .git_archival.txt  export-subst
 ```
 
-Finally, don't forget to commit the two files:
+Finally, commit both files:
 ```commandline
-$ git add .git_archival.txt .gitattributes && git commit -m "add export config"
+$ git add .git_archival.txt .gitattributes && git commit -m "add git archive support"
+```
+
+#### Understanding the warnings
+
+If you see warnings like these when building your package:
+
+```
+UserWarning: git archive did not support describe output
+UserWarning: unprocessed git archival found (no export subst applied)
+```
+
+This typically happens when:
+
+1. **Building from working directory**: You're running `python -m build` directly in your repository
+2. **Sdist extraction**: A build tool extracts your sdist to build wheels, but the extracted directory isn't a git repository
+
+#### Recommended build workflows
+
+**For development builds:**
+Exclude `.git_archival.txt` from your package to avoid warnings:
+
+```{ .text file="MANIFEST.in"}
+# Exclude archival file from development builds
+exclude .git_archival.txt
+```
+
+**For release builds from archives:**
+Build from an actual git archive to ensure proper template expansion:
+
+```commandline
+# Create archive from a specific tag/commit
+$ git archive --output=../source_archive.tar v1.2.3
+$ cd ..
+$ tar -xf source_archive.tar
+$ cd extracted_directory/
+$ python -m build .
+```
+
+**For automated releases:**
+Many CI systems and package repositories (like GitHub Actions) automatically handle this correctly when building from git archives.
+
+#### Integration with package managers
+
+**MANIFEST.in exclusions:**
+```{ .text file="MANIFEST.in"}
+# Exclude development files from packages
+exclude .git_archival.txt
+exclude .gitattributes
 ```
 
 
-Note that if you are creating a `_version.py` file, note that it should not
-be kept in version control. It's strongly recommended to be put into gitignore.
+```{ .text file=".gitattributes"}
+# Archive configuration
+.git_archival.txt  export-subst
+.gitignore         export-ignore
+```
+
+#### Troubleshooting
+
+**Problem: "unprocessed git archival found" warnings**
+- ✅ **Solution**: Add `exclude .git_archival.txt` to `MANIFEST.in` for development builds
+- ✅ **Alternative**: Build from actual git archives for releases
+
+**Problem: "git archive did not support describe output" warnings**
+- ℹ️ **Information**: This is expected when `.git_archival.txt` contains unexpanded templates
+- ✅ **Solution**: Same as above - exclude file or build from git archives
+
+**Problem: Version detection fails in git archives**
+- ✅ **Check**: Is `.gitattributes` configured with `export-subst`?
+- ✅ **Check**: Are you building from a properly created git archive?
+- ✅ **Check**: Does your git hosting provider support archive template expansion?
+
+!!! warning "Branch Names and Archive Stability"
+
+    Including `ref-names: $Format:%D$` in your `.git_archival.txt` can make archive checksums change when new commits are added to branches referenced in the archive. This primarily affects GitHub's automatic source archives. Use the stable format (without `ref-names`) unless you specifically need branch information and understand the stability implications.
+
+!!! note "Version Files"
+
+    If you are creating a `_version.py` file, it should not be kept in version control. Add it to `.gitignore`:
+    ```
+    # Generated version file
+    src/mypackage/_version.py
+    ```
 
 [git-archive-issue]: https://github.com/pypa/setuptools-scm/issues/806
 
