@@ -80,3 +80,163 @@ version_file = "ver.py"
     assert version_file.exists()
 
     assert output[:5] in version_file.read_text("utf-8")
+
+
+def test_cli_create_archival_file_stable(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test creating stable .git_archival.txt file."""
+    wd.commit_testfile()
+    wd.write(PYPROJECT_TOML, PYPROJECT_SIMPLE)
+    monkeypatch.chdir(wd.cwd)
+
+    archival_file = wd.cwd / ".git_archival.txt"
+    assert not archival_file.exists()
+
+    # Test successful creation
+    result = main(["create-archival-file", "--stable"])
+    assert result == 0
+    assert archival_file.exists()
+
+    content = archival_file.read_text("utf-8")
+    expected_lines = [
+        "node: $Format:%H$",
+        "node-date: $Format:%cI$",
+        "describe-name: $Format:%(describe:tags=true,match=*[0-9]*)$",
+    ]
+    for line in expected_lines:
+        assert line in content
+
+    # Stable version should not contain ref-names
+    assert "ref-names" not in content
+
+
+def test_cli_create_archival_file_full(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test creating full .git_archival.txt file with branch information."""
+    wd.commit_testfile()
+    wd.write(PYPROJECT_TOML, PYPROJECT_SIMPLE)
+    monkeypatch.chdir(wd.cwd)
+
+    archival_file = wd.cwd / ".git_archival.txt"
+    assert not archival_file.exists()
+
+    # Test successful creation
+    result = main(["create-archival-file", "--full"])
+    assert result == 0
+    assert archival_file.exists()
+
+    content = archival_file.read_text("utf-8")
+    expected_lines = [
+        "node: $Format:%H$",
+        "node-date: $Format:%cI$",
+        "describe-name: $Format:%(describe:tags=true,match=*[0-9]*)$",
+        "ref-names: $Format:%D$",
+    ]
+    for line in expected_lines:
+        assert line in content
+
+    # Full version should contain warning comment
+    assert "WARNING" in content
+    assert "unstable" in content
+
+
+def test_cli_create_archival_file_exists_no_force(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that existing .git_archival.txt file prevents creation without --force."""
+    wd.commit_testfile()
+    wd.write(PYPROJECT_TOML, PYPROJECT_SIMPLE)
+    monkeypatch.chdir(wd.cwd)
+
+    archival_file = wd.cwd / ".git_archival.txt"
+    archival_file.write_text("existing content", encoding="utf-8")
+
+    # Should fail without --force
+    result = main(["create-archival-file", "--stable"])
+    assert result == 1
+
+    # Content should be unchanged
+    assert archival_file.read_text("utf-8") == "existing content"
+
+
+def test_cli_create_archival_file_exists_with_force(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that --force overwrites existing .git_archival.txt file."""
+    wd.commit_testfile()
+    wd.write(PYPROJECT_TOML, PYPROJECT_SIMPLE)
+    monkeypatch.chdir(wd.cwd)
+
+    archival_file = wd.cwd / ".git_archival.txt"
+    archival_file.write_text("existing content", encoding="utf-8")
+
+    # Should succeed with --force
+    result = main(["create-archival-file", "--stable", "--force"])
+    assert result == 0
+
+    # Content should be updated
+    content = archival_file.read_text("utf-8")
+    assert "existing content" not in content
+    assert "node: $Format:%H$" in content
+
+
+def test_cli_create_archival_file_requires_stable_or_full(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that create-archival-file requires either --stable or --full."""
+    wd.commit_testfile()
+    wd.write(PYPROJECT_TOML, PYPROJECT_SIMPLE)
+    monkeypatch.chdir(wd.cwd)
+
+    # Should fail without --stable or --full
+    with pytest.raises(SystemExit):
+        main(["create-archival-file"])
+
+
+def test_cli_create_archival_file_mutually_exclusive(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that --stable and --full are mutually exclusive."""
+    wd.commit_testfile()
+    wd.write(PYPROJECT_TOML, PYPROJECT_SIMPLE)
+    monkeypatch.chdir(wd.cwd)
+
+    # Should fail with both --stable and --full
+    with pytest.raises(SystemExit):
+        main(["create-archival-file", "--stable", "--full"])
+
+
+def test_cli_create_archival_file_existing_gitattributes(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test behavior when .gitattributes already has export-subst configuration."""
+    wd.commit_testfile()
+    wd.write(PYPROJECT_TOML, PYPROJECT_SIMPLE)
+    monkeypatch.chdir(wd.cwd)
+
+    # Create .gitattributes with export-subst configuration
+    gitattributes_file = wd.cwd / ".gitattributes"
+    gitattributes_file.write_text(".git_archival.txt  export-subst\n", encoding="utf-8")
+
+    result = main(["create-archival-file", "--stable"])
+    assert result == 0
+
+    archival_file = wd.cwd / ".git_archival.txt"
+    assert archival_file.exists()
+
+
+def test_cli_create_archival_file_no_gitattributes(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test behavior when .gitattributes doesn't exist or lacks export-subst."""
+    wd.commit_testfile()
+    wd.write(PYPROJECT_TOML, PYPROJECT_SIMPLE)
+    monkeypatch.chdir(wd.cwd)
+
+    result = main(["create-archival-file", "--stable"])
+    assert result == 0
+
+    archival_file = wd.cwd / ".git_archival.txt"
+    assert archival_file.exists()

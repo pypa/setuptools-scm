@@ -9,6 +9,8 @@
 - fix #1099 use file modification times for dirty working directory timestamps instead of current time
 - fix #1059: add `SETUPTOOLS_SCM_PRETEND_METADATA` environment variable to override individual ScmVersion fields
 - add `scm` parameter support to `get_version()` function for nested SCM configuration
+- fix #987: expand documentation on git archival files and add cli tools for good defaults
+
 ### Changed
 
 - add `pip` to test optional dependencies for improved uv venv compatibility

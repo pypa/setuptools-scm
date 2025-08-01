@@ -5,6 +5,7 @@ import json
 import os
 import sys
 
+from pathlib import Path
 from typing import Any
 
 from setuptools_scm import Configuration
@@ -106,6 +107,28 @@ def _get_cli_opts(args: list[str] | None) -> argparse.Namespace:
     # We avoid `metavar` to prevent printing repetitive information
     desc = "List information about the package, e.g. included files"
     sub.add_parser("ls", help=desc[0].lower() + desc[1:], description=desc)
+
+    # Add create-archival-file subcommand
+    archival_desc = "Create .git_archival.txt file for git archive support"
+    archival_parser = sub.add_parser(
+        "create-archival-file",
+        help=archival_desc[0].lower() + archival_desc[1:],
+        description=archival_desc,
+    )
+    archival_group = archival_parser.add_mutually_exclusive_group(required=True)
+    archival_group.add_argument(
+        "--stable",
+        action="store_true",
+        help="create stable archival file (recommended, no branch names)",
+    )
+    archival_group.add_argument(
+        "--full",
+        action="store_true",
+        help="create full archival file with branch information (can cause instability)",
+    )
+    archival_parser.add_argument(
+        "--force", action="store_true", help="overwrite existing .git_archival.txt file"
+    )
     return parser.parse_args(args)
 
 
@@ -115,6 +138,9 @@ def command(opts: argparse.Namespace, version: str, config: Configuration) -> in
 
     if opts.command == "ls":
         opts.query = ["files"]
+
+    if opts.command == "create-archival-file":
+        return _create_archival_file(opts, config)
 
     if opts.query == []:
         opts.no_version = True
@@ -187,3 +213,79 @@ def _find_pyproject(parent: str) -> str:
     return os.path.abspath(
         "pyproject.toml"
     )  # use default name to trigger the default errors
+
+
+def _create_archival_file(opts: argparse.Namespace, config: Configuration) -> int:
+    """Create .git_archival.txt file with appropriate content."""
+    archival_path = Path(config.root, ".git_archival.txt")
+
+    # Check if file exists and force flag
+    if archival_path.exists() and not opts.force:
+        print(
+            f"Error: {archival_path} already exists. Use --force to overwrite.",
+            file=sys.stderr,
+        )
+        return 1
+
+    if opts.stable:
+        content = _get_stable_archival_content()
+        print("Creating stable .git_archival.txt (recommended for releases)")
+    elif opts.full:
+        content = _get_full_archival_content()
+        print("Creating full .git_archival.txt with branch information")
+        print("WARNING: This can cause archive checksums to be unstable!")
+
+    try:
+        archival_path.write_text(content, encoding="utf-8")
+        print(f"Created: {archival_path}")
+
+        gitattributes_path = Path(config.root, ".gitattributes")
+        needs_gitattributes = True
+
+        if gitattributes_path.exists():
+            # TODO: more nuanced check later
+            gitattributes_content = gitattributes_path.read_text("utf-8")
+            if (
+                ".git_archival.txt" in gitattributes_content
+                and "export-subst" in gitattributes_content
+            ):
+                needs_gitattributes = False
+
+        if needs_gitattributes:
+            print("\nNext steps:")
+            print("1. Add this line to .gitattributes:")
+            print("   .git_archival.txt  export-subst")
+            print("2. Commit both files:")
+            print("   git add .git_archival.txt .gitattributes")
+            print("   git commit -m 'add git archive support'")
+        else:
+            print("\nNext step:")
+            print("Commit the archival file:")
+            print("   git add .git_archival.txt")
+            print("   git commit -m 'update git archival file'")
+
+        return 0
+    except OSError as e:
+        print(f"Error: Could not create {archival_path}: {e}", file=sys.stderr)
+        return 1
+
+
+def _get_stable_archival_content() -> str:
+    """Generate stable archival file content (no branch names)."""
+    return """\
+node: $Format:%H$
+node-date: $Format:%cI$
+describe-name: $Format:%(describe:tags=true,match=*[0-9]*)$
+"""
+
+
+def _get_full_archival_content() -> str:
+    """Generate full archival file content with branch information."""
+    return """\
+# WARNING: Including ref-names can make archive checksums unstable
+# after commits are added post-release. Use only if describe-name is insufficient.
+node: $Format:%H$
+node-date: $Format:%cI$
+describe-name: $Format:%(describe:tags=true,match=*[0-9]*)$
+ref-names: $Format:%D$
+"""
