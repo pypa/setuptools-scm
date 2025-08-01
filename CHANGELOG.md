@@ -40,6 +40,7 @@
 - fix #501: add py.typed
 - fix #804: git - use fallback version instead of 0.0 when no version is found at all
 - fix #1139: use logging.lastResort instead of a own replica to avoid polluting logging._handlerList
+- fix #873: don't infer version in cli if --no-version is given
 
 ## v8.3.1
 

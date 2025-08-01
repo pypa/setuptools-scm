@@ -33,10 +33,13 @@ def main(args: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         config = Configuration(root=inferred_root)
-
-    version = _get_version(
-        config, force_write_version_files=opts.force_write_version_files
-    )
+    version: str | None
+    if opts.no_version:
+        version = "0.0.0+no-version-was-requested.fake-version"
+    else:
+        version = _get_version(
+            config, force_write_version_files=opts.force_write_version_files
+        )
     if version is None:
         raise SystemExit("ERROR: no version found for", opts)
     if opts.strip_dev:
