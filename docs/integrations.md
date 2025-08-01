@@ -299,7 +299,9 @@ The environment variable `SETUPTOOLS_SCM_OVERRIDES_FOR_${NORMALIZED_DIST_NAME}` 
    SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE='{"local_scheme": "no-local-version"}'
    ```
 
-#### Alternative: pyproject.toml Configuration
+#### Alternative Approaches
+
+**Option 1: pyproject.toml Configuration**
 
 Instead of environment variables, you can configure this in your `pyproject.toml`:
 
