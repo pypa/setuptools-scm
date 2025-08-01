@@ -39,9 +39,9 @@ def make_default_handler() -> logging.Handler:
 
         return RichHandler(console=console)
     except ImportError:
-        handler = AlwaysStdErrHandler()
-        handler.setFormatter(logging.Formatter("%(levelname)s %(name)s %(message)s"))
-        return handler
+        last_resort = logging.lastResort
+        assert last_resort is not None
+        return last_resort
 
 
 _default_handler = make_default_handler()
