@@ -7,6 +7,8 @@ on:
     - "*"
     tags:
     - "v*"
+  release:
+    types: [published]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -101,7 +103,7 @@ jobs:
   dist_upload:
 
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+    if: (github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')) || (github.event_name == 'release' && github.event.action == 'published')
     permissions:
       id-token: write
     needs: [test]
