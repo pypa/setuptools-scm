@@ -10,6 +10,8 @@
 - fix #1059: add `SETUPTOOLS_SCM_PRETEND_METADATA` environment variable to override individual ScmVersion fields
 - add `scm` parameter support to `get_version()` function for nested SCM configuration
 - fix #987: expand documentation on git archival files and add cli tools for good defaults
+- fix #311: document github/gitlab ci pipelines that enable auto-upload to test-pypi/pypi
+
 
 ### Changed
 

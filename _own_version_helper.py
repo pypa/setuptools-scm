@@ -9,6 +9,7 @@ from pyproject.toml is respected
 from __future__ import annotations
 
 import logging
+import os
 
 from typing import Callable
 
@@ -22,6 +23,7 @@ from setuptools_scm import hg
 from setuptools_scm.fallbacks import parse_pkginfo
 from setuptools_scm.version import ScmVersion
 from setuptools_scm.version import get_local_node_and_date
+from setuptools_scm.version import get_no_local_node
 from setuptools_scm.version import guess_next_dev_version
 
 log = logging.getLogger("setuptools_scm")
@@ -48,11 +50,18 @@ def parse(root: str, config: Configuration) -> ScmVersion | None:
 
 
 def scm_version() -> str:
+    # Use no-local-version if SETUPTOOLS_SCM_NO_LOCAL is set (for CI uploads)
+    local_scheme = (
+        get_no_local_node
+        if os.environ.get("SETUPTOOLS_SCM_NO_LOCAL")
+        else get_local_node_and_date
+    )
+
     return get_version(
         relative_to=__file__,
         parse=parse,
         version_scheme=guess_next_dev_version,
-        local_scheme=get_local_node_and_date,
+        local_scheme=local_scheme,
     )
 
 
