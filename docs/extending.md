@@ -120,8 +120,12 @@ representing the version.
     non-release branch, increments the minor segment and sets the micro segment to
     zero, then appends `.devN`
 
+    Namespaces are unix pathname separated parts of a branch/tag name.
+
     **Examples:**
     - Tag `1.0.0` on release branch `release-1.0` → version `1.0.1.devN`
+
+    - Tag `1.0.0` on release branch `release/v1.0` → version `1.0.1.devN`
     - Tag `1.0.0` on development branch → version `1.1.0.devN`
 
 ### `setuptools_scm.local_scheme`
