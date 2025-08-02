@@ -8,10 +8,15 @@ import sys
 import textwrap
 
 from pathlib import Path
+from typing import TYPE_CHECKING
+from typing import Any
 
 import pytest
 
 import setuptools_scm._integration.setuptools
+
+if TYPE_CHECKING:
+    import setuptools
 
 from setuptools_scm import Configuration
 from setuptools_scm._integration.setuptools import _extract_package_name
@@ -674,3 +679,115 @@ def test_improved_error_message_mentions_both_config_options(
     assert "tool.setuptools_scm" in error_msg
     assert "build-system" in error_msg
     assert "requires" in error_msg
+
+
+# Helper functions for testing integration point ordering
+def integration_infer_version(dist: setuptools.Distribution) -> str:
+    """Helper to call infer_version and return the result."""
+    from setuptools_scm._integration.setuptools import infer_version
+
+    infer_version(dist)
+    return "infer_version"
+
+
+def integration_version_keyword_default(dist: setuptools.Distribution) -> str:
+    """Helper to call version_keyword with default config and return the result."""
+    from setuptools_scm._integration.setuptools import version_keyword
+
+    version_keyword(dist, "use_scm_version", True)
+    return "version_keyword_default"
+
+
+def integration_version_keyword_calver(dist: setuptools.Distribution) -> str:
+    """Helper to call version_keyword with calver-by-date scheme and return the result."""
+    from setuptools_scm._integration.setuptools import version_keyword
+
+    version_keyword(dist, "use_scm_version", {"version_scheme": "calver-by-date"})
+    return "version_keyword_calver"
+
+
+# Test cases: (first_func, second_func, expected_final_version)
+# We use a controlled date to make calver deterministic
+TEST_CASES = [
+    # Real-world scenarios: infer_version and version_keyword can be called in either order
+    (integration_infer_version, integration_version_keyword_default, "1.0.1.dev1"),
+    (
+        integration_infer_version,
+        integration_version_keyword_calver,
+        "9.2.13.0.dev1",
+    ),  # calver should win but doesn't
+    (integration_version_keyword_default, integration_infer_version, "1.0.1.dev1"),
+    (integration_version_keyword_calver, integration_infer_version, "9.2.13.0.dev1"),
+]
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/1022")
+@pytest.mark.filterwarnings("ignore:version of .* already set:UserWarning")
+@pytest.mark.filterwarnings(
+    "ignore:.* does not correspond to a valid versioning date.*:UserWarning"
+)
+@pytest.mark.parametrize(
+    ("first_integration", "second_integration", "expected_final_version"),
+    TEST_CASES,
+)
+def test_integration_function_call_order(
+    wd: WorkDir,
+    monkeypatch: pytest.MonkeyPatch,
+    first_integration: Any,
+    second_integration: Any,
+    expected_final_version: str,
+) -> None:
+    """Test that integration functions can be called in any order.
+
+    version_keyword should always win when it specifies configuration, but currently doesn't.
+    Some tests will fail, showing the bug.
+    """
+    # Set up controlled environment for deterministic versions
+    monkeypatch.setenv("SOURCE_DATE_EPOCH", "1234567890")  # 2009-02-13T23:31:30+00:00
+    # Override node_date to get consistent calver versions
+    monkeypatch.setenv("SETUPTOOLS_SCM_PRETEND_METADATA", "{node_date=2009-02-13}")
+
+    # Set up a git repository with a tag and known commit hash
+    wd.commit_testfile("test")
+    wd("git tag 1.0.0")
+    wd.commit_testfile("test2")  # Add another commit to get distance
+    monkeypatch.chdir(wd.cwd)
+
+    # Generate unique distribution name based on the test combination
+    first_name = first_integration.__name__.replace("integration_", "")
+    second_name = second_integration.__name__.replace("integration_", "")
+    dist_name = f"test-pkg-{first_name}-then-{second_name}"
+
+    # Create a pyproject.toml file
+    pyproject_content = f"""
+[build-system]
+requires = ["setuptools", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "{dist_name}"
+dynamic = ["version"]
+
+[tool.setuptools_scm]
+local_scheme = "no-local-version"
+"""
+    wd.write("pyproject.toml", pyproject_content)
+
+    import setuptools
+
+    # Create distribution and clear any auto-set version
+    dist = setuptools.Distribution({"name": dist_name})
+    dist.metadata.version = None
+
+    # Call both integration functions in order
+    first_integration(dist)
+    second_integration(dist)
+
+    # Get the final version directly from the distribution
+    final_version = dist.metadata.version
+
+    # Assert the final version matches expectation
+    # Some tests will fail here, demonstrating the bug where version_keyword doesn't override
+    assert final_version == expected_final_version, (
+        f"Expected version '{expected_final_version}' but got '{final_version}'"
+    )
