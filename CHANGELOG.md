@@ -46,6 +46,7 @@
 - fix #1139: use logging.lastResort instead of a own replica to avoid polluting logging._handlerList
 - fix #873: don't infer version in cli if --no-version is given
 - fix #535: accept tags from a release action in the gh ui
+- fix #1073: explain namespaces for release-branch-semver
 
 ## v8.3.1
 
