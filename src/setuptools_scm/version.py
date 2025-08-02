@@ -111,11 +111,31 @@ def tag_to_version(
     version_str = tag_dict["version"]
     log.debug("version pre parse %s", version_str)
 
-    if suffix := tag_dict.get("suffix", ""):
-        warnings.warn(f"tag {tag!r} will be stripped of its suffix {suffix!r}")
+    # Try to create version from base version first
+    try:
+        version: _VersionT = config.version_cls(version_str)
+        log.debug("version=%r", version)
+    except Exception:
+        warnings.warn(
+            f"tag {tag!r} will be stripped of its suffix {tag_dict.get('suffix', '')!r}"
+        )
+        # Fall back to trying without any suffix
+        version = config.version_cls(version_str)
+        log.debug("version=%r", version)
+        return version
 
-    version: _VersionT = config.version_cls(version_str)
-    log.debug("version=%r", version)
+    # If base version is valid, check if we can preserve the suffix
+    if suffix := tag_dict.get("suffix", ""):
+        log.debug("tag %r includes local build data %r, preserving it", tag, suffix)
+        # Try creating version with suffix - if it fails, we'll use the base version
+        try:
+            version_with_suffix = config.version_cls(version_str + suffix)
+            log.debug("version with suffix=%r", version_with_suffix)
+            return version_with_suffix
+        except Exception:
+            warnings.warn(f"tag {tag!r} will be stripped of its suffix {suffix!r}")
+            # Return the base version without suffix
+            return version
 
     return version
 
@@ -455,6 +475,60 @@ def postrelease_version(version: ScmVersion) -> str:
         return version.format_with("{tag}.post{distance}")
 
 
+def _combine_version_with_local_parts(
+    main_version: str, *local_parts: str | None
+) -> str:
+    """
+    Combine a main version with multiple local parts into a valid PEP 440 version string.
+    Handles deduplication of local parts to avoid adding the same local data twice.
+
+    Args:
+        main_version: The main version string (e.g., "1.2.0", "1.2.dev3")
+        *local_parts: Variable number of local version parts, can be None or empty
+
+    Returns:
+        A valid PEP 440 version string
+
+    Examples:
+        _combine_version_with_local_parts("1.2.0", "build.123", "d20090213") -> "1.2.0+build.123.d20090213"
+        _combine_version_with_local_parts("1.2.0", "build.123", None) -> "1.2.0+build.123"
+        _combine_version_with_local_parts("1.2.0+build.123", "d20090213") -> "1.2.0+build.123.d20090213"
+        _combine_version_with_local_parts("1.2.0+build.123", "build.123") -> "1.2.0+build.123"  # no duplication
+        _combine_version_with_local_parts("1.2.0", None, None) -> "1.2.0"
+    """
+    # Split main version into base and existing local parts
+    if "+" in main_version:
+        main_part, existing_local = main_version.split("+", 1)
+        all_local_parts = existing_local.split(".")
+    else:
+        main_part = main_version
+        all_local_parts = []
+
+    # Process each new local part
+    for part in local_parts:
+        if not part or not part.strip():
+            continue
+
+        # Strip any leading + and split into segments
+        clean_part = part.strip("+")
+        if not clean_part:
+            continue
+
+        # Split multi-part local identifiers (e.g., "build.123" -> ["build", "123"])
+        part_segments = clean_part.split(".")
+
+        # Add each segment if not already present
+        for segment in part_segments:
+            if segment and segment not in all_local_parts:
+                all_local_parts.append(segment)
+
+    # Return combined result
+    if all_local_parts:
+        return main_part + "+" + ".".join(all_local_parts)
+    else:
+        return main_part
+
+
 def format_version(version: ScmVersion) -> str:
     log.debug("scm version %s", version)
     log.debug("config %s", version.config)
@@ -462,13 +536,46 @@ def format_version(version: ScmVersion) -> str:
         assert isinstance(version.tag, str)
         return version.tag
 
+    # Extract original tag's local data for later combination
+    original_local = ""
+    if hasattr(version.tag, "local") and version.tag.local is not None:
+        original_local = str(version.tag.local)
+
+    # Create a patched ScmVersion with only the base version (no local data) for version schemes
+    from dataclasses import replace
+
+    if version.tag:
+        # Extract the base version (public part) from the tag using config's version_cls
+        if hasattr(version.tag, "public"):
+            # It's a Version object with a public attribute
+            base_version_str = str(version.tag.public)
+        elif isinstance(version.tag, str):
+            # It's a string - strip any local part
+            base_version_str = version.tag.split("+")[0]
+        else:
+            # It's some other type - use string representation and strip local part
+            base_version_str = str(version.tag).split("+")[0]
+
+        # Create the base tag using the config's version class
+        base_tag = version.config.version_cls(base_version_str)
+        version_for_scheme = replace(version, tag=base_tag)
+    else:
+        version_for_scheme = version
+
     main_version = _entrypoints._call_version_scheme(
-        version, "setuptools_scm.version_scheme", version.config.version_scheme
+        version_for_scheme,
+        "setuptools_scm.version_scheme",
+        version.config.version_scheme,
     )
     log.debug("version %s", main_version)
     assert main_version is not None
+
     local_version = _entrypoints._call_version_scheme(
         version, "setuptools_scm.local_scheme", version.config.local_scheme, "+unknown"
     )
     log.debug("local_version %s", local_version)
-    return main_version + local_version
+
+    # Combine main version with original local data and new local scheme data
+    return _combine_version_with_local_parts(
+        str(main_version), original_local, local_version
+    )

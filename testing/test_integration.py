@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.metadata
 import logging
 import os
+import re
 import subprocess
 import sys
 import textwrap
@@ -12,6 +13,8 @@ from typing import TYPE_CHECKING
 from typing import Any
 
 import pytest
+
+from packaging.version import Version
 
 import setuptools_scm._integration.setuptools
 
@@ -379,6 +382,139 @@ def test_pretend_metadata_invalid_toml_error(
         assert version == "1.0.0"
 
     assert "Failed to parse pretend metadata" in caplog.text
+
+
+def test_git_tag_with_local_build_data_preserved(wd: WorkDir) -> None:
+    """Test that git tags containing local build data are preserved in final version."""
+    wd.commit_testfile()
+
+    # Create a git tag that includes local build data
+    # This simulates a CI system that creates tags with build metadata
+    wd("git tag 1.0.0+build.123")
+
+    # The version should preserve the build metadata from the tag
+    version = wd.get_version()
+
+    # Validate it's a proper PEP 440 version
+    parsed_version = Version(version)
+    assert str(parsed_version) == version, (
+        f"Version should parse correctly as PEP 440: {version}"
+    )
+
+    # Should preserve the build metadata that was in the git tag
+    assert version == "1.0.0+build.123", (
+        f"Expected build metadata preserved, got {version}"
+    )
+
+    # Validate the local part is correct
+    assert parsed_version.local == "build.123", (
+        f"Expected local part 'build.123', got {parsed_version.local}"
+    )
+
+
+def test_git_tag_with_commit_hash_preserved(wd: WorkDir) -> None:
+    """Test that git tags with commit hash data are preserved."""
+    wd.commit_testfile()
+
+    # Create a git tag that includes commit hash metadata
+    wd("git tag 2.0.0+sha.abcd1234")
+
+    # The version should preserve the commit hash from the tag
+    version = wd.get_version()
+
+    # Validate it's a proper PEP 440 version
+    parsed_version = Version(version)
+    assert str(parsed_version) == version, (
+        f"Version should parse correctly as PEP 440: {version}"
+    )
+
+    # Should preserve the commit hash that was in the git tag
+    assert version == "2.0.0+sha.abcd1234"
+
+    # Validate the local part is correct
+    assert parsed_version.local == "sha.abcd1234", (
+        f"Expected local part 'sha.abcd1234', got {parsed_version.local}"
+    )
+
+
+def test_git_tag_with_local_build_data_preserved_dirty_workdir(wd: WorkDir) -> None:
+    """Test that git tags with local build data are preserved even with dirty working directory."""
+    wd.commit_testfile()
+
+    # Create a git tag that includes local build data
+    wd("git tag 1.5.0+build.456")
+
+    # Make working directory dirty
+    wd.write("modified_file.txt", "some changes")
+
+    # The version should preserve the build metadata from the tag
+    # even when working directory is dirty
+    version = wd.get_version()
+
+    # Validate it's a proper PEP 440 version
+    parsed_version = Version(version)
+    assert str(parsed_version) == version, (
+        f"Version should parse correctly as PEP 440: {version}"
+    )
+
+    # Should preserve the build metadata that was in the git tag
+    assert version == "1.5.0+build.456", (
+        f"Expected build metadata preserved with dirty workdir, got {version}"
+    )
+
+    # Validate the local part is correct
+    assert parsed_version.local == "build.456", (
+        f"Expected local part 'build.456', got {parsed_version.local}"
+    )
+
+
+def test_git_tag_with_local_build_data_preserved_with_distance(wd: WorkDir) -> None:
+    """Test that git tags with local build data are preserved with distance."""
+    wd.commit_testfile()
+
+    # Create a git tag that includes local build data
+    wd("git tag 3.0.0+ci.789")
+
+    # Add another commit after the tag to create distance
+    wd.commit_testfile("after-tag")
+
+    # The version should use version scheme for distance but preserve original tag's build data
+    version = wd.get_version()
+
+    # Validate it's a proper PEP 440 version
+    parsed_version = Version(version)
+    assert str(parsed_version) == version, (
+        f"Version should parse correctly as PEP 440: {version}"
+    )
+
+    # Tag local data should be preserved and combined with SCM data
+    assert version.startswith("3.0.1.dev1"), (
+        f"Expected dev version with distance, got {version}"
+    )
+
+    # Use regex to validate the version format with both tag build data and SCM node data
+    # Expected format: 3.0.1.dev1+ci.789.g<commit_hash>
+    version_pattern = r"^3\.0\.1\.dev1\+ci\.789\.g[a-f0-9]+$"
+    assert re.match(version_pattern, version), (
+        f"Version should match pattern {version_pattern}, got {version}"
+    )
+
+    # The original tag's local data (+ci.789) should be preserved and combined with SCM data
+    assert "+ci.789" in version, f"Tag local data should be preserved, got {version}"
+
+    # Validate the local part contains both tag and SCM node information
+    assert parsed_version.local is not None, (
+        f"Expected local version part, got {parsed_version.local}"
+    )
+    assert "ci.789" in parsed_version.local, (
+        f"Expected local part to contain tag data 'ci.789', got {parsed_version.local}"
+    )
+    assert "g" in parsed_version.local, (
+        f"Expected local part to contain SCM node data 'g...', got {parsed_version.local}"
+    )
+
+    # Note: This test verifies that local build data from tags is preserved and combined
+    # with SCM data when there's distance, which is the desired behavior for issue 1019.
 
 
 def testwarn_on_broken_setuptools() -> None:
