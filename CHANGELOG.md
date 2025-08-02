@@ -11,6 +11,7 @@
 - add `scm` parameter support to `get_version()` function for nested SCM configuration
 - fix #987: expand documentation on git archival files and add cli tools for good defaults
 - fix #311: document github/gitlab ci pipelines that enable auto-upload to test-pypi/pypi
+- fix #1022: allow `version_keyword` to override `infer_version` when configuration differs
 
 
 ### Changed

@@ -108,8 +108,21 @@ def version_keyword(
     _log_hookstart("version_keyword", dist)
 
     if dist.metadata.version is not None:
-        warnings.warn(f"version of {dist_name} already set")
-        return
+        # Check if version was set by infer_version
+        was_set_by_infer = getattr(dist, "_setuptools_scm_version_set_by_infer", False)
+
+        if was_set_by_infer:
+            # Version was set by infer_version, check if we have overrides
+            if not overrides:
+                # No overrides, just use the infer_version result
+                return
+            # We have overrides, clear the marker and proceed to override the version
+            dist._setuptools_scm_version_set_by_infer = False  # type: ignore[attr-defined]
+            dist.metadata.version = None
+        else:
+            # Version was set by something else, warn and return
+            warnings.warn(f"version of {dist_name} already set")
+            return
 
     if dist_name is None:
         dist_name = read_dist_name_from_setup_cfg()
@@ -141,3 +154,5 @@ def infer_version(dist: setuptools.Distribution) -> None:
         log.info(e, exc_info=True)
     else:
         _assign_version(dist, config)
+        # Mark that this version was set by infer_version
+        dist._setuptools_scm_version_set_by_infer = True  # type: ignore[attr-defined]
