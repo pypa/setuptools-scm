@@ -84,8 +84,16 @@ def _git_ls_files_and_dirs(toplevel: str) -> tuple[set[str], set[str]]:
             # ensure we avoid resource warnings by cleaning up the process
             proc.stdout.close()
             proc.terminate()
+            # Wait for process to actually terminate and be reaped
+            try:
+                proc.wait(timeout=5)  # Add timeout to avoid hanging
+            except subprocess.TimeoutExpired:
+                log.warning("git archive process did not terminate gracefully, killing")
+                proc.kill()
+                proc.wait()
     except Exception:
-        if proc.wait() != 0:
+        # proc.wait() already called in finally block, check if it failed
+        if proc.returncode != 0:
             log.error("listing git files failed - pretending there aren't any")
         return set(), set()
 
