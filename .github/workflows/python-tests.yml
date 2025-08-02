@@ -44,6 +44,9 @@ jobs:
         include:
         - os: windows-latest
           python_version: 'msys2'
+    env:
+      # Enable tracemalloc to debug gc errors with popen objects (especially on Windows)
+      PYTHONTRACEMALLOC: "1"
 
     name: ${{ matrix.os }} - Python ${{ matrix.python_version }}
     steps:
