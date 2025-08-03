@@ -215,16 +215,26 @@ setup_py_with_normalize: dict[str, str] = {
         setup(use_scm_version={'normalize': False, 'write_to': 'VERSION.txt'})
         """,
     "with_created_class": """
-        from setuptools import setup
+from setuptools import setup
 
-        class MyVersion:
-            def __init__(self, tag_str: str):
-                self.version = tag_str
+class MyVersion:
+    def __init__(self, tag_str: str):
+        self.version = tag_str
 
-            def __repr__(self):
-                return self.version
+    def __repr__(self):
+        return self.version
 
-        setup(use_scm_version={'version_cls': MyVersion, 'write_to': 'VERSION.txt'})
+    @property
+    def public(self):
+        return self.version.split('+')[0]
+
+    @property
+    def local(self):
+        if '+' in self.version:
+            return self.version.split('+', 1)[1]
+        return None
+
+setup(use_scm_version={'version_cls': MyVersion, 'write_to': 'VERSION.txt'})
         """,
     "with_named_import": """
         from setuptools import setup

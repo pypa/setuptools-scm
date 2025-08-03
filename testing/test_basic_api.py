@@ -55,7 +55,9 @@ def assert_root(monkeypatch: pytest.MonkeyPatch, expected_root: str) -> None:
 
     def assertion(config: Configuration) -> ScmVersion:
         assert config.absolute_root == expected_root
-        return ScmVersion("1.0", config=config)
+        from packaging.version import Version
+
+        return ScmVersion(Version("1.0"), config=config)
 
     monkeypatch.setattr(setuptools_scm._get_version_impl, "parse_version", assertion)
 
@@ -249,6 +251,18 @@ def test_custom_version_cls() -> None:
 
         def __repr__(self) -> str:
             return f"hello,{self.version}"
+
+        @property
+        def public(self) -> str:
+            """The public portion of the version (without local part)."""
+            return self.version.split("+")[0]
+
+        @property
+        def local(self) -> str | None:
+            """The local version segment."""
+            if "+" in self.version:
+                return self.version.split("+", 1)[1]
+            return None
 
     # you can not use normalize=False and version_cls at the same time
     with pytest.raises(

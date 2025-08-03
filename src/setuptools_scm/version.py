@@ -152,8 +152,8 @@ def _source_epoch_or_utc_now() -> datetime:
 class ScmVersion:
     """represents a parsed version from scm"""
 
-    tag: _v.Version | _v.NonNormalizedVersion | str
-    """the related tag or preformatted version string"""
+    tag: _v.Version | _v.NonNormalizedVersion
+    """the related tag or preformatted version"""
     config: _config.Configuration
     """the configuration used to parse the version"""
     distance: int = 0
@@ -223,9 +223,16 @@ class ScmVersion:
 
 def _parse_tag(
     tag: _VersionT | str, preformatted: bool, config: _config.Configuration
-) -> _VersionT | str:
+) -> _VersionT:
     if preformatted:
-        return tag
+        # For preformatted versions, tag should already be validated as a version object
+        # String validation is handled in meta function before calling this
+        if isinstance(tag, str):
+            # This should not happen with enhanced meta, but kept for safety
+            return _v.NonNormalizedVersion(tag)
+        else:
+            # Already a version object (including test mocks), return as-is
+            return tag
     elif not isinstance(tag, config.version_cls):
         version = tag_to_version(tag, config)
         assert version is not None
@@ -246,7 +253,16 @@ def meta(
     node_date: date | None = None,
     time: datetime | None = None,
 ) -> ScmVersion:
-    parsed_version = _parse_tag(tag, preformatted, config)
+    parsed_version: _VersionT
+    # Enhanced string validation for preformatted versions
+    if preformatted and isinstance(tag, str):
+        # Validate PEP 440 compliance using NonNormalizedVersion
+        # Let validation errors bubble up to the caller
+        parsed_version = _v.NonNormalizedVersion(tag)
+    else:
+        # Use existing _parse_tag logic for non-preformatted or already validated inputs
+        parsed_version = _parse_tag(tag, preformatted, config)
+
     log.info("version %s -> %s", tag, parsed_version)
     assert parsed_version is not None, f"Can't parse version {tag}"
     scm_version = ScmVersion(
@@ -533,8 +549,7 @@ def format_version(version: ScmVersion) -> str:
     log.debug("scm version %s", version)
     log.debug("config %s", version.config)
     if version.preformatted:
-        assert isinstance(version.tag, str)
-        return version.tag
+        return str(version.tag)
 
     # Extract original tag's local data for later combination
     original_local = ""
@@ -544,23 +559,10 @@ def format_version(version: ScmVersion) -> str:
     # Create a patched ScmVersion with only the base version (no local data) for version schemes
     from dataclasses import replace
 
-    if version.tag:
-        # Extract the base version (public part) from the tag using config's version_cls
-        if hasattr(version.tag, "public"):
-            # It's a Version object with a public attribute
-            base_version_str = str(version.tag.public)
-        elif isinstance(version.tag, str):
-            # It's a string - strip any local part
-            base_version_str = version.tag.split("+")[0]
-        else:
-            # It's some other type - use string representation and strip local part
-            base_version_str = str(version.tag).split("+")[0]
-
-        # Create the base tag using the config's version class
-        base_tag = version.config.version_cls(base_version_str)
-        version_for_scheme = replace(version, tag=base_tag)
-    else:
-        version_for_scheme = version
+    # Extract the base version (public part) from the tag using config's version_cls
+    base_version_str = str(version.tag.public)
+    base_tag = version.config.version_cls(base_version_str)
+    version_for_scheme = replace(version, tag=base_tag)
 
     main_version = _entrypoints._call_version_scheme(
         version_for_scheme,

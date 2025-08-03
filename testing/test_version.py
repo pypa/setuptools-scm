@@ -71,7 +71,27 @@ def test_next_semver(version: ScmVersion, expected_next: str) -> None:
 
 
 def test_next_semver_bad_tag() -> None:
-    version = meta("1.0.0-foo", preformatted=True, config=c)
+    # Create a mock version class that represents an invalid version for testing error handling
+    from typing import cast
+
+    from setuptools_scm._version_cls import _VersionT
+
+    class BrokenVersionForTest:
+        """A mock version that behaves like a string but passes type checking."""
+
+        def __init__(self, version_str: str):
+            self._version_str = version_str
+
+        def __str__(self) -> str:
+            return self._version_str
+
+        def __repr__(self) -> str:
+            return f"BrokenVersionForTest({self._version_str!r})"
+
+    # Cast to the expected type to avoid type checking issues
+    broken_tag = cast(_VersionT, BrokenVersionForTest("1.0.0-foo"))
+    version = meta(broken_tag, preformatted=True, config=c)
+
     with pytest.raises(
         ValueError, match=r"1\.0\.0-foo.* can't be parsed as numeric version"
     ):
@@ -470,6 +490,18 @@ def test_custom_version_cls() -> None:
 
         def __repr__(self) -> str:
             return f"MyVersion<Custom{self.tag}>"
+
+        @property
+        def public(self) -> str:
+            """The public portion of the version (without local part)."""
+            return self.tag.split("+")[0]
+
+        @property
+        def local(self) -> str | None:
+            """The local version segment."""
+            if "+" in self.tag:
+                return self.tag.split("+", 1)[1]
+            return None
 
     config = Configuration(version_cls=MyVersion)  # type: ignore[arg-type]
     scm_version = meta("1.0.0-foo", config=config)

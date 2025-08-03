@@ -25,6 +25,7 @@ def parse_pkginfo(root: _t.PathT, config: Configuration) -> ScmVersion | None:
     data = data_from_mime(pkginfo)
     version = data.get("Version", _UNKNOWN)
     if version != _UNKNOWN:
+        # Use enhanced meta function - let validation errors bubble up
         return meta(version, preformatted=True, config=config)
     else:
         return None
@@ -38,8 +39,10 @@ def fallback_version(root: _t.PathT, config: Configuration) -> ScmVersion | None
                 parent_name[len(config.parentdir_prefix_version) :], config
             )
             if version is not None:
+                # Use enhanced meta function - let validation errors bubble up
                 return meta(str(version), preformatted=True, config=config)
     if config.fallback_version is not None:
         log.debug("FALLBACK %s", config.fallback_version)
+        # Use enhanced meta function - let validation errors bubble up
         return meta(config.fallback_version, preformatted=True, config=config)
     return None

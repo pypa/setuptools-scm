@@ -193,14 +193,16 @@ def test_pretend_version_name_takes_precedence(
     assert wd.get_version(dist_name="test") == "1.0.0"
 
 
-def test_pretend_version_accepts_bad_string(
+def test_pretend_version_rejects_invalid_string(
     monkeypatch: pytest.MonkeyPatch, wd: WorkDir
 ) -> None:
+    """Test that invalid pretend versions raise errors and bubble up."""
     monkeypatch.setenv(PRETEND_KEY, "dummy")
     wd.write("setup.py", SETUP_PY_PLAIN)
-    assert wd.get_version(write_to="test.py") == "dummy"
-    pyver = wd([sys.executable, "setup.py", "--version"])
-    assert pyver == "0.0.0"
+
+    # With strict validation, invalid pretend versions should raise errors
+    with pytest.raises(Exception, match=r".*dummy.*"):
+        wd.get_version(write_to="test.py")
 
 
 def test_pretend_metadata_with_version(

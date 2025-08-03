@@ -164,8 +164,7 @@ def _read_pretended_version_for(
     pretended = read_named_env(name="PRETEND_VERSION", dist_name=config.dist_name)
 
     if pretended:
-        # we use meta here since the pretended version
-        # must adhere to the pep to begin with
+        # Use enhanced meta function - let validation errors bubble up
         return version.meta(tag=pretended, preformatted=True, config=config)
     else:
         return None
