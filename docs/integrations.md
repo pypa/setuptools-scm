@@ -47,7 +47,7 @@ build:
       - export SETUPTOOLS_SCM_OVERRIDES_FOR_${READTHEDOCS_PROJECT//-/_}='{scm.git.pre_parse="fail_on_shallow"}'
 ```
 
-This configuration uses the `SETUPTOOLS_SCM_OVERRIDES_FOR_${NORMALIZED_DIST_NAME}` environment variable to override the `scm.git.pre_parse` setting specifically for your project when building on ReadTheDocs, forcing setuptools-scm to fail with a clear error if the repository is shallow.
+This configuration uses the `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}` environment variable to override the `scm.git.pre_parse` setting specifically for your project when building on ReadTheDocs, forcing setuptools-scm to fail with a clear error if the repository is shallow.
 
 ## CI/CD and Package Publishing
 
@@ -67,7 +67,7 @@ These local version components (`+g1a2b3c4d5`, `+dirty`) prevent uploading to Py
 
 #### The Solution
 
-Use the `SETUPTOOLS_SCM_OVERRIDES_FOR_${NORMALIZED_DIST_NAME}` environment variable to override the `local_scheme` to `no-local-version` when building for upload to PyPI.
+Use the `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}` environment variable to override the `local_scheme` to `no-local-version` when building for upload to PyPI.
 
 ### GitHub Actions Example
 
@@ -287,9 +287,9 @@ publish-release:
 
 #### Environment Variable Format
 
-The environment variable `SETUPTOOLS_SCM_OVERRIDES_FOR_${NORMALIZED_DIST_NAME}` must be set where:
+The environment variable `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}` must be set where:
 
-1. **`${NORMALIZED_DIST_NAME}`** is your package name normalized according to PEP 503:
+1. **`${DIST_NAME}`** is your package name normalized according to PEP 503:
    - Convert to uppercase
    - Replace hyphens and dots with underscores
    - Examples: `my-package` → `MY_PACKAGE`, `my.package` → `MY_PACKAGE`

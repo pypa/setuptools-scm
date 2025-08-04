@@ -7,7 +7,7 @@ setuptools-scm provides a mechanism to override the version number build time.
 the environment variable `SETUPTOOLS_SCM_PRETEND_VERSION` is used
 as the override source for the version number unparsed string.
 
-to be specific about the package this applies for, one can use `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME}`
+to be specific about the package this applies for, one can use `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DIST_NAME}`
 where the dist name normalization follows adapted PEP 503 semantics.
 
 ## pretend metadata
@@ -17,7 +17,7 @@ setuptools-scm provides a mechanism to override individual version metadata fiel
 The environment variable `SETUPTOOLS_SCM_PRETEND_METADATA` accepts a TOML inline table
 with field overrides for the ScmVersion object.
 
-To be specific about the package this applies for, one can use `SETUPTOOLS_SCM_PRETEND_METADATA_FOR_${NORMALIZED_DIST_NAME}`
+To be specific about the package this applies for, one can use `SETUPTOOLS_SCM_PRETEND_METADATA_FOR_${DIST_NAME}`
 where the dist name normalization follows adapted PEP 503 semantics.
 
 ### Supported fields
@@ -82,7 +82,7 @@ export SETUPTOOLS_SCM_PRETEND_METADATA='{node="g1337beef", distance=4}'
 
 ## config overrides
 
-setuptools-scm parses the environment variable `SETUPTOOLS_SCM_OVERRIDES_FOR_${NORMALIZED_DIST_NAME}`
+setuptools-scm parses the environment variable `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}`
 as a toml inline map to override the configuration data from `pyproject.toml`.
 
 ## subprocess timeouts
