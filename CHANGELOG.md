@@ -1,5 +1,13 @@
 # Changelog
 
+
+## v9.0.1
+
+### Fixed
+
+- fix #1180: ensure version dumping works when no scm_version is given (problems in downstreams)
+
+
 ## v9.0.0
 
 ### Breaking

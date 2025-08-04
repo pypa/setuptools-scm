@@ -293,3 +293,61 @@ def test_has_command_logs_stderr(caplog: pytest.LogCaptureFixture) -> None:
 def test_tag_to_version(tag: str, expected_version: str) -> None:
     version = str(tag_to_version(tag, c))
     assert version == expected_version
+
+
+def test_write_version_to_path_deprecation_warning_none(tmp_path: Path) -> None:
+    """Test that write_version_to_path warns when scm_version=None is passed."""
+    from setuptools_scm._integration.dump_version import write_version_to_path
+
+    target_file = tmp_path / "version.py"
+
+    # This should raise a deprecation warning when scm_version=None is explicitly passed
+    with pytest.warns(
+        DeprecationWarning, match="write_version_to_path called without scm_version"
+    ):
+        write_version_to_path(
+            target=target_file,
+            template=None,  # Use default template
+            version="1.2.3",
+            scm_version=None,  # Explicitly passing None should warn
+        )
+
+    # Verify the file was created and contains the expected content
+    assert target_file.exists()
+    content = target_file.read_text(encoding="utf-8")
+
+    # Check that the version is correctly formatted
+    assert "__version__ = version = '1.2.3'" in content
+    assert "__version_tuple__ = version_tuple = (1, 2, 3)" in content
+
+    # Check that commit_id is set to None when scm_version is None
+    assert "__commit_id__ = commit_id = None" in content
+
+
+def test_write_version_to_path_deprecation_warning_missing(tmp_path: Path) -> None:
+    """Test that write_version_to_path warns when scm_version parameter is not provided."""
+    from setuptools_scm._integration.dump_version import write_version_to_path
+
+    target_file = tmp_path / "version.py"
+
+    # This should raise a deprecation warning when scm_version is not provided
+    with pytest.warns(
+        DeprecationWarning, match="write_version_to_path called without scm_version"
+    ):
+        write_version_to_path(
+            target=target_file,
+            template=None,  # Use default template
+            version="1.2.3",
+            # scm_version not provided - should warn
+        )
+
+    # Verify the file was created and contains the expected content
+    assert target_file.exists()
+    content = target_file.read_text(encoding="utf-8")
+
+    # Check that the version is correctly formatted
+    assert "__version__ = version = '1.2.3'" in content
+    assert "__version_tuple__ = version_tuple = (1, 2, 3)" in content
+
+    # Check that commit_id is set to None when scm_version is None
+    assert "__commit_id__ = commit_id = None" in content
