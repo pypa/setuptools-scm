@@ -94,6 +94,16 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
     unset (the default), `setuptools-scm` will error if it fails to detect the
     version.
 
+`fallback_root: Path | PathLike[str] = "."`
+:   The directory to use when SCM metadata is not available (e.g., in extracted
+    archives like PyPI tarballs). This is particularly useful for legacy
+    configurations that need to work both in development (with SCM metadata)
+    and from archives (without SCM metadata). Defaults to the current directory.
+
+    When SCM metadata is present, the `root` parameter is used; when it's not
+    available, `fallback_root` is used instead. This allows the same configuration
+    to work in both scenarios without modification.
+
 `parse: Callable[[Path, Config], ScmVersion] | None = None`
 :   A function that will be used instead of the discovered SCM
     for parsing the version. Use with caution,

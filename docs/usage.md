@@ -178,8 +178,24 @@ from setuptools_scm import get_version
 version = get_version(root='..', relative_to=__file__)
 ```
 
+For legacy configurations or when working with extracted archives (like PyPI tarballs),
+you may need to specify a `fallback_root` parameter. This is particularly useful
+for legacy Sphinx configurations that use `get_version()` instead of getting the
+version from the installed package:
+
+```python
+from setuptools_scm import get_version
+# For legacy Sphinx conf.py that needs to work both in development and from archives
+version = get_version(root='..', fallback_root='..', relative_to=__file__)
+```
+
+The `fallback_root` parameter specifies the directory to use when the SCM metadata
+is not available (e.g., in extracted tarballs), while `root` is used when SCM
+metadata is present.
+
 ### Usage from Sphinx
 
+The recommended approach for Sphinx configurations is to use the installed package metadata:
 
 ``` {.python file=docs/.entangled/sphinx_conf.py}
 from importlib.metadata import version as get_version
@@ -191,6 +207,21 @@ version: str = ".".join(release.split('.')[:2])
 The underlying reason is that services like *Read the Docs* sometimes change
 the working directory for good reasons and using the installed metadata
 prevents using needless volatile data there.
+
+!!! note "Legacy Sphinx configurations"
+
+    If you have a legacy Sphinx configuration that still uses `setuptools_scm.get_version()`
+    directly (instead of `importlib.metadata`), you may need to use the `fallback_root`
+    parameter to ensure it works both in development and when building from archives:
+
+    ```python
+    from setuptools_scm import get_version
+    # Legacy approach - use fallback_root for archive compatibility
+    release = get_version(root='..', fallback_root='..', relative_to=__file__)
+    version = ".".join(release.split('.')[:2])
+    ```
+
+    However, it's strongly recommended to migrate to the `importlib.metadata` approach above.
 
 
 ### With Docker/Podman
