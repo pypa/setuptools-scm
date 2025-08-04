@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Breaking
+
+- fix #1019: pass python version build tags from scm version to results propperly
+
 ### Added
 
 - add `setuptools-scm` console_scripts entry point to make the CLI directly executable

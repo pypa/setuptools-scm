@@ -219,8 +219,7 @@ def test_pretend_metadata_with_version(
 
     # Test version file template functionality
     wd.write("setup.py", SETUP_PY_PLAIN)
-    wd("mkdir -p src")  # Create the src directory
-    # This is a template string, not an f-string - used by setuptools-scm templating
+    wd("mkdir -p src")
     version_file_content = """
 version = '{version}'
 major = {version_tuple[0]}
@@ -234,7 +233,6 @@ num_commit = {scm_version.distance}
         write_to="src/version.py", write_to_template=version_file_content
     )
 
-    # Read the file using pathlib
     content = (wd.cwd / "src/version.py").read_text()
     assert "commit_hash = 'g1337beef'" in content
     assert "num_commit = 4" in content
@@ -266,10 +264,8 @@ def test_pretend_metadata_without_version_warns(
     # Let's create an empty git repo without commits to truly have no base version
     monkeypatch.setenv(PRETEND_METADATA_KEY, '{node="g1234567", distance=2}')
 
-    # Should get a version with fallback but metadata overrides applied
     with caplog.at_level(logging.WARNING):
         version = wd.get_version()
-        # Should get a fallback version with metadata overrides
         assert version is not None
 
     # In this case, metadata was applied to a fallback version, so no warning about missing base
@@ -301,7 +297,6 @@ def test_pretend_metadata_with_scm_version(
     # Test version file to see if metadata was applied
     wd.write("setup.py", SETUP_PY_PLAIN)
     wd("mkdir -p src")
-    # This is a template string, not an f-string - used by setuptools-scm templating
     version_file_content = """
 version = '{version}'
 commit_hash = '{scm_version.short_node}'
@@ -403,7 +398,6 @@ def test_git_tag_with_local_build_data_preserved(wd: WorkDir) -> None:
         f"Version should parse correctly as PEP 440: {version}"
     )
 
-    # Should preserve the build metadata that was in the git tag
     assert version == "1.0.0+build.123", (
         f"Expected build metadata preserved, got {version}"
     )
@@ -430,7 +424,6 @@ def test_git_tag_with_commit_hash_preserved(wd: WorkDir) -> None:
         f"Version should parse correctly as PEP 440: {version}"
     )
 
-    # Should preserve the commit hash that was in the git tag
     assert version == "2.0.0+sha.abcd1234"
 
     # Validate the local part is correct
@@ -459,7 +452,6 @@ def test_git_tag_with_local_build_data_preserved_dirty_workdir(wd: WorkDir) -> N
         f"Version should parse correctly as PEP 440: {version}"
     )
 
-    # Should preserve the build metadata that was in the git tag
     assert version == "1.5.0+build.456", (
         f"Expected build metadata preserved with dirty workdir, got {version}"
     )
