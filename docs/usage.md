@@ -221,7 +221,7 @@ Note that running this Dockerfile requires docker with BuildKit enabled
 
 To avoid BuildKit and mounting of the .git folder altogether, one can also pass the desired
 version as a build argument.
-Note that `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME}`
+Note that `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DIST_NAME}`
 is preferred over `SETUPTOOLS_SCM_PRETEND_VERSION`.
 
 

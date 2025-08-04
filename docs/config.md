@@ -157,7 +157,7 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
         it is strongly recommended to use distribution-specific pretend versions
         (see below).
 
-`SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME}`
+`SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DIST_NAME}`
 :   used as the primary source for the version number,
     in which case it will be an unparsed string.
     Specifying distribution-specific pretend versions will
