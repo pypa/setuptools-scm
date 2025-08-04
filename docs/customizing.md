@@ -33,7 +33,7 @@ setup(use_scm_version={"version_scheme": myversion_func})
 
 ``` { .toml title="pyproject.toml" file="docs/examples/version_scheme_code/pyproject.toml" }
 [build-system]
-requires = ["setuptools>=64", "setuptools-scm>=8"]
+requires = ["setuptools>=80", "setuptools-scm>=8"]  # setuptools>=61 minimum, >=80 recommended
 build-backend = "setuptools.build_meta"
 
 [project]

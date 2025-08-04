@@ -24,13 +24,13 @@ or [configuring Git archive][git-archive-docs].
 The preferred way to configure [setuptools-scm] is to author
 settings in a `tool.setuptools_scm` section of `pyproject.toml`.
 
-This feature requires setuptools 61 or later.
+This feature requires setuptools 61 or later (recommended: >=80 for best compatibility).
 First, ensure that [setuptools-scm] is present during the project's
 build step by specifying it as one of the build requirements.
 
 ```toml title="pyproject.toml"
 [build-system]
-requires = ["setuptools>=64", "setuptools-scm>=8"]
+requires = ["setuptools>=80", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 ```
 
@@ -61,7 +61,7 @@ dynamic = ["version"]
 
     ```toml title="pyproject.toml"
     [build-system]
-    requires = ["setuptools>=64", "setuptools-scm>=8"]
+    requires = ["setuptools>=80", "setuptools-scm>=8"]
     build-backend = "setuptools.build_meta"
 
     [project]
@@ -107,6 +107,12 @@ modern [setuptools-scm] is unable to support them sensibly.
 
 It's strongly recommended to build a wheel artifact using modern Python and setuptools,
 then installing the artifact instead of trying to run against old setuptools versions.
+
+!!! note "Legacy Setuptools Support"
+    While setuptools-scm recommends setuptools >=80, it maintains compatibility with setuptools 61+
+    to support legacy deployments that cannot easily upgrade. Support for setuptools <80 is deprecated
+    and will be removed in a future release. This allows enterprise environments and older CI/CD systems
+    to continue using setuptools-scm while still encouraging adoption of newer versions.
 
 
 ## Code of Conduct

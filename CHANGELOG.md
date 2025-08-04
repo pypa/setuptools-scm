@@ -28,6 +28,7 @@
 - fix #1150: enable setuptools-scm when we are a build requirement
 - feature #1154: add the commit id the the default version file template
 - drop scriv
+- fix #921: document setuptools version requirements more consistently - 61 as minumum asn 8 as recommended minimum
 
 ### Fixed
 
