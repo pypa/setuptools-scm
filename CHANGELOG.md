@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v9.0.0
 
 ### Breaking
 
@@ -16,6 +16,7 @@
 - fix #987: expand documentation on git archival files and add cli tools for good defaults
 - fix #311: document github/gitlab ci pipelines that enable auto-upload to test-pypi/pypi
 - fix #1022: allow `version_keyword` to override `infer_version` when configuration differs
+- fix #554: document `fallback_root` parameter in programmatic usage and configuration
 
 
 ### Changed
@@ -53,6 +54,10 @@
 - fix #873: don't infer version in cli if --no-version is given
 - fix #535: accept tags from a release action in the gh ui
 - fix #1073: explain namespaces for release-branch-semver
+- fix #1052: use consistent node hash length across all SCM backends
+- fix #1045: reindent the `__all__` in the version template for better readability
+- fix #968: harden environment override finding with better normalization and typo suggestions
+- fix #846: add support for failing on missing submodules
 
 ## v8.3.1
 
