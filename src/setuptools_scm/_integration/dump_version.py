@@ -95,19 +95,34 @@ def _validate_template(target: Path, template: str | None) -> str:
         return template
 
 
+class DummyScmVersion:
+    @property
+    def short_node(self) -> str | None:
+        return None
+
+
 def write_version_to_path(
-    target: Path, template: str | None, version: str, scm_version: ScmVersion | None
+    target: Path,
+    template: str | None,
+    version: str,
+    scm_version: ScmVersion | None = None,
 ) -> None:
     final_template = _validate_template(target, template)
     log.debug("dump %s into %s", version, target)
     version_tuple = _version_as_tuple(version)
-    if scm_version is not None:
-        content = final_template.format(
-            version=version,
-            version_tuple=version_tuple,
-            scm_version=scm_version,
+    if scm_version is None:
+        warnings.warn(
+            "write_version_to_path called without scm_version parameter. "
+            "This will be required in a future version. "
+            "Pass scm_version=None explicitly to suppress this warning.",
+            DeprecationWarning,
+            stacklevel=2,
         )
-    else:
-        content = final_template.format(version=version, version_tuple=version_tuple)
+
+    content = final_template.format(
+        version=version,
+        version_tuple=version_tuple,
+        scm_version=scm_version or DummyScmVersion(),
+    )
 
     target.write_text(content, encoding="utf-8")
