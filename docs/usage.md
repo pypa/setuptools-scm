@@ -2,6 +2,11 @@
 
 ## At build time
 
+!!! note "Setuptools Version Requirements"
+    setuptools-scm requires setuptools 61 or later (minimum), but recommends >=80 for best compatibility.
+    Support for setuptools <80 is deprecated and will be removed in a future release.
+    The examples below use `setuptools>=80` as the recommended version.
+
 There are two ways to configure `setuptools-scm` at build time, depending on your needs:
 
 ### Automatic Configuration (Recommended for Simple Cases)
@@ -11,7 +16,7 @@ in your build requirements:
 
 ```toml title="pyproject.toml"
 [build-system]
-requires = ["setuptools>=64", "setuptools-scm>=8"]
+requires = ["setuptools>=80", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -29,7 +34,7 @@ If you need to customize setuptools-scm behavior, use the `tool.setuptools_scm` 
 
 ```toml title="pyproject.toml"
 [build-system]
-requires = ["setuptools>=64", "setuptools-scm>=8"]
+requires = ["setuptools>=80", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]

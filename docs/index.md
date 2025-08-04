@@ -27,12 +27,13 @@ or [configuring Git archive][git-archive-docs].
 ### With setuptools
 
 Note: `setuptools-scm>=8` intentionally doesn't depend on setuptools to ease non-setuptools usage.
-Please ensure a recent version of setuptools (>=64) is installed.
+Please ensure a recent version of setuptools is installed (minimum: >=61, recommended: >=80 for best compatibility).
+Support for setuptools <80 is deprecated and will be removed in a future release.
 
 
 ```toml title="pyproject.toml"
 [build-system]
-requires = ["setuptools>=64", "setuptools-scm>=8"]
+requires = ["setuptools>=80", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
