@@ -93,7 +93,6 @@ def test_cli_create_archival_file_stable(
     archival_file = wd.cwd / ".git_archival.txt"
     assert not archival_file.exists()
 
-    # Test successful creation
     result = main(["create-archival-file", "--stable"])
     assert result == 0
     assert archival_file.exists()
@@ -122,7 +121,6 @@ def test_cli_create_archival_file_full(
     archival_file = wd.cwd / ".git_archival.txt"
     assert not archival_file.exists()
 
-    # Test successful creation
     result = main(["create-archival-file", "--full"])
     assert result == 0
     assert archival_file.exists()

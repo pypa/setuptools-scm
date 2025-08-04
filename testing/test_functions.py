@@ -47,6 +47,18 @@ VERSIONS = {
     "distance-dirty": meta("1.1", distance=3, dirty=True, config=c),
 }
 
+# Versions with build metadata in the tag
+VERSIONS_WITH_BUILD_METADATA = {
+    "exact-build": meta("1.1+build.123", distance=0, dirty=False, config=c),
+    "dirty-build": meta("1.1+build.123", distance=0, dirty=True, config=c),
+    "distance-clean-build": meta("1.1+build.123", distance=3, dirty=False, config=c),
+    "distance-dirty-build": meta("1.1+build.123", distance=3, dirty=True, config=c),
+    "exact-ci": meta("2.0.0+ci.456", distance=0, dirty=False, config=c),
+    "dirty-ci": meta("2.0.0+ci.456", distance=0, dirty=True, config=c),
+    "distance-clean-ci": meta("2.0.0+ci.456", distance=2, dirty=False, config=c),
+    "distance-dirty-ci": meta("2.0.0+ci.456", distance=2, dirty=True, config=c),
+}
+
 
 @pytest.mark.parametrize(
     ("version", "version_scheme", "local_scheme", "expected"),
@@ -75,6 +87,96 @@ def test_format_version(
         ),
     )
     assert format_version(configured_version) == expected
+
+
+@pytest.mark.parametrize(
+    ("version", "version_scheme", "local_scheme", "expected"),
+    [
+        # Exact matches should preserve build metadata from tag
+        ("exact-build", "guess-next-dev", "node-and-date", "1.1+build.123"),
+        ("exact-build", "guess-next-dev", "no-local-version", "1.1+build.123"),
+        ("exact-ci", "guess-next-dev", "node-and-date", "2.0.0+ci.456"),
+        ("exact-ci", "guess-next-dev", "no-local-version", "2.0.0+ci.456"),
+        # Dirty exact matches - version scheme treats dirty as non-exact, build metadata preserved
+        (
+            "dirty-build",
+            "guess-next-dev",
+            "node-and-date",
+            "1.2.dev0+build.123.d20090213",
+        ),
+        ("dirty-build", "guess-next-dev", "no-local-version", "1.2.dev0+build.123"),
+        ("dirty-ci", "guess-next-dev", "node-and-date", "2.0.1.dev0+ci.456.d20090213"),
+        # Distance cases - build metadata should be preserved and combined with SCM data
+        (
+            "distance-clean-build",
+            "guess-next-dev",
+            "node-and-date",
+            "1.2.dev3+build.123",
+        ),
+        (
+            "distance-clean-build",
+            "guess-next-dev",
+            "no-local-version",
+            "1.2.dev3+build.123",
+        ),
+        ("distance-clean-ci", "guess-next-dev", "node-and-date", "2.0.1.dev2+ci.456"),
+        # Distance + dirty cases - build metadata should be preserved and combined with SCM data
+        (
+            "distance-dirty-build",
+            "guess-next-dev",
+            "node-and-date",
+            "1.2.dev3+build.123.d20090213",
+        ),
+        (
+            "distance-dirty-ci",
+            "guess-next-dev",
+            "node-and-date",
+            "2.0.1.dev2+ci.456.d20090213",
+        ),
+        # Post-release scheme tests
+        ("exact-build", "post-release", "node-and-date", "1.1+build.123"),
+        (
+            "dirty-build",
+            "post-release",
+            "node-and-date",
+            "1.1.post0+build.123.d20090213",
+        ),
+        (
+            "distance-clean-build",
+            "post-release",
+            "node-and-date",
+            "1.1.post3+build.123",
+        ),
+        (
+            "distance-dirty-build",
+            "post-release",
+            "node-and-date",
+            "1.1.post3+build.123.d20090213",
+        ),
+    ],
+)
+def test_format_version_with_build_metadata(
+    version: str, version_scheme: str, local_scheme: str, expected: str
+) -> None:
+    """Test format_version with tags that contain build metadata."""
+    from dataclasses import replace
+
+    from packaging.version import Version
+
+    scm_version = VERSIONS_WITH_BUILD_METADATA[version]
+    configured_version = replace(
+        scm_version,
+        config=replace(
+            scm_version.config, version_scheme=version_scheme, local_scheme=local_scheme
+        ),
+    )
+    result = format_version(configured_version)
+
+    # Validate result is a valid PEP 440 version
+    parsed = Version(result)
+    assert str(parsed) == result, f"Result should be valid PEP 440: {result}"
+
+    assert result == expected, f"Expected {expected}, got {result}"
 
 
 def test_dump_version_doesnt_bail_on_value_error(tmp_path: Path) -> None:

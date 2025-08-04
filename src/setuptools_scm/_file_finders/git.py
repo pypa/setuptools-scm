@@ -39,11 +39,9 @@ def _git_toplevel(path: str) -> str | None:
             # ``cwd`` is absolute path to current working directory.
             # the below method removes the length of ``out`` from
             # ``cwd``, which gives the git toplevel
-            assert cwd.replace("\\", "/").endswith(out), f"cwd={cwd!r}\nout={out!r}"
-            # In windows cwd contains ``\`` which should be replaced by ``/``
-            # for this assertion to work. Length of string isn't changed by replace
-            # ``\\`` is just and escape for `\`
-            out = cwd[: -len(out)]
+            from .._compat import strip_path_suffix
+
+            out = strip_path_suffix(cwd, out, f"cwd={cwd!r}\nout={out!r}")
         log.debug("find files toplevel %s", out)
         return norm_real(out)
     except subprocess.CalledProcessError:
