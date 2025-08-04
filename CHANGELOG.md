@@ -6,7 +6,8 @@
 ### Fixed
 
 - fix #1180: ensure version dumping works when no scm_version is given (problems in downstreams)
-
+- fix #1181: config - reintroduce controll over when we expect a section to be present
+             as it turns out theres valid use cases where setuptools_scm is not direct part of the dependencies
 
 ## v9.0.0
 
