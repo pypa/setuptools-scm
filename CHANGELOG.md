@@ -50,7 +50,7 @@
 - fix #879: add test that validates case different behavior on windows
 - migrate git describe command to new scm config
 - add support for failing on missing submodules
-- fix #279: expand errors when scm can be found upwards and relative_to wasnt used
+- fix #279: expand errors when scm can be found upwards and relative_to wasn't used
 - fix #577: introduce explicit scmversion node and short node
 - fix #1100: add workaround for readthedocs worktress to the docs
 - fix #790: document shallow fail for rtd

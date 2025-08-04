@@ -1,12 +1,14 @@
 ---
-description: run tests wit uv tooling
+description: run tests with uv tooling
 globs:
 alwaysApply: true
 ---
 
 use `uv run pytest` to run tests
 use uv to manage dependencies
-
+use `uv run python ...` to run inline tests
 follow preexisting conventions in the project
 
-- use the fixtures
+in cases where a unittest/integration test adds value, prefer adding them first
+
+- use the fixtures the project defines
