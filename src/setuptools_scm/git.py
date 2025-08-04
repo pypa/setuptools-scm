@@ -93,11 +93,9 @@ class GitWorkdir(Workdir):
             real_wd = os.fspath(wd)
         else:
             str_wd = os.fspath(wd)
-            assert str_wd.replace("\\", "/").endswith(real_wd)
-            # In windows wd contains ``\`` which should be replaced by ``/``
-            # for this assertion to work.  Length of string isn't changed by replace
-            # ``\\`` is just and escape for `\`
-            real_wd = str_wd[: -len(real_wd)]
+            from ._compat import strip_path_suffix
+
+            real_wd = strip_path_suffix(str_wd, real_wd)
         log.debug("real root %s", real_wd)
         if not samefile(real_wd, wd):
             return None
