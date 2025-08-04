@@ -12,7 +12,7 @@
 
 ### Breaking
 
-- fix #1019: pass python version build tags from scm version to results propperly
+- fix #1019: pass python version build tags from scm version to results properly
 
 ### Added
 
@@ -37,7 +37,7 @@
 - fix #1150: enable setuptools-scm when we are a build requirement
 - feature #1154: add the commit id the the default version file template
 - drop scriv
-- fix #921: document setuptools version requirements more consistently - 61 as minumum asn 8 as recommended minimum
+- fix #921: document setuptools version requirements more consistently - 61 as minimum asn 8 as recommended minimum
 
 ### Fixed
 
@@ -71,7 +71,7 @@
 
 ### Fixed
 
-- fixed #1131: allow self-build without importlib_metadata avaliable on python3.9
+- fixed #1131: allow self-build without importlib_metadata available on python3.9
 
 ## v8.3.0
 
