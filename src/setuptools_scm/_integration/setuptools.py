@@ -130,6 +130,7 @@ def version_keyword(
     config = _config.Configuration.from_file(
         dist_name=dist_name,
         missing_file_ok=True,
+        missing_section_ok=True,
         **overrides,
     )
     _assign_version(dist, config)

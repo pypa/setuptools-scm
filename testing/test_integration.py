@@ -921,3 +921,35 @@ local_scheme = "no-local-version"
     assert final_version == expected_final_version, (
         f"Expected version '{expected_final_version}' but got '{final_version}'"
     )
+
+
+def test_version_keyword_no_scm_dependency_works(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Set up a git repository with a tag
+    wd.commit_testfile("test")
+    wd("git tag 1.0.0")
+    monkeypatch.chdir(wd.cwd)
+
+    # Create a pyproject.toml file WITHOUT setuptools_scm in build-system.requires
+    # and WITHOUT [tool.setuptools_scm] section
+    pyproject_content = """
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "test-package-no-scm"
+dynamic = ["version"]
+"""
+    wd.write("pyproject.toml", pyproject_content)
+
+    import setuptools
+
+    from setuptools_scm._integration.setuptools import version_keyword
+
+    # Create distribution
+    dist = setuptools.Distribution({"name": "test-package-no-scm"})
+
+    version_keyword(dist, "use_scm_version", True)
+    assert dist.metadata.version == "1.0.0"

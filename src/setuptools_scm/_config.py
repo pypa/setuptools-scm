@@ -271,6 +271,7 @@ class Configuration:
         name: str | os.PathLike[str] = "pyproject.toml",
         dist_name: str | None = None,
         missing_file_ok: bool = False,
+        missing_section_ok: bool = False,
         **kwargs: Any,
     ) -> Configuration:
         """
@@ -279,10 +280,20 @@ class Configuration:
                 not installed or the file has invalid format or does
                 not contain setuptools_scm configuration (either via
         _        [tool.setuptools_scm] section or build-system.requires).
+
+        Parameters:
+        - name: path to pyproject.toml
+        - dist_name: name of the distribution
+        - missing_file_ok: if True, do not raise an error if the file is not found
+        - missing_section_ok: if True, do not raise an error if the section is not found
+          (workaround for not walking the dependency graph when figuring out if setuptools_scm is a dependency)
+        - **kwargs: additional keyword arguments to pass to the Configuration constructor
         """
 
         try:
-            pyproject_data = _read_pyproject(Path(name))
+            pyproject_data = _read_pyproject(
+                Path(name), missing_section_ok=missing_section_ok
+            )
         except FileNotFoundError:
             if missing_file_ok:
                 log.warning("File %s not found, using empty configuration", name)
