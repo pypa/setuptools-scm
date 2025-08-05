@@ -4,6 +4,7 @@ import logging
 import os
 import warnings
 
+from pathlib import Path
 from typing import Any
 from typing import Callable
 
@@ -149,8 +150,21 @@ def infer_version(dist: setuptools.Distribution) -> None:
     if dist_name == "setuptools-scm":
         return
 
+    # Check if setuptools-scm is configured before proceeding
     try:
-        config = _config.Configuration.from_file(dist_name=dist_name)
+        from .pyproject_reading import read_pyproject
+
+        pyproject_data = read_pyproject(Path("pyproject.toml"), missing_section_ok=True)
+        # Only proceed if setuptools-scm is either in build_requires or has a tool section
+        if not pyproject_data.is_required and not pyproject_data.section_present:
+            return  # No setuptools-scm configuration, silently return
+    except (FileNotFoundError, LookupError):
+        return  # No pyproject.toml or other issues, silently return
+
+    try:
+        config = _config.Configuration.from_file(
+            dist_name=dist_name, pyproject_data=pyproject_data
+        )
     except LookupError as e:
         log.info(e, exc_info=True)
     else:

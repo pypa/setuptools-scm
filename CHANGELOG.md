@@ -1,5 +1,11 @@
 # Changelog
 
+## v9.0.2
+
+### Fixed
+
+- fix #1184: in case setuptools-scm is a indirect dependency and no pyproject.toml section exists - don't infer the version
+
 
 ## v9.0.1
 

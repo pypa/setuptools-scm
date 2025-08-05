@@ -272,6 +272,7 @@ class Configuration:
         dist_name: str | None = None,
         missing_file_ok: bool = False,
         missing_section_ok: bool = False,
+        pyproject_data: PyProjectData | None = None,
         **kwargs: Any,
     ) -> Configuration:
         """
@@ -291,9 +292,10 @@ class Configuration:
         """
 
         try:
-            pyproject_data = _read_pyproject(
-                Path(name), missing_section_ok=missing_section_ok
-            )
+            if pyproject_data is None:
+                pyproject_data = _read_pyproject(
+                    Path(name), missing_section_ok=missing_section_ok
+                )
         except FileNotFoundError:
             if missing_file_ok:
                 log.warning("File %s not found, using empty configuration", name)
@@ -303,6 +305,7 @@ class Configuration:
                     project={},
                     section={},
                     is_required=False,
+                    section_present=False,
                 )
             else:
                 raise
