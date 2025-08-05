@@ -6,14 +6,15 @@
 ### Fixed
 
 - fix #1180: ensure version dumping works when no scm_version is given (problems in downstreams)
-- fix #1181: config - reintroduce controll over when we expect a section to be present
-             as it turns out theres valid use cases where setuptools_scm is not direct part of the dependencies
+- fix #1181: config - reintroduce control over when we expect a section to be present
+             as it turns out there's valid use cases where setuptools_scm is not direct part of the dependencies
+- add codespell pre-commit hook
 
 ## v9.0.0
 
 ### Breaking
 
-- fix #1019: pass python version build tags from scm version to results propperly
+- fix #1019: pass python version build tags from scm version to results properly
 
 ### Added
 
@@ -38,7 +39,7 @@
 - fix #1150: enable setuptools-scm when we are a build requirement
 - feature #1154: add the commit id the the default version file template
 - drop scriv
-- fix #921: document setuptools version requirements more consistently - 61 as minumum asn 8 as recommended minimum
+- fix #921: document setuptools version requirements more consistently - 61 as minimum asn 8 as recommended minimum
 
 ### Fixed
 
@@ -51,7 +52,7 @@
 - fix #879: add test that validates case different behavior on windows
 - migrate git describe command to new scm config
 - add support for failing on missing submodules
-- fix #279: expand errors when scm can be found upwards and relative_to wasnt used
+- fix #279: expand errors when scm can be found upwards and relative_to wasn't used
 - fix #577: introduce explicit scmversion node and short node
 - fix #1100: add workaround for readthedocs worktress to the docs
 - fix #790: document shallow fail for rtd
@@ -72,7 +73,7 @@
 
 ### Fixed
 
-- fixed #1131: allow self-build without importlib_metadata avaliable on python3.9
+- fixed #1131: allow self-build without importlib_metadata available on python3.9
 
 ## v8.3.0
 

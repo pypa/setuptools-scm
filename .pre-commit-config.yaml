@@ -31,3 +31,9 @@ repos:
     rev: 2025.05.02
     hooks:
       - id: sp-repo-review
+
+-   repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+    -   id: codespell
+        args: [-w, --ignore-words-list=hist,nd,te]
