@@ -12,6 +12,7 @@ class WorkDir:
     commit_command: str
     signed_commit_command: str
     add_command: str
+    tag_command: str
 
     def __repr__(self) -> str:
         return f"<WD {self.cwd}>"
@@ -68,3 +69,60 @@ class WorkDir:
         version = get_version(root=self.cwd, fallback_root=self.cwd, **kw)
         print(self.cwd.name, version, sep=": ")
         return version
+
+    def create_basic_setup_py(
+        self, name: str = "test-package", use_scm_version: str = "True"
+    ) -> None:
+        """Create a basic setup.py file with setuptools_scm configuration."""
+        self.write(
+            "setup.py",
+            f"""__import__('setuptools').setup(
+    name="{name}",
+    use_scm_version={use_scm_version},
+)""",
+        )
+
+    def create_basic_pyproject_toml(
+        self, name: str = "test-package", dynamic_version: bool = True
+    ) -> None:
+        """Create a basic pyproject.toml file with setuptools_scm configuration."""
+        dynamic_section = 'dynamic = ["version"]' if dynamic_version else ""
+        self.write(
+            "pyproject.toml",
+            f"""[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "{name}"
+{dynamic_section}
+
+[tool.setuptools_scm]
+""",
+        )
+
+    def create_basic_setup_cfg(self, name: str = "test-package") -> None:
+        """Create a basic setup.cfg file with metadata."""
+        self.write(
+            "setup.cfg",
+            f"""[metadata]
+name = {name}
+""",
+        )
+
+    def create_test_file(
+        self, filename: str = "test.txt", content: str = "test content"
+    ) -> None:
+        """Create a test file and commit it to the repository."""
+        # Create parent directories if they don't exist
+        path = self.cwd / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.write(filename, content)
+        self.add_and_commit()
+
+    def create_tag(self, tag: str = "1.0.0") -> None:
+        """Create a tag using the configured tag_command."""
+        if hasattr(self, "tag_command"):
+            self(self.tag_command, tag=tag)
+        else:
+            raise RuntimeError("No tag_command configured")

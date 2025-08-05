@@ -35,14 +35,8 @@ from .wd_wrapper import WorkDir
 c = Configuration()
 
 
-@pytest.fixture
-def wd(wd: WorkDir) -> WorkDir:
-    wd("git init")
-    wd("git config user.email test@example.com")
-    wd('git config user.name "a test"')
-    wd.add_command = "git add ."
-    wd.commit_command = "git commit -m test-{reason}"
-    return wd
+# File-level marker for git tests
+pytestmark = pytest.mark.git
 
 
 def test_pyproject_support(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
