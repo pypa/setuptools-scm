@@ -160,6 +160,10 @@ def infer_version(dist: setuptools.Distribution) -> None:
             return  # No setuptools-scm configuration, silently return
     except (FileNotFoundError, LookupError):
         return  # No pyproject.toml or other issues, silently return
+    except ValueError as e:
+        # Log the error as debug info instead of raising it
+        log.debug("Configuration issue in pyproject.toml: %s", e)
+        return  # Configuration issue, silently return
 
     try:
         config = _config.Configuration.from_file(
