@@ -514,13 +514,13 @@ def test_custom_version_cls() -> None:
 def test_no_matching_entrypoints(config_key: str) -> None:
     version = meta(
         "1.0",
-        config=replace(c, **{config_key: "nonexistant"}),  # type: ignore[arg-type]
+        config=replace(c, **{config_key: "nonexistent"}),  # type: ignore[arg-type]
     )
     with pytest.raises(
         ValueError,
         match=(
             r'Couldn\'t find any implementations for entrypoint "setuptools_scm\..*?"'
-            ' with value "nonexistant"'
+            ' with value "nonexistent"'
         ),
     ):
         format_version(version)

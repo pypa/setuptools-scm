@@ -1,5 +1,5 @@
 ---
-description: run tests wit uv tooling
+description: run tests with uv tooling
 globs:
 alwaysApply: true
 ---
