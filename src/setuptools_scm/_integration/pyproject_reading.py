@@ -28,6 +28,19 @@ class PyProjectData(NamedTuple):
     def project_name(self) -> str | None:
         return self.project.get("name")
 
+    def verify_dynamic_version_when_required(self) -> None:
+        """Verify that dynamic=['version'] is set when setuptools-scm is used as build dependency indicator."""
+        if self.is_required and not self.section_present:
+            # When setuptools-scm is in build-system.requires but no tool section exists,
+            # we need to verify that dynamic=['version'] is set in the project section
+            dynamic = self.project.get("dynamic", [])
+            if "version" not in dynamic:
+                raise ValueError(
+                    f"{self.path}: setuptools-scm is present in [build-system].requires "
+                    f"but dynamic=['version'] is not set in [project]. "
+                    f"Either add dynamic=['version'] to [project] or add a [tool.{self.tool_name}] section."
+                )
+
 
 def has_build_package(
     requires: Sequence[str], build_package_names: Sequence[str]
@@ -74,9 +87,14 @@ def read_pyproject(
             section_present = False
 
     project = defn.get("project", {})
-    return PyProjectData(
+    pyproject_data = PyProjectData(
         path, tool_name, project, section, is_required, section_present
     )
+
+    # Verify dynamic version when setuptools-scm is used as build dependency indicator
+    pyproject_data.verify_dynamic_version_when_required()
+
+    return pyproject_data
 
 
 def get_args_for_pyproject(

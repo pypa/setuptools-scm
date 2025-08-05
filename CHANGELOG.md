@@ -1,5 +1,11 @@
 # Changelog
 
+## v9.0.3
+
+### fixed
+
+- fix 1184: verify version is dynamic if the dependency is used as indicator for enabling
+
 ## v9.0.2
 
 ### Fixed
