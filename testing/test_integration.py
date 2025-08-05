@@ -923,6 +923,125 @@ local_scheme = "no-local-version"
     )
 
 
+def test_infer_version_with_build_requires_no_tool_section(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that infer_version works when setuptools-scm is in build_requires but no [tool.setuptools_scm] section"""
+    if sys.version_info < (3, 11):
+        pytest.importorskip("tomli")
+
+    # Set up a git repository with a tag
+    wd.commit_testfile("test")
+    wd("git tag 1.0.0")
+    monkeypatch.chdir(wd.cwd)
+
+    # Create a pyproject.toml file with setuptools_scm in build-system.requires but NO [tool.setuptools_scm] section
+    pyproject_content = """
+[build-system]
+requires = ["setuptools>=80", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "test-package-infer-version"
+dynamic = ["version"]
+"""
+    wd.write("pyproject.toml", pyproject_content)
+
+    import setuptools
+
+    from setuptools_scm._integration.setuptools import infer_version
+
+    # Create distribution
+    dist = setuptools.Distribution({"name": "test-package-infer-version"})
+
+    # Call infer_version - this should work because setuptools_scm is in build-system.requires
+    infer_version(dist)
+
+    # Verify that version was set
+    assert dist.metadata.version is not None
+    assert dist.metadata.version == "1.0.0"
+
+    # Verify that the marker was set
+    assert getattr(dist, "_setuptools_scm_version_set_by_infer", False) is True
+
+
+def test_infer_version_with_build_requires_dash_variant_no_tool_section(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that infer_version works when setuptools-scm (dash variant) is in build_requires but no [tool.setuptools_scm] section"""
+    if sys.version_info < (3, 11):
+        pytest.importorskip("tomli")
+
+    # Set up a git repository with a tag
+    wd.commit_testfile("test")
+    wd("git tag 1.0.0")
+    monkeypatch.chdir(wd.cwd)
+
+    # Create a pyproject.toml file with setuptools-scm (dash variant) in build-system.requires but NO [tool.setuptools_scm] section
+    pyproject_content = """
+[build-system]
+requires = ["setuptools>=80", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "test-package-infer-version-dash"
+dynamic = ["version"]
+"""
+    wd.write("pyproject.toml", pyproject_content)
+
+    import setuptools
+
+    from setuptools_scm._integration.setuptools import infer_version
+
+    # Create distribution
+    dist = setuptools.Distribution({"name": "test-package-infer-version-dash"})
+
+    # Call infer_version - this should work because setuptools-scm is in build-system.requires
+    infer_version(dist)
+
+    # Verify that version was set
+    assert dist.metadata.version is not None
+    assert dist.metadata.version == "1.0.0"
+
+    # Verify that the marker was set
+    assert getattr(dist, "_setuptools_scm_version_set_by_infer", False) is True
+
+
+def test_infer_version_without_build_requires_no_tool_section_silently_returns(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that infer_version silently returns when setuptools-scm is NOT in build_requires and no [tool.setuptools_scm] section"""
+    if sys.version_info < (3, 11):
+        pytest.importorskip("tomli")
+
+    # Set up a git repository with a tag
+    wd.commit_testfile("test")
+    wd("git tag 1.0.0")
+    monkeypatch.chdir(wd.cwd)
+
+    # Create a pyproject.toml file WITHOUT setuptools_scm in build-system.requires and NO [tool.setuptools_scm] section
+    pyproject_content = """
+[build-system]
+requires = ["setuptools>=80", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "test-package-no-scm"
+dynamic = ["version"]
+"""
+    wd.write("pyproject.toml", pyproject_content)
+
+    import setuptools
+
+    from setuptools_scm._integration.setuptools import infer_version
+
+    # Create distribution
+    dist = setuptools.Distribution({"name": "test-package-no-scm"})
+
+    infer_version(dist)
+    assert dist.metadata.version is None
+
+
 def test_version_keyword_no_scm_dependency_works(
     wd: WorkDir, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -22,6 +22,7 @@ class PyProjectData(NamedTuple):
     project: TOML_RESULT
     section: TOML_RESULT
     is_required: bool
+    section_present: bool
 
     @property
     def project_name(self) -> str | None:
@@ -55,6 +56,7 @@ def read_pyproject(
 
     try:
         section = defn.get("tool", {})[tool_name]
+        section_present = True
     except LookupError as e:
         if not is_required and not missing_section_ok:
             # Enhanced error message that mentions both configuration options
@@ -69,9 +71,12 @@ def read_pyproject(
             error = f"{path} does not contain a tool.{tool_name} section"
             log.warning("toml section missing %r", error, exc_info=True)
             section = {}
+            section_present = False
 
     project = defn.get("project", {})
-    return PyProjectData(path, tool_name, project, section, is_required)
+    return PyProjectData(
+        path, tool_name, project, section, is_required, section_present
+    )
 
 
 def get_args_for_pyproject(
