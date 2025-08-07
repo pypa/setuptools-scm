@@ -73,11 +73,11 @@ class PyProjectData:
 
 
 def has_build_package(
-    requires: Sequence[str], build_package_names: Sequence[str]
+    requires: Sequence[str], canonical_build_package_name: str
 ) -> bool:
     for requirement in requires:
-        package_name = extract_package_name(requirement).lower()
-        if package_name in build_package_names:
+        package_name = extract_package_name(requirement)
+        if package_name == canonical_build_package_name:
             return True
     return False
 
@@ -85,7 +85,7 @@ def has_build_package(
 def read_pyproject(
     path: Path = Path("pyproject.toml"),
     tool_name: str = "setuptools_scm",
-    build_package_names: Sequence[str] = ("setuptools_scm", "setuptools-scm"),
+    canonical_build_package_name: str = "setuptools-scm",
     missing_section_ok: bool = False,
     missing_file_ok: bool = False,
 ) -> PyProjectData:
@@ -107,7 +107,7 @@ def read_pyproject(
             raise
 
     requires: list[str] = defn.get("build-system", {}).get("requires", [])
-    is_required = has_build_package(requires, build_package_names)
+    is_required = has_build_package(requires, canonical_build_package_name)
 
     try:
         section = defn.get("tool", {})[tool_name]
