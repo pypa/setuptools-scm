@@ -71,10 +71,10 @@ def test_pyproject_support(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> N
 
 
 PYPROJECT_FILES = {
-    "setup.py": "[tool.setuptools_scm]",
-    "setup.cfg": "[tool.setuptools_scm]",
+    "setup.py": "[tool.setuptools_scm]\n",
+    "setup.cfg": "[tool.setuptools_scm]\n",
     "pyproject tool.setuptools_scm": (
-        "[tool.setuptools_scm]\ndist_name='setuptools_scm_example'"
+        "[project]\nname='setuptools_scm_example'\n[tool.setuptools_scm]"
     ),
     "pyproject.project": (
         "[project]\nname='setuptools_scm_example'\n"
@@ -109,11 +109,116 @@ with_metadata_in = pytest.mark.parametrize(
 def test_pyproject_support_with_git(wd: WorkDir, metadata_in: str) -> None:
     if sys.version_info < (3, 11):
         pytest.importorskip("tomli")
-    wd.write("pyproject.toml", PYPROJECT_FILES[metadata_in])
+
+    # Write files first
+    if metadata_in == "pyproject tool.setuptools_scm":
+        wd.write(
+            "pyproject.toml",
+            textwrap.dedent(
+                """
+                [build-system]
+                requires = ["setuptools>=80", "setuptools-scm>=8"]
+                build-backend = "setuptools.build_meta"
+
+                [tool.setuptools_scm]
+                dist_name='setuptools_scm_example'
+                """
+            ),
+        )
+    elif metadata_in == "pyproject.project":
+        wd.write(
+            "pyproject.toml",
+            textwrap.dedent(
+                """
+                [build-system]
+                requires = ["setuptools>=80", "setuptools-scm>=8"]
+                build-backend = "setuptools.build_meta"
+
+                [project]
+                name='setuptools_scm_example'
+                dynamic=['version']
+                [tool.setuptools_scm]
+                """
+            ),
+        )
+    else:
+        # For "setup.py" and "setup.cfg" cases, use the PYPROJECT_FILES content
+        wd.write("pyproject.toml", PYPROJECT_FILES[metadata_in])
+
     wd.write("setup.py", SETUP_PY_FILES[metadata_in])
     wd.write("setup.cfg", SETUP_CFG_FILES[metadata_in])
-    res = wd([sys.executable, "setup.py", "--version"])
-    assert res.endswith("0.1.dev0+d20090213")
+
+    # Now do git operations
+    wd("git init")
+    wd("git config user.email test@example.com")
+    wd('git config user.name "a test"')
+    wd("git add .")
+    wd('git commit -m "initial"')
+    wd("git tag v1.0.0")
+
+    res = run([sys.executable, "setup.py", "--version"], wd.cwd)
+    assert res.stdout == "1.0.0"
+
+
+def test_pyproject_no_project_section_no_auto_activation(wd: WorkDir) -> None:
+    """Test that setuptools_scm doesn't auto-activate when pyproject.toml has no project section."""
+    if sys.version_info < (3, 11):
+        pytest.importorskip("tomli")
+
+    # Create pyproject.toml with setuptools-scm in build-system.requires but no project section
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent(
+            """
+            [build-system]
+            requires = ["setuptools>=80", "setuptools-scm>=8"]
+            build-backend = "setuptools.build_meta"
+            """
+        ),
+    )
+
+    wd.write("setup.py", "__import__('setuptools').setup(name='test_package')")
+
+    # Now do git operations
+    wd("git init")
+    wd("git config user.email test@example.com")
+    wd('git config user.name "a test"')
+    wd("git add .")
+    wd('git commit -m "initial"')
+    wd("git tag v1.0.0")
+
+    # Should not auto-activate setuptools_scm, so version should be None
+    res = run([sys.executable, "setup.py", "--version"], wd.cwd)
+    print(f"Version output: {res.stdout!r}")
+    # The version should not be from setuptools_scm (which would be 1.0.0 from git tag)
+    # but should be the default setuptools version (0.0.0)
+    assert res.stdout == "0.0.0"  # Default version when no version is set
+
+
+def test_pyproject_no_project_section_no_error(wd: WorkDir) -> None:
+    """Test that setuptools_scm doesn't raise an error when there's no project section."""
+    if sys.version_info < (3, 11):
+        pytest.importorskip("tomli")
+
+    # Create pyproject.toml with setuptools-scm in build-system.requires but no project section
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent(
+            """
+            [build-system]
+            requires = ["setuptools>=80", "setuptools-scm>=8"]
+            build-backend = "setuptools.build_meta"
+            """
+        ),
+    )
+
+    # This should NOT raise an error because there's no project section
+    # setuptools_scm should simply not auto-activate
+    from setuptools_scm._integration.pyproject_reading import read_pyproject
+
+    pyproject_data = read_pyproject(wd.cwd / "pyproject.toml")
+    # Should not auto-activate when no project section exists
+    assert not pyproject_data.is_required or not pyproject_data.section_present
 
 
 @pytest.mark.parametrize("use_scm_version", ["True", "{}", "lambda: {}"])
@@ -539,7 +644,7 @@ def test_unicode_in_setup_cfg(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-    name = setuptools_scm._integration.setuptools.read_dist_name_from_setup_cfg(cfg)
+    name = setuptools_scm._integration.setup_cfg.read_dist_name_from_setup_cfg(cfg)
     assert name == "configparser"
 
 
