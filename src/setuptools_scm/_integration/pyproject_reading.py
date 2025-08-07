@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .. import _log
+from .._requirement_cls import extract_package_name
 from .toml import TOML_RESULT
 from .toml import read_toml_content
 
@@ -75,12 +76,7 @@ def has_build_package(
     requires: Sequence[str], build_package_names: Sequence[str]
 ) -> bool:
     for requirement in requires:
-        import re
-
-        # Remove extras like [toml] first
-        clean_req = re.sub(r"\[.*?\]", "", requirement)
-        # Split on version operators and take first part
-        package_name = re.split(r"[><=!~]", clean_req)[0].strip().lower()
+        package_name = extract_package_name(requirement).lower()
         if package_name in build_package_names:
             return True
     return False

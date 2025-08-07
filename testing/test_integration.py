@@ -18,11 +18,12 @@ from packaging.version import Version
 
 import setuptools_scm._integration.setuptools
 
+from setuptools_scm._requirement_cls import extract_package_name
+
 if TYPE_CHECKING:
     import setuptools
 
 from setuptools_scm import Configuration
-from setuptools_scm._integration.setuptools import _extract_package_name
 from setuptools_scm._integration.setuptools import _warn_on_old_setuptools
 from setuptools_scm._overrides import PRETEND_KEY
 from setuptools_scm._overrides import PRETEND_KEY_NAMED
@@ -826,7 +827,7 @@ def test_pyproject_build_system_requires_priority_over_tool_section(
 )
 def test_extract_package_name(base_name: str, requirements: str) -> None:
     """Test the _extract_package_name helper function"""
-    assert _extract_package_name(f"{base_name}{requirements}") == base_name
+    assert extract_package_name(f"{base_name}{requirements}") == "setuptools-scm"
 
 
 def test_build_requires_integration_with_config_reading(wd: WorkDir) -> None:
