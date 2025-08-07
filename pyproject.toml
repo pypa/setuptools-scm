@@ -48,11 +48,8 @@ dependencies = [
   'typing-extensions; python_version < "3.10"',
 ]
 [project.optional-dependencies]
-rich = [
-  "rich",
-]
-toml = [
-]
+rich = ["rich"]
+toml = []
 
 [dependency-groups]
 docs = [
