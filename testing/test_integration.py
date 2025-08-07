@@ -818,17 +818,15 @@ def test_pyproject_build_system_requires_priority_over_tool_section(
     assert res.endswith("0.1.dev0+d20090213")
 
 
-def test_extract_package_name() -> None:
+@pytest.mark.parametrize("base_name", ["setuptools_scm", "setuptools-scm"])
+@pytest.mark.parametrize(
+    "requirements",
+    ["", ">=8", "[toml]>=7", "~=9.0", "[rich,toml]>=8"],
+    ids=["empty", "version", "extras", "fuzzy", "multiple-extras"],
+)
+def test_extract_package_name(base_name: str, requirements: str) -> None:
     """Test the _extract_package_name helper function"""
-    assert _extract_package_name("setuptools_scm") == "setuptools_scm"
-    assert _extract_package_name("setuptools-scm") == "setuptools-scm"
-    assert _extract_package_name("setuptools_scm>=8") == "setuptools_scm"
-    assert _extract_package_name("setuptools-scm>=8") == "setuptools-scm"
-    assert _extract_package_name("setuptools_scm[toml]>=7.0") == "setuptools_scm"
-    assert _extract_package_name("setuptools-scm[toml]>=7.0") == "setuptools-scm"
-    assert _extract_package_name("setuptools_scm==8.0.0") == "setuptools_scm"
-    assert _extract_package_name("setuptools_scm~=8.0") == "setuptools_scm"
-    assert _extract_package_name("setuptools_scm[rich,toml]>=8") == "setuptools_scm"
+    assert _extract_package_name(f"{base_name}{requirements}") == base_name
 
 
 def test_build_requires_integration_with_config_reading(wd: WorkDir) -> None:
