@@ -45,7 +45,7 @@ dynamic = ["version"]
 [tool.setuptools_scm]
 """
         pyproject_file = tmp_path / "pyproject.toml"
-        pyproject_file.write_text(pyproject_content)
+        pyproject_file.write_text(pyproject_content, encoding="utf-8")
 
         result = read_pyproject(path=pyproject_file)
 

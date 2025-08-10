@@ -339,7 +339,7 @@ num_commit = {scm_version.distance}
         write_to="src/version.py", write_to_template=version_file_content
     )
 
-    content = (wd.cwd / "src/version.py").read_text()
+    content = (wd.cwd / "src/version.py").read_text(encoding="utf-8")
     assert "commit_hash = 'g1337beef'" in content
     assert "num_commit = 4" in content
 
@@ -412,7 +412,7 @@ num_commit = {scm_version.distance}
         write_to="src/version.py", write_to_template=version_file_content
     )
 
-    content = (wd.cwd / "src/version.py").read_text()
+    content = (wd.cwd / "src/version.py").read_text(encoding="utf-8")
     assert "commit_hash = 'gcustom123'" in content
     assert "num_commit = 7" in content
 
