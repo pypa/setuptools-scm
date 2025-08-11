@@ -1305,3 +1305,38 @@ name = "test-package-missing-dynamic"
 
     # Verify that version was not set due to configuration issue
     assert dist.metadata.version is None
+
+
+@pytest.mark.issue("xmlsec-regression")
+def test_xmlsec_download_regression(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that pip download works for xmlsec package without causing setuptools_scm regression.
+
+    This test ensures that downloading and building xmlsec from source doesn't fail
+    due to setuptools_scm issues when using --no-build-isolation.
+    """
+    # Set up environment with setuptools_scm debug enabled
+    monkeypatch.setenv("SETUPTOOLS_SCM_DEBUG", "1")
+    monkeypatch.setenv("COLUMNS", "150")
+
+    # Run pip download command with no-binary and no-build-isolation
+    try:
+        subprocess.run(
+            [
+                *(sys.executable, "-m", "pip", "download"),
+                *("--no-binary", "xmlsec"),
+                "--no-build-isolation",
+                "-v",
+                "xmlsec==1.3.16",
+            ],
+            cwd=tmp_path,
+            text=True,
+            timeout=300,
+            check=True,
+        )
+    except subprocess.CalledProcessError as e:
+        pytest.fail(f"pip download failed: {e}", pytrace=False)
+
+    # The success of the subprocess.run call above means the regression is fixed.
+    # pip download succeeded without setuptools_scm causing version conflicts.
