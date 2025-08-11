@@ -16,8 +16,7 @@ import pytest
 
 from packaging.version import Version
 
-import setuptools_scm._integration.setuptools
-
+from setuptools_scm._integration import setuptools as setuptools_integration
 from setuptools_scm._requirement_cls import extract_package_name
 
 if TYPE_CHECKING:
@@ -645,7 +644,9 @@ def test_unicode_in_setup_cfg(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-    name = setuptools_scm._integration.setup_cfg.read_dist_name_from_setup_cfg(cfg)
+    from setuptools_scm._integration.setup_cfg import read_dist_name_from_setup_cfg
+
+    name = read_dist_name_from_setup_cfg(cfg)
     assert name == "configparser"
 
 
@@ -657,10 +658,10 @@ def test_setuptools_version_keyword_ensures_regex(
     wd("git tag 1.0")
     monkeypatch.chdir(wd.cwd)
 
-    from setuptools_scm._integration.setuptools import version_keyword
-
     dist = create_clean_distribution("test")
-    version_keyword(dist, "use_scm_version", {"tag_regex": "(1.0)"})
+    setuptools_integration.version_keyword(
+        dist, "use_scm_version", {"tag_regex": "(1.0)"}
+    )
     assert dist.metadata.version == "1.0"
 
 
@@ -938,43 +939,32 @@ def create_clean_distribution(name: str) -> setuptools.Distribution:
     return dist
 
 
-# Helper functions for testing integration point ordering
-def integration_infer_version(dist: setuptools.Distribution) -> str:
-    """Helper to call infer_version and return the result."""
-    from setuptools_scm._integration.setuptools import infer_version
-
-    infer_version(dist)
-    return "infer_version"
-
-
-def integration_version_keyword_default(dist: setuptools.Distribution) -> str:
+def version_keyword_default(dist: setuptools.Distribution) -> None:
     """Helper to call version_keyword with default config and return the result."""
-    from setuptools_scm._integration.setuptools import version_keyword
 
-    version_keyword(dist, "use_scm_version", True)
-    return "version_keyword_default"
+    setuptools_integration.version_keyword(dist, "use_scm_version", True)
 
 
-def integration_version_keyword_calver(dist: setuptools.Distribution) -> str:
+def version_keyword_calver(dist: setuptools.Distribution) -> None:
     """Helper to call version_keyword with calver-by-date scheme and return the result."""
-    from setuptools_scm._integration.setuptools import version_keyword
 
-    version_keyword(dist, "use_scm_version", {"version_scheme": "calver-by-date"})
-    return "version_keyword_calver"
+    setuptools_integration.version_keyword(
+        dist, "use_scm_version", {"version_scheme": "calver-by-date"}
+    )
 
 
 # Test cases: (first_func, second_func, expected_final_version)
 # We use a controlled date to make calver deterministic
 TEST_CASES = [
     # Real-world scenarios: infer_version and version_keyword can be called in either order
-    (integration_infer_version, integration_version_keyword_default, "1.0.1.dev1"),
+    (setuptools_integration.infer_version, version_keyword_default, "1.0.1.dev1"),
     (
-        integration_infer_version,
-        integration_version_keyword_calver,
+        setuptools_integration.infer_version,
+        version_keyword_calver,
         "9.2.13.0.dev1",
     ),  # calver should win but doesn't
-    (integration_version_keyword_default, integration_infer_version, "1.0.1.dev1"),
-    (integration_version_keyword_calver, integration_infer_version, "9.2.13.0.dev1"),
+    (version_keyword_default, setuptools_integration.infer_version, "1.0.1.dev1"),
+    (version_keyword_calver, setuptools_integration.infer_version, "9.2.13.0.dev1"),
 ]
 
 
@@ -1010,11 +1000,6 @@ def test_integration_function_call_order(
     wd.commit_testfile("test2")  # Add another commit to get distance
     monkeypatch.chdir(wd.cwd)
 
-    # Generate unique distribution name based on the test combination
-    first_name = first_integration.__name__.replace("integration_", "")
-    second_name = second_integration.__name__.replace("integration_", "")
-    dist_name = f"test-pkg-{first_name}-then-{second_name}"
-
     # Create a pyproject.toml file
     pyproject_content = f"""
 [build-system]
@@ -1022,7 +1007,7 @@ requires = ["setuptools", "setuptools_scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "{dist_name}"
+name = "test-pkg-{first_integration.__name__}-{second_integration.__name__}"
 dynamic = ["version"]
 
 [tool.setuptools_scm]
@@ -1030,11 +1015,9 @@ local_scheme = "no-local-version"
 """
     wd.write("pyproject.toml", pyproject_content)
 
-    import setuptools
-
-    # Create distribution and clear any auto-set version
-    dist = setuptools.Distribution({"name": dist_name})
-    dist.metadata.version = None
+    dist = create_clean_distribution(
+        f"test-pkg-{first_integration.__name__}-{second_integration.__name__}"
+    )
 
     # Call both integration functions in order
     first_integration(dist)
