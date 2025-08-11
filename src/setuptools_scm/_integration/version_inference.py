@@ -154,13 +154,15 @@ def get_version_inference_config(
 
     # Handle missing configuration
     if not pyproject_data.is_required and not pyproject_data.section_present:
-        # If there are overrides, proceed with inference (explicit use_scm_version)
+        # If version_keyword was called (overrides is not None), activate setuptools_scm
+        # This handles both use_scm_version=True (empty {}) and use_scm_version={config}
         if overrides is not None:
             return VersionInferenceConfig(
                 dist_name=dist_name,
                 pyproject_data=pyproject_data,
                 overrides=overrides,
             )
+        # If infer_version was called (overrides is None), only activate with config
         return VersionInferenceNoOp()
 
     # Handle missing project section when required
@@ -168,6 +170,7 @@ def get_version_inference_config(
         pyproject_data.is_required
         and not pyproject_data.section_present
         and not pyproject_data.project_present
+        and overrides is None  # Only return NoOp for infer_version, not version_keyword
     ):
         return VersionInferenceNoOp()
 
