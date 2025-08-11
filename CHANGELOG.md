@@ -7,20 +7,39 @@
 - fix #1194: correctly handle version keyword when pyproject metadata is missing
 
 
-## v9.0.3
+## v9.1.1
+
+### fixed
+
+- fix #1194: correctly handle version keyword when pyproject metadata is missing
+
+
+## v9.1.0
+
+### fixed
+
+- complete reiteration of the decision logic for enabling version inference on setuptools_scm
+
+  - shared logic for the important parts
+  - proper deferring based in precedence of finalize options vs version keyword
+  - unittestable for the parsing parts and the decision steps
+
+
+
+## v9.0.3 (yanked)
 
 ### fixed
 
 - fix 1184: verify version is dynamic if the dependency is used as indicator for enabling
 
-## v9.0.2
+## v9.0.2 (yanked)
 
 ### Fixed
 
 - fix #1184: in case setuptools-scm is a indirect dependency and no pyproject.toml section exists - don't infer the version
 
 
-## v9.0.1
+## v9.0.1 (yanked)
 
 ### Fixed
 
@@ -29,7 +48,7 @@
              as it turns out there's valid use cases where setuptools_scm is not direct part of the dependencies
 - add codespell pre-commit hook
 
-## v9.0.0
+## v9.0.0 (yanked)
 
 ### Breaking
 
