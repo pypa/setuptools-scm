@@ -121,6 +121,23 @@ jobs:
     - name: Publish package to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
 
+  upload-release-assets:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published'
+    needs: [test]
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        name: Packages
+        path: dist
+    - name: Upload release assets
+      uses: softprops/action-gh-release@v2
+      with:
+        files: dist/*
+        fail_on_unmatched_files: true
+
   test-pypi-upload:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
