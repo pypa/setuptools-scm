@@ -3,18 +3,13 @@ from __future__ import annotations
 import logging
 import warnings
 
-from pathlib import Path
 from typing import Any
 from typing import Callable
 
 import setuptools
 
-from .. import _config
 from .pyproject_reading import read_pyproject
 from .setup_cfg import _dist_name_from_legacy
-from .version_inference import VersionInferenceConfig
-from .version_inference import VersionInferenceError
-from .version_inference import VersionInferenceException
 from .version_inference import get_version_inference_config
 
 log = logging.getLogger(__name__)
@@ -37,22 +32,6 @@ Suggested workaround if applicable:
 """
             )
         )
-
-
-def _assign_version(
-    dist: setuptools.Distribution, config: _config.Configuration
-) -> None:
-    from .._get_version_impl import _get_version
-    from .._get_version_impl import _version_missing
-
-    # todo: build time plugin
-    maybe_version = _get_version(config, force_write_version_files=True)
-
-    if maybe_version is None:
-        _version_missing(config)
-    else:
-        assert dist.metadata.version is None
-        dist.metadata.version = maybe_version
 
 
 _warn_on_old_setuptools()
@@ -80,6 +59,10 @@ def version_keyword(
     keyword: str,
     value: bool | dict[str, Any] | Callable[[], dict[str, Any]],
 ) -> None:
+    """apply version infernce when setup(use_scm_version=...) is used
+    this takes priority over the finalize_options based version
+    """
+
     _log_hookstart("version_keyword", dist)
 
     # Parse overrides (integration point responsibility)
@@ -95,14 +78,11 @@ def version_keyword(
 
     # Get pyproject data
     try:
-        pyproject_data = read_pyproject(
-            Path("pyproject.toml"), missing_section_ok=True, missing_file_ok=True
-        )
+        pyproject_data = read_pyproject(missing_section_ok=True, missing_file_ok=True)
     except (LookupError, ValueError) as e:
         log.debug("Configuration issue in pyproject.toml: %s", e)
         return
 
-    # Get decision
     result = get_version_inference_config(
         dist_name=dist_name,
         current_version=dist.metadata.version,
@@ -111,40 +91,23 @@ def version_keyword(
         was_set_by_infer=was_set_by_infer,
     )
 
-    # Handle result
-    if result is None:
-        return  # Don't infer
-    elif isinstance(result, VersionInferenceError):
-        if result.should_warn:
-            warnings.warn(result.message)
-        return
-    elif isinstance(result, VersionInferenceException):
-        raise result.exception
-    elif isinstance(result, VersionInferenceConfig):
-        # Clear version if it was set by infer_version
-        if was_set_by_infer:
-            dist._setuptools_scm_version_set_by_infer = False  # type: ignore[attr-defined]
-            dist.metadata.version = None
-
-        # Proceed with inference
-        config = _config.Configuration.from_file(
-            dist_name=result.dist_name,
-            pyproject_data=result.pyproject_data,
-            missing_file_ok=True,
-            missing_section_ok=True,
-            **overrides,
-        )
-        _assign_version(dist, config)
+    result.apply(dist)
 
 
 def infer_version(dist: setuptools.Distribution) -> None:
+    """apply version inference from the finalize_options hook
+    this is the default for pyproject.toml based projects that don't use the use_scm_version keyword
+
+    if the version keyword is used, it will override the version from this hook
+    as user might have passed custom code version schemes
+    """
+
     _log_hookstart("infer_version", dist)
 
     dist_name = _dist_name_from_legacy(dist)
 
-    # Get pyproject data (integration point responsibility)
     try:
-        pyproject_data = read_pyproject(Path("pyproject.toml"), missing_section_ok=True)
+        pyproject_data = read_pyproject(missing_section_ok=True)
     except FileNotFoundError:
         log.debug("pyproject.toml not found, skipping infer_version")
         return
@@ -152,31 +115,9 @@ def infer_version(dist: setuptools.Distribution) -> None:
         log.debug("Configuration issue in pyproject.toml: %s", e)
         return
 
-    # Get decision
     result = get_version_inference_config(
         dist_name=dist_name,
         current_version=dist.metadata.version,
         pyproject_data=pyproject_data,
     )
-
-    # Handle result
-    if result is None:
-        return  # Don't infer
-    elif isinstance(result, VersionInferenceError):
-        if result.should_warn:
-            log.warning(result.message)
-        return
-    elif isinstance(result, VersionInferenceException):
-        raise result.exception
-    elif isinstance(result, VersionInferenceConfig):
-        # Proceed with inference
-        try:
-            config = _config.Configuration.from_file(
-                dist_name=result.dist_name, pyproject_data=result.pyproject_data
-            )
-        except LookupError as e:
-            log.info(e, exc_info=True)
-        else:
-            _assign_version(dist, config)
-            # Mark that this version was set by infer_version
-            dist._setuptools_scm_version_set_by_infer = True  # type: ignore[attr-defined]
+    result.apply(dist)

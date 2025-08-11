@@ -4,6 +4,7 @@ from setuptools_scm._integration.pyproject_reading import PyProjectData
 from setuptools_scm._integration.version_inference import VersionInferenceConfig
 from setuptools_scm._integration.version_inference import VersionInferenceError
 from setuptools_scm._integration.version_inference import VersionInferenceException
+from setuptools_scm._integration.version_inference import VersionInferenceNoOp
 from setuptools_scm._integration.version_inference import get_version_inference_config
 
 
@@ -25,7 +26,7 @@ class TestVersionInferenceDecision:
         assert result.overrides == {"key": "value"}
 
     def test_version_already_set_by_infer_no_overrides(self) -> None:
-        """Test that we don't proceed when version was set by infer_version with no overrides."""
+        """Test that we allow re-inferring when version was set by infer_version and overrides=None (another infer_version call)."""
         result = get_version_inference_config(
             dist_name="test_package",
             current_version="1.0.0",
@@ -34,7 +35,21 @@ class TestVersionInferenceDecision:
             was_set_by_infer=True,
         )
 
-        assert result is None
+        assert isinstance(result, VersionInferenceConfig)
+        assert result.dist_name == "test_package"
+        assert result.overrides is None
+
+    def test_version_already_set_by_infer_empty_overrides(self) -> None:
+        """Test that we don't re-infer when version was set by infer_version with empty overrides (version_keyword call)."""
+        result = get_version_inference_config(
+            dist_name="test_package",
+            current_version="1.0.0",
+            pyproject_data=PyProjectData.for_testing(True, True, True),
+            overrides={},
+            was_set_by_infer=True,
+        )
+
+        assert isinstance(result, VersionInferenceNoOp)
 
     def test_version_already_set_by_something_else(self) -> None:
         """Test that we return error when version was set by something else."""
@@ -58,7 +73,7 @@ class TestVersionInferenceDecision:
             pyproject_data=PyProjectData.for_testing(True, True, True),
         )
 
-        assert result is None
+        assert isinstance(result, VersionInferenceNoOp)
 
     def test_no_pyproject_toml(self) -> None:
         """Test that we don't infer when no pyproject.toml exists."""
@@ -74,7 +89,7 @@ class TestVersionInferenceDecision:
             pyproject_data=PyProjectData.for_testing(False, False, True),
         )
 
-        assert result is None
+        assert isinstance(result, VersionInferenceNoOp)
 
     def test_setuptools_scm_required_no_project_section(self) -> None:
         """Test that we don't infer when setuptools-scm is required but no project section."""
@@ -84,7 +99,7 @@ class TestVersionInferenceDecision:
             pyproject_data=PyProjectData.for_testing(True, False, False),
         )
 
-        assert result is None
+        assert isinstance(result, VersionInferenceNoOp)
 
     def test_setuptools_scm_required_with_project_section(self) -> None:
         """Test that we infer when setuptools-scm is required and project section exists."""

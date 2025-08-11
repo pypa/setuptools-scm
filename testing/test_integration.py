@@ -656,12 +656,12 @@ def test_setuptools_version_keyword_ensures_regex(
     wd.commit_testfile("test")
     wd("git tag 1.0")
     monkeypatch.chdir(wd.cwd)
-    import setuptools
 
     from setuptools_scm._integration.setuptools import version_keyword
 
-    dist = setuptools.Distribution({"name": "test"})
+    dist = create_clean_distribution("test")
     version_keyword(dist, "use_scm_version", {"tag_regex": "(1.0)"})
+    assert dist.metadata.version == "1.0"
 
 
 @pytest.mark.parametrize(
@@ -917,6 +917,27 @@ def test_improved_error_message_mentions_both_config_options(
     assert "requires" in error_msg
 
 
+# Helper function for creating and managing distribution objects
+def create_clean_distribution(name: str) -> setuptools.Distribution:
+    """Create a clean distribution object without any setuptools_scm effects.
+
+    This function creates a new setuptools Distribution and ensures it's completely
+    clean from any previous setuptools_scm version inference effects, including:
+    - Clearing any existing version
+    - Removing the _setuptools_scm_version_set_by_infer flag
+    """
+    import setuptools
+
+    dist = setuptools.Distribution({"name": name})
+
+    # Clean all setuptools_scm effects
+    dist.metadata.version = None
+    if hasattr(dist, "_setuptools_scm_version_set_by_infer"):
+        delattr(dist, "_setuptools_scm_version_set_by_infer")
+
+    return dist
+
+
 # Helper functions for testing integration point ordering
 def integration_infer_version(dist: setuptools.Distribution) -> str:
     """Helper to call infer_version and return the result."""
@@ -1053,12 +1074,10 @@ dynamic = ["version"]
 """
     wd.write("pyproject.toml", pyproject_content)
 
-    import setuptools
-
     from setuptools_scm._integration.setuptools import infer_version
 
-    # Create distribution
-    dist = setuptools.Distribution({"name": "test-package-infer-version"})
+    # Create clean distribution
+    dist = create_clean_distribution("test-package-infer-version")
 
     # Call infer_version - this should work because setuptools_scm is in build-system.requires
     infer_version(dist)
@@ -1095,12 +1114,10 @@ dynamic = ["version"]
 """
     wd.write("pyproject.toml", pyproject_content)
 
-    import setuptools
-
     from setuptools_scm._integration.setuptools import infer_version
 
-    # Create distribution
-    dist = setuptools.Distribution({"name": "test-package-infer-version-dash"})
+    # Create clean distribution
+    dist = create_clean_distribution("test-package-infer-version-dash")
 
     # Call infer_version - this should work because setuptools-scm is in build-system.requires
     infer_version(dist)
@@ -1137,12 +1154,10 @@ dynamic = ["version"]
 """
     wd.write("pyproject.toml", pyproject_content)
 
-    import setuptools
-
     from setuptools_scm._integration.setuptools import infer_version
 
-    # Create distribution
-    dist = setuptools.Distribution({"name": "test-package-no-scm"})
+    # Create clean distribution
+    dist = create_clean_distribution("test-package-no-scm")
 
     infer_version(dist)
     assert dist.metadata.version is None
@@ -1297,12 +1312,10 @@ name = "test-package-missing-dynamic"
 """
     wd.write("pyproject.toml", pyproject_content)
 
-    import setuptools
-
     from setuptools_scm._integration.setuptools import infer_version
 
-    # Create distribution
-    dist = setuptools.Distribution({"name": "test-package-missing-dynamic"})
+    # Create clean distribution
+    dist = create_clean_distribution("test-package-missing-dynamic")
 
     # This should not raise an error, but should log debug info about the configuration issue
     infer_version(dist)
