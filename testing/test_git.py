@@ -666,7 +666,7 @@ def test_fail_on_missing_submodules_with_initialized_submodules(wd: WorkDir) -> 
 
     # Create a commit in the submodule
     test_file = submodule_dir / "test.txt"
-    test_file.write_text("test content")
+    test_file.write_text("test content", encoding="utf-8")
     wd(["git", "-C", str(submodule_dir), "add", "test.txt"])
     wd(["git", "-C", str(submodule_dir), "commit", "-m", "Initial commit"])
 
@@ -741,7 +741,7 @@ def test_nested_scm_git_config_from_toml(tmp_path: Path) -> None:
 [tool.setuptools_scm.scm.git]
 pre_parse = "fail_on_missing_submodules"
 """
-    pyproject_path.write_text(pyproject_content)
+    pyproject_path.write_text(pyproject_content, encoding="utf-8")
 
     # Parse the configuration from file
     config = Configuration.from_file(pyproject_path)

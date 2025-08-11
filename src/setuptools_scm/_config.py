@@ -291,24 +291,12 @@ class Configuration:
         - **kwargs: additional keyword arguments to pass to the Configuration constructor
         """
 
-        try:
-            if pyproject_data is None:
-                pyproject_data = _read_pyproject(
-                    Path(name), missing_section_ok=missing_section_ok
-                )
-        except FileNotFoundError:
-            if missing_file_ok:
-                log.warning("File %s not found, using empty configuration", name)
-                pyproject_data = PyProjectData(
-                    path=Path(name),
-                    tool_name="setuptools_scm",
-                    project={},
-                    section={},
-                    is_required=False,
-                    section_present=False,
-                )
-            else:
-                raise
+        if pyproject_data is None:
+            pyproject_data = _read_pyproject(
+                Path(name),
+                missing_section_ok=missing_section_ok,
+                missing_file_ok=missing_file_ok,
+            )
         args = _get_args_for_pyproject(pyproject_data, dist_name, kwargs)
 
         args.update(read_toml_overrides(args["dist_name"]))

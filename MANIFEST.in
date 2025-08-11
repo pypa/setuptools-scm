@@ -18,8 +18,10 @@ include CHANGELOG.md
 
 recursive-include testing *.bash
 prune nextgen
+prune .cursor
 
 recursive-include docs *.md
 include docs/examples/version_scheme_code/*.py
 include docs/examples/version_scheme_code/*.toml
 include mkdocs.yml
+include uv.lock

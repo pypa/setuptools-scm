@@ -138,7 +138,7 @@ def test_version_missing_with_relative_to_set(wd: WorkDir) -> None:
 
     # Create a dummy file to use as relative_to
     dummy_file = subdir / "setup.py"
-    dummy_file.write_text("# dummy file")
+    dummy_file.write_text("# dummy file", encoding="utf-8")
 
     # Test error message when relative_to IS set
     config = Configuration(root=str(subdir), relative_to=str(dummy_file))

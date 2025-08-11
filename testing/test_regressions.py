@@ -114,7 +114,8 @@ def test_case_mismatch_nested_dir_windows_git(tmp_path: Path) -> None:
     nested_dir.mkdir()
 
     # Create a pyproject.toml in the nested directory
-    (nested_dir / "pyproject.toml").write_text("""
+    (nested_dir / "pyproject.toml").write_text(
+        """
 [build-system]
 requires = ["setuptools>=64", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
@@ -124,7 +125,9 @@ name = "test-project"
 dynamic = ["version"]
 
 [tool.setuptools_scm]
-""")
+""",
+        encoding="utf-8",
+    )
 
     # Add and commit the file
     run("git add .", repo_path)
@@ -159,7 +162,7 @@ def test_case_mismatch_force_assertion_failure(tmp_path: Path) -> None:
     nested_dir.mkdir()
 
     # Add and commit something to make it a valid repo
-    (nested_dir / "test.txt").write_text("test")
+    (nested_dir / "test.txt").write_text("test", encoding="utf-8")
     run("git add .", repo_path)
     run("git commit -m 'Initial commit'", repo_path)
 

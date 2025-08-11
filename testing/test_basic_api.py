@@ -106,7 +106,7 @@ setup(use_scm_version={"fallback_version": "12.34"})
 
 
 def test_empty_pretend_version(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
+    # monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
     monkeypatch.setenv("SETUPTOOLS_SCM_PRETEND_VERSION", "")
     p = tmp_path / "sub/package"
     p.mkdir(parents=True)
