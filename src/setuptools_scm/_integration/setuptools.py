@@ -38,7 +38,13 @@ _warn_on_old_setuptools()
 
 
 def _log_hookstart(hook: str, dist: setuptools.Distribution) -> None:
-    log.debug("%s %s %s %r", hook, id(dist), id(dist.metadata), vars(dist.metadata))
+    log.debug(
+        "%s %s %s %r",
+        hook,
+        id(dist),
+        id(dist.metadata),
+        {**vars(dist.metadata), "long_description": ...},
+    )
 
 
 def get_keyword_overrides(
