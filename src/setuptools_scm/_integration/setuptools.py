@@ -62,20 +62,28 @@ def _log_hookstart(hook: str, dist: setuptools.Distribution) -> None:
     log.debug("%s %s %s %r", hook, id(dist), id(dist.metadata), vars(dist.metadata))
 
 
+def get_keyword_overrides(
+    value: bool | dict[str, Any] | Callable[[], dict[str, Any]],
+) -> dict[str, Any]:
+    """normalize the version keyword input"""
+    if value is True:
+        return {}
+    elif callable(value):
+        return value()
+    else:
+        assert isinstance(value, dict), "version_keyword expects a dict or True"
+        return value
+
+
 def version_keyword(
     dist: setuptools.Distribution,
     keyword: str,
     value: bool | dict[str, Any] | Callable[[], dict[str, Any]],
 ) -> None:
+    _log_hookstart("version_keyword", dist)
+
     # Parse overrides (integration point responsibility)
-    overrides: dict[str, Any]
-    if value is True:
-        overrides = {}
-    elif callable(value):
-        overrides = value()
-    else:
-        assert isinstance(value, dict), "version_keyword expects a dict or True"
-        overrides = value
+    overrides = get_keyword_overrides(value)
 
     assert "dist_name" not in overrides, (
         "dist_name may not be specified in the setup keyword "
@@ -84,7 +92,6 @@ def version_keyword(
     dist_name: str | None = _dist_name_from_legacy(dist)
 
     was_set_by_infer = getattr(dist, "_setuptools_scm_version_set_by_infer", False)
-    _log_hookstart("version_keyword", dist)
 
     # Get pyproject data
     try:
@@ -139,7 +146,7 @@ def infer_version(dist: setuptools.Distribution) -> None:
     try:
         pyproject_data = read_pyproject(Path("pyproject.toml"), missing_section_ok=True)
     except FileNotFoundError:
-        log.debug("pyproject.toml not found")
+        log.debug("pyproject.toml not found, skipping infer_version")
         return
     except (LookupError, ValueError) as e:
         log.debug("Configuration issue in pyproject.toml: %s", e)
