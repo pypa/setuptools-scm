@@ -12,7 +12,7 @@ import setuptools
 from .. import _types as _t
 from .pyproject_reading import PyProjectData
 from .pyproject_reading import read_pyproject
-from .setup_cfg import _dist_name_from_legacy
+from .setup_cfg import extract_from_legacy
 from .toml import InvalidTomlError
 from .version_inference import get_version_inference_config
 
@@ -85,7 +85,8 @@ def version_keyword(
         "dist_name may not be specified in the setup keyword "
     )
 
-    dist_name: str | None = _dist_name_from_legacy(dist)
+    legacy_data = extract_from_legacy(dist)
+    dist_name: str | None = legacy_data.name
 
     was_set_by_infer = getattr(dist, "_setuptools_scm_version_set_by_infer", False)
 
@@ -101,7 +102,7 @@ def version_keyword(
 
     result = _get_version_inference_config(
         dist_name=dist_name,
-        current_version=dist.metadata.version,
+        current_version=legacy_data.version or pyproject_data.project.get("version"),
         pyproject_data=pyproject_data,
         overrides=overrides,
         was_set_by_infer=was_set_by_infer,
@@ -125,7 +126,8 @@ def infer_version(
 
     _log_hookstart("infer_version", dist)
 
-    dist_name = _dist_name_from_legacy(dist)
+    legacy_data = extract_from_legacy(dist)
+    dist_name = legacy_data.name
 
     try:
         pyproject_data = read_pyproject(_given_result=_given_pyproject_data)
@@ -138,7 +140,7 @@ def infer_version(
 
     result = _get_version_inference_config(
         dist_name=dist_name,
-        current_version=dist.metadata.version,
+        current_version=legacy_data.version or pyproject_data.project.get("version"),
         pyproject_data=pyproject_data,
     )
     result.apply(dist)

@@ -18,6 +18,7 @@ from packaging.version import Version
 
 from setuptools_scm._integration import setuptools as setuptools_integration
 from setuptools_scm._integration.pyproject_reading import PyProjectData
+from setuptools_scm._integration.setup_cfg import SetuptoolsBasicData
 from setuptools_scm._requirement_cls import extract_package_name
 
 if TYPE_CHECKING:
@@ -645,10 +646,63 @@ def test_unicode_in_setup_cfg(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-    from setuptools_scm._integration.setup_cfg import read_dist_name_from_setup_cfg
+    from setuptools_scm._integration.setup_cfg import read_setup_cfg
 
-    name = read_dist_name_from_setup_cfg(cfg)
+    name = read_setup_cfg(cfg).name
     assert name == "configparser"
+
+    # also ensure we can parse a version if present (legacy projects)
+    cfg.write_text(
+        textwrap.dedent(
+            """
+            [metadata]
+            name = configparser
+            version = 1.2.3
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    data = read_setup_cfg(cfg)
+    assert isinstance(data, SetuptoolsBasicData)
+    assert data.name == "configparser"
+    assert data.version == "1.2.3"
+
+
+def test_setup_cfg_version_prevents_inference_version_keyword(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Legacy project with version in setup.cfg
+    cfg = tmp_path / "setup.cfg"
+    cfg.write_text(
+        textwrap.dedent(
+            """
+            [metadata]
+            name = legacy-proj
+            version = 0.9.0
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    # No pyproject.toml
+    monkeypatch.chdir(tmp_path)
+
+    dist = create_clean_distribution("legacy-proj")
+
+    # Using keyword should detect an existing version via setup.cfg and avoid inferring
+    from setuptools_scm._integration import setuptools as setuptools_integration
+    from setuptools_scm._integration.pyproject_reading import PyProjectData
+
+    setuptools_integration.version_keyword(
+        dist,
+        "use_scm_version",
+        True,
+        _given_pyproject_data=PyProjectData.empty(tmp_path / "pyproject.toml"),
+    )
+
+    # setuptools_scm should not set a version when setup.cfg already provided one
+    assert dist.metadata.version is None
 
 
 def test_setuptools_version_keyword_ensures_regex(

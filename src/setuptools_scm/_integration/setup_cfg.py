@@ -2,20 +2,36 @@ from __future__ import annotations
 
 import os
 
+from dataclasses import dataclass
+from pathlib import Path
+
 import setuptools
 
 
-def read_dist_name_from_setup_cfg(
-    input: str | os.PathLike[str] = "setup.cfg",
-) -> str | None:
-    # minimal effort to read dist_name off setup.cfg metadata
+@dataclass
+class SetuptoolsBasicData:
+    path: Path
+    name: str | None
+    version: str | None
+
+
+def read_setup_cfg(input: str | os.PathLike[str] = "setup.cfg") -> SetuptoolsBasicData:
+    """Parse setup.cfg and return unified data. Does not raise if file is missing."""
     import configparser
 
+    path = Path(input)
     parser = configparser.ConfigParser()
     parser.read([input], encoding="utf-8")
-    dist_name = parser.get("metadata", "name", fallback=None)
-    return dist_name
+
+    name = parser.get("metadata", "name", fallback=None)
+    version = parser.get("metadata", "version", fallback=None)
+    return SetuptoolsBasicData(path=path, name=name, version=version)
 
 
-def _dist_name_from_legacy(dist: setuptools.Distribution) -> str | None:
-    return dist.metadata.name or read_dist_name_from_setup_cfg()
+def extract_from_legacy(dist: setuptools.Distribution) -> SetuptoolsBasicData:
+    base = read_setup_cfg()
+    if base.name is None:
+        base.name = dist.metadata.name
+    if base.version is None:
+        base.version = dist.metadata.version
+    return base
