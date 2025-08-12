@@ -5,6 +5,7 @@ import os
 from typing import TYPE_CHECKING
 from typing import Callable
 from typing import List
+from typing import Protocol
 from typing import Sequence
 from typing import Tuple
 from typing import Union
@@ -36,3 +37,24 @@ GIT_PRE_PARSE: TypeAlias = Union[str, None]
 GivenPyProjectResult: TypeAlias = Union[
     "PyProjectData", "InvalidTomlError", FileNotFoundError, None
 ]
+
+
+class VersionInferenceApplicable(Protocol):
+    """A result object from version inference decision that can be applied to a dist."""
+
+    def apply(self, dist: object) -> None:  # pragma: no cover - structural type
+        ...
+
+
+class GetVersionInferenceConfig(Protocol):
+    """Callable protocol for the decision function used by integration points."""
+
+    def __call__(
+        self,
+        dist_name: str | None,
+        current_version: str | None,
+        pyproject_data: PyProjectData,
+        overrides: dict[str, object] | None = None,
+        was_set_by_infer: bool = False,
+    ) -> VersionInferenceApplicable:  # pragma: no cover - structural type
+        ...

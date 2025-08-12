@@ -70,6 +70,7 @@ def version_keyword(
     value: bool | dict[str, Any] | Callable[[], dict[str, Any]],
     *,
     _given_pyproject_data: _t.GivenPyProjectResult = None,
+    _get_version_inference_config: _t.GetVersionInferenceConfig = get_version_inference_config,
 ) -> None:
     """apply version infernce when setup(use_scm_version=...) is used
     this takes priority over the finalize_options based version
@@ -98,7 +99,7 @@ def version_keyword(
         log.debug("Configuration issue in pyproject.toml: %s", e)
         return
 
-    result = get_version_inference_config(
+    result = _get_version_inference_config(
         dist_name=dist_name,
         current_version=dist.metadata.version,
         pyproject_data=pyproject_data,
@@ -113,6 +114,7 @@ def infer_version(
     dist: setuptools.Distribution,
     *,
     _given_pyproject_data: _t.GivenPyProjectResult = None,
+    _get_version_inference_config: _t.GetVersionInferenceConfig = get_version_inference_config,
 ) -> None:
     """apply version inference from the finalize_options hook
     this is the default for pyproject.toml based projects that don't use the use_scm_version keyword
@@ -134,7 +136,7 @@ def infer_version(
         log.debug("Configuration issue in pyproject.toml: %s", e)
         return
 
-    result = get_version_inference_config(
+    result = _get_version_inference_config(
         dist_name=dist_name,
         current_version=dist.metadata.version,
         pyproject_data=pyproject_data,
