@@ -18,6 +18,10 @@ log = _log.log.getChild("pyproject_reading")
 _ROOT = "root"
 
 
+DEFAULT_PYPROJECT_PATH = Path("pyproject.toml")
+DEFAULT_TOOL_NAME = "setuptools_scm"
+
+
 @dataclass
 class PyProjectData:
     path: Path
@@ -50,8 +54,8 @@ class PyProjectData:
             project["dynamic"] = ["version"]
 
         return cls(
-            path=Path("pyproject.toml"),
-            tool_name="setuptools_scm",
+            path=DEFAULT_PYPROJECT_PATH,
+            tool_name=DEFAULT_TOOL_NAME,
             project=project,
             section={},
             is_required=is_required,
@@ -60,7 +64,9 @@ class PyProjectData:
         )
 
     @classmethod
-    def empty(cls, path: Path, tool_name: str) -> PyProjectData:
+    def empty(
+        cls, path: Path = DEFAULT_PYPROJECT_PATH, tool_name: str = DEFAULT_TOOL_NAME
+    ) -> PyProjectData:
         return cls(
             path=path,
             tool_name=tool_name,
@@ -125,8 +131,8 @@ def has_build_package(
 
 
 def read_pyproject(
-    path: Path = Path("pyproject.toml"),
-    tool_name: str = "setuptools_scm",
+    path: Path = DEFAULT_PYPROJECT_PATH,
+    tool_name: str = DEFAULT_TOOL_NAME,
     canonical_build_package_name: str = "setuptools-scm",
     _given_result: _t.GivenPyProjectResult = None,
 ) -> PyProjectData:
