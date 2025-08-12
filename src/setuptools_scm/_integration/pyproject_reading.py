@@ -126,16 +126,11 @@ def read_pyproject(
     path: Path = Path("pyproject.toml"),
     tool_name: str = "setuptools_scm",
     canonical_build_package_name: str = "setuptools-scm",
-    missing_file_ok: bool = False,
 ) -> PyProjectData:
     try:
         defn = read_toml_content(path)
     except FileNotFoundError:
-        if missing_file_ok:
-            log.warning("File %s not found, using empty configuration", path)
-            return PyProjectData.empty(path=path, tool_name=tool_name)
-        else:
-            raise
+        raise
 
     requires: list[str] = defn.get("build-system", {}).get("requires", [])
     is_required = has_build_package(requires, canonical_build_package_name)

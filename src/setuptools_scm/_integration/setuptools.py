@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import warnings
 
+from pathlib import Path
 from typing import Any
 from typing import Callable
 
@@ -90,7 +91,12 @@ def version_keyword(
         pyproject_data = _given_pyproject_data
     else:
         try:
-            pyproject_data = read_pyproject(missing_file_ok=True)
+            pyproject_data = read_pyproject()
+        except FileNotFoundError:
+            log.debug("pyproject.toml not found, proceeding with empty configuration")
+            pyproject_data = PyProjectData.empty(
+                Path("pyproject.toml"), "setuptools_scm"
+            )
         except (LookupError, ValueError) as e:
             log.debug("Configuration issue in pyproject.toml: %s", e)
             return

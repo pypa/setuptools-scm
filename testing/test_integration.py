@@ -910,7 +910,6 @@ def test_missing_section_no_longer_raises_error(
     config = Configuration.from_file(
         name=wd.cwd.joinpath("pyproject.toml"),
         dist_name="test-package",
-        missing_file_ok=False,
     )
 
     # Should have created a valid configuration with default values

@@ -37,7 +37,6 @@ class VersionInferenceConfig:
         config = _config_module.Configuration.from_file(
             dist_name=self.dist_name,
             pyproject_data=self.pyproject_data,
-            missing_file_ok=True,
             **(self.overrides or {}),
         )
 
