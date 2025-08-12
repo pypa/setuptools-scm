@@ -89,7 +89,7 @@ class TestVersionInferenceDecision:
         assert isinstance(result, VersionInferenceNoOp)
 
     def test_no_setuptools_scm_config_version_keyword(self) -> None:
-        """Test that we DO infer when setuptools-scm is not configured but use_scm_version=True."""
+        """We infer when setuptools-scm is not configured but use_scm_version=True."""
         result = get_version_inference_config(
             dist_name="test_package",
             current_version=None,
@@ -102,7 +102,7 @@ class TestVersionInferenceDecision:
         assert result.overrides == {}
 
     def test_setuptools_scm_required_no_project_section_infer_version(self) -> None:
-        """Test that we don't infer when setuptools-scm is required but no project section and infer_version called."""
+        """We don't infer without tool section even if required: infer_version path."""
         result = get_version_inference_config(
             dist_name="test_package",
             current_version=None,
@@ -142,18 +142,17 @@ class TestVersionInferenceDecision:
         assert result.overrides == overrides
 
     def test_setuptools_scm_required_with_project_section(self) -> None:
-        """Test that we infer when setuptools-scm is required and project section exists."""
+        """We only infer when tool section present, regardless of required/project presence."""
         result = get_version_inference_config(
             dist_name="test_package",
             current_version=None,
             pyproject_data=PyProjectData.for_testing(True, False, True),
         )
 
-        assert isinstance(result, VersionInferenceConfig)
-        assert result.dist_name == "test_package"
+        assert isinstance(result, VersionInferenceNoOp)
 
     def test_tool_section_present(self) -> None:
-        """Test that we infer when tool section is present."""
+        """We infer when tool section is present."""
         result = get_version_inference_config(
             dist_name="test_package",
             current_version=None,

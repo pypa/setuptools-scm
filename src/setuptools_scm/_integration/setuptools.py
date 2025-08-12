@@ -138,6 +138,7 @@ def infer_version(
         log.debug("Configuration issue in pyproject.toml: %s", e)
         return
 
+    # Only infer when tool section present per get_version_inference_config
     result = _get_version_inference_config(
         dist_name=dist_name,
         current_version=legacy_data.version or pyproject_data.project.get("version"),

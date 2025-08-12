@@ -739,7 +739,7 @@ def test_git_archival_plugin_ignored(tmp_path: Path, ep_name: str) -> None:
 
 
 def test_pyproject_build_system_requires_setuptools_scm(wd: WorkDir) -> None:
-    """Test that setuptools_scm is enabled when present in build-system.requires"""
+    """With only build-system.requires and dynamic version, no auto-enable without tool section."""
     if sys.version_info < (3, 11):
         pytest.importorskip("tomli")
 
@@ -761,13 +761,13 @@ def test_pyproject_build_system_requires_setuptools_scm(wd: WorkDir) -> None:
     wd.write("setup.py", "__import__('setuptools').setup()")
 
     res = wd([sys.executable, "setup.py", "--version"])
-    assert res.endswith("0.1.dev0+d20090213")
+    assert res == "0.0.0"
 
 
 def test_pyproject_build_system_requires_setuptools_scm_dash_variant(
     wd: WorkDir,
 ) -> None:
-    """Test that setuptools-scm (dash variant) is also detected in build-system.requires"""
+    """Dash variant also does not auto-enable without tool section."""
     if sys.version_info < (3, 11):
         pytest.importorskip("tomli")
 
@@ -789,9 +789,12 @@ def test_pyproject_build_system_requires_setuptools_scm_dash_variant(
     wd.write("setup.py", "__import__('setuptools').setup()")
 
     res = wd([sys.executable, "setup.py", "--version"])
-    assert res.endswith("0.1.dev0+d20090213")
+    assert res == "0.0.0"
 
 
+@pytest.mark.xfail(
+    reason="we currently dont support dynamic version without tool section"
+)
 def test_pyproject_build_system_requires_with_extras(wd: WorkDir) -> None:
     """Test that setuptools_scm[toml] is detected in build-system.requires"""
     if sys.version_info < (3, 11):
@@ -847,7 +850,7 @@ def test_pyproject_build_system_requires_not_present(wd: WorkDir) -> None:
 def test_pyproject_build_system_requires_priority_over_tool_section(
     wd: WorkDir,
 ) -> None:
-    """Test that both build-system.requires and [tool.setuptools_scm] section work together"""
+    """Tool section controls enablement; build-system.requires may coexist."""
     if sys.version_info < (3, 11):
         pytest.importorskip("tomli")
 
@@ -887,7 +890,7 @@ def test_extract_package_name(base_name: str, requirements: str) -> None:
 
 
 def test_build_requires_integration_with_config_reading(wd: WorkDir) -> None:
-    """Test that Configuration.from_file handles build-system.requires automatically"""
+    """Configuration.from_file still accepts build-system.requires without tool section."""
     if sys.version_info < (3, 11):
         pytest.importorskip("tomli")
 
@@ -1092,6 +1095,9 @@ def test_integration_function_call_order(
     )
 
 
+@pytest.mark.xfail(
+    reason="we currently dont support dynamic version without tool section"
+)
 def test_infer_version_with_build_requires_no_tool_section(
     wd: WorkDir, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1119,14 +1125,14 @@ def test_infer_version_with_build_requires_no_tool_section(
     # Call infer_version with direct data injection - no file I/O!
     infer_version(dist, _given_pyproject_data=pyproject_data)
 
-    # Verify that version was set
-    assert dist.metadata.version is not None
     assert dist.metadata.version == "1.0.0"
 
-    # Verify that the marker was set
     assert getattr(dist, "_setuptools_scm_version_set_by_infer", False) is True
 
 
+@pytest.mark.xfail(
+    reason="we currently dont support dynamic version without tool section"
+)
 def test_infer_version_with_build_requires_dash_variant_no_tool_section(
     wd: WorkDir, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1154,11 +1160,8 @@ def test_infer_version_with_build_requires_dash_variant_no_tool_section(
     # Call infer_version with direct data injection - no file I/O!
     infer_version(dist, _given_pyproject_data=pyproject_data)
 
-    # Verify that version was set
-    assert dist.metadata.version is not None
     assert dist.metadata.version == "1.0.0"
 
-    # Verify that the marker was set
     assert getattr(dist, "_setuptools_scm_version_set_by_infer", False) is True
 
 
@@ -1221,6 +1224,9 @@ def test_version_keyword_no_scm_dependency_works(
     assert dist.metadata.version == "1.0.0"
 
 
+@pytest.mark.xfail(
+    reason="we currently dont support dynamic version without tool section"
+)
 def test_verify_dynamic_version_when_required_missing_dynamic() -> None:
     """Test that should_infer raises ValueError when setuptools-scm is in build-system.requires but dynamic=['version'] is missing"""
     from setuptools_scm._integration.pyproject_reading import PyProjectData
@@ -1261,6 +1267,9 @@ def test_verify_dynamic_version_when_required_with_tool_section() -> None:
     assert pyproject_data.should_infer() is True
 
 
+@pytest.mark.xfail(
+    reason="we currently dont support dynamic version without tool section"
+)
 def test_verify_dynamic_version_when_required_with_dynamic() -> None:
     """Test that verification passes when setuptools-scm is in build-system.requires and dynamic=['version'] is set"""
     from setuptools_scm._integration.pyproject_reading import PyProjectData

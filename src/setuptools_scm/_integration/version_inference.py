@@ -149,14 +149,10 @@ def get_version_inference_config(
             dist_name=dist_name, pyproject_data=pyproject_data, overrides=overrides
         )
 
-    # infer_version path: decide based on pyproject configuration only
-    try:
-        if pyproject_data.should_infer():
-            return VersionInferenceConfig(
-                dist_name=dist_name, pyproject_data=pyproject_data, overrides=None
-            )
-    except ValueError:
-        # Auto-activation should not error in infer_version context → skip silently
-        return VersionInferenceNoOp()
+    # infer_version path: only infer when [tool.setuptools_scm] section is present
+    if pyproject_data.should_infer():
+        return VersionInferenceConfig(
+            dist_name=dist_name, pyproject_data=pyproject_data, overrides=None
+        )
 
     return VersionInferenceNoOp()
