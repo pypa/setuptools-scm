@@ -2,11 +2,12 @@
 
 ## When is configuration needed?
 
-Starting with setuptools-scm 8.1+, explicit configuration is **optional** in many cases:
+Starting with setuptools-scm 9.0, explicit configuration is required to enable
+version inference, either via the `[tool.setuptools_scm]` section or the
+`use_scm_version` setup keyword. Listing `setuptools_scm` in `build-system.requires`
+and declaring `project.dynamic = ["version"]` no longer auto-enables inference.
 
-- **No configuration needed**: If `setuptools_scm` (or `setuptools-scm`) is in your `build-system.requires`, setuptools-scm will automatically activate with sensible defaults.
-
-- **Configuration recommended**: Use the `[tool.setuptools_scm]` section when you need to:
+Use the `[tool.setuptools_scm]` section when you need to:
   - Write version files (`version_file`)
   - Customize version schemes (`version_scheme`, `local_scheme`)
   - Set custom tag patterns (`tag_regex`)
