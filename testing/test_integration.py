@@ -17,6 +17,7 @@ import pytest
 from packaging.version import Version
 
 from setuptools_scm._integration import setuptools as setuptools_integration
+from setuptools_scm._integration.pyproject_reading import PyProjectData
 from setuptools_scm._requirement_cls import extract_package_name
 
 if TYPE_CHECKING:
@@ -939,33 +940,35 @@ def create_clean_distribution(name: str) -> setuptools.Distribution:
     return dist
 
 
-def version_keyword_default(dist: setuptools.Distribution) -> None:
+def version_keyword_default(
+    dist: setuptools.Distribution, pyproject_data: PyProjectData | None = None
+) -> None:
     """Helper to call version_keyword with default config and return the result."""
 
-    setuptools_integration.version_keyword(dist, "use_scm_version", True)
-
-
-def version_keyword_calver(dist: setuptools.Distribution) -> None:
-    """Helper to call version_keyword with calver-by-date scheme and return the result."""
-
     setuptools_integration.version_keyword(
-        dist, "use_scm_version", {"version_scheme": "calver-by-date"}
+        dist, "use_scm_version", True, _given_pyproject_data=pyproject_data
     )
 
 
-# Test cases: (first_func, second_func, expected_final_version)
-# We use a controlled date to make calver deterministic
-TEST_CASES = [
-    # Real-world scenarios: infer_version and version_keyword can be called in either order
-    (setuptools_integration.infer_version, version_keyword_default, "1.0.1.dev1"),
-    (
-        setuptools_integration.infer_version,
-        version_keyword_calver,
-        "9.2.13.0.dev1",
-    ),  # calver should win but doesn't
-    (version_keyword_default, setuptools_integration.infer_version, "1.0.1.dev1"),
-    (version_keyword_calver, setuptools_integration.infer_version, "9.2.13.0.dev1"),
-]
+def version_keyword_calver(
+    dist: setuptools.Distribution, pyproject_data: PyProjectData | None = None
+) -> None:
+    """Helper to call version_keyword with calver-by-date scheme and return the result."""
+
+    setuptools_integration.version_keyword(
+        dist,
+        "use_scm_version",
+        {"version_scheme": "calver-by-date"},
+        _given_pyproject_data=pyproject_data,
+    )
+
+
+def infer_version_with_data(
+    dist: setuptools.Distribution, pyproject_data: PyProjectData | None = None
+) -> None:
+    """Helper to call infer_version with pyproject data."""
+
+    setuptools_integration.infer_version(dist, _given_pyproject_data=pyproject_data)
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/1022")
@@ -975,7 +978,13 @@ TEST_CASES = [
 )
 @pytest.mark.parametrize(
     ("first_integration", "second_integration", "expected_final_version"),
-    TEST_CASES,
+    [
+        # infer_version and version_keyword can be called in either order
+        (infer_version_with_data, version_keyword_default, "1.0.1.dev1"),
+        (infer_version_with_data, version_keyword_calver, "9.2.13.0.dev1"),
+        (version_keyword_default, infer_version_with_data, "1.0.1.dev1"),
+        (version_keyword_calver, infer_version_with_data, "9.2.13.0.dev1"),
+    ],
 )
 def test_integration_function_call_order(
     wd: WorkDir,
@@ -992,7 +1001,9 @@ def test_integration_function_call_order(
     # Set up controlled environment for deterministic versions
     monkeypatch.setenv("SOURCE_DATE_EPOCH", "1234567890")  # 2009-02-13T23:31:30+00:00
     # Override node_date to get consistent calver versions
-    monkeypatch.setenv("SETUPTOOLS_SCM_PRETEND_METADATA", "{node_date=2009-02-13}")
+    monkeypatch.setenv(
+        "SETUPTOOLS_SCM_PRETEND_METADATA_FOR_TEST_CALL_ORDER", "{node_date=2009-02-13}"
+    )
 
     # Set up a git repository with a tag and known commit hash
     wd.commit_testfile("test")
@@ -1000,28 +1011,23 @@ def test_integration_function_call_order(
     wd.commit_testfile("test2")  # Add another commit to get distance
     monkeypatch.chdir(wd.cwd)
 
-    # Create a pyproject.toml file
-    pyproject_content = f"""
-[build-system]
-requires = ["setuptools", "setuptools_scm"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "test-pkg-{first_integration.__name__}-{second_integration.__name__}"
-dynamic = ["version"]
-
-[tool.setuptools_scm]
-local_scheme = "no-local-version"
-"""
-    wd.write("pyproject.toml", pyproject_content)
-
-    dist = create_clean_distribution(
-        f"test-pkg-{first_integration.__name__}-{second_integration.__name__}"
+    # Create PyProjectData with equivalent configuration - no file I/O!
+    project_name = "test-call-order"
+    pyproject_data = PyProjectData(
+        path=Path("pyproject.toml"),
+        tool_name="setuptools_scm",
+        project={"name": project_name, "dynamic": ["version"]},
+        section={"local_scheme": "no-local-version"},  # [tool.setuptools_scm] config
+        is_required=True,  # setuptools_scm in build-system.requires
+        section_present=True,  # [tool.setuptools_scm] section exists
+        project_present=True,  # [project] section exists
     )
 
-    # Call both integration functions in order
-    first_integration(dist)
-    second_integration(dist)
+    dist = create_clean_distribution(project_name)
+
+    # Call both integration functions in order with direct data injection
+    first_integration(dist, pyproject_data)
+    second_integration(dist, pyproject_data)
 
     # Get the final version directly from the distribution
     final_version = dist.metadata.version
