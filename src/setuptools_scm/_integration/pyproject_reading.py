@@ -127,10 +127,7 @@ def read_pyproject(
     tool_name: str = "setuptools_scm",
     canonical_build_package_name: str = "setuptools-scm",
 ) -> PyProjectData:
-    try:
-        defn = read_toml_content(path)
-    except FileNotFoundError:
-        raise
+    defn = read_toml_content(path)
 
     requires: list[str] = defn.get("build-system", {}).get("requires", [])
     is_required = has_build_package(requires, canonical_build_package_name)

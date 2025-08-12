@@ -29,6 +29,10 @@ TOML_RESULT: TypeAlias = Dict[str, Any]
 TOML_LOADER: TypeAlias = Callable[[str], TOML_RESULT]
 
 
+class InvalidTomlError(ValueError):
+    """Raised when TOML data cannot be parsed."""
+
+
 def read_toml_content(path: Path, default: TOML_RESULT | None = None) -> TOML_RESULT:
     try:
         data = path.read_text(encoding="utf-8")
@@ -39,7 +43,10 @@ def read_toml_content(path: Path, default: TOML_RESULT | None = None) -> TOML_RE
             log.debug("%s missing, presuming default %r", path, default)
             return default
     else:
-        return load_toml(data)
+        try:
+            return load_toml(data)
+        except Exception as e:  # tomllib/tomli raise different decode errors
+            raise InvalidTomlError(f"Invalid TOML in {path}") from e
 
 
 class _CheatTomlData(TypedDict):
@@ -52,8 +59,11 @@ def load_toml_or_inline_map(data: str | None) -> dict[str, Any]:
     """
     if not data:
         return {}
-    elif data[0] == "{":
-        data = "cheat=" + data
-        loaded: _CheatTomlData = cast(_CheatTomlData, load_toml(data))
-        return loaded["cheat"]
-    return load_toml(data)
+    try:
+        if data[0] == "{":
+            data = "cheat=" + data
+            loaded: _CheatTomlData = cast(_CheatTomlData, load_toml(data))
+            return loaded["cheat"]
+        return load_toml(data)
+    except Exception as e:  # tomllib/tomli raise different decode errors
+        raise InvalidTomlError("Invalid TOML content") from e

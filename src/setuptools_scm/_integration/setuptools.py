@@ -12,6 +12,7 @@ import setuptools
 from .pyproject_reading import PyProjectData
 from .pyproject_reading import read_pyproject
 from .setup_cfg import _dist_name_from_legacy
+from .toml import InvalidTomlError
 from .version_inference import get_version_inference_config
 
 log = logging.getLogger(__name__)
@@ -97,7 +98,7 @@ def version_keyword(
             pyproject_data = PyProjectData.empty(
                 Path("pyproject.toml"), "setuptools_scm"
             )
-        except (LookupError, ValueError) as e:
+        except InvalidTomlError as e:
             log.debug("Configuration issue in pyproject.toml: %s", e)
             return
 
@@ -134,7 +135,7 @@ def infer_version(
         except FileNotFoundError:
             log.debug("pyproject.toml not found, skipping infer_version")
             return
-        except (LookupError, ValueError) as e:
+        except InvalidTomlError as e:
             log.debug("Configuration issue in pyproject.toml: %s", e)
             return
 
