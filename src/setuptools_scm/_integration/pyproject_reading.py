@@ -57,6 +57,18 @@ class PyProjectData:
             project_present=project_present,
         )
 
+    @classmethod
+    def empty(cls, path: Path, tool_name: str) -> PyProjectData:
+        return cls(
+            path=path,
+            tool_name=tool_name,
+            project={},
+            section={},
+            is_required=False,
+            section_present=False,
+            project_present=False,
+        )
+
     @property
     def project_name(self) -> str | None:
         return self.project.get("name")
@@ -121,29 +133,23 @@ def read_pyproject(
     except FileNotFoundError:
         if missing_file_ok:
             log.warning("File %s not found, using empty configuration", path)
-            return PyProjectData(
-                path=path,
-                tool_name=tool_name,
-                project={},
-                section={},
-                is_required=False,
-                section_present=False,
-                project_present=False,
-            )
+            return PyProjectData.empty(path=path, tool_name=tool_name)
         else:
             raise
 
     requires: list[str] = defn.get("build-system", {}).get("requires", [])
     is_required = has_build_package(requires, canonical_build_package_name)
 
-    try:
-        section = defn.get("tool", {})[tool_name]
-        section_present = True
-    except LookupError:
-        error = f"{path} does not contain a tool.{tool_name} section"
-        log.warning("toml section missing %r", error, exc_info=True)
-        section = {}
-        section_present = False
+    tool_section = defn.get("tool", {})
+    section = tool_section.get(tool_name, {})
+    section_present = tool_name in tool_section
+
+    if not section_present:
+        log.warning(
+            "toml section missing %r does not contain a tool.%s section",
+            path,
+            tool_name,
+        )
 
     project = defn.get("project", {})
     project_present = "project" in defn
