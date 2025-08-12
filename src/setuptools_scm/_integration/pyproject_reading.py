@@ -33,13 +33,20 @@ class PyProjectData:
         section_present: bool = False,
         project_present: bool = False,
         project_name: str | None = None,
+        has_dynamic_version: bool = True,
     ) -> PyProjectData:
         """Create a PyProjectData instance for testing purposes."""
+        project: TOML_RESULT
         if project_name is not None:
             project = {"name": project_name}
             assert project_present
         else:
             project = {}
+
+        # If project is present and has_dynamic_version is True, add dynamic=['version']
+        if project_present and has_dynamic_version:
+            project["dynamic"] = ["version"]
+
         return cls(
             path=Path("pyproject.toml"),
             tool_name="setuptools_scm",
@@ -54,22 +61,43 @@ class PyProjectData:
     def project_name(self) -> str | None:
         return self.project.get("name")
 
-    def verify_dynamic_version_when_required(self) -> None:
-        """Verify that dynamic=['version'] is set when setuptools-scm is used as build dependency indicator."""
-        if self.is_required and not self.section_present:
-            # When setuptools-scm is in build-system.requires but no tool section exists,
-            # we need to verify that dynamic=['version'] is set in the project section
-            # But only if there's actually a project section
-            if not self.project_present:
-                # No project section, so don't auto-activate setuptools_scm
-                return
-            dynamic = self.project.get("dynamic", [])
-            if "version" not in dynamic:
-                raise ValueError(
-                    f"{self.path}: setuptools-scm is present in [build-system].requires "
-                    f"but dynamic=['version'] is not set in [project]. "
-                    f"Either add dynamic=['version'] to [project] or add a [tool.{self.tool_name}] section."
-                )
+    def should_infer(self) -> bool:
+        """
+        Determine if setuptools_scm should infer version based on configuration.
+
+        This method only considers the pyproject.toml configuration state.
+        It does not consider version_keyword context (overrides always infer).
+
+        Returns:
+            True if version inference should proceed based on configuration
+
+        Raises:
+            ValueError: If setuptools-scm is required but dynamic=['version'] is missing
+        """
+        # If there's a tool section, always infer
+        if self.section_present:
+            return True
+
+        # If not required, don't auto-activate for infer_version
+        if not self.is_required:
+            return False
+
+        # setuptools-scm is required but no tool section
+        if not self.project_present:
+            # No project section - don't auto-activate
+            return False
+
+        # Project section exists - check for dynamic=['version']
+        dynamic = self.project.get("dynamic", [])
+        if "version" not in dynamic:
+            raise ValueError(
+                f"{self.path}: setuptools-scm is present in [build-system].requires "
+                f"but dynamic=['version'] is not set in [project]. "
+                f"Either add dynamic=['version'] to [project] or add a [tool.{self.tool_name}] section."
+            )
+
+        # All conditions met
+        return True
 
 
 def has_build_package(
@@ -133,9 +161,6 @@ def read_pyproject(
     pyproject_data = PyProjectData(
         path, tool_name, project, section, is_required, section_present, project_present
     )
-
-    # Verify dynamic version when setuptools-scm is used as build dependency indicator
-    pyproject_data.verify_dynamic_version_when_required()
 
     return pyproject_data
 

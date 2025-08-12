@@ -1181,7 +1181,7 @@ dynamic = ["version"]
 def test_verify_dynamic_version_when_required_missing_dynamic(
     wd: WorkDir, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Test that verification fails when setuptools-scm is in build-system.requires but dynamic=['version'] is missing"""
+    """Test that should_infer raises ValueError when setuptools-scm is in build-system.requires but dynamic=['version'] is missing"""
     if sys.version_info < (3, 11):
         pytest.importorskip("tomli")
 
@@ -1202,11 +1202,14 @@ name = "test-package-missing-dynamic"
 
     from setuptools_scm._integration.pyproject_reading import read_pyproject
 
-    # This should raise a ValueError because dynamic=['version'] is missing
+    # Read pyproject data first
+    pyproject_data = read_pyproject(Path("pyproject.toml"), missing_section_ok=True)
+
+    # should_infer should raise a ValueError when dynamic=['version'] is missing
     with pytest.raises(
         ValueError, match="dynamic=\\['version'\\] is not set in \\[project\\]"
     ):
-        read_pyproject(Path("pyproject.toml"), missing_section_ok=True)
+        pyproject_data.should_infer()
 
 
 def test_verify_dynamic_version_when_required_with_tool_section(
@@ -1240,6 +1243,9 @@ name = "test-package-with-tool-section"
     assert pyproject_data.is_required is True
     assert pyproject_data.section_present is True
 
+    # should_infer should return True because tool section exists
+    assert pyproject_data.should_infer() is True
+
 
 def test_verify_dynamic_version_when_required_with_dynamic(
     wd: WorkDir, monkeypatch: pytest.MonkeyPatch
@@ -1270,11 +1276,14 @@ dynamic = ["version"]
     assert pyproject_data.is_required is True
     assert pyproject_data.section_present is False
 
+    # should_infer should return True because dynamic=['version'] is set
+    assert pyproject_data.should_infer() is True
+
 
 def test_infer_version_logs_debug_when_missing_dynamic_version(
     wd: WorkDir, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Test that infer_version logs debug info when setuptools-scm is in build-system.requires but dynamic=['version'] is missing"""
+    """Test that infer_version gracefully handles and logs debug info when setuptools-scm is in build-system.requires but dynamic=['version'] is missing"""
     if sys.version_info < (3, 11):
         pytest.importorskip("tomli")
 
