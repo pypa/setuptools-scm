@@ -114,62 +114,49 @@ def get_version_inference_config(
     Returns:
         VersionInferenceResult with the decision and configuration
     """
+    # Normalize name from project metadata when not provided
     if dist_name is None:
         dist_name = pyproject_data.project_name
 
-    # Handle version already set
+    # If a version is already present, decide based on context (infer_version vs version_keyword)
     if current_version is not None:
-        if was_set_by_infer:
-            if overrides is not None and overrides:
-                # Clear version and proceed with actual overrides (non-empty dict)
-                return VersionInferenceConfig(
-                    dist_name=dist_name,
-                    pyproject_data=pyproject_data,
-                    overrides=overrides,
-                )
-            else:
-                # Keep existing version from infer_version (no overrides or empty overrides)
-                # But allow re-inferring if this is another infer_version call
-                if overrides is None:
-                    # This is another infer_version call, allow it to proceed
-                    return VersionInferenceConfig(
-                        dist_name=dist_name,
-                        pyproject_data=pyproject_data,
-                        overrides=overrides,
-                    )
-                else:
-                    # This is version_keyword with empty overrides, keep existing version
-                    return VersionInferenceNoOp()
-        else:
-            # Version set by something else
+        # infer_version call (overrides is None) should be a no-op if version already exists
+        if overrides is None:
+            return VersionInferenceNoOp()
+
+        if not was_set_by_infer:
             return VersionInferenceError(
-                f"version of {dist_name} already set", should_warn=True
+                f"version of {dist_name} already set",
+                should_warn=pyproject_data.should_infer(),
             )
 
-    # Handle setuptools-scm package
+        # Version was set by infer_version previously
+        if overrides:
+            # Non-empty overrides from version_keyword → re-infer with overrides
+            return VersionInferenceConfig(
+                dist_name=dist_name, pyproject_data=pyproject_data, overrides=overrides
+            )
+        # Empty overrides dict from version_keyword → keep existing version
+        return VersionInferenceNoOp()
+
+    # Do not infer a version for setuptools-scm itself
     if dist_name == "setuptools-scm":
         return VersionInferenceNoOp()
 
-    # version_keyword (with overrides) always tries to infer
+    # version_keyword path: any overrides (empty or not) mean we should infer
     if overrides is not None:
         return VersionInferenceConfig(
-            dist_name=dist_name,
-            pyproject_data=pyproject_data,
-            overrides=overrides,
+            dist_name=dist_name, pyproject_data=pyproject_data, overrides=overrides
         )
 
-    # infer_version (no overrides) uses pyproject configuration to decide
+    # infer_version path: decide based on pyproject configuration only
     try:
-        should_proceed = pyproject_data.should_infer()
+        if pyproject_data.should_infer():
+            return VersionInferenceConfig(
+                dist_name=dist_name, pyproject_data=pyproject_data, overrides=None
+            )
     except ValueError:
-        # For infer_version, silently skip on configuration issues (auto-activation shouldn't error)
+        # Auto-activation should not error in infer_version context → skip silently
         return VersionInferenceNoOp()
 
-    if should_proceed:
-        return VersionInferenceConfig(
-            dist_name=dist_name,
-            pyproject_data=pyproject_data,
-            overrides=overrides,
-        )
-    else:
-        return VersionInferenceNoOp()
+    return VersionInferenceNoOp()

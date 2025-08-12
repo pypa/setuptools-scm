@@ -26,7 +26,7 @@ class TestVersionInferenceDecision:
         assert result.overrides == {"key": "value"}
 
     def test_version_already_set_by_infer_no_overrides(self) -> None:
-        """Test that we allow re-inferring when version was set by infer_version and overrides=None (another infer_version call)."""
+        """infer_version call with existing version should be a no-op."""
         result = get_version_inference_config(
             dist_name="test_package",
             current_version="1.0.0",
@@ -35,9 +35,7 @@ class TestVersionInferenceDecision:
             was_set_by_infer=True,
         )
 
-        assert isinstance(result, VersionInferenceConfig)
-        assert result.dist_name == "test_package"
-        assert result.overrides is None
+        assert isinstance(result, VersionInferenceNoOp)
 
     def test_version_already_set_by_infer_empty_overrides(self) -> None:
         """Test that we don't re-infer when version was set by infer_version with empty overrides (version_keyword call)."""
@@ -52,7 +50,7 @@ class TestVersionInferenceDecision:
         assert isinstance(result, VersionInferenceNoOp)
 
     def test_version_already_set_by_something_else(self) -> None:
-        """Test that we return error when version was set by something else."""
+        """infer_version call with existing version set by something else should be a no-op."""
         result = get_version_inference_config(
             dist_name="test_package",
             current_version="1.0.0",
@@ -61,9 +59,7 @@ class TestVersionInferenceDecision:
             was_set_by_infer=False,
         )
 
-        assert isinstance(result, VersionInferenceError)
-        assert result.message == "version of test_package already set"
-        assert result.should_warn is True
+        assert isinstance(result, VersionInferenceNoOp)
 
     def test_setuptools_scm_package(self) -> None:
         """Test that we don't infer for setuptools-scm package itself."""
@@ -190,7 +186,7 @@ class TestVersionInferenceDecision:
         assert result.dist_name is None
 
     def test_version_already_set_none_dist_name(self) -> None:
-        """Test that we handle None dist_name in error case."""
+        """infer_version call with None dist_name and existing version should be a no-op."""
         result = get_version_inference_config(
             dist_name=None,
             current_version="1.0.0",
@@ -199,8 +195,7 @@ class TestVersionInferenceDecision:
             was_set_by_infer=False,
         )
 
-        assert isinstance(result, VersionInferenceError)
-        assert result.message == "version of None already set"
+        assert isinstance(result, VersionInferenceNoOp)
 
     def test_overrides_passed_through(self) -> None:
         """Test that overrides are passed through to the config."""
