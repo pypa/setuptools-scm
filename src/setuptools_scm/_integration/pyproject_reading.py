@@ -114,7 +114,6 @@ def read_pyproject(
     path: Path = Path("pyproject.toml"),
     tool_name: str = "setuptools_scm",
     canonical_build_package_name: str = "setuptools-scm",
-    missing_section_ok: bool = False,
     missing_file_ok: bool = False,
 ) -> PyProjectData:
     try:
@@ -140,21 +139,11 @@ def read_pyproject(
     try:
         section = defn.get("tool", {})[tool_name]
         section_present = True
-    except LookupError as e:
-        if not is_required and not missing_section_ok:
-            # Enhanced error message that mentions both configuration options
-            error = (
-                f"{path} does not contain a tool.{tool_name} section. "
-                f"setuptools_scm requires configuration via either:\n"
-                f"  1. [tool.{tool_name}] section in {path}, or\n"
-                f"  2. {tool_name} (or setuptools-scm) in [build-system] requires"
-            )
-            raise LookupError(error) from e
-        else:
-            error = f"{path} does not contain a tool.{tool_name} section"
-            log.warning("toml section missing %r", error, exc_info=True)
-            section = {}
-            section_present = False
+    except LookupError:
+        error = f"{path} does not contain a tool.{tool_name} section"
+        log.warning("toml section missing %r", error, exc_info=True)
+        section = {}
+        section_present = False
 
     project = defn.get("project", {})
     project_present = "project" in defn

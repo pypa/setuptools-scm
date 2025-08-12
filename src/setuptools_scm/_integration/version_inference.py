@@ -38,7 +38,6 @@ class VersionInferenceConfig:
             dist_name=self.dist_name,
             pyproject_data=self.pyproject_data,
             missing_file_ok=True,
-            missing_section_ok=True,
             **(self.overrides or {}),
         )
 

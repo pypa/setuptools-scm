@@ -881,10 +881,10 @@ def test_build_requires_integration_with_config_reading(wd: WorkDir) -> None:
     assert config.dist_name == "test-package"
 
 
-def test_improved_error_message_mentions_both_config_options(
+def test_missing_section_no_longer_raises_error(
     wd: WorkDir, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Test that the error message mentions both configuration options"""
+    """Test that missing [tool.setuptools_scm] section no longer raises error, creates valid config"""
     if sys.version_info < (3, 11):
         pytest.importorskip("tomli")
 
@@ -904,18 +904,18 @@ def test_improved_error_message_mentions_both_config_options(
 
     from setuptools_scm._config import Configuration
 
-    with pytest.raises(LookupError) as exc_info:
-        Configuration.from_file(
-            name=wd.cwd.joinpath("pyproject.toml"),
-            dist_name="test-package",
-            missing_file_ok=False,
-        )
+    # This should no longer raise an error - instead it should create a valid configuration
+    # with default values and log a warning
+    config = Configuration.from_file(
+        name=wd.cwd.joinpath("pyproject.toml"),
+        dist_name="test-package",
+        missing_file_ok=False,
+    )
 
-    error_msg = str(exc_info.value)
-    # Check that the error message mentions both configuration options
-    assert "tool.setuptools_scm" in error_msg
-    assert "build-system" in error_msg
-    assert "requires" in error_msg
+    # Should have created a valid configuration with default values
+    assert config.dist_name == "test-package"
+    assert config.version_scheme == "guess-next-dev"  # default
+    assert config.local_scheme == "node-and-date"  # default
 
 
 # Helper function for creating and managing distribution objects

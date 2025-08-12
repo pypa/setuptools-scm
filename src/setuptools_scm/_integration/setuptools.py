@@ -90,9 +90,7 @@ def version_keyword(
         pyproject_data = _given_pyproject_data
     else:
         try:
-            pyproject_data = read_pyproject(
-                missing_section_ok=True, missing_file_ok=True
-            )
+            pyproject_data = read_pyproject(missing_file_ok=True)
         except (LookupError, ValueError) as e:
             log.debug("Configuration issue in pyproject.toml: %s", e)
             return
@@ -126,7 +124,7 @@ def infer_version(
         pyproject_data = _given_pyproject_data
     else:
         try:
-            pyproject_data = read_pyproject(missing_section_ok=True)
+            pyproject_data = read_pyproject()
         except FileNotFoundError:
             log.debug("pyproject.toml not found, skipping infer_version")
             return
