@@ -1178,32 +1178,18 @@ dynamic = ["version"]
     assert dist.metadata.version == "1.0.0"
 
 
-def test_verify_dynamic_version_when_required_missing_dynamic(
-    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_verify_dynamic_version_when_required_missing_dynamic() -> None:
     """Test that should_infer raises ValueError when setuptools-scm is in build-system.requires but dynamic=['version'] is missing"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
+    from setuptools_scm._integration.pyproject_reading import PyProjectData
 
-    # Change to the test directory
-    monkeypatch.chdir(wd.cwd)
-
-    # Create a pyproject.toml file with setuptools-scm in build-system.requires but NO dynamic=['version']
-    pyproject_content = """
-[build-system]
-requires = ["setuptools>=80", "setuptools-scm>=8"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "test-package-missing-dynamic"
-# Missing: dynamic = ["version"]
-"""
-    wd.write("pyproject.toml", pyproject_content)
-
-    from setuptools_scm._integration.pyproject_reading import read_pyproject
-
-    # Read pyproject data first
-    pyproject_data = read_pyproject(Path("pyproject.toml"), missing_section_ok=True)
+    # Create pyproject data: setuptools-scm required, project present, but no dynamic=['version']
+    pyproject_data = PyProjectData.for_testing(
+        is_required=True,
+        section_present=False,
+        project_present=True,
+        project_name="test-package-missing-dynamic",
+        has_dynamic_version=False,  # This is the key: no dynamic=['version']
+    )
 
     # should_infer should raise a ValueError when dynamic=['version'] is missing
     with pytest.raises(
@@ -1212,34 +1198,19 @@ name = "test-package-missing-dynamic"
         pyproject_data.should_infer()
 
 
-def test_verify_dynamic_version_when_required_with_tool_section(
-    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_verify_dynamic_version_when_required_with_tool_section() -> None:
     """Test that verification passes when setuptools-scm is in build-system.requires and [tool.setuptools_scm] section exists"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
+    from setuptools_scm._integration.pyproject_reading import PyProjectData
 
-    # Change to the test directory
-    monkeypatch.chdir(wd.cwd)
+    # Create pyproject data: setuptools-scm required, tool section present
+    pyproject_data = PyProjectData.for_testing(
+        is_required=True,
+        section_present=True,  # This is the key: tool section exists
+        project_present=True,
+        project_name="test-package-with-tool-section",
+        has_dynamic_version=False,  # dynamic=['version'] not needed when tool section exists
+    )
 
-    # Create a pyproject.toml file with setuptools-scm in build-system.requires and [tool.setuptools_scm] section
-    pyproject_content = """
-[build-system]
-requires = ["setuptools>=80", "setuptools-scm>=8"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "test-package-with-tool-section"
-# Missing: dynamic = ["version"]
-
-[tool.setuptools_scm]
-"""
-    wd.write("pyproject.toml", pyproject_content)
-
-    from setuptools_scm._integration.pyproject_reading import read_pyproject
-
-    # This should not raise an error because [tool.setuptools_scm] section exists
-    pyproject_data = read_pyproject(Path("pyproject.toml"), missing_section_ok=True)
     assert pyproject_data.is_required is True
     assert pyproject_data.section_present is True
 
@@ -1247,32 +1218,19 @@ name = "test-package-with-tool-section"
     assert pyproject_data.should_infer() is True
 
 
-def test_verify_dynamic_version_when_required_with_dynamic(
-    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_verify_dynamic_version_when_required_with_dynamic() -> None:
     """Test that verification passes when setuptools-scm is in build-system.requires and dynamic=['version'] is set"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
+    from setuptools_scm._integration.pyproject_reading import PyProjectData
 
-    # Change to the test directory
-    monkeypatch.chdir(wd.cwd)
+    # Create pyproject data: setuptools-scm required, no tool section, but dynamic=['version'] set
+    pyproject_data = PyProjectData.for_testing(
+        is_required=True,
+        section_present=False,
+        project_present=True,
+        project_name="test-package-with-dynamic",
+        has_dynamic_version=True,  # This is the key: dynamic=['version'] is set
+    )
 
-    # Create a pyproject.toml file with setuptools-scm in build-system.requires and dynamic=['version']
-    pyproject_content = """
-[build-system]
-requires = ["setuptools>=80", "setuptools-scm>=8"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "test-package-with-dynamic"
-dynamic = ["version"]
-"""
-    wd.write("pyproject.toml", pyproject_content)
-
-    from setuptools_scm._integration.pyproject_reading import read_pyproject
-
-    # This should not raise an error because dynamic=['version'] is set
-    pyproject_data = read_pyproject(Path("pyproject.toml"), missing_section_ok=True)
     assert pyproject_data.is_required is True
     assert pyproject_data.section_present is False
 
