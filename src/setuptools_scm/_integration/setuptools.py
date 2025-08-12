@@ -9,6 +9,7 @@ from typing import Callable
 
 import setuptools
 
+from .. import _types as _t
 from .pyproject_reading import PyProjectData
 from .pyproject_reading import read_pyproject
 from .setup_cfg import _dist_name_from_legacy
@@ -68,7 +69,7 @@ def version_keyword(
     keyword: str,
     value: bool | dict[str, Any] | Callable[[], dict[str, Any]],
     *,
-    _given_pyproject_data: PyProjectData | None = None,
+    _given_pyproject_data: _t.GivenPyProjectResult = None,
 ) -> None:
     """apply version infernce when setup(use_scm_version=...) is used
     this takes priority over the finalize_options based version
@@ -87,20 +88,15 @@ def version_keyword(
 
     was_set_by_infer = getattr(dist, "_setuptools_scm_version_set_by_infer", False)
 
-    # Get pyproject data
-    if _given_pyproject_data is not None:
-        pyproject_data = _given_pyproject_data
-    else:
-        try:
-            pyproject_data = read_pyproject()
-        except FileNotFoundError:
-            log.debug("pyproject.toml not found, proceeding with empty configuration")
-            pyproject_data = PyProjectData.empty(
-                Path("pyproject.toml"), "setuptools_scm"
-            )
-        except InvalidTomlError as e:
-            log.debug("Configuration issue in pyproject.toml: %s", e)
-            return
+    # Get pyproject data (support direct injection for tests)
+    try:
+        pyproject_data = read_pyproject(_given_result=_given_pyproject_data)
+    except FileNotFoundError:
+        log.debug("pyproject.toml not found, proceeding with empty configuration")
+        pyproject_data = PyProjectData.empty(Path("pyproject.toml"), "setuptools_scm")
+    except InvalidTomlError as e:
+        log.debug("Configuration issue in pyproject.toml: %s", e)
+        return
 
     result = get_version_inference_config(
         dist_name=dist_name,
@@ -114,7 +110,9 @@ def version_keyword(
 
 
 def infer_version(
-    dist: setuptools.Distribution, *, _given_pyproject_data: PyProjectData | None = None
+    dist: setuptools.Distribution,
+    *,
+    _given_pyproject_data: _t.GivenPyProjectResult = None,
 ) -> None:
     """apply version inference from the finalize_options hook
     this is the default for pyproject.toml based projects that don't use the use_scm_version keyword
@@ -127,17 +125,14 @@ def infer_version(
 
     dist_name = _dist_name_from_legacy(dist)
 
-    if _given_pyproject_data is not None:
-        pyproject_data = _given_pyproject_data
-    else:
-        try:
-            pyproject_data = read_pyproject()
-        except FileNotFoundError:
-            log.debug("pyproject.toml not found, skipping infer_version")
-            return
-        except InvalidTomlError as e:
-            log.debug("Configuration issue in pyproject.toml: %s", e)
-            return
+    try:
+        pyproject_data = read_pyproject(_given_result=_given_pyproject_data)
+    except FileNotFoundError:
+        log.debug("pyproject.toml not found, skipping infer_version")
+        return
+    except InvalidTomlError as e:
+        log.debug("Configuration issue in pyproject.toml: %s", e)
+        return
 
     result = get_version_inference_config(
         dist_name=dist_name,

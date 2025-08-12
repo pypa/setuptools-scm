@@ -7,8 +7,10 @@ from pathlib import Path
 from typing import Sequence
 
 from .. import _log
+from .. import _types as _t
 from .._requirement_cls import extract_package_name
 from .toml import TOML_RESULT
+from .toml import InvalidTomlError
 from .toml import read_toml_content
 
 log = _log.log.getChild("pyproject_reading")
@@ -126,7 +128,28 @@ def read_pyproject(
     path: Path = Path("pyproject.toml"),
     tool_name: str = "setuptools_scm",
     canonical_build_package_name: str = "setuptools-scm",
+    _given_result: _t.GivenPyProjectResult = None,
 ) -> PyProjectData:
+    """Read and parse pyproject configuration.
+
+    This function supports dependency injection for tests via `_given_result`.
+
+    Parameters:
+    - path: Path to the pyproject file
+    - tool_name: The tool section name (default: `setuptools_scm`)
+    - canonical_build_package_name: Normalized build requirement name
+    - _given_result: Optional testing hook. Can be:
+        - PyProjectData: returned directly
+        - InvalidTomlError | FileNotFoundError: raised directly
+        - None: read from filesystem
+    """
+
+    if _given_result is not None:
+        if isinstance(_given_result, PyProjectData):
+            return _given_result
+        if isinstance(_given_result, (InvalidTomlError, FileNotFoundError)):
+            raise _given_result
+
     defn = read_toml_content(path)
 
     requires: list[str] = defn.get("build-system", {}).get("requires", [])

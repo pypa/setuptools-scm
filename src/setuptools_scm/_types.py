@@ -18,6 +18,8 @@ if TYPE_CHECKING:
         from typing_extensions import TypeAlias
 
     from . import version
+    from ._integration.pyproject_reading import PyProjectData
+    from ._integration.toml import InvalidTomlError
 
 PathT: TypeAlias = Union["os.PathLike[str]", str]
 
@@ -29,3 +31,8 @@ SCMVERSION: TypeAlias = "version.ScmVersion"
 
 # Git pre-parse function types
 GIT_PRE_PARSE: TypeAlias = Union[str, None]
+
+# Testing injection types for configuration reading
+GivenPyProjectResult: TypeAlias = Union[
+    "PyProjectData", "InvalidTomlError", FileNotFoundError, None
+]
