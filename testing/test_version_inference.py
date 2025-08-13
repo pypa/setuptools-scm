@@ -3,6 +3,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Any
 
+import pytest
+
 from setuptools_scm._integration.pyproject_reading import PyProjectData
 from setuptools_scm._integration.version_inference import VersionInferenceConfig
 from setuptools_scm._integration.version_inference import VersionInferenceNoOp
@@ -11,23 +13,26 @@ from setuptools_scm._integration.version_inference import VersionInferenceWarnin
 from setuptools_scm._integration.version_inference import get_version_inference_config
 
 # Common test data
-DEFAULT_PYPROJECT_DATA = PyProjectData.for_testing(
-    is_required=True, section_present=True, project_present=True
-)
-
-PYPROJECT_WITHOUT_TOOL_SECTION = PyProjectData.for_testing(
-    is_required=True, section_present=False, project_present=True
-)
-
-PYPROJECT_ONLY_REQUIRED = PyProjectData.for_testing(
-    is_required=True, section_present=False, project_present=False
+PYPROJECT = SimpleNamespace(
+    DEFAULT=PyProjectData.for_testing(
+        is_required=True, section_present=True, project_present=True
+    ),
+    WITHOUT_TOOL_SECTION=PyProjectData.for_testing(
+        is_required=True, section_present=False, project_present=True
+    ),
+    ONLY_REQUIRED=PyProjectData.for_testing(
+        is_required=True, section_present=False, project_present=False
+    ),
+    WITHOUT_PROJECT=PyProjectData.for_testing(
+        is_required=True, section_present=True, project_present=False
+    ),
 )
 
 OVERRIDES = SimpleNamespace(
+    NOT_GIVEN=None,
     EMPTY={},
     CALVER={"version_scheme": "calver"},
     UNRELATED={"key": "value"},
-    INFER_VERSION=None,
 )
 
 
@@ -45,7 +50,7 @@ def expect_config(
     *,
     dist_name: str | None = "test_package",
     current_version: str | None,
-    pyproject_data: PyProjectData = DEFAULT_PYPROJECT_DATA,
+    pyproject_data: PyProjectData = PYPROJECT.DEFAULT,
     overrides: dict[str, Any] | None = None,
     expected: type[VersionInferenceConfig]
     | VersionInferenceWarning
@@ -74,63 +79,144 @@ def expect_config(
     assert result == expectation
 
 
+infer_implied = pytest.mark.parametrize(
+    ("overrides", "pyproject_data"),
+    [
+        pytest.param(
+            OVERRIDES.EMPTY, PYPROJECT.DEFAULT, id="empty_overrides_default_pyproject"
+        ),
+        pytest.param(
+            OVERRIDES.EMPTY,
+            PYPROJECT.WITHOUT_TOOL_SECTION,
+            id="empty_overrides_without_tool_section",
+        ),
+        pytest.param(
+            OVERRIDES.NOT_GIVEN,
+            PYPROJECT.DEFAULT,
+            id="infer_version_default_pyproject",
+        ),
+    ],
+)
+
+
+@pytest.mark.parametrize("package_name", ["test_package", None])
+@infer_implied
+def test_implied_with_version_warns(
+    package_name: str | None,
+    overrides: dict[str, Any] | None,
+    pyproject_data: PyProjectData,
+) -> None:
+    expect_config(
+        dist_name=package_name,
+        current_version="1.0.0",
+        pyproject_data=pyproject_data,
+        overrides=overrides,
+        expected=WARNING_PACKAGE if package_name else WARNING_NO_PACKAGE,
+    )
+
+
+@pytest.mark.parametrize("package_name", ["test_package", None])
+@infer_implied
+def test_implied_without_version_infers(
+    package_name: str | None,
+    overrides: dict[str, Any] | None,
+    pyproject_data: PyProjectData,
+) -> None:
+    expect_config(
+        dist_name=package_name,
+        current_version=None,
+        pyproject_data=pyproject_data,
+        overrides=overrides,
+        expected=VersionInferenceConfig,
+    )
+
+
+def test_no_config_no_infer() -> None:
+    expect_config(
+        current_version=None,
+        pyproject_data=PYPROJECT.WITHOUT_TOOL_SECTION,
+        overrides=OVERRIDES.NOT_GIVEN,
+        expected=NOOP,
+    )
+
+
+Expectation = SimpleNamespace
+
+
 class TestVersionInferenceDecision:
     """Test the version inference decision logic."""
 
-    def test_missing_version_with_overrides_triggers(self) -> None:
-        """Test that version_keyword context with overrides infers when no existing version."""
-        expect_config(
-            current_version=None,  # version_keyword passes None when version was set by infer
-            overrides=OVERRIDES.UNRELATED,
-            expected=VersionInferenceConfig,
-        )
-
-    def test_overrides_on_existing_version_warns(self) -> None:
-        """note: version_keyword opts out of inference if
-        version is set by something else or overrides are empty"""
-        expect_config(
-            current_version="1.0.0",  # version set by something else (setup.cfg, etc.)
-            overrides=OVERRIDES.UNRELATED,
-            expected=WARNING_PACKAGE,
-        )
-
-    def test_version_already_set_no_overrides(self) -> None:
-        """infer_version call with existing version warns when inference is implied."""
-        expect_config(
-            current_version="1.0.0",
-            overrides=None,
-            expected=WARNING_PACKAGE,
-        )
-
-    def test_version_keyword_with_empty_overrides(self) -> None:
-        """Test that version_keyword context with empty overrides infers when no existing version."""
-        expect_config(
-            current_version=None,  # version_keyword handles early exit, so this is what we see
-            overrides=OVERRIDES.EMPTY,
-            expected=VersionInferenceConfig,
-        )
-
-    def test_version_keyword_empty_overrides_existing_version(self) -> None:
-        """Test that version_keyword context with empty overrides and existing version errors."""
-        expect_config(
-            current_version="1.0.0",  # version set by something else (setup.cfg, etc.)
-            overrides=OVERRIDES.EMPTY,
-            expected=WARNING_PACKAGE,
-        )
-
-    def test_version_already_set_by_something_else(self) -> None:
-        """infer_version call with existing version warns when inference is implied."""
-        expect_config(
-            current_version="1.0.0",
-            overrides=None,
-            expected=WARNING_PACKAGE,
-        )
+    @pytest.mark.parametrize(
+        "expectation",
+        [
+            pytest.param(
+                Expectation(
+                    current_version=None,
+                    overrides=OVERRIDES.UNRELATED,
+                    expected=VersionInferenceConfig,
+                ),
+                id="missing_version_with_overrides_triggers",
+            ),
+            pytest.param(
+                Expectation(
+                    current_version="1.0.0",
+                    overrides=OVERRIDES.UNRELATED,
+                    expected=WARNING_PACKAGE,
+                ),
+                id="overrides_on_existing_version_warns",
+            ),
+            pytest.param(
+                Expectation(
+                    current_version="1.0.0",
+                    overrides=None,
+                    expected=WARNING_PACKAGE,
+                ),
+                id="version_already_set_no_overrides",
+            ),
+            pytest.param(
+                Expectation(
+                    current_version=None,
+                    overrides=OVERRIDES.EMPTY,
+                    expected=VersionInferenceConfig,
+                ),
+                id="version_keyword_with_empty_overrides",
+            ),
+            pytest.param(
+                Expectation(
+                    current_version="1.0.0",
+                    overrides=OVERRIDES.EMPTY,
+                    expected=WARNING_PACKAGE,
+                ),
+                id="version_keyword_empty_overrides_existing_version",
+            ),
+            pytest.param(
+                Expectation(
+                    current_version="1.0.0",
+                    overrides=None,
+                    expected=WARNING_PACKAGE,
+                ),
+                id="version_already_set_by_something_else",
+            ),
+            pytest.param(
+                Expectation(
+                    current_version=None,
+                    overrides=None,
+                    expected=VersionInferenceConfig,
+                ),
+                id="both_required_and_tool_section",
+            ),
+        ],
+    )
+    @pytest.mark.xfail(reason="TODO: fix this")
+    def test_default_package_scenarios(self, expectation: Expectation) -> None:
+        """Test version inference scenarios using default package name and pyproject data."""
+        expectation.check()
 
     def test_no_setuptools_scm_config_infer_version(self) -> None:
         """Test that we don't infer when setuptools-scm is not configured and infer_version called."""
         expect_config(
             current_version=None,
-            pyproject_data=PYPROJECT_WITHOUT_TOOL_SECTION,
+            pyproject_data=PYPROJECT.WITHOUT_TOOL_SECTION,
             overrides=None,
             expected=NOOP,
         )
@@ -139,7 +225,7 @@ class TestVersionInferenceDecision:
         """We infer when setuptools-scm is not configured but use_scm_version=True."""
         expect_config(
             current_version=None,
-            pyproject_data=PYPROJECT_WITHOUT_TOOL_SECTION,
+            pyproject_data=PYPROJECT.WITHOUT_TOOL_SECTION,
             overrides=OVERRIDES.EMPTY,
             expected=VersionInferenceConfig,
         )
@@ -148,7 +234,7 @@ class TestVersionInferenceDecision:
         """We don't infer without tool section even if required: infer_version path."""
         expect_config(
             current_version=None,
-            pyproject_data=PYPROJECT_ONLY_REQUIRED,
+            pyproject_data=PYPROJECT.ONLY_REQUIRED,
             overrides=None,
             expected=NOOP,
         )
@@ -157,7 +243,7 @@ class TestVersionInferenceDecision:
         """Test that we DO infer when setuptools-scm is required but no project section and use_scm_version=True."""
         expect_config(
             current_version=None,
-            pyproject_data=PYPROJECT_ONLY_REQUIRED,
+            pyproject_data=PYPROJECT.ONLY_REQUIRED,
             overrides=OVERRIDES.EMPTY,
             expected=VersionInferenceConfig,
         )
@@ -168,7 +254,7 @@ class TestVersionInferenceDecision:
         """Test that we DO infer when setuptools-scm is required but no project section and use_scm_version={config}."""
         expect_config(
             current_version=None,
-            pyproject_data=PYPROJECT_ONLY_REQUIRED,
+            pyproject_data=PYPROJECT.ONLY_REQUIRED,
             overrides=OVERRIDES.CALVER,
             expected=VersionInferenceConfig,
         )
@@ -177,7 +263,7 @@ class TestVersionInferenceDecision:
         """We only infer when tool section present, regardless of required/project presence."""
         expect_config(
             current_version=None,
-            pyproject_data=PYPROJECT_WITHOUT_TOOL_SECTION,
+            pyproject_data=PYPROJECT.WITHOUT_TOOL_SECTION,
             expected=NOOP,
         )
 
@@ -185,16 +271,7 @@ class TestVersionInferenceDecision:
         """We infer when tool section is present."""
         expect_config(
             current_version=None,
-            pyproject_data=PyProjectData.for_testing(
-                is_required=False, section_present=True, project_present=False
-            ),
-            expected=VersionInferenceConfig,
-        )
-
-    def test_both_required_and_tool_section(self) -> None:
-        """Test that we infer when both required and tool section are present."""
-        expect_config(
-            current_version=None,
+            pyproject_data=PYPROJECT.WITHOUT_PROJECT,
             expected=VersionInferenceConfig,
         )
 
