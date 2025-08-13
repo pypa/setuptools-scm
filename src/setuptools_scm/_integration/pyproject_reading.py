@@ -35,6 +35,7 @@ class PyProjectData:
     @classmethod
     def for_testing(
         cls,
+        *,
         is_required: bool = False,
         section_present: bool = False,
         project_present: bool = False,

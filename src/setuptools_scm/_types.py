@@ -10,6 +10,8 @@ from typing import Sequence
 from typing import Tuple
 from typing import Union
 
+from setuptools import Distribution
+
 if TYPE_CHECKING:
     import sys
 
@@ -42,7 +44,7 @@ GivenPyProjectResult: TypeAlias = Union[
 class VersionInferenceApplicable(Protocol):
     """A result object from version inference decision that can be applied to a dist."""
 
-    def apply(self, dist: object) -> None:  # pragma: no cover - structural type
+    def apply(self, dist: Distribution) -> None:  # pragma: no cover - structural type
         ...
 
 

@@ -11,6 +11,7 @@ import setuptools
 from .. import _types as _t
 from .pyproject_reading import PyProjectData
 from .pyproject_reading import read_pyproject
+from .setup_cfg import SetuptoolsBasicData
 from .setup_cfg import extract_from_legacy
 from .toml import InvalidTomlError
 from .version_inference import get_version_inference_config
@@ -69,6 +70,7 @@ def version_keyword(
     value: bool | dict[str, Any] | Callable[[], dict[str, Any]],
     *,
     _given_pyproject_data: _t.GivenPyProjectResult = None,
+    _given_legacy_data: SetuptoolsBasicData | None = None,
     _get_version_inference_config: _t.GetVersionInferenceConfig = get_version_inference_config,
 ) -> None:
     """apply version infernce when setup(use_scm_version=...) is used
@@ -84,7 +86,7 @@ def version_keyword(
         "dist_name may not be specified in the setup keyword "
     )
 
-    legacy_data = extract_from_legacy(dist)
+    legacy_data = extract_from_legacy(dist, _given_legacy_data=_given_legacy_data)
     dist_name: str | None = legacy_data.name
 
     was_set_by_infer = getattr(dist, "_setuptools_scm_version_set_by_infer", False)
@@ -124,6 +126,7 @@ def infer_version(
     dist: setuptools.Distribution,
     *,
     _given_pyproject_data: _t.GivenPyProjectResult = None,
+    _given_legacy_data: SetuptoolsBasicData | None = None,
     _get_version_inference_config: _t.GetVersionInferenceConfig = get_version_inference_config,
 ) -> None:
     """apply version inference from the finalize_options hook
@@ -135,7 +138,7 @@ def infer_version(
 
     _log_hookstart("infer_version", dist)
 
-    legacy_data = extract_from_legacy(dist)
+    legacy_data = extract_from_legacy(dist, _given_legacy_data=_given_legacy_data)
     dist_name = legacy_data.name
 
     try:

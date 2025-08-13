@@ -28,8 +28,12 @@ def read_setup_cfg(input: str | os.PathLike[str] = "setup.cfg") -> SetuptoolsBas
     return SetuptoolsBasicData(path=path, name=name, version=version)
 
 
-def extract_from_legacy(dist: setuptools.Distribution) -> SetuptoolsBasicData:
-    base = read_setup_cfg()
+def extract_from_legacy(
+    dist: setuptools.Distribution,
+    *,
+    _given_legacy_data: SetuptoolsBasicData | None = None,
+) -> SetuptoolsBasicData:
+    base = _given_legacy_data if _given_legacy_data is not None else read_setup_cfg()
     if base.name is None:
         base.name = dist.metadata.name
     if base.version is None:

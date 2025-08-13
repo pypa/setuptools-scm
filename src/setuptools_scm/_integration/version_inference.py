@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 from typing import Any
 from typing import Union
 
+from setuptools import Distribution
+
 from .. import _log
 
 if TYPE_CHECKING:
@@ -21,7 +23,7 @@ class VersionInferenceConfig:
     pyproject_data: PyProjectData | None
     overrides: dict[str, Any] | None
 
-    def apply(self, dist: Any) -> None:
+    def apply(self, dist: Distribution) -> None:
         """Apply version inference to the distribution."""
         from .. import _config as _config_module
         from .._get_version_impl import _get_version
@@ -42,34 +44,32 @@ class VersionInferenceConfig:
 
         # Mark that this version was set by infer_version if overrides is None (infer_version context)
         if self.overrides is None:
-            dist._setuptools_scm_version_set_by_infer = True
+            dist._setuptools_scm_version_set_by_infer = True  # type: ignore[attr-defined]
 
 
 @dataclass
-class VersionInferenceError:
+class VersionInferenceWarning:
     """Error message for user."""
 
     message: str
-    should_warn: bool = False
 
-    def apply(self, dist: Any) -> None:
+    def apply(self, dist: Distribution) -> None:
         """Apply error handling to the distribution."""
         import warnings
 
-        if self.should_warn:
-            warnings.warn(self.message)
+        warnings.warn(self.message)
 
 
 class VersionInferenceNoOp:
     """No operation result - silent skip."""
 
-    def apply(self, dist: Any) -> None:
+    def apply(self, dist: Distribution) -> None:
         """Apply no-op to the distribution."""
 
 
 VersionInferenceResult = Union[
     VersionInferenceConfig,  # Proceed with inference
-    VersionInferenceError,  # Show error/warning
+    VersionInferenceWarning,  # Show warning
     VersionInferenceNoOp,  # Don't infer (silent)
 ]
 
@@ -92,37 +92,21 @@ def get_version_inference_config(
     Returns:
         VersionInferenceResult with the decision and configuration
     """
-    # Normalize name from project metadata when not provided
-    if dist_name is None:
-        dist_name = pyproject_data.project_name
 
-    # Never infer a version for setuptools-scm itself
-    if dist_name == "setuptools-scm":
-        return VersionInferenceNoOp()
+    config = VersionInferenceConfig(
+        dist_name=dist_name,
+        pyproject_data=pyproject_data,
+        overrides=overrides,
+    )
 
-    # If a version already exists, short-circuit by context
-    if current_version is not None:
-        if overrides is None:
-            # infer_version called and a version is already present → do nothing
-            return VersionInferenceNoOp()
+    inference_implied = pyproject_data.should_infer() or overrides is not None
+
+    if inference_implied:
+        if current_version is None:
+            return config
         else:
-            # version_keyword context - always warn if version already set
-            return VersionInferenceError(
+            return VersionInferenceWarning(
                 f"version of {dist_name} already set",
-                should_warn=pyproject_data.should_infer(),
             )
-
-    # No version present yet
-    if overrides is not None:
-        # version_keyword path: any overrides (empty or not) mean we should infer
-        return VersionInferenceConfig(
-            dist_name=dist_name, pyproject_data=pyproject_data, overrides=overrides
-        )
-
-    # infer_version path: only infer when [tool.setuptools_scm] is present
-    if pyproject_data.should_infer():
-        return VersionInferenceConfig(
-            dist_name=dist_name, pyproject_data=pyproject_data, overrides=overrides
-        )
-
-    return VersionInferenceNoOp()
+    else:
+        return VersionInferenceNoOp()

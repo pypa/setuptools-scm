@@ -672,34 +672,36 @@ def test_unicode_in_setup_cfg(tmp_path: Path) -> None:
 def test_setup_cfg_version_prevents_inference_version_keyword(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # Legacy project with version in setup.cfg
-    cfg = tmp_path / "setup.cfg"
-    cfg.write_text(
-        textwrap.dedent(
-            """
-            [metadata]
-            name = legacy-proj
-            version = 0.9.0
-            """
-        ),
-        encoding="utf-8",
-    )
-
-    # No pyproject.toml
+    # Legacy project setup - we construct the data directly since files are not read anyway
     monkeypatch.chdir(tmp_path)
 
     dist = create_clean_distribution("legacy-proj")
 
-    # Using keyword should detect an existing version via setup.cfg and avoid inferring
+    # Using keyword should detect an existing version via legacy data and avoid inferring
     from setuptools_scm._integration import setuptools as setuptools_integration
     from setuptools_scm._integration.pyproject_reading import PyProjectData
+    from setuptools_scm._integration.setup_cfg import SetuptoolsBasicData
 
-    setuptools_integration.version_keyword(
-        dist,
-        "use_scm_version",
-        True,
-        _given_pyproject_data=PyProjectData.empty(tmp_path / "pyproject.toml"),
+    # Construct PyProjectData directly without requiring build backend inference
+    pyproject_data = PyProjectData.for_testing(
+        is_required=False,  # setuptools-scm not required
+        section_present=False,  # no [tool.setuptools_scm] section
+        project_present=False,  # no [project] section
     )
+
+    # Construct legacy data with version from setup.cfg
+    legacy_data = SetuptoolsBasicData(
+        path=tmp_path / "setup.cfg", name="legacy-proj", version="0.9.0"
+    )
+
+    with pytest.warns(UserWarning, match="version of legacy-proj already set"):
+        setuptools_integration.version_keyword(
+            dist,
+            "use_scm_version",
+            True,
+            _given_pyproject_data=pyproject_data,
+            _given_legacy_data=legacy_data,
+        )
 
     # setuptools_scm should not set a version when setup.cfg already provided one
     assert dist.metadata.version is None
