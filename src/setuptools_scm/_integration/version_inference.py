@@ -60,6 +60,7 @@ class VersionInferenceWarning:
         warnings.warn(self.message)
 
 
+@dataclass(frozen=True)
 class VersionInferenceNoOp:
     """No operation result - silent skip."""
 
