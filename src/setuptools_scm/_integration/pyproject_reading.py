@@ -81,6 +81,15 @@ class PyProjectData:
     def project_name(self) -> str | None:
         return self.project.get("name")
 
+    @property
+    def project_version(self) -> str | None:
+        """Return the static version from [project] if present.
+
+        When the project declares dynamic = ["version"], the version
+        is intentionally omitted from [project] and this returns None.
+        """
+        return self.project.get("version")
+
     def should_infer(self) -> bool:
         """
         Determine if setuptools_scm should infer version based on configuration.

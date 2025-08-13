@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import warnings
 
-from pathlib import Path
 from typing import Any
 from typing import Callable
 
@@ -95,14 +94,14 @@ def version_keyword(
         pyproject_data = read_pyproject(_given_result=_given_pyproject_data)
     except FileNotFoundError:
         log.debug("pyproject.toml not found, proceeding with empty configuration")
-        pyproject_data = PyProjectData.empty(Path("pyproject.toml"), "setuptools_scm")
+        pyproject_data = PyProjectData.empty()
     except InvalidTomlError as e:
         log.debug("Configuration issue in pyproject.toml: %s", e)
         return
 
     result = _get_version_inference_config(
         dist_name=dist_name,
-        current_version=legacy_data.version or pyproject_data.project.get("version"),
+        current_version=legacy_data.version or pyproject_data.project_version,
         pyproject_data=pyproject_data,
         overrides=overrides,
         was_set_by_infer=was_set_by_infer,
@@ -141,7 +140,7 @@ def infer_version(
     # Only infer when tool section present per get_version_inference_config
     result = _get_version_inference_config(
         dist_name=dist_name,
-        current_version=legacy_data.version or pyproject_data.project.get("version"),
+        current_version=legacy_data.version or pyproject_data.project_version,
         pyproject_data=pyproject_data,
     )
     result.apply(dist)
