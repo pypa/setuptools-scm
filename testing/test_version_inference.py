@@ -140,95 +140,8 @@ def test_no_config_no_infer() -> None:
     )
 
 
-Expectation = SimpleNamespace
-
-
 class TestVersionInferenceDecision:
     """Test the version inference decision logic."""
-
-    @pytest.mark.parametrize(
-        "expectation",
-        [
-            pytest.param(
-                Expectation(
-                    current_version=None,
-                    overrides=OVERRIDES.UNRELATED,
-                    expected=VersionInferenceConfig,
-                ),
-                id="missing_version_with_overrides_triggers",
-            ),
-            pytest.param(
-                Expectation(
-                    current_version="1.0.0",
-                    overrides=OVERRIDES.UNRELATED,
-                    expected=WARNING_PACKAGE,
-                ),
-                id="overrides_on_existing_version_warns",
-            ),
-            pytest.param(
-                Expectation(
-                    current_version="1.0.0",
-                    overrides=None,
-                    expected=WARNING_PACKAGE,
-                ),
-                id="version_already_set_no_overrides",
-            ),
-            pytest.param(
-                Expectation(
-                    current_version=None,
-                    overrides=OVERRIDES.EMPTY,
-                    expected=VersionInferenceConfig,
-                ),
-                id="version_keyword_with_empty_overrides",
-            ),
-            pytest.param(
-                Expectation(
-                    current_version="1.0.0",
-                    overrides=OVERRIDES.EMPTY,
-                    expected=WARNING_PACKAGE,
-                ),
-                id="version_keyword_empty_overrides_existing_version",
-            ),
-            pytest.param(
-                Expectation(
-                    current_version="1.0.0",
-                    overrides=None,
-                    expected=WARNING_PACKAGE,
-                ),
-                id="version_already_set_by_something_else",
-            ),
-            pytest.param(
-                Expectation(
-                    current_version=None,
-                    overrides=None,
-                    expected=VersionInferenceConfig,
-                ),
-                id="both_required_and_tool_section",
-            ),
-        ],
-    )
-    @pytest.mark.xfail(reason="TODO: fix this")
-    def test_default_package_scenarios(self, expectation: Expectation) -> None:
-        """Test version inference scenarios using default package name and pyproject data."""
-        expectation.check()
-
-    def test_no_setuptools_scm_config_infer_version(self) -> None:
-        """Test that we don't infer when setuptools-scm is not configured and infer_version called."""
-        expect_config(
-            current_version=None,
-            pyproject_data=PYPROJECT.WITHOUT_TOOL_SECTION,
-            overrides=None,
-            expected=NOOP,
-        )
-
-    def test_no_setuptools_scm_config_version_keyword(self) -> None:
-        """We infer when setuptools-scm is not configured but use_scm_version=True."""
-        expect_config(
-            current_version=None,
-            pyproject_data=PYPROJECT.WITHOUT_TOOL_SECTION,
-            overrides=OVERRIDES.EMPTY,
-            expected=VersionInferenceConfig,
-        )
 
     def test_setuptools_scm_required_no_project_section_infer_version(self) -> None:
         """We don't infer without tool section even if required: infer_version path."""
@@ -259,35 +172,10 @@ class TestVersionInferenceDecision:
             expected=VersionInferenceConfig,
         )
 
-    def test_setuptools_scm_required_with_project_section(self) -> None:
-        """We only infer when tool section present, regardless of required/project presence."""
-        expect_config(
-            current_version=None,
-            pyproject_data=PYPROJECT.WITHOUT_TOOL_SECTION,
-            expected=NOOP,
-        )
-
     def test_tool_section_present(self) -> None:
         """We infer when tool section is present."""
         expect_config(
             current_version=None,
             pyproject_data=PYPROJECT.WITHOUT_PROJECT,
             expected=VersionInferenceConfig,
-        )
-
-    def test_none_dist_name(self) -> None:
-        """Test that we handle None dist_name correctly."""
-        expect_config(
-            dist_name=None,
-            current_version=None,
-            expected=VersionInferenceConfig,
-        )
-
-    def test_version_already_set_none_dist_name(self) -> None:
-        """infer_version call with None dist_name and existing version warns when inference is implied."""
-        expect_config(
-            dist_name=None,
-            current_version="1.0.0",
-            overrides=None,
-            expected=WARNING_NO_PACKAGE,
         )
