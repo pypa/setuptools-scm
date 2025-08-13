@@ -89,6 +89,10 @@ def version_keyword(
 
     was_set_by_infer = getattr(dist, "_setuptools_scm_version_set_by_infer", False)
 
+    # Exit early if overrides is empty dict AND version was set by infer
+    if overrides == {} and was_set_by_infer:
+        return
+
     # Get pyproject data (support direct injection for tests)
     try:
         pyproject_data = read_pyproject(_given_result=_given_pyproject_data)
@@ -99,12 +103,18 @@ def version_keyword(
         log.debug("Configuration issue in pyproject.toml: %s", e)
         return
 
+    # Pass None as current_version if overrides is truthy AND version was set by infer
+    current_version = (
+        None
+        if (overrides and was_set_by_infer)
+        else (legacy_data.version or pyproject_data.project_version)
+    )
+
     result = _get_version_inference_config(
         dist_name=dist_name,
-        current_version=legacy_data.version or pyproject_data.project_version,
+        current_version=current_version,
         pyproject_data=pyproject_data,
         overrides=overrides,
-        was_set_by_infer=was_set_by_infer,
     )
 
     result.apply(dist)

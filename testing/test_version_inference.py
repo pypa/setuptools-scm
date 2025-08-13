@@ -3,7 +3,6 @@ from __future__ import annotations
 from setuptools_scm._integration.pyproject_reading import PyProjectData
 from setuptools_scm._integration.version_inference import VersionInferenceConfig
 from setuptools_scm._integration.version_inference import VersionInferenceError
-from setuptools_scm._integration.version_inference import VersionInferenceException
 from setuptools_scm._integration.version_inference import VersionInferenceNoOp
 from setuptools_scm._integration.version_inference import get_version_inference_config
 
@@ -11,43 +10,40 @@ from setuptools_scm._integration.version_inference import get_version_inference_
 class TestVersionInferenceDecision:
     """Test the version inference decision logic."""
 
-    def test_version_already_set_by_infer_with_overrides(self) -> None:
-        """Test that we proceed when version was set by infer_version but overrides provided."""
+    def test_version_already_set_with_overrides(self) -> None:
+        """Test that we get an error when version is already set and overrides provided."""
         result = get_version_inference_config(
             dist_name="test_package",
             current_version="1.0.0",
             pyproject_data=PyProjectData.for_testing(True, True, True),
             overrides={"key": "value"},
-            was_set_by_infer=True,
         )
 
-        assert isinstance(result, VersionInferenceConfig)
-        assert result.dist_name == "test_package"
-        assert result.overrides == {"key": "value"}
+        assert isinstance(result, VersionInferenceError)
+        assert "version of test_package already set" in result.message
 
-    def test_version_already_set_by_infer_no_overrides(self) -> None:
+    def test_version_already_set_no_overrides(self) -> None:
         """infer_version call with existing version should be a no-op."""
         result = get_version_inference_config(
             dist_name="test_package",
             current_version="1.0.0",
             pyproject_data=PyProjectData.for_testing(True, True, True),
             overrides=None,
-            was_set_by_infer=True,
         )
 
         assert isinstance(result, VersionInferenceNoOp)
 
-    def test_version_already_set_by_infer_empty_overrides(self) -> None:
-        """Test that we don't re-infer when version was set by infer_version with empty overrides (version_keyword call)."""
+    def test_version_already_set_empty_overrides(self) -> None:
+        """Test that we get an error when version is already set with empty overrides (version_keyword call)."""
         result = get_version_inference_config(
             dist_name="test_package",
             current_version="1.0.0",
             pyproject_data=PyProjectData.for_testing(True, True, True),
             overrides={},
-            was_set_by_infer=True,
         )
 
-        assert isinstance(result, VersionInferenceNoOp)
+        assert isinstance(result, VersionInferenceError)
+        assert "version of test_package already set" in result.message
 
     def test_version_already_set_by_something_else(self) -> None:
         """infer_version call with existing version set by something else should be a no-op."""
@@ -56,7 +52,6 @@ class TestVersionInferenceDecision:
             current_version="1.0.0",
             pyproject_data=PyProjectData.for_testing(True, True, True),
             overrides=None,
-            was_set_by_infer=False,
         )
 
         assert isinstance(result, VersionInferenceNoOp)
@@ -83,7 +78,8 @@ class TestVersionInferenceDecision:
             dist_name="test_package",
             current_version=None,
             pyproject_data=PyProjectData.for_testing(False, False, True),
-            overrides=None,  # infer_version call
+            overrides=None,
+            # infer_version call
         )
 
         assert isinstance(result, VersionInferenceNoOp)
@@ -94,7 +90,8 @@ class TestVersionInferenceDecision:
             dist_name="test_package",
             current_version=None,
             pyproject_data=PyProjectData.for_testing(False, False, True),
-            overrides={},  # version_keyword call with use_scm_version=True
+            overrides={},
+            # version_keyword call with use_scm_version=True
         )
 
         assert isinstance(result, VersionInferenceConfig)
@@ -107,7 +104,8 @@ class TestVersionInferenceDecision:
             dist_name="test_package",
             current_version=None,
             pyproject_data=PyProjectData.for_testing(True, False, False),
-            overrides=None,  # infer_version call
+            overrides=None,
+            # infer_version call
         )
 
         assert isinstance(result, VersionInferenceNoOp)
@@ -118,7 +116,8 @@ class TestVersionInferenceDecision:
             dist_name="test_package",
             current_version=None,
             pyproject_data=PyProjectData.for_testing(True, False, False),
-            overrides={},  # version_keyword call with use_scm_version=True
+            overrides={},
+            # version_keyword call with use_scm_version=True
         )
 
         assert isinstance(result, VersionInferenceConfig)
@@ -134,7 +133,8 @@ class TestVersionInferenceDecision:
             dist_name="test_package",
             current_version=None,
             pyproject_data=PyProjectData.for_testing(True, False, False),
-            overrides=overrides,  # version_keyword call with use_scm_version={config}
+            overrides=overrides,
+            # version_keyword call with use_scm_version={config}
         )
 
         assert isinstance(result, VersionInferenceConfig)
@@ -191,7 +191,6 @@ class TestVersionInferenceDecision:
             current_version="1.0.0",
             pyproject_data=PyProjectData.for_testing(True, True, True),
             overrides=None,
-            was_set_by_infer=False,
         )
 
         assert isinstance(result, VersionInferenceNoOp)
@@ -260,13 +259,3 @@ class TestVersionInferenceError:
         """Test VersionInferenceError default should_warn value."""
         error = VersionInferenceError("test message")
         assert error.should_warn is False
-
-
-class TestVersionInferenceException:
-    """Test the VersionInferenceException dataclass."""
-
-    def test_exception_creation(self) -> None:
-        """Test creating VersionInferenceException instances."""
-        original_exception = ValueError("test error")
-        wrapper = VersionInferenceException(original_exception)
-        assert wrapper.exception == original_exception

@@ -55,6 +55,5 @@ class GetVersionInferenceConfig(Protocol):
         current_version: str | None,
         pyproject_data: PyProjectData,
         overrides: dict[str, object] | None = None,
-        was_set_by_infer: bool = False,
     ) -> VersionInferenceApplicable:  # pragma: no cover - structural type
         ...
