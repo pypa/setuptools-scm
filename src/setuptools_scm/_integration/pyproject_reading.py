@@ -31,6 +31,7 @@ class PyProjectData:
     is_required: bool
     section_present: bool
     project_present: bool
+    build_requires: list[str]
 
     @classmethod
     def for_testing(
@@ -41,6 +42,8 @@ class PyProjectData:
         project_present: bool = False,
         project_name: str | None = None,
         has_dynamic_version: bool = True,
+        build_requires: list[str] | None = None,
+        local_scheme: str | None = None,
     ) -> PyProjectData:
         """Create a PyProjectData instance for testing purposes."""
         project: TOML_RESULT
@@ -54,14 +57,22 @@ class PyProjectData:
         if project_present and has_dynamic_version:
             project["dynamic"] = ["version"]
 
+        if build_requires is None:
+            build_requires = []
+        if local_scheme is not None:
+            assert section_present
+            section = {"local_scheme": local_scheme}
+        else:
+            section = {}
         return cls(
             path=DEFAULT_PYPROJECT_PATH,
             tool_name=DEFAULT_TOOL_NAME,
             project=project,
-            section={},
+            section=section,
             is_required=is_required,
             section_present=section_present,
             project_present=project_present,
+            build_requires=build_requires,
         )
 
     @classmethod
@@ -76,6 +87,7 @@ class PyProjectData:
             is_required=False,
             section_present=False,
             project_present=False,
+            build_requires=[],
         )
 
     @property
@@ -95,14 +107,28 @@ class PyProjectData:
         """
         Determine if setuptools_scm should infer version based on configuration.
 
-        Only infer when an explicit [tool.setuptools_scm] section is present.
-        The presence of setuptools-scm in build-system.requires or
-        project.dynamic does NOT auto-enable inference.
+        Infer when:
+        1. An explicit [tool.setuptools_scm] section is present, OR
+        2. setuptools-scm[simple] is in build-system.requires AND
+           version is in project.dynamic
 
         Returns:
             True if [tool.setuptools_scm] is present, otherwise False
         """
-        return self.section_present
+        # Original behavior: explicit tool section
+        if self.section_present:
+            return True
+
+        # New behavior: simple extra + dynamic version
+        if self.project_present:
+            dynamic_fields = self.project.get("dynamic", [])
+            if "version" in dynamic_fields:
+                if has_build_package_with_extra(
+                    self.build_requires, "setuptools-scm", "simple"
+                ):
+                    return True
+
+        return False
 
 
 def has_build_package(
@@ -112,6 +138,34 @@ def has_build_package(
         package_name = extract_package_name(requirement)
         if package_name == canonical_build_package_name:
             return True
+    return False
+
+
+def has_build_package_with_extra(
+    requires: Sequence[str], canonical_build_package_name: str, extra_name: str
+) -> bool:
+    """Check if a build dependency has a specific extra.
+
+    Args:
+        requires: List of requirement strings from build-system.requires
+        canonical_build_package_name: The canonical package name to look for
+        extra_name: The extra name to check for (e.g., "simple")
+
+    Returns:
+        True if the package is found with the specified extra
+    """
+    from .._requirement_cls import Requirement
+
+    for requirement_string in requires:
+        try:
+            requirement = Requirement(requirement_string)
+            package_name = extract_package_name(requirement_string)
+            if package_name == canonical_build_package_name:
+                if extra_name in requirement.extras:
+                    return True
+        except Exception:
+            # If parsing fails, continue to next requirement
+            continue
     return False
 
 
@@ -160,7 +214,14 @@ def read_pyproject(
     project = defn.get("project", {})
     project_present = "project" in defn
     pyproject_data = PyProjectData(
-        path, tool_name, project, section, is_required, section_present, project_present
+        path,
+        tool_name,
+        project,
+        section,
+        is_required,
+        section_present,
+        project_present,
+        requires,
     )
 
     return pyproject_data

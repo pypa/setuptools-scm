@@ -7,11 +7,40 @@
     Support for setuptools <80 is deprecated and will be removed in a future release.
     The examples below use `setuptools>=80` as the recommended version.
 
-There are two ways to enable `setuptools-scm` at build time:
+There are three ways to enable `setuptools-scm` at build time:
 
-### Explicit Configuration (required)
+### Simplified Activation (new)
 
-Add a `tool.setuptools_scm` section to explicitly opt-in to version inference:
+For basic usage without custom configuration, use the `simple` extra:
+
+```toml title="pyproject.toml"
+[build-system]
+requires = ["setuptools>=80", "setuptools-scm[simple]>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# version = "0.0.1"  # Remove any existing version parameter.
+dynamic = ["version"]
+
+# No [tool.setuptools_scm] section needed for basic usage!
+```
+
+This streamlined approach automatically enables version inference when:
+- `setuptools-scm[simple]` is listed in `build-system.requires`
+- `version` is included in `project.dynamic`
+
+!!! tip "When to use simplified activation"
+
+    Use simplified activation when you:
+    - Want basic SCM version inference with default settings
+    - Don't need custom version schemes or file writing
+    - Prefer minimal configuration
+
+    Upgrade to explicit configuration if you need customization.
+
+### Explicit Configuration (full control)
+
+Add a `tool.setuptools_scm` section for custom configuration:
 
 ```toml title="pyproject.toml"
 [build-system]
@@ -41,19 +70,16 @@ must ensure build requirements are installed.
 Alternatively, enable `setuptools-scm` via the `use_scm_version` keyword in `setup.py`.
 This also counts as an explicit opt-in and does not require a tool section.
 
-!!! warning "Simplified activation removed"
+!!! note "Legacy simplified activation"
 
-    Previous documentation described a "simplified" activation where listing
-    `setuptools_scm` in `build-system.requires` together with `project.dynamic = ["version"]`
-    would auto-enable version inference. This behavior has been removed due to
-    regressions and ambiguous activation. You must explicitly opt in via either:
+    Previous versions had a "simplified" activation where listing `setuptools_scm`
+    in `build-system.requires` together with `project.dynamic = ["version"]` would
+    auto-enable version inference. This behavior was removed due to regressions and
+    ambiguous activation.
 
-    - a `[tool.setuptools_scm]` section, or
-    - the `use_scm_version` setup keyword.
-
-    The presence of `setuptools_scm` (or `setuptools-scm`) in `build-system.requires`
-    is still recommended to ensure the dependency is available during builds, but it
-    no longer enables version inference by itself.
+    The new simplified activation using the `[simple]` extra provides the same
+    convenience but with explicit opt-in, making it clear when version inference
+    should be enabled.
 
 ### Version files
 

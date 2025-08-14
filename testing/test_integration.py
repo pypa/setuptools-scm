@@ -633,14 +633,12 @@ def test_integration_function_call_order(
 
     # Create PyProjectData with equivalent configuration - no file I/O!
     project_name = "test-call-order"
-    pyproject_data = PyProjectData(
-        path=Path("pyproject.toml"),
-        tool_name="setuptools_scm",
-        project={"name": project_name, "dynamic": ["version"]},
-        section={"local_scheme": "no-local-version"},  # [tool.setuptools_scm] config
-        is_required=True,  # setuptools_scm in build-system.requires
-        section_present=True,  # [tool.setuptools_scm] section exists
-        project_present=True,  # [project] section exists
+    pyproject_data = PyProjectData.for_testing(
+        project_name=project_name,
+        has_dynamic_version=True,
+        project_present=True,
+        section_present=True,
+        local_scheme="no-local-version",
     )
 
     dist = create_clean_distribution(project_name)

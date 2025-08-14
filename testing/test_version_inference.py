@@ -179,3 +179,77 @@ class TestVersionInferenceDecision:
             pyproject_data=PYPROJECT.WITHOUT_PROJECT,
             expected=VersionInferenceConfig,
         )
+
+    def test_simple_extra_with_dynamic_version_infers(self) -> None:
+        """We infer when setuptools-scm[simple] is in build-system.requires and version is dynamic."""
+        pyproject_data = PyProjectData.for_testing(
+            is_required=True,
+            section_present=False,
+            project_present=True,
+            has_dynamic_version=True,
+            build_requires=["setuptools-scm[simple]"],
+        )
+        expect_config(
+            current_version=None,
+            pyproject_data=pyproject_data,
+            expected=VersionInferenceConfig,
+        )
+
+    def test_simple_extra_without_dynamic_version_no_infer(self) -> None:
+        """We don't infer when setuptools-scm[simple] is present but version is not dynamic."""
+        pyproject_data = PyProjectData.for_testing(
+            is_required=True,
+            section_present=False,
+            project_present=True,
+            has_dynamic_version=False,
+            build_requires=["setuptools-scm[simple]"],
+        )
+        expect_config(
+            current_version=None,
+            pyproject_data=pyproject_data,
+            expected=NOOP,
+        )
+
+    def test_no_simple_extra_with_dynamic_version_no_infer(self) -> None:
+        """We don't infer when setuptools-scm (without simple extra) is present even with dynamic version."""
+        pyproject_data = PyProjectData.for_testing(
+            is_required=True,
+            section_present=False,
+            project_present=True,
+            has_dynamic_version=True,
+            build_requires=["setuptools-scm"],
+        )
+        expect_config(
+            current_version=None,
+            pyproject_data=pyproject_data,
+            expected=NOOP,
+        )
+
+    def test_simple_extra_no_project_section_no_infer(self) -> None:
+        """We don't infer when setuptools-scm[simple] is present but no project section."""
+        pyproject_data = PyProjectData.for_testing(
+            is_required=True,
+            section_present=False,
+            project_present=False,
+            build_requires=["setuptools-scm[simple]"],
+        )
+        expect_config(
+            current_version=None,
+            pyproject_data=pyproject_data,
+            expected=NOOP,
+        )
+
+    def test_simple_extra_with_version_warns(self) -> None:
+        """We warn when setuptools-scm[simple] is present with dynamic version but version is already set."""
+        pyproject_data = PyProjectData.for_testing(
+            is_required=True,
+            section_present=False,
+            project_present=True,
+            has_dynamic_version=True,
+            build_requires=["setuptools-scm[simple]"],
+        )
+        expect_config(
+            current_version="1.0.0",
+            pyproject_data=pyproject_data,
+            expected=WARNING_PACKAGE,
+        )

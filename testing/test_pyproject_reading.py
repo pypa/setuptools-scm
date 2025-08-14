@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from setuptools_scm._integration.pyproject_reading import has_build_package_with_extra
 from setuptools_scm._integration.pyproject_reading import read_pyproject
 
 
@@ -40,3 +41,70 @@ dynamic = ["version"]
         assert result.section_present is True
         assert result.project_present is True
         assert result.project.get("name") == "test-package"
+
+
+class TestBuildPackageWithExtra:
+    """Test the has_build_package_with_extra function."""
+
+    def test_has_simple_extra(self) -> None:
+        """Test that simple extra is detected correctly."""
+        requires = ["setuptools-scm[simple]"]
+        assert (
+            has_build_package_with_extra(requires, "setuptools-scm", "simple") is True
+        )
+
+    def test_has_no_simple_extra(self) -> None:
+        """Test that missing simple extra is detected correctly."""
+        requires = ["setuptools-scm"]
+        assert (
+            has_build_package_with_extra(requires, "setuptools-scm", "simple") is False
+        )
+
+    def test_has_different_extra(self) -> None:
+        """Test that different extra is not detected as simple."""
+        requires = ["setuptools-scm[toml]"]
+        assert (
+            has_build_package_with_extra(requires, "setuptools-scm", "simple") is False
+        )
+
+    def test_has_multiple_extras_including_simple(self) -> None:
+        """Test that simple extra is detected when multiple extras are present."""
+        requires = ["setuptools-scm[simple,toml]"]
+        assert (
+            has_build_package_with_extra(requires, "setuptools-scm", "simple") is True
+        )
+
+    def test_different_package_with_simple_extra(self) -> None:
+        """Test that simple extra on different package is not detected."""
+        requires = ["other-package[simple]"]
+        assert (
+            has_build_package_with_extra(requires, "setuptools-scm", "simple") is False
+        )
+
+    def test_version_specifier_with_extra(self) -> None:
+        """Test that version specifiers work correctly with extras."""
+        requires = ["setuptools-scm[simple]>=8.0"]
+        assert (
+            has_build_package_with_extra(requires, "setuptools-scm", "simple") is True
+        )
+
+    def test_complex_requirement_with_extra(self) -> None:
+        """Test that complex requirements with extras work correctly."""
+        requires = ["setuptools-scm[simple]>=8.0,<9.0"]
+        assert (
+            has_build_package_with_extra(requires, "setuptools-scm", "simple") is True
+        )
+
+    def test_empty_requires_list(self) -> None:
+        """Test that empty requires list returns False."""
+        requires: list[str] = []
+        assert (
+            has_build_package_with_extra(requires, "setuptools-scm", "simple") is False
+        )
+
+    def test_invalid_requirement_string(self) -> None:
+        """Test that invalid requirement strings are handled gracefully."""
+        requires = ["invalid requirement string"]
+        assert (
+            has_build_package_with_extra(requires, "setuptools-scm", "simple") is False
+        )

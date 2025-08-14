@@ -2,10 +2,23 @@
 
 ## When is configuration needed?
 
-Starting with setuptools-scm 9.0, explicit configuration is required to enable
-version inference, either via the `[tool.setuptools_scm]` section or the
-`use_scm_version` setup keyword. Listing `setuptools_scm` in `build-system.requires`
-and declaring `project.dynamic = ["version"]` no longer auto-enables inference.
+setuptools-scm provides flexible activation options:
+
+### Simplified Activation (No Configuration Needed)
+
+For basic usage, use the `simple` extra with no configuration:
+
+```toml title="pyproject.toml"
+[build-system]
+requires = ["setuptools>=80", "setuptools-scm[simple]>=8"]
+
+[project]
+dynamic = ["version"]
+```
+
+This automatically enables version inference with default settings.
+
+### Explicit Configuration (Full Control)
 
 Use the `[tool.setuptools_scm]` section when you need to:
   - Write version files (`version_file`)
