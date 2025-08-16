@@ -30,6 +30,23 @@ Note: `setuptools-scm>=8` intentionally doesn't depend on setuptools to ease non
 Please ensure a recent version of setuptools is installed (minimum: >=61, recommended: >=80 for best compatibility).
 Support for setuptools <80 is deprecated and will be removed in a future release.
 
+**Simplified setup (recommended for basic usage):**
+
+```toml title="pyproject.toml"
+[build-system]
+requires = ["setuptools>=80", "setuptools-scm[simple]>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "example"
+# Important: Remove any existing version declaration
+# version = "0.0.1"
+dynamic = ["version"]
+
+# No additional configuration needed!
+```
+
+**With custom configuration:**
 
 ```toml title="pyproject.toml"
 [build-system]
@@ -38,13 +55,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "example"
-# Important: Remove any existing version declaration
-# version = "0.0.1"
 dynamic = ["version"]
-# more missing
 
 [tool.setuptools_scm]
-´´´
+# Custom configuration options go here
+```
 
 
 !!! tip "Recommended Tag Format"

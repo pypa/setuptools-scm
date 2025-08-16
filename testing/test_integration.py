@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import importlib.metadata
 import logging
-import os
 import re
 import subprocess
 import sys
@@ -17,6 +16,8 @@ import pytest
 from packaging.version import Version
 
 from setuptools_scm._integration import setuptools as setuptools_integration
+from setuptools_scm._integration.pyproject_reading import PyProjectData
+from setuptools_scm._integration.setup_cfg import SetuptoolsBasicData
 from setuptools_scm._requirement_cls import extract_package_name
 
 if TYPE_CHECKING:
@@ -44,8 +45,6 @@ def wd(wd: WorkDir) -> WorkDir:
 
 
 def test_pyproject_support(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
     pkg = tmp_path / "package"
     pkg.mkdir()
@@ -70,217 +69,11 @@ def test_pyproject_support(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> N
     assert res.stdout == "12.34"
 
 
-PYPROJECT_FILES = {
-    "setup.py": "[tool.setuptools_scm]\n",
-    "setup.cfg": "[tool.setuptools_scm]\n",
-    "pyproject tool.setuptools_scm": (
-        "[project]\nname='setuptools_scm_example'\n[tool.setuptools_scm]"
-    ),
-    "pyproject.project": (
-        "[project]\nname='setuptools_scm_example'\n"
-        "dynamic=['version']\n[tool.setuptools_scm]"
-    ),
-}
-
-SETUP_PY_PLAIN = "__import__('setuptools').setup()"
-SETUP_PY_WITH_NAME = "__import__('setuptools').setup(name='setuptools_scm_example')"
-
-SETUP_PY_FILES = {
-    "setup.py": SETUP_PY_WITH_NAME,
-    "setup.cfg": SETUP_PY_PLAIN,
-    "pyproject tool.setuptools_scm": SETUP_PY_PLAIN,
-    "pyproject.project": SETUP_PY_PLAIN,
-}
-
-SETUP_CFG_FILES = {
-    "setup.py": "",
-    "setup.cfg": "[metadata]\nname=setuptools_scm_example",
-    "pyproject tool.setuptools_scm": "",
-    "pyproject.project": "",
-}
-
-with_metadata_in = pytest.mark.parametrize(
-    "metadata_in",
-    ["setup.py", "setup.cfg", "pyproject tool.setuptools_scm", "pyproject.project"],
-)
-
-
-@with_metadata_in
-def test_pyproject_support_with_git(wd: WorkDir, metadata_in: str) -> None:
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    # Write files first
-    if metadata_in == "pyproject tool.setuptools_scm":
-        wd.write(
-            "pyproject.toml",
-            textwrap.dedent(
-                """
-                [build-system]
-                requires = ["setuptools>=80", "setuptools-scm>=8"]
-                build-backend = "setuptools.build_meta"
-
-                [tool.setuptools_scm]
-                dist_name='setuptools_scm_example'
-                """
-            ),
-        )
-    elif metadata_in == "pyproject.project":
-        wd.write(
-            "pyproject.toml",
-            textwrap.dedent(
-                """
-                [build-system]
-                requires = ["setuptools>=80", "setuptools-scm>=8"]
-                build-backend = "setuptools.build_meta"
-
-                [project]
-                name='setuptools_scm_example'
-                dynamic=['version']
-                [tool.setuptools_scm]
-                """
-            ),
-        )
-    else:
-        # For "setup.py" and "setup.cfg" cases, use the PYPROJECT_FILES content
-        wd.write("pyproject.toml", PYPROJECT_FILES[metadata_in])
-
-    wd.write("setup.py", SETUP_PY_FILES[metadata_in])
-    wd.write("setup.cfg", SETUP_CFG_FILES[metadata_in])
-
-    # Now do git operations
-    wd("git init")
-    wd("git config user.email test@example.com")
-    wd('git config user.name "a test"')
-    wd("git add .")
-    wd('git commit -m "initial"')
-    wd("git tag v1.0.0")
-
-    res = run([sys.executable, "setup.py", "--version"], wd.cwd)
-    assert res.stdout == "1.0.0"
-
-
-def test_pyproject_no_project_section_no_auto_activation(wd: WorkDir) -> None:
-    """Test that setuptools_scm doesn't auto-activate when pyproject.toml has no project section."""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    # Create pyproject.toml with setuptools-scm in build-system.requires but no project section
-    wd.write(
-        "pyproject.toml",
-        textwrap.dedent(
-            """
-            [build-system]
-            requires = ["setuptools>=80", "setuptools-scm>=8"]
-            build-backend = "setuptools.build_meta"
-            """
-        ),
-    )
-
-    wd.write("setup.py", "__import__('setuptools').setup(name='test_package')")
-
-    # Now do git operations
-    wd("git init")
-    wd("git config user.email test@example.com")
-    wd('git config user.name "a test"')
-    wd("git add .")
-    wd('git commit -m "initial"')
-    wd("git tag v1.0.0")
-
-    # Should not auto-activate setuptools_scm, so version should be None
-    res = run([sys.executable, "setup.py", "--version"], wd.cwd)
-    print(f"Version output: {res.stdout!r}")
-    # The version should not be from setuptools_scm (which would be 1.0.0 from git tag)
-    # but should be the default setuptools version (0.0.0)
-    assert res.stdout == "0.0.0"  # Default version when no version is set
-
-
-def test_pyproject_no_project_section_no_error(wd: WorkDir) -> None:
-    """Test that setuptools_scm doesn't raise an error when there's no project section."""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    # Create pyproject.toml with setuptools-scm in build-system.requires but no project section
-    wd.write(
-        "pyproject.toml",
-        textwrap.dedent(
-            """
-            [build-system]
-            requires = ["setuptools>=80", "setuptools-scm>=8"]
-            build-backend = "setuptools.build_meta"
-            """
-        ),
-    )
-
-    # This should NOT raise an error because there's no project section
-    # setuptools_scm should simply not auto-activate
-    from setuptools_scm._integration.pyproject_reading import read_pyproject
-
-    pyproject_data = read_pyproject(wd.cwd / "pyproject.toml")
-    # Should not auto-activate when no project section exists
-    assert not pyproject_data.is_required or not pyproject_data.section_present
-
-
-@pytest.mark.parametrize("use_scm_version", ["True", "{}", "lambda: {}"])
-def test_pyproject_missing_setup_hook_works(wd: WorkDir, use_scm_version: str) -> None:
-    wd.write(
-        "setup.py",
-        f"""__import__('setuptools').setup(
-    name="example-scm-unique",
-    use_scm_version={use_scm_version},
-    )""",
-    )
-    wd.write(
-        "pyproject.toml",
-        textwrap.dedent(
-            """
-            [build-system]
-            requires=["setuptools", "setuptools_scm"]
-            build-backend = "setuptools.build_meta"
-            [tool.setuptools_scm]
-            """
-        ),
-    )
-
-    res = subprocess.run(
-        [sys.executable, "setup.py", "--version"],
-        cwd=wd.cwd,
-        check=True,
-        stdout=subprocess.PIPE,
-        encoding="utf-8",
-    )
-    stripped = res.stdout.strip()
-    assert stripped.endswith("0.1.dev0+d20090213")
-
-    res_build = subprocess.run(
-        [sys.executable, "-m", "build", "-nxw"],
-        env={k: v for k, v in os.environ.items() if k != "SETUPTOOLS_SCM_DEBUG"},
-        cwd=wd.cwd,
-    )
-    import pprint
-
-    pprint.pprint(res_build)
-    wheel: Path = next(wd.cwd.joinpath("dist").iterdir())
-    assert "0.1.dev0+d20090213" in str(wheel)
-
-
 def test_pretend_version(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> None:
     monkeypatch.setenv(PRETEND_KEY, "1.0.0")
 
     assert wd.get_version() == "1.0.0"
     assert wd.get_version(dist_name="ignored") == "1.0.0"
-
-
-@with_metadata_in
-def test_pretend_version_named_pyproject_integration(
-    monkeypatch: pytest.MonkeyPatch, wd: WorkDir, metadata_in: str
-) -> None:
-    test_pyproject_support_with_git(wd, metadata_in)
-    monkeypatch.setenv(
-        PRETEND_KEY_NAMED.format(name="setuptools_scm_example".upper()), "3.2.1"
-    )
-    res = wd([sys.executable, "setup.py", "--version"])
-    assert res.endswith("3.2.1")
 
 
 def test_pretend_version_named(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> None:
@@ -303,7 +96,6 @@ def test_pretend_version_rejects_invalid_string(
 ) -> None:
     """Test that invalid pretend versions raise errors and bubble up."""
     monkeypatch.setenv(PRETEND_KEY, "dummy")
-    wd.write("setup.py", SETUP_PY_PLAIN)
 
     # With strict validation, invalid pretend versions should raise errors
     with pytest.raises(Exception, match=r".*dummy.*"):
@@ -323,7 +115,6 @@ def test_pretend_metadata_with_version(
     assert version == "1.2.3.dev4+g1337beef"
 
     # Test version file template functionality
-    wd.write("setup.py", SETUP_PY_PLAIN)
     wd("mkdir -p src")
     version_file_content = """
 version = '{version}'
@@ -400,7 +191,6 @@ def test_pretend_metadata_with_scm_version(
     assert "1.0.1.dev7+gcustom123" == version
 
     # Test version file to see if metadata was applied
-    wd.write("setup.py", SETUP_PY_PLAIN)
     wd("mkdir -p src")
     version_file_content = """
 version = '{version}'
@@ -628,7 +418,7 @@ def test_distribution_provides_extras() -> None:
 
     dist = distribution("setuptools_scm")
     pe: list[str] = dist.metadata.get_all("Provides-Extra", [])
-    assert sorted(pe) == ["rich", "toml"]
+    assert sorted(pe) == ["rich", "simple", "toml"]
 
 
 @pytest.mark.issue(760)
@@ -644,10 +434,65 @@ def test_unicode_in_setup_cfg(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-    from setuptools_scm._integration.setup_cfg import read_dist_name_from_setup_cfg
+    from setuptools_scm._integration.setup_cfg import read_setup_cfg
 
-    name = read_dist_name_from_setup_cfg(cfg)
+    name = read_setup_cfg(cfg).name
     assert name == "configparser"
+
+    # also ensure we can parse a version if present (legacy projects)
+    cfg.write_text(
+        textwrap.dedent(
+            """
+            [metadata]
+            name = configparser
+            version = 1.2.3
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    data = read_setup_cfg(cfg)
+    assert isinstance(data, SetuptoolsBasicData)
+    assert data.name == "configparser"
+    assert data.version == "1.2.3"
+
+
+def test_setup_cfg_version_prevents_inference_version_keyword(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Legacy project setup - we construct the data directly since files are not read anyway
+    monkeypatch.chdir(tmp_path)
+
+    dist = create_clean_distribution("legacy-proj")
+
+    # Using keyword should detect an existing version via legacy data and avoid inferring
+    from setuptools_scm._integration import setuptools as setuptools_integration
+    from setuptools_scm._integration.pyproject_reading import PyProjectData
+    from setuptools_scm._integration.setup_cfg import SetuptoolsBasicData
+
+    # Construct PyProjectData directly without requiring build backend inference
+    pyproject_data = PyProjectData.for_testing(
+        is_required=False,  # setuptools-scm not required
+        section_present=False,  # no [tool.setuptools_scm] section
+        project_present=False,  # no [project] section
+    )
+
+    # Construct legacy data with version from setup.cfg
+    legacy_data = SetuptoolsBasicData(
+        path=tmp_path / "setup.cfg", name="legacy-proj", version="0.9.0"
+    )
+
+    with pytest.warns(UserWarning, match="version of legacy-proj already set"):
+        setuptools_integration.version_keyword(
+            dist,
+            "use_scm_version",
+            True,
+            _given_pyproject_data=pyproject_data,
+            _given_legacy_data=legacy_data,
+        )
+
+    # setuptools_scm should not set a version when setup.cfg already provided one
+    assert dist.metadata.version is None
 
 
 def test_setuptools_version_keyword_ensures_regex(
@@ -683,143 +528,6 @@ def test_git_archival_plugin_ignored(tmp_path: Path, ep_name: str) -> None:
     assert "setuptools_scm_git_archive:parse" not in imports
 
 
-def test_pyproject_build_system_requires_setuptools_scm(wd: WorkDir) -> None:
-    """Test that setuptools_scm is enabled when present in build-system.requires"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    # Test with setuptools_scm in build-system.requires but no [tool.setuptools_scm] section
-    wd.write(
-        "pyproject.toml",
-        textwrap.dedent(
-            """
-            [build-system]
-            requires = ["setuptools>=64", "setuptools_scm>=8"]
-            build-backend = "setuptools.build_meta"
-
-            [project]
-            name = "test-package"
-            dynamic = ["version"]
-            """
-        ),
-    )
-    wd.write("setup.py", "__import__('setuptools').setup()")
-
-    res = wd([sys.executable, "setup.py", "--version"])
-    assert res.endswith("0.1.dev0+d20090213")
-
-
-def test_pyproject_build_system_requires_setuptools_scm_dash_variant(
-    wd: WorkDir,
-) -> None:
-    """Test that setuptools-scm (dash variant) is also detected in build-system.requires"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    # Test with setuptools-scm (dash variant) in build-system.requires
-    wd.write(
-        "pyproject.toml",
-        textwrap.dedent(
-            """
-            [build-system]
-            requires = ["setuptools>=64", "setuptools-scm>=8"]
-            build-backend = "setuptools.build_meta"
-
-            [project]
-            name = "test-package"
-            dynamic = ["version"]
-            """
-        ),
-    )
-    wd.write("setup.py", "__import__('setuptools').setup()")
-
-    res = wd([sys.executable, "setup.py", "--version"])
-    assert res.endswith("0.1.dev0+d20090213")
-
-
-def test_pyproject_build_system_requires_with_extras(wd: WorkDir) -> None:
-    """Test that setuptools_scm[toml] is detected in build-system.requires"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    # Test with setuptools_scm[toml] (with extras) in build-system.requires
-    wd.write(
-        "pyproject.toml",
-        textwrap.dedent(
-            """
-            [build-system]
-            requires = ["setuptools>=64", "setuptools_scm[toml]>=8"]
-            build-backend = "setuptools.build_meta"
-
-            [project]
-            name = "test-package"
-            dynamic = ["version"]
-            """
-        ),
-    )
-    wd.write("setup.py", "__import__('setuptools').setup()")
-
-    res = wd([sys.executable, "setup.py", "--version"])
-    assert res.endswith("0.1.dev0+d20090213")
-
-
-def test_pyproject_build_system_requires_not_present(wd: WorkDir) -> None:
-    """Test that version is not set when setuptools_scm is not in build-system.requires and no [tool.setuptools_scm] section"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    # Test without setuptools_scm in build-system.requires and no [tool.setuptools_scm] section
-    wd.write(
-        "pyproject.toml",
-        textwrap.dedent(
-            """
-            [build-system]
-            requires = ["setuptools>=64", "wheel"]
-            build-backend = "setuptools.build_meta"
-
-            [project]
-            name = "test-package"
-            dynamic = ["version"]
-            """
-        ),
-    )
-    wd.write("setup.py", "__import__('setuptools').setup()")
-
-    res = wd([sys.executable, "setup.py", "--version"])
-    assert res == "0.0.0"
-
-
-def test_pyproject_build_system_requires_priority_over_tool_section(
-    wd: WorkDir,
-) -> None:
-    """Test that both build-system.requires and [tool.setuptools_scm] section work together"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    # Test with both setuptools_scm in build-system.requires AND [tool.setuptools_scm] section
-    wd.write(
-        "pyproject.toml",
-        textwrap.dedent(
-            """
-            [build-system]
-            requires = ["setuptools>=64", "setuptools_scm>=8"]
-            build-backend = "setuptools.build_meta"
-
-            [project]
-            name = "test-package"
-            dynamic = ["version"]
-
-            [tool.setuptools_scm]
-            # empty section, should work with build-system detection
-            """
-        ),
-    )
-    wd.write("setup.py", "__import__('setuptools').setup()")
-
-    res = wd([sys.executable, "setup.py", "--version"])
-    assert res.endswith("0.1.dev0+d20090213")
-
-
 @pytest.mark.parametrize("base_name", ["setuptools_scm", "setuptools-scm"])
 @pytest.mark.parametrize(
     "requirements",
@@ -829,93 +537,6 @@ def test_pyproject_build_system_requires_priority_over_tool_section(
 def test_extract_package_name(base_name: str, requirements: str) -> None:
     """Test the _extract_package_name helper function"""
     assert extract_package_name(f"{base_name}{requirements}") == "setuptools-scm"
-
-
-def test_build_requires_integration_with_config_reading(wd: WorkDir) -> None:
-    """Test that Configuration.from_file handles build-system.requires automatically"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    from setuptools_scm._config import Configuration
-
-    # Test: pyproject.toml with setuptools_scm in build-system.requires but no tool section
-    wd.write(
-        "pyproject.toml",
-        textwrap.dedent(
-            """
-            [build-system]
-            requires = ["setuptools>=64", "setuptools_scm>=8"]
-
-            [project]
-            name = "test-package"
-            dynamic = ["version"]
-            """
-        ),
-    )
-
-    # This should NOT raise an error because setuptools_scm is in build-system.requires
-    config = Configuration.from_file(
-        name=wd.cwd.joinpath("pyproject.toml"), dist_name="test-package"
-    )
-    assert config.dist_name == "test-package"
-
-    # Test: pyproject.toml with setuptools-scm (dash variant) in build-system.requires
-    wd.write(
-        "pyproject.toml",
-        textwrap.dedent(
-            """
-            [build-system]
-            requires = ["setuptools>=64", "setuptools-scm>=8"]
-
-            [project]
-            name = "test-package"
-            dynamic = ["version"]
-            """
-        ),
-    )
-
-    # This should also NOT raise an error
-    config = Configuration.from_file(
-        name=wd.cwd.joinpath("pyproject.toml"), dist_name="test-package"
-    )
-    assert config.dist_name == "test-package"
-
-
-def test_improved_error_message_mentions_both_config_options(
-    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Test that the error message mentions both configuration options"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    # Create pyproject.toml without setuptools_scm configuration
-    wd.write(
-        "pyproject.toml",
-        textwrap.dedent(
-            """
-            [project]
-            name = "test-package"
-
-            [build-system]
-            requires = ["setuptools>=64"]
-            """
-        ),
-    )
-
-    from setuptools_scm._config import Configuration
-
-    with pytest.raises(LookupError) as exc_info:
-        Configuration.from_file(
-            name=wd.cwd.joinpath("pyproject.toml"),
-            dist_name="test-package",
-            missing_file_ok=False,
-        )
-
-    error_msg = str(exc_info.value)
-    # Check that the error message mentions both configuration options
-    assert "tool.setuptools_scm" in error_msg
-    assert "build-system" in error_msg
-    assert "requires" in error_msg
 
 
 # Helper function for creating and managing distribution objects
@@ -939,33 +560,35 @@ def create_clean_distribution(name: str) -> setuptools.Distribution:
     return dist
 
 
-def version_keyword_default(dist: setuptools.Distribution) -> None:
+def version_keyword_default(
+    dist: setuptools.Distribution, pyproject_data: PyProjectData | None = None
+) -> None:
     """Helper to call version_keyword with default config and return the result."""
 
-    setuptools_integration.version_keyword(dist, "use_scm_version", True)
-
-
-def version_keyword_calver(dist: setuptools.Distribution) -> None:
-    """Helper to call version_keyword with calver-by-date scheme and return the result."""
-
     setuptools_integration.version_keyword(
-        dist, "use_scm_version", {"version_scheme": "calver-by-date"}
+        dist, "use_scm_version", True, _given_pyproject_data=pyproject_data
     )
 
 
-# Test cases: (first_func, second_func, expected_final_version)
-# We use a controlled date to make calver deterministic
-TEST_CASES = [
-    # Real-world scenarios: infer_version and version_keyword can be called in either order
-    (setuptools_integration.infer_version, version_keyword_default, "1.0.1.dev1"),
-    (
-        setuptools_integration.infer_version,
-        version_keyword_calver,
-        "9.2.13.0.dev1",
-    ),  # calver should win but doesn't
-    (version_keyword_default, setuptools_integration.infer_version, "1.0.1.dev1"),
-    (version_keyword_calver, setuptools_integration.infer_version, "9.2.13.0.dev1"),
-]
+def version_keyword_calver(
+    dist: setuptools.Distribution, pyproject_data: PyProjectData | None = None
+) -> None:
+    """Helper to call version_keyword with calver-by-date scheme and return the result."""
+
+    setuptools_integration.version_keyword(
+        dist,
+        "use_scm_version",
+        {"version_scheme": "calver-by-date"},
+        _given_pyproject_data=pyproject_data,
+    )
+
+
+def infer_version_with_data(
+    dist: setuptools.Distribution, pyproject_data: PyProjectData | None = None
+) -> None:
+    """Helper to call infer_version with pyproject data."""
+
+    setuptools_integration.infer_version(dist, _given_pyproject_data=pyproject_data)
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools_scm/issues/1022")
@@ -975,7 +598,13 @@ TEST_CASES = [
 )
 @pytest.mark.parametrize(
     ("first_integration", "second_integration", "expected_final_version"),
-    TEST_CASES,
+    [
+        # infer_version and version_keyword can be called in either order
+        (infer_version_with_data, version_keyword_default, "1.0.1.dev1"),
+        (infer_version_with_data, version_keyword_calver, "9.2.13.0.dev1"),
+        (version_keyword_default, infer_version_with_data, "1.0.1.dev1"),
+        (version_keyword_calver, infer_version_with_data, "9.2.13.0.dev1"),
+    ],
 )
 def test_integration_function_call_order(
     wd: WorkDir,
@@ -992,7 +621,9 @@ def test_integration_function_call_order(
     # Set up controlled environment for deterministic versions
     monkeypatch.setenv("SOURCE_DATE_EPOCH", "1234567890")  # 2009-02-13T23:31:30+00:00
     # Override node_date to get consistent calver versions
-    monkeypatch.setenv("SETUPTOOLS_SCM_PRETEND_METADATA", "{node_date=2009-02-13}")
+    monkeypatch.setenv(
+        "SETUPTOOLS_SCM_PRETEND_METADATA_FOR_TEST_CALL_ORDER", "{node_date=2009-02-13}"
+    )
 
     # Set up a git repository with a tag and known commit hash
     wd.commit_testfile("test")
@@ -1000,28 +631,21 @@ def test_integration_function_call_order(
     wd.commit_testfile("test2")  # Add another commit to get distance
     monkeypatch.chdir(wd.cwd)
 
-    # Create a pyproject.toml file
-    pyproject_content = f"""
-[build-system]
-requires = ["setuptools", "setuptools_scm"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "test-pkg-{first_integration.__name__}-{second_integration.__name__}"
-dynamic = ["version"]
-
-[tool.setuptools_scm]
-local_scheme = "no-local-version"
-"""
-    wd.write("pyproject.toml", pyproject_content)
-
-    dist = create_clean_distribution(
-        f"test-pkg-{first_integration.__name__}-{second_integration.__name__}"
+    # Create PyProjectData with equivalent configuration - no file I/O!
+    project_name = "test-call-order"
+    pyproject_data = PyProjectData.for_testing(
+        project_name=project_name,
+        has_dynamic_version=True,
+        project_present=True,
+        section_present=True,
+        local_scheme="no-local-version",
     )
 
-    # Call both integration functions in order
-    first_integration(dist)
-    second_integration(dist)
+    dist = create_clean_distribution(project_name)
+
+    # Call both integration functions in order with direct data injection
+    first_integration(dist, pyproject_data)
+    second_integration(dist, pyproject_data)
 
     # Get the final version directly from the distribution
     final_version = dist.metadata.version
@@ -1031,280 +655,6 @@ local_scheme = "no-local-version"
     assert final_version == expected_final_version, (
         f"Expected version '{expected_final_version}' but got '{final_version}'"
     )
-
-
-def test_infer_version_with_build_requires_no_tool_section(
-    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Test that infer_version works when setuptools-scm is in build_requires but no [tool.setuptools_scm] section"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    # Set up a git repository with a tag
-    wd.commit_testfile("test")
-    wd("git tag 1.0.0")
-    monkeypatch.chdir(wd.cwd)
-
-    # Create a pyproject.toml file with setuptools_scm in build-system.requires but NO [tool.setuptools_scm] section
-    pyproject_content = """
-[build-system]
-requires = ["setuptools>=80", "setuptools_scm>=8"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "test-package-infer-version"
-dynamic = ["version"]
-"""
-    wd.write("pyproject.toml", pyproject_content)
-
-    from setuptools_scm._integration.setuptools import infer_version
-
-    # Create clean distribution
-    dist = create_clean_distribution("test-package-infer-version")
-
-    # Call infer_version - this should work because setuptools_scm is in build-system.requires
-    infer_version(dist)
-
-    # Verify that version was set
-    assert dist.metadata.version is not None
-    assert dist.metadata.version == "1.0.0"
-
-    # Verify that the marker was set
-    assert getattr(dist, "_setuptools_scm_version_set_by_infer", False) is True
-
-
-def test_infer_version_with_build_requires_dash_variant_no_tool_section(
-    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Test that infer_version works when setuptools-scm (dash variant) is in build_requires but no [tool.setuptools_scm] section"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    # Set up a git repository with a tag
-    wd.commit_testfile("test")
-    wd("git tag 1.0.0")
-    monkeypatch.chdir(wd.cwd)
-
-    # Create a pyproject.toml file with setuptools-scm (dash variant) in build-system.requires but NO [tool.setuptools_scm] section
-    pyproject_content = """
-[build-system]
-requires = ["setuptools>=80", "setuptools-scm>=8"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "test-package-infer-version-dash"
-dynamic = ["version"]
-"""
-    wd.write("pyproject.toml", pyproject_content)
-
-    from setuptools_scm._integration.setuptools import infer_version
-
-    # Create clean distribution
-    dist = create_clean_distribution("test-package-infer-version-dash")
-
-    # Call infer_version - this should work because setuptools-scm is in build-system.requires
-    infer_version(dist)
-
-    # Verify that version was set
-    assert dist.metadata.version is not None
-    assert dist.metadata.version == "1.0.0"
-
-    # Verify that the marker was set
-    assert getattr(dist, "_setuptools_scm_version_set_by_infer", False) is True
-
-
-def test_infer_version_without_build_requires_no_tool_section_silently_returns(
-    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Test that infer_version silently returns when setuptools-scm is NOT in build_requires and no [tool.setuptools_scm] section"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    # Set up a git repository with a tag
-    wd.commit_testfile("test")
-    wd("git tag 1.0.0")
-    monkeypatch.chdir(wd.cwd)
-
-    # Create a pyproject.toml file WITHOUT setuptools_scm in build-system.requires and NO [tool.setuptools_scm] section
-    pyproject_content = """
-[build-system]
-requires = ["setuptools>=80", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "test-package-no-scm"
-dynamic = ["version"]
-"""
-    wd.write("pyproject.toml", pyproject_content)
-
-    from setuptools_scm._integration.setuptools import infer_version
-
-    # Create clean distribution
-    dist = create_clean_distribution("test-package-no-scm")
-
-    infer_version(dist)
-    assert dist.metadata.version is None
-
-
-def test_version_keyword_no_scm_dependency_works(
-    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    # Set up a git repository with a tag
-    wd.commit_testfile("test")
-    wd("git tag 1.0.0")
-    monkeypatch.chdir(wd.cwd)
-
-    # Create a pyproject.toml file WITHOUT setuptools_scm in build-system.requires
-    # and WITHOUT [tool.setuptools_scm] section
-    pyproject_content = """
-[build-system]
-requires = ["setuptools>=80"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "test-package-no-scm"
-dynamic = ["version"]
-"""
-    wd.write("pyproject.toml", pyproject_content)
-
-    import setuptools
-
-    from setuptools_scm._integration.setuptools import version_keyword
-
-    # Create distribution
-    dist = setuptools.Distribution({"name": "test-package-no-scm"})
-
-    version_keyword(dist, "use_scm_version", True)
-    assert dist.metadata.version == "1.0.0"
-
-
-def test_verify_dynamic_version_when_required_missing_dynamic(
-    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Test that verification fails when setuptools-scm is in build-system.requires but dynamic=['version'] is missing"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    # Change to the test directory
-    monkeypatch.chdir(wd.cwd)
-
-    # Create a pyproject.toml file with setuptools-scm in build-system.requires but NO dynamic=['version']
-    pyproject_content = """
-[build-system]
-requires = ["setuptools>=80", "setuptools-scm>=8"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "test-package-missing-dynamic"
-# Missing: dynamic = ["version"]
-"""
-    wd.write("pyproject.toml", pyproject_content)
-
-    from setuptools_scm._integration.pyproject_reading import read_pyproject
-
-    # This should raise a ValueError because dynamic=['version'] is missing
-    with pytest.raises(
-        ValueError, match="dynamic=\\['version'\\] is not set in \\[project\\]"
-    ):
-        read_pyproject(Path("pyproject.toml"), missing_section_ok=True)
-
-
-def test_verify_dynamic_version_when_required_with_tool_section(
-    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Test that verification passes when setuptools-scm is in build-system.requires and [tool.setuptools_scm] section exists"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    # Change to the test directory
-    monkeypatch.chdir(wd.cwd)
-
-    # Create a pyproject.toml file with setuptools-scm in build-system.requires and [tool.setuptools_scm] section
-    pyproject_content = """
-[build-system]
-requires = ["setuptools>=80", "setuptools-scm>=8"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "test-package-with-tool-section"
-# Missing: dynamic = ["version"]
-
-[tool.setuptools_scm]
-"""
-    wd.write("pyproject.toml", pyproject_content)
-
-    from setuptools_scm._integration.pyproject_reading import read_pyproject
-
-    # This should not raise an error because [tool.setuptools_scm] section exists
-    pyproject_data = read_pyproject(Path("pyproject.toml"), missing_section_ok=True)
-    assert pyproject_data.is_required is True
-    assert pyproject_data.section_present is True
-
-
-def test_verify_dynamic_version_when_required_with_dynamic(
-    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Test that verification passes when setuptools-scm is in build-system.requires and dynamic=['version'] is set"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    # Change to the test directory
-    monkeypatch.chdir(wd.cwd)
-
-    # Create a pyproject.toml file with setuptools-scm in build-system.requires and dynamic=['version']
-    pyproject_content = """
-[build-system]
-requires = ["setuptools>=80", "setuptools-scm>=8"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "test-package-with-dynamic"
-dynamic = ["version"]
-"""
-    wd.write("pyproject.toml", pyproject_content)
-
-    from setuptools_scm._integration.pyproject_reading import read_pyproject
-
-    # This should not raise an error because dynamic=['version'] is set
-    pyproject_data = read_pyproject(Path("pyproject.toml"), missing_section_ok=True)
-    assert pyproject_data.is_required is True
-    assert pyproject_data.section_present is False
-
-
-def test_infer_version_logs_debug_when_missing_dynamic_version(
-    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Test that infer_version logs debug info when setuptools-scm is in build-system.requires but dynamic=['version'] is missing"""
-    if sys.version_info < (3, 11):
-        pytest.importorskip("tomli")
-
-    # Set up a git repository with a tag
-    wd.commit_testfile("test")
-    wd("git tag 1.0.0")
-    monkeypatch.chdir(wd.cwd)
-
-    # Create a pyproject.toml file with setuptools-scm in build-system.requires but NO dynamic=['version']
-    pyproject_content = """
-[build-system]
-requires = ["setuptools>=80", "setuptools-scm>=8"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "test-package-missing-dynamic"
-# Missing: dynamic = ["version"]
-"""
-    wd.write("pyproject.toml", pyproject_content)
-
-    from setuptools_scm._integration.setuptools import infer_version
-
-    # Create clean distribution
-    dist = create_clean_distribution("test-package-missing-dynamic")
-
-    # This should not raise an error, but should log debug info about the configuration issue
-    infer_version(dist)
-
-    # Verify that version was not set due to configuration issue
-    assert dist.metadata.version is None
 
 
 @pytest.mark.issue("xmlsec-regression")
@@ -1331,7 +681,6 @@ def test_xmlsec_download_regression(
                 "xmlsec==1.3.16",
             ],
             cwd=tmp_path,
-            text=True,
             timeout=300,
             check=True,
         )

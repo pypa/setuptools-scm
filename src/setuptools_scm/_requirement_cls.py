@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+__all__ = ["Requirement", "extract_package_name"]
+
 try:
     from packaging.requirements import Requirement
     from packaging.utils import canonicalize_name

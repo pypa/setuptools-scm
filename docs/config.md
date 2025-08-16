@@ -2,11 +2,25 @@
 
 ## When is configuration needed?
 
-Starting with setuptools-scm 8.1+, explicit configuration is **optional** in many cases:
+setuptools-scm provides flexible activation options:
 
-- **No configuration needed**: If `setuptools_scm` (or `setuptools-scm`) is in your `build-system.requires`, setuptools-scm will automatically activate with sensible defaults.
+### Simplified Activation (No Configuration Needed)
 
-- **Configuration recommended**: Use the `[tool.setuptools_scm]` section when you need to:
+For basic usage, use the `simple` extra with no configuration:
+
+```toml title="pyproject.toml"
+[build-system]
+requires = ["setuptools>=80", "setuptools-scm[simple]>=8"]
+
+[project]
+dynamic = ["version"]
+```
+
+This automatically enables version inference with default settings.
+
+### Explicit Configuration (Full Control)
+
+Use the `[tool.setuptools_scm]` section when you need to:
   - Write version files (`version_file`)
   - Customize version schemes (`version_scheme`, `local_scheme`)
   - Set custom tag patterns (`tag_regex`)

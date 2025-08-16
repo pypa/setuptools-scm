@@ -1,5 +1,24 @@
 # Changelog
 
+## v9.2.0
+
+### Added
+
+- add simplified activation via `setuptools-scm[simple]` extra
+
+  A new streamlined way to enable version inference without requiring a `[tool.setuptools_scm]` section.
+  When `setuptools-scm[simple]` is in `build-system.requires` and `version` is in `project.dynamic`,
+  version inference is automatically enabled with default settings.
+
+
+### removed
+
+- unchecked simplified activation - too many projects use setups where it would fail
+
+### changed
+
+- refine activation logic and add unittest for the relevant cases instead of trying to speedrun setuptools 
+
 ## v9.1.1
 
 ### fixed

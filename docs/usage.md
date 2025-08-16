@@ -7,30 +7,40 @@
     Support for setuptools <80 is deprecated and will be removed in a future release.
     The examples below use `setuptools>=80` as the recommended version.
 
-There are two ways to configure `setuptools-scm` at build time, depending on your needs:
+There are three ways to enable `setuptools-scm` at build time:
 
-### Automatic Configuration (Recommended for Simple Cases)
+### Simplified Activation (new)
 
-For projects that don't need custom configuration, simply include `setuptools-scm`
-in your build requirements:
+For basic usage without custom configuration, use the `simple` extra:
 
 ```toml title="pyproject.toml"
 [build-system]
-requires = ["setuptools>=80", "setuptools-scm>=8"]
+requires = ["setuptools>=80", "setuptools-scm[simple]>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 # version = "0.0.1"  # Remove any existing version parameter.
 dynamic = ["version"]
+
+# No [tool.setuptools_scm] section needed for basic usage!
 ```
 
-**That's it!** Starting with setuptools-scm 8.1+, if `setuptools_scm` (or `setuptools-scm`)
-is present in your `build-system.requires`, setuptools-scm will automatically activate
-with default settings.
+This streamlined approach automatically enables version inference when:
+- `setuptools-scm[simple]` is listed in `build-system.requires`
+- `version` is included in `project.dynamic`
 
-### Explicit Configuration
+!!! tip "When to use simplified activation"
 
-If you need to customize setuptools-scm behavior, use the `tool.setuptools_scm` section:
+    Use simplified activation when you:
+    - Want basic SCM version inference with default settings
+    - Don't need custom version schemes or file writing
+    - Prefer minimal configuration
+
+    Upgrade to explicit configuration if you need customization.
+
+### Explicit Configuration (full control)
+
+Add a `tool.setuptools_scm` section for custom configuration:
 
 ```toml title="pyproject.toml"
 [build-system]
@@ -51,20 +61,25 @@ pre_parse = "fail_on_missing_submodules"  # Fail if submodules are not initializ
 describe_command = "git describe --dirty --tags --long --exclude *js*"  # Custom describe command
 ```
 
-Both approaches will work with projects that support PEP 518 ([pip](https://pypi.org/project/pip) and
-[pep517](https://pypi.org/project/pep517/)).
-Tools that still invoke `setup.py` must ensure build requirements are installed
+Projects must support PEP 518 ([pip](https://pypi.org/project/pip) and
+[pep517](https://pypi.org/project/pep517/)). Tools that still invoke `setup.py`
+must ensure build requirements are installed.
 
-!!! info "How Automatic Detection Works"
+### Using the setup keyword
 
-    When setuptools-scm is listed in `build-system.requires`, it automatically detects this during the build process and activates with default settings. This means:
+Alternatively, enable `setuptools-scm` via the `use_scm_version` keyword in `setup.py`.
+This also counts as an explicit opt-in and does not require a tool section.
 
-    - ✅ **Automatic activation**: No `[tool.setuptools_scm]` section needed
-    - ✅ **Default behavior**: Uses standard version schemes and SCM detection
-    - ✅ **Error handling**: Provides helpful error messages if configuration is missing
-    - ⚙️ **Customization**: Add `[tool.setuptools_scm]` section when you need custom options
+!!! note "Legacy simplified activation"
 
-    Both package names are detected: `setuptools_scm` and `setuptools-scm` (with dash).
+    Previous versions had a "simplified" activation where listing `setuptools_scm`
+    in `build-system.requires` together with `project.dynamic = ["version"]` would
+    auto-enable version inference. This behavior was removed due to regressions and
+    ambiguous activation.
+
+    The new simplified activation using the `[simple]` extra provides the same
+    convenience but with explicit opt-in, making it clear when version inference
+    should be enabled.
 
 ### Version files
 
