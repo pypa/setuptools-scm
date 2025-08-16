@@ -1870,7 +1870,7 @@ requires-dist = [
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=1" },
     { name = "typing-extensions", marker = "python_full_version < '3.10'" },
 ]
-provides-extras = ["rich", "toml"]
+provides-extras = ["rich", "simple", "toml"]
 
 [package.metadata.requires-dev]
 docs = [

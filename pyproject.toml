@@ -49,6 +49,7 @@ dependencies = [
 ]
 [project.optional-dependencies]
 rich = ["rich"]
+simple = []
 toml = []
 
 [dependency-groups]

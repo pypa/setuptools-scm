@@ -418,7 +418,7 @@ def test_distribution_provides_extras() -> None:
 
     dist = distribution("setuptools_scm")
     pe: list[str] = dist.metadata.get_all("Provides-Extra", [])
-    assert sorted(pe) == ["rich", "toml"]
+    assert sorted(pe) == ["rich", "simple", "toml"]
 
 
 @pytest.mark.issue(760)
