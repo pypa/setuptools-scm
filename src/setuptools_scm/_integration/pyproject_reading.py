@@ -7,13 +7,19 @@ from pathlib import Path
 from typing import Sequence
 
 from .. import _log
+from .. import _types as _t
 from .._requirement_cls import extract_package_name
 from .toml import TOML_RESULT
+from .toml import InvalidTomlError
 from .toml import read_toml_content
 
 log = _log.log.getChild("pyproject_reading")
 
 _ROOT = "root"
+
+
+DEFAULT_PYPROJECT_PATH = Path("pyproject.toml")
+DEFAULT_TOOL_NAME = "setuptools_scm"
 
 
 @dataclass
@@ -25,51 +31,104 @@ class PyProjectData:
     is_required: bool
     section_present: bool
     project_present: bool
+    build_requires: list[str]
 
     @classmethod
     def for_testing(
         cls,
+        *,
         is_required: bool = False,
         section_present: bool = False,
         project_present: bool = False,
         project_name: str | None = None,
+        has_dynamic_version: bool = True,
+        build_requires: list[str] | None = None,
+        local_scheme: str | None = None,
     ) -> PyProjectData:
         """Create a PyProjectData instance for testing purposes."""
+        project: TOML_RESULT
         if project_name is not None:
             project = {"name": project_name}
             assert project_present
         else:
             project = {}
+
+        # If project is present and has_dynamic_version is True, add dynamic=['version']
+        if project_present and has_dynamic_version:
+            project["dynamic"] = ["version"]
+
+        if build_requires is None:
+            build_requires = []
+        if local_scheme is not None:
+            assert section_present
+            section = {"local_scheme": local_scheme}
+        else:
+            section = {}
         return cls(
-            path=Path("pyproject.toml"),
-            tool_name="setuptools_scm",
+            path=DEFAULT_PYPROJECT_PATH,
+            tool_name=DEFAULT_TOOL_NAME,
             project=project,
-            section={},
+            section=section,
             is_required=is_required,
             section_present=section_present,
             project_present=project_present,
+            build_requires=build_requires,
+        )
+
+    @classmethod
+    def empty(
+        cls, path: Path = DEFAULT_PYPROJECT_PATH, tool_name: str = DEFAULT_TOOL_NAME
+    ) -> PyProjectData:
+        return cls(
+            path=path,
+            tool_name=tool_name,
+            project={},
+            section={},
+            is_required=False,
+            section_present=False,
+            project_present=False,
+            build_requires=[],
         )
 
     @property
     def project_name(self) -> str | None:
         return self.project.get("name")
 
-    def verify_dynamic_version_when_required(self) -> None:
-        """Verify that dynamic=['version'] is set when setuptools-scm is used as build dependency indicator."""
-        if self.is_required and not self.section_present:
-            # When setuptools-scm is in build-system.requires but no tool section exists,
-            # we need to verify that dynamic=['version'] is set in the project section
-            # But only if there's actually a project section
-            if not self.project_present:
-                # No project section, so don't auto-activate setuptools_scm
-                return
-            dynamic = self.project.get("dynamic", [])
-            if "version" not in dynamic:
-                raise ValueError(
-                    f"{self.path}: setuptools-scm is present in [build-system].requires "
-                    f"but dynamic=['version'] is not set in [project]. "
-                    f"Either add dynamic=['version'] to [project] or add a [tool.{self.tool_name}] section."
-                )
+    @property
+    def project_version(self) -> str | None:
+        """Return the static version from [project] if present.
+
+        When the project declares dynamic = ["version"], the version
+        is intentionally omitted from [project] and this returns None.
+        """
+        return self.project.get("version")
+
+    def should_infer(self) -> bool:
+        """
+        Determine if setuptools_scm should infer version based on configuration.
+
+        Infer when:
+        1. An explicit [tool.setuptools_scm] section is present, OR
+        2. setuptools-scm[simple] is in build-system.requires AND
+           version is in project.dynamic
+
+        Returns:
+            True if [tool.setuptools_scm] is present, otherwise False
+        """
+        # Original behavior: explicit tool section
+        if self.section_present:
+            return True
+
+        # New behavior: simple extra + dynamic version
+        if self.project_present:
+            dynamic_fields = self.project.get("dynamic", [])
+            if "version" in dynamic_fields:
+                if has_build_package_with_extra(
+                    self.build_requires, "setuptools-scm", "simple"
+                ):
+                    return True
+
+        return False
 
 
 def has_build_package(
@@ -82,60 +141,88 @@ def has_build_package(
     return False
 
 
+def has_build_package_with_extra(
+    requires: Sequence[str], canonical_build_package_name: str, extra_name: str
+) -> bool:
+    """Check if a build dependency has a specific extra.
+
+    Args:
+        requires: List of requirement strings from build-system.requires
+        canonical_build_package_name: The canonical package name to look for
+        extra_name: The extra name to check for (e.g., "simple")
+
+    Returns:
+        True if the package is found with the specified extra
+    """
+    from .._requirement_cls import Requirement
+
+    for requirement_string in requires:
+        try:
+            requirement = Requirement(requirement_string)
+            package_name = extract_package_name(requirement_string)
+            if package_name == canonical_build_package_name:
+                if extra_name in requirement.extras:
+                    return True
+        except Exception:
+            # If parsing fails, continue to next requirement
+            continue
+    return False
+
+
 def read_pyproject(
-    path: Path = Path("pyproject.toml"),
-    tool_name: str = "setuptools_scm",
+    path: Path = DEFAULT_PYPROJECT_PATH,
+    tool_name: str = DEFAULT_TOOL_NAME,
     canonical_build_package_name: str = "setuptools-scm",
-    missing_section_ok: bool = False,
-    missing_file_ok: bool = False,
+    _given_result: _t.GivenPyProjectResult = None,
 ) -> PyProjectData:
-    try:
-        defn = read_toml_content(path)
-    except FileNotFoundError:
-        if missing_file_ok:
-            log.warning("File %s not found, using empty configuration", path)
-            return PyProjectData(
-                path=path,
-                tool_name=tool_name,
-                project={},
-                section={},
-                is_required=False,
-                section_present=False,
-                project_present=False,
-            )
-        else:
-            raise
+    """Read and parse pyproject configuration.
+
+    This function supports dependency injection for tests via `_given_result`.
+
+    Parameters:
+    - path: Path to the pyproject file
+    - tool_name: The tool section name (default: `setuptools_scm`)
+    - canonical_build_package_name: Normalized build requirement name
+    - _given_result: Optional testing hook. Can be:
+        - PyProjectData: returned directly
+        - InvalidTomlError | FileNotFoundError: raised directly
+        - None: read from filesystem
+    """
+
+    if _given_result is not None:
+        if isinstance(_given_result, PyProjectData):
+            return _given_result
+        if isinstance(_given_result, (InvalidTomlError, FileNotFoundError)):
+            raise _given_result
+
+    defn = read_toml_content(path)
 
     requires: list[str] = defn.get("build-system", {}).get("requires", [])
     is_required = has_build_package(requires, canonical_build_package_name)
 
-    try:
-        section = defn.get("tool", {})[tool_name]
-        section_present = True
-    except LookupError as e:
-        if not is_required and not missing_section_ok:
-            # Enhanced error message that mentions both configuration options
-            error = (
-                f"{path} does not contain a tool.{tool_name} section. "
-                f"setuptools_scm requires configuration via either:\n"
-                f"  1. [tool.{tool_name}] section in {path}, or\n"
-                f"  2. {tool_name} (or setuptools-scm) in [build-system] requires"
-            )
-            raise LookupError(error) from e
-        else:
-            error = f"{path} does not contain a tool.{tool_name} section"
-            log.warning("toml section missing %r", error, exc_info=True)
-            section = {}
-            section_present = False
+    tool_section = defn.get("tool", {})
+    section = tool_section.get(tool_name, {})
+    section_present = tool_name in tool_section
+
+    if not section_present:
+        log.warning(
+            "toml section missing %r does not contain a tool.%s section",
+            path,
+            tool_name,
+        )
 
     project = defn.get("project", {})
     project_present = "project" in defn
     pyproject_data = PyProjectData(
-        path, tool_name, project, section, is_required, section_present, project_present
+        path,
+        tool_name,
+        project,
+        section,
+        is_required,
+        section_present,
+        project_present,
+        requires,
     )
-
-    # Verify dynamic version when setuptools-scm is used as build dependency indicator
-    pyproject_data.verify_dynamic_version_when_required()
 
     return pyproject_data
 
