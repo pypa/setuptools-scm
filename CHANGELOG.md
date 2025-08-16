@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v9.2.0
 
 ### Added
 
@@ -15,6 +15,9 @@
 
 - unchecked simplified activation - too many projects use setups where it would fail
 
+### changed
+
+- refine activation logic and add unittest for the relevant cases instead of trying to speedrun setuptools 
 
 ## v9.1.1
 
