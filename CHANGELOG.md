@@ -12,6 +12,7 @@
 
 
 ### removed
+
 - unchecked simplified activation - too many projects use setups where it would fail
 
 
