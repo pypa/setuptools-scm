@@ -10,23 +10,18 @@ import setuptools_scm._file_finders
 
 from setuptools_scm import Configuration
 from setuptools_scm._run_cmd import CommandNotFoundError
-from setuptools_scm._run_cmd import has_command
 from setuptools_scm.hg import archival_to_version
 from setuptools_scm.hg import parse
 from setuptools_scm.version import format_version
 from testing.wd_wrapper import WorkDir
 
-pytestmark = pytest.mark.skipif(
-    not has_command("hg", warn=False), reason="hg executable not found"
-)
+# Note: Mercurial availability is now checked in WorkDir.setup_hg() method
 
 
 @pytest.fixture
 def wd(wd: WorkDir) -> WorkDir:
-    wd("hg init")
-    wd.add_command = "hg add ."
-    wd.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
-    return wd
+    """Set up mercurial for hg-specific tests."""
+    return wd.setup_hg()
 
 
 archival_mapping = {

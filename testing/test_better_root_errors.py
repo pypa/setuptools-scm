@@ -16,32 +16,13 @@ from setuptools_scm._get_version_impl import _find_scm_in_parents
 from setuptools_scm._get_version_impl import _version_missing
 from testing.wd_wrapper import WorkDir
 
-
-def setup_git_repo(wd: WorkDir) -> WorkDir:
-    """Set up a git repository for testing."""
-    wd("git init")
-    wd("git config user.email test@example.com")
-    wd('git config user.name "a test"')
-    wd.add_command = "git add ."
-    wd.commit_command = "git commit -m test-{reason}"
-    return wd
-
-
-def setup_hg_repo(wd: WorkDir) -> WorkDir:
-    """Set up a mercurial repository for testing."""
-    try:
-        wd("hg init")
-        wd.add_command = "hg add ."
-        wd.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
-        return wd
-    except Exception:
-        pytest.skip("hg not available")
+# No longer need to import setup functions - using WorkDir methods directly
 
 
 def test_find_scm_in_parents_finds_git(wd: WorkDir) -> None:
     """Test that _find_scm_in_parents correctly finds git repositories in parent directories."""
     # Set up git repo in root
-    setup_git_repo(wd)
+    wd.setup_git()
 
     # Create a subdirectory structure
     subdir = wd.cwd / "subproject" / "nested"
@@ -57,7 +38,7 @@ def test_find_scm_in_parents_finds_git(wd: WorkDir) -> None:
 def test_find_scm_in_parents_finds_hg(wd: WorkDir) -> None:
     """Test that _find_scm_in_parents correctly finds mercurial repositories in parent directories."""
     # Set up hg repo in root
-    setup_hg_repo(wd)
+    wd.setup_hg()
 
     # Create a subdirectory structure
     subdir = wd.cwd / "subproject" / "nested"
@@ -85,7 +66,7 @@ def test_find_scm_in_parents_returns_none(wd: WorkDir) -> None:
 def test_version_missing_with_scm_in_parent(wd: WorkDir) -> None:
     """Test that _version_missing provides helpful error message when SCM is found in parent."""
     # Set up git repo in root
-    setup_git_repo(wd)
+    wd.setup_git()
 
     # Create a subdirectory structure
     subdir = wd.cwd / "subproject" / "nested"
@@ -130,7 +111,7 @@ def test_version_missing_no_scm_found(wd: WorkDir) -> None:
 def test_version_missing_with_relative_to_set(wd: WorkDir) -> None:
     """Test that when relative_to is set, we don't search parents for error messages."""
     # Set up git repo in root
-    setup_git_repo(wd)
+    wd.setup_git()
 
     # Create a subdirectory structure
     subdir = wd.cwd / "subproject" / "nested"
@@ -161,7 +142,7 @@ def test_search_parent_directories_works_as_suggested(
 ) -> None:
     """Test that the suggested search_parent_directories=True solution actually works."""
     # Set up git repo
-    setup_git_repo(wd)
+    wd.setup_git()
     wd.commit_testfile()  # Make sure there's a commit for version detection
 
     # Create a subdirectory
@@ -182,7 +163,7 @@ def test_integration_better_error_from_nested_directory(
 ) -> None:
     """Integration test: get_version from nested directory should give helpful error."""
     # Set up git repo
-    setup_git_repo(wd)
+    wd.setup_git()
 
     # Create a subdirectory
     subdir = wd.cwd / "subproject"

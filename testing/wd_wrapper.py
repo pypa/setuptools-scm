@@ -3,7 +3,15 @@ from __future__ import annotations
 import itertools
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
+
+import pytest
+
+from setuptools_scm._run_cmd import has_command
+
+if TYPE_CHECKING:
+    pass
 
 
 class WorkDir:
@@ -126,3 +134,66 @@ name = {name}
             self(self.tag_command, tag=tag)
         else:
             raise RuntimeError("No tag_command configured")
+
+    def configure_git_commands(self) -> None:
+        """Configure git commands without initializing the repository."""
+        self.add_command = "git add ."
+        self.commit_command = "git commit -m test-{reason}"
+        self.tag_command = "git tag {tag}"
+
+    def configure_hg_commands(self) -> None:
+        """Configure mercurial commands without initializing the repository."""
+        self.add_command = "hg add ."
+        self.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
+        self.tag_command = "hg tag {tag}"
+
+    def setup_git(
+        self, monkeypatch: pytest.MonkeyPatch | None = None, *, init: bool = True
+    ) -> WorkDir:
+        """Set up git SCM for this WorkDir.
+
+        Args:
+            monkeypatch: Optional pytest MonkeyPatch to clear HOME environment
+            init: Whether to initialize the git repository (default: True)
+
+        Returns:
+            Self for method chaining
+
+        Raises:
+            pytest.skip: If git executable is not found
+        """
+        if not has_command("git", warn=False):
+            pytest.skip("git executable not found")
+
+        self.configure_git_commands()
+
+        if init:
+            if monkeypatch:
+                monkeypatch.delenv("HOME", raising=False)
+            self("git init")
+            self("git config user.email test@example.com")
+            self('git config user.name "a test"')
+
+        return self
+
+    def setup_hg(self, *, init: bool = True) -> WorkDir:
+        """Set up mercurial SCM for this WorkDir.
+
+        Args:
+            init: Whether to initialize the mercurial repository (default: True)
+
+        Returns:
+            Self for method chaining
+
+        Raises:
+            pytest.skip: If hg executable is not found
+        """
+        if not has_command("hg", warn=False):
+            pytest.skip("hg executable not found")
+
+        self.configure_hg_commands()
+
+        if init:
+            self("hg init")
+
+        return self

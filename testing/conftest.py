@@ -27,16 +27,6 @@ def pytest_configure(config: pytest.Config) -> None:
     os.environ["SOURCE_DATE_EPOCH"] = "1234567890"
     os.environ["SETUPTOOLS_SCM_DEBUG"] = "1"
 
-    # Register custom markers
-    config.addinivalue_line(
-        "markers",
-        "git: mark test to use git SCM",
-    )
-    config.addinivalue_line(
-        "markers",
-        "hg: mark test to use mercurial SCM",
-    )
-
 
 VERSION_PKGS = ["setuptools", "setuptools_scm", "packaging", "build", "wheel"]
 
@@ -99,48 +89,30 @@ def debug_mode() -> Iterator[DebugMode]:
 
 
 def setup_git_wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch | None = None) -> WorkDir:
-    """Set up a WorkDir with git initialized and configured for testing."""
-    if monkeypatch:
-        monkeypatch.delenv("HOME", raising=False)
-    wd("git init")
-    wd("git config user.email test@example.com")
-    wd('git config user.name "a test"')
-    wd.add_command = "git add ."
-    wd.commit_command = "git commit -m test-{reason}"
-    wd.tag_command = "git tag {tag}"
-    return wd
+    """Set up a WorkDir with git initialized and configured for testing.
+
+    Note: This is a compatibility wrapper. Consider using wd.setup_git() directly.
+    """
+    return wd.setup_git(monkeypatch)
 
 
 def setup_hg_wd(wd: WorkDir) -> WorkDir:
-    """Set up a WorkDir with mercurial initialized and configured for testing."""
-    wd("hg init")
-    wd.add_command = "hg add ."
-    wd.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
-    wd.tag_command = "hg tag {tag}"
-    return wd
+    """Set up a WorkDir with mercurial initialized and configured for testing.
+
+    Note: This is a compatibility wrapper. Consider using wd.setup_hg() directly.
+    """
+    return wd.setup_hg()
 
 
 @pytest.fixture
-def wd(
-    tmp_path: Path, request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
-) -> WorkDir:
-    """WorkDir fixture that automatically configures SCM based on markers."""
+def wd(tmp_path: Path) -> WorkDir:
+    """Base WorkDir fixture that returns an unconfigured working directory.
+
+    Individual test modules should override this fixture to set up specific SCM configurations.
+    """
     target_wd = tmp_path.resolve() / "wd"
     target_wd.mkdir()
-    wd = WorkDir(target_wd)
-
-    # Check for SCM markers on the test function or module
-    git_marker = request.node.get_closest_marker("git")
-    hg_marker = request.node.get_closest_marker("hg")
-
-    # Configure SCM based on markers
-    if git_marker:
-        setup_git_wd(wd, monkeypatch)
-    elif hg_marker:
-        setup_hg_wd(wd)
-    # If no SCM markers, return unconfigured workdir
-
-    return wd
+    return WorkDir(target_wd)
 
 
 @pytest.fixture(scope="session")

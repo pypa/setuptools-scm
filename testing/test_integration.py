@@ -35,8 +35,11 @@ from .wd_wrapper import WorkDir
 c = Configuration()
 
 
-# File-level marker for git tests
-pytestmark = pytest.mark.git
+# Module-level fixture for git SCM setup
+@pytest.fixture
+def wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> WorkDir:
+    """Set up git for integration tests."""
+    return wd.setup_git(monkeypatch)
 
 
 def test_pyproject_support(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
