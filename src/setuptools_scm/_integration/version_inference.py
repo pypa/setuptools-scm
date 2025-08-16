@@ -25,22 +25,13 @@ class VersionInferenceConfig:
 
     def apply(self, dist: Distribution) -> None:
         """Apply version inference to the distribution."""
-        from .. import _config as _config_module
-        from .._get_version_impl import _get_version
-        from .._get_version_impl import _version_missing
-
-        config = _config_module.Configuration.from_file(
-            dist_name=self.dist_name,
-            pyproject_data=self.pyproject_data,
-            **(self.overrides or {}),
+        version_string = infer_version_string(
+            self.dist_name,
+            self.pyproject_data,  # type: ignore[arg-type]
+            self.overrides,
+            force_write_version_files=True,
         )
-
-        # Get and assign version
-        maybe_version = _get_version(config, force_write_version_files=True)
-        if maybe_version is None:
-            _version_missing(config)
-        else:
-            dist.metadata.version = maybe_version
+        dist.metadata.version = version_string
 
         # Mark that this version was set by infer_version if overrides is None (infer_version context)
         if self.overrides is None:
@@ -73,6 +64,43 @@ VersionInferenceResult = Union[
     VersionInferenceWarning,  # Show warning
     VersionInferenceNoOp,  # Don't infer (silent)
 ]
+
+
+def infer_version_string(
+    dist_name: str | None,
+    pyproject_data: PyProjectData,
+    overrides: dict[str, Any] | None = None,
+    *,
+    force_write_version_files: bool = False,
+) -> str:
+    """
+    Compute the inferred version string from the given inputs without requiring a
+    setuptools Distribution instance. This is a pure helper that simplifies
+    integration tests by avoiding file I/O and side effects on a Distribution.
+
+    Parameters:
+        dist_name: Optional distribution name (used for overrides and env scoping)
+        pyproject_data: Parsed PyProjectData (may be constructed via for_testing())
+        overrides: Optional override configuration (same keys as [tool.setuptools_scm])
+        force_write_version_files: When True, apply write_to/version_file effects
+
+    Returns:
+        The computed version string.
+    """
+    from .. import _config as _config_module
+    from .._get_version_impl import _get_version
+    from .._get_version_impl import _version_missing
+
+    config = _config_module.Configuration.from_file(
+        dist_name=dist_name, pyproject_data=pyproject_data, **(overrides or {})
+    )
+
+    maybe_version = _get_version(
+        config, force_write_version_files=force_write_version_files
+    )
+    if maybe_version is None:
+        _version_missing(config)
+    return maybe_version
 
 
 def get_version_inference_config(
