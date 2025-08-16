@@ -34,27 +34,14 @@ from setuptools_scm.version import format_version
 from .conftest import DebugMode
 from .wd_wrapper import WorkDir
 
-pytestmark = pytest.mark.skipif(
-    not has_command("git", warn=False), reason="git executable not found"
-)
+# Note: Git availability is now checked in WorkDir.setup_git() method
 
 
-def setup_git_wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch | None = None) -> WorkDir:
-    """Set up a WorkDir with git initialized and configured for testing."""
-    if monkeypatch:
-        monkeypatch.delenv("HOME", raising=False)
-    wd("git init")
-    wd("git config user.email test@example.com")
-    wd('git config user.name "a test"')
-    wd.add_command = "git add ."
-    wd.commit_command = "git commit -m test-{reason}"
-    return wd
-
-
-@pytest.fixture(name="wd")
+@pytest.fixture
 def wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch, debug_mode: DebugMode) -> WorkDir:
+    """Set up git for git-specific tests."""
     debug_mode.disable()
-    setup_git_wd(wd, monkeypatch)
+    wd.setup_git(monkeypatch)
     debug_mode.enable()
     return wd
 
@@ -685,7 +672,7 @@ def test_fail_on_missing_submodules_with_uninitialized_submodules(
     # Create a test repository with a .gitmodules file but no actual submodule
     test_repo = tmp_path / "test_repo"
     test_repo.mkdir()
-    test_wd = setup_git_wd(WorkDir(test_repo))
+    test_wd = WorkDir(test_repo).setup_git()
 
     # Create a fake .gitmodules file (this simulates what happens after cloning without --recurse-submodules)
     gitmodules_content = """[submodule "external"]

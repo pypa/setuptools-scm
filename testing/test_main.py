@@ -22,11 +22,7 @@ def test_main() -> None:
 
 @pytest.fixture
 def repo(wd: WorkDir) -> WorkDir:
-    wd("git init")
-    wd("git config user.email user@host")
-    wd("git config user.name user")
-    wd.add_command = "git add ."
-    wd.commit_command = "git commit -m test-{reason}"
+    wd.setup_git()
 
     wd.write("README.rst", "My example")
     wd.add_and_commit()

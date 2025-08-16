@@ -17,7 +17,7 @@
 
 ### changed
 
-- refine activation logic and add unittest for the relevant cases instead of trying to speedrun setuptools 
+- refine activation logic and add unittest for the relevant cases instead of trying to speedrun setuptools
 
 ## v9.1.1
 
