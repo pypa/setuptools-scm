@@ -22,7 +22,7 @@ else:
 from .wd_wrapper import WorkDir
 
 
-def pytest_configure() -> None:
+def pytest_configure(config: pytest.Config) -> None:
     # 2009-02-13T23:31:30+00:00
     os.environ["SOURCE_DATE_EPOCH"] = "1234567890"
     os.environ["SETUPTOOLS_SCM_DEBUG"] = "1"
@@ -42,10 +42,10 @@ def pytest_report_header() -> list[str]:
             # Replace everything up to and including site-packages with site::
             parts = path.split("site-packages", 1)
             if len(parts) > 1:
-                path = "site:." + parts[1]
+                path = "site::" + parts[1]
         elif path and str(Path.cwd()) in path:
             # Replace current working directory with CWD::
-            path = path.replace(str(Path.cwd()), "CWD:.")
+            path = path.replace(str(Path.cwd()), "CWD::")
         res.append(f"{pkg} version {pkg_version} from {path}")
     return res
 
@@ -88,8 +88,28 @@ def debug_mode() -> Iterator[DebugMode]:
         yield debug_mode
 
 
+def setup_git_wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch | None = None) -> WorkDir:
+    """Set up a WorkDir with git initialized and configured for testing.
+
+    Note: This is a compatibility wrapper. Consider using wd.setup_git() directly.
+    """
+    return wd.setup_git(monkeypatch)
+
+
+def setup_hg_wd(wd: WorkDir) -> WorkDir:
+    """Set up a WorkDir with mercurial initialized and configured for testing.
+
+    Note: This is a compatibility wrapper. Consider using wd.setup_hg() directly.
+    """
+    return wd.setup_hg()
+
+
 @pytest.fixture
 def wd(tmp_path: Path) -> WorkDir:
+    """Base WorkDir fixture that returns an unconfigured working directory.
+
+    Individual test modules should override this fixture to set up specific SCM configurations.
+    """
     target_wd = tmp_path.resolve() / "wd"
     target_wd.mkdir()
     return WorkDir(target_wd)

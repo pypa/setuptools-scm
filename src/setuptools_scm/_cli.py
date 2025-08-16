@@ -11,10 +11,13 @@ from typing import Any
 from setuptools_scm import Configuration
 from setuptools_scm._file_finders import find_files
 from setuptools_scm._get_version_impl import _get_version
+from setuptools_scm._integration.pyproject_reading import PyProjectData
 from setuptools_scm.discover import walk_potential_roots
 
 
-def main(args: list[str] | None = None) -> int:
+def main(
+    args: list[str] | None = None, *, _given_pyproject_data: PyProjectData | None = None
+) -> int:
     opts = _get_cli_opts(args)
     inferred_root: str = opts.root or "."
 
@@ -24,6 +27,7 @@ def main(args: list[str] | None = None) -> int:
         config = Configuration.from_file(
             pyproject,
             root=(os.path.abspath(opts.root) if opts.root is not None else None),
+            pyproject_data=_given_pyproject_data,
         )
     except (LookupError, FileNotFoundError) as ex:
         # no pyproject.toml OR no [tool.setuptools_scm]

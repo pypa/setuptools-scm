@@ -18,21 +18,9 @@ def inwd(
 ) -> WorkDir:
     param: str = request.param  # type: ignore[attr-defined]
     if param == "git":
-        try:
-            wd("git init")
-        except OSError:
-            pytest.skip("git executable not found")
-        wd("git config user.email test@example.com")
-        wd('git config user.name "a test"')
-        wd.add_command = "git add ."
-        wd.commit_command = "git commit -m test-{reason}"
+        wd.setup_git(monkeypatch)
     elif param == "hg":
-        try:
-            wd("hg init")
-        except OSError:
-            pytest.skip("hg executable not found")
-        wd.add_command = "hg add ."
-        wd.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
+        wd.setup_hg()
     (wd.cwd / "file1").touch()
     adir = wd.cwd / "adir"
     adir.mkdir()
@@ -249,10 +237,7 @@ def test_archive(
 
 @pytest.fixture
 def hg_wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> WorkDir:
-    try:
-        wd("hg init")
-    except OSError:
-        pytest.skip("hg executable not found")
+    wd.setup_hg()
     (wd.cwd / "file").touch()
     wd("hg add file")
     monkeypatch.chdir(wd.cwd)
