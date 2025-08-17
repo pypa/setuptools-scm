@@ -26,13 +26,6 @@
 - fix #1194: correctly handle version keyword when pyproject metadata is missing
 
 
-## v9.1.1
-
-### fixed
-
-- fix #1194: correctly handle version keyword when pyproject metadata is missing
-
-
 ## v9.1.0
 
 ### fixed
