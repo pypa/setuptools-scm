@@ -17,23 +17,16 @@
 
 ### changed
 
-- refine activation logic and add unittest for the relevant cases instead of trying to speedrun setuptools 
+- refine activation logic and add unittest for the relevant cases instead of trying to speedrun setuptools
 
-## v9.1.1
-
-### fixed
-
-- fix #1194: correctly handle version keyword when pyproject metadata is missing
-
-
-## v9.1.1
+## v9.1.1 (yanked)
 
 ### fixed
 
 - fix #1194: correctly handle version keyword when pyproject metadata is missing
 
 
-## v9.1.0
+## v9.1.0 (yanked)
 
 ### fixed
 
