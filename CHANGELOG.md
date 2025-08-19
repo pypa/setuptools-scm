@@ -1,5 +1,14 @@
 # Changelog
 
+
+## v9.2.0
+
+### fixed
+
+- fix #1216: accept and create a warning for usages of `version = attr:` in setuptools config.
+  unfortunately dozens of projects cargo-culted that antipattern
+
+
 ## v9.2.0
 
 ### Added

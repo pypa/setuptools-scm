@@ -18,6 +18,7 @@ from packaging.version import Version
 from setuptools_scm._integration import setuptools as setuptools_integration
 from setuptools_scm._integration.pyproject_reading import PyProjectData
 from setuptools_scm._integration.setup_cfg import SetuptoolsBasicData
+from setuptools_scm._integration.setup_cfg import read_setup_cfg
 from setuptools_scm._requirement_cls import extract_package_name
 
 if TYPE_CHECKING:
@@ -455,6 +456,29 @@ def test_unicode_in_setup_cfg(tmp_path: Path) -> None:
     assert isinstance(data, SetuptoolsBasicData)
     assert data.name == "configparser"
     assert data.version == "1.2.3"
+
+
+@pytest.mark.issue(1216)
+def test_setup_cfg_dynamic_version_warns_and_ignores(tmp_path: Path) -> None:
+    cfg = tmp_path / "setup.cfg"
+    cfg.write_text(
+        textwrap.dedent(
+            """
+            [metadata]
+            name = example-broken
+            version = attr: example_broken.__version__
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.warns(
+        UserWarning,
+        match="setup.cfg: ignoring invalid dynamic version - version = attr: ... is sabotaging setuptools-scm",
+    ):
+        legacy_data = read_setup_cfg(cfg)
+
+    assert legacy_data.version is None
 
 
 def test_setup_cfg_version_prevents_inference_version_keyword(
