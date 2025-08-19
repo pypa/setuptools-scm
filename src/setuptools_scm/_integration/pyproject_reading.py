@@ -174,6 +174,7 @@ def read_pyproject(
     tool_name: str = DEFAULT_TOOL_NAME,
     canonical_build_package_name: str = "setuptools-scm",
     _given_result: _t.GivenPyProjectResult = None,
+    _given_definition: TOML_RESULT | None = None,
 ) -> PyProjectData:
     """Read and parse pyproject configuration.
 
@@ -195,7 +196,10 @@ def read_pyproject(
         if isinstance(_given_result, (InvalidTomlError, FileNotFoundError)):
             raise _given_result
 
-    defn = read_toml_content(path)
+    if _given_definition is not None:
+        defn = _given_definition
+    else:
+        defn = read_toml_content(path)
 
     requires: list[str] = defn.get("build-system", {}).get("requires", [])
     is_required = has_build_package(requires, canonical_build_package_name)

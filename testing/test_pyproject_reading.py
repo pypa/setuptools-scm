@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
@@ -108,3 +109,20 @@ class TestBuildPackageWithExtra:
         assert (
             has_build_package_with_extra(requires, "setuptools-scm", "simple") is False
         )
+
+
+def test_read_pyproject_with_given_definition(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that read_pyproject reads existing files correctly."""
+    monkeypatch.setattr(
+        "setuptools_scm._integration.pyproject_reading.read_toml_content",
+        Mock(side_effect=FileNotFoundError("this test should not read")),
+    )
+
+    res = read_pyproject(
+        _given_definition={
+            "build-system": {"requires": ["setuptools-scm[simple]"]},
+            "project": {"name": "test-package", "dynamic": ["version"]},
+        }
+    )
+
+    assert res.should_infer()
