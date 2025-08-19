@@ -126,3 +126,23 @@ def test_read_pyproject_with_given_definition(monkeypatch: pytest.MonkeyPatch) -
     )
 
     assert res.should_infer()
+
+
+def test_read_pyproject_with_setuptools_dynamic_version_warns() -> None:
+    with pytest.warns(
+        UserWarning,
+        match=r"pyproject.toml: at \[tool\.setuptools\.dynamic\]\n"
+        r"version = {attr = \.\.\.} is sabotaging setuptools-scm",
+    ):
+        pyproject_data = read_pyproject(
+            _given_definition={
+                "build-system": {"requires": ["setuptools-scm[simple]"]},
+                "project": {"name": "test-package", "dynamic": ["version"]},
+                "tool": {
+                    "setuptools": {
+                        "dynamic": {"version": {"attr": "test_package.__version__"}}
+                    }
+                },
+            }
+        )
+    assert pyproject_data.project_version is None

@@ -228,6 +228,18 @@ def read_pyproject(
         requires,
     )
 
+    setuptools_dynamic_version = (
+        defn.get("tool", {})
+        .get("setuptools", {})
+        .get("dynamic", {})
+        .get("version", None)
+    )
+    if setuptools_dynamic_version is not None:
+        warnings.warn(
+            f"{path}: at [tool.setuptools.dynamic]\n"
+            "version = {attr = ...} is sabotaging setuptools-scm"
+        )
+
     return pyproject_data
 
 
