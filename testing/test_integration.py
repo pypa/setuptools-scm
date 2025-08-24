@@ -474,7 +474,7 @@ def test_setup_cfg_dynamic_version_warns_and_ignores(tmp_path: Path) -> None:
 
     with pytest.warns(
         UserWarning,
-        match="setup.cfg: ignoring invalid dynamic version - version = attr: ... is sabotaging setuptools-scm",
+        match=r"setup\.cfg: at \[metadata\]",
     ):
         legacy_data = read_setup_cfg(cfg)
 

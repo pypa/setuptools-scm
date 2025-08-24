@@ -131,8 +131,7 @@ def test_read_pyproject_with_given_definition(monkeypatch: pytest.MonkeyPatch) -
 def test_read_pyproject_with_setuptools_dynamic_version_warns() -> None:
     with pytest.warns(
         UserWarning,
-        match=r"pyproject.toml: at \[tool\.setuptools\.dynamic\]\n"
-        r"version = {attr = \.\.\.} is sabotaging setuptools-scm",
+        match=r"pyproject\.toml: at \[tool\.setuptools\.dynamic\]",
     ):
         pyproject_data = read_pyproject(
             _given_definition={

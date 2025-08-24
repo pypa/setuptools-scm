@@ -235,10 +235,9 @@ def read_pyproject(
         .get("version", None)
     )
     if setuptools_dynamic_version is not None:
-        warnings.warn(
-            f"{path}: at [tool.setuptools.dynamic]\n"
-            "version = {attr = ...} is sabotaging setuptools-scm"
-        )
+        from .deprecation import warn_pyproject_setuptools_dynamic_version
+
+        warn_pyproject_setuptools_dynamic_version(path)
 
     return pyproject_data
 
