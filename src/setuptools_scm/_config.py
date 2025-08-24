@@ -310,7 +310,6 @@ class Configuration:
         # Handle nested SCM configuration
 
         scm_config = ScmConfiguration.from_data(scm_data)
-
         return cls(
             relative_to=relative_to,
             version_cls=version_cls,

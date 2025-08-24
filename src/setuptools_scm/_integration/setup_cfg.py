@@ -25,6 +25,11 @@ def read_setup_cfg(input: str | os.PathLike[str] = "setup.cfg") -> SetuptoolsBas
 
     name = parser.get("metadata", "name", fallback=None)
     version = parser.get("metadata", "version", fallback=None)
+    if version is not None and "attr" in version:
+        from .deprecation import warn_setup_cfg_dynamic_version
+
+        warn_setup_cfg_dynamic_version(path)
+        version = None
     return SetuptoolsBasicData(path=path, name=name, version=version)
 
 
