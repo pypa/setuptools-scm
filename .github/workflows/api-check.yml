@@ -45,7 +45,7 @@ jobs:
 
       - name: Report API check result
         if: steps.griffe-check.outputs.api_check_result == 'warning'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             core.warning('API stability check detected breaking changes. Please review the API changes above.')
