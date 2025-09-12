@@ -54,7 +54,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         if: matrix.python_version != 'msys2'
         with:
           python-version: ${{ matrix.python_version }}
