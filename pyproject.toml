@@ -69,7 +69,7 @@ test = [
   "pytest-timeout",  # Timeout protection for CI/CD
   "rich",
   "ruff",
-  "mypy~=1.13.0", # pinned to old for python 3.8
+  "mypy>=1.13,<1.19", # pinned to old for python 3.8
   'typing-extensions; python_version < "3.11"',
   "wheel",
   "griffe",
