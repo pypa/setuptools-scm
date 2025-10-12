@@ -114,7 +114,7 @@ class TestBuildPackageWithExtra:
 def test_read_pyproject_with_given_definition(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that read_pyproject reads existing files correctly."""
     monkeypatch.setattr(
-        "setuptools_scm._integration.pyproject_reading.read_toml_content",
+        "vcs_versioning._toml.read_toml_content",
         Mock(side_effect=FileNotFoundError("this test should not read")),
     )
 
