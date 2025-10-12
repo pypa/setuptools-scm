@@ -113,12 +113,7 @@ def repositories_hg_git(tmp_path: Path) -> tuple[WorkDir, WorkDir]:
     path_git = tmp_path / "repo_git"
     path_git.mkdir()
 
-    wd = WorkDir(path_git)
-    wd("git init")
-    wd("git config user.email test@example.com")
-    wd('git config user.name "a test"')
-    wd.add_command = "git add ."
-    wd.commit_command = "git commit -m test-{reason}"
+    wd = WorkDir(path_git).setup_git()
 
     path_hg = tmp_path / "repo_hg"
     run(["hg", "clone", path_git, path_hg, "--config", "extensions.hggit="], tmp_path)
@@ -128,7 +123,6 @@ def repositories_hg_git(tmp_path: Path) -> tuple[WorkDir, WorkDir]:
         file.write("[extensions]\nhggit =\n")
 
     wd_hg = WorkDir(path_hg)
-    wd_hg.add_command = "hg add ."
-    wd_hg.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
+    wd_hg.configure_hg_commands()
 
     return wd_hg, wd
