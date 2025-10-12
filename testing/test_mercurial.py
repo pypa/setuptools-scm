@@ -10,23 +10,18 @@ import setuptools_scm._file_finders
 
 from setuptools_scm import Configuration
 from setuptools_scm._run_cmd import CommandNotFoundError
-from setuptools_scm._run_cmd import has_command
 from setuptools_scm.hg import archival_to_version
 from setuptools_scm.hg import parse
 from setuptools_scm.version import format_version
 from testing.wd_wrapper import WorkDir
 
-pytestmark = pytest.mark.skipif(
-    not has_command("hg", warn=False), reason="hg executable not found"
-)
+# Note: Mercurial availability is now checked in WorkDir.setup_hg() method
 
 
 @pytest.fixture
 def wd(wd: WorkDir) -> WorkDir:
-    wd("hg init")
-    wd.add_command = "hg add ."
-    wd.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
-    return wd
+    """Set up mercurial for hg-specific tests."""
+    return wd.setup_hg()
 
 
 archival_mapping = {
@@ -114,31 +109,32 @@ def test_find_files_stop_at_root_hg(
 
 # XXX: better tests for tag prefixes
 def test_version_from_hg_id(wd: WorkDir) -> None:
-    assert wd.get_version() == "0.0"
+    # Initial state with no commits
+    wd.expect_parse(tag="0.0", distance=0, dirty=False, exact=True)
 
     wd.commit_testfile()
-    assert wd.get_version().startswith("0.1.dev1+")
+    wd.expect_parse(tag="0.0", distance=1, dirty=False, node_prefix="h")
 
     # tagging commit is considered the tag
     wd('hg tag v0.1 -u test -d "0 0"')
-    assert wd.get_version() == "0.1"
+    wd.expect_parse(tag="0.1", distance=0, dirty=False, exact=True)
 
     wd.commit_testfile()
-    assert wd.get_version().startswith("0.2.dev2")
+    wd.expect_parse(tag="0.1", distance=2, dirty=False)
 
     wd("hg up v0.1")
-    assert wd.get_version() == "0.1"
+    wd.expect_parse(tag="0.1", distance=0, dirty=False, exact=True)
 
     # commit originating from the tagged revision
     # that is not an actual tag
     wd.commit_testfile()
-    assert wd.get_version().startswith("0.2.dev1+")
+    wd.expect_parse(tag="0.1", distance=1, dirty=False)
 
     # several tags
     wd("hg up")
     wd('hg tag v0.2 -u test -d "0 0"')
     wd('hg tag v0.3 -u test -d "0 0" -r v0.2')
-    assert wd.get_version() == "0.3"
+    wd.expect_parse(tag="0.3", distance=0, dirty=False, exact=True)
 
 
 def test_version_from_archival(wd: WorkDir) -> None:

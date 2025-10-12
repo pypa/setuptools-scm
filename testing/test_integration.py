@@ -35,14 +35,11 @@ from .wd_wrapper import WorkDir
 c = Configuration()
 
 
+# Module-level fixture for git SCM setup
 @pytest.fixture
-def wd(wd: WorkDir) -> WorkDir:
-    wd("git init")
-    wd("git config user.email test@example.com")
-    wd('git config user.name "a test"')
-    wd.add_command = "git add ."
-    wd.commit_command = "git commit -m test-{reason}"
-    return wd
+def wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> WorkDir:
+    """Set up git for integration tests."""
+    return wd.setup_git(monkeypatch)
 
 
 def test_pyproject_support(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -5,6 +5,8 @@ import os
 import shutil
 import sys
 
+from datetime import datetime
+from datetime import timezone
 from pathlib import Path
 from types import TracebackType
 from typing import Any
@@ -21,10 +23,18 @@ else:
 
 from .wd_wrapper import WorkDir
 
+# Test time constants: 2009-02-13T23:31:30+00:00
+TEST_SOURCE_DATE = datetime(2009, 2, 13, 23, 31, 30, tzinfo=timezone.utc)
+TEST_SOURCE_DATE_EPOCH = int(TEST_SOURCE_DATE.timestamp())
+TEST_SOURCE_DATE_FORMATTED = "20090213"  # As used in node-and-date local scheme
+TEST_SOURCE_DATE_TIMESTAMP = (
+    "20090213233130"  # As used in node-and-timestamp local scheme
+)
 
-def pytest_configure() -> None:
+
+def pytest_configure(config: pytest.Config) -> None:
     # 2009-02-13T23:31:30+00:00
-    os.environ["SOURCE_DATE_EPOCH"] = "1234567890"
+    os.environ["SOURCE_DATE_EPOCH"] = str(TEST_SOURCE_DATE_EPOCH)
     os.environ["SETUPTOOLS_SCM_DEBUG"] = "1"
 
 
@@ -42,10 +52,10 @@ def pytest_report_header() -> list[str]:
             # Replace everything up to and including site-packages with site::
             parts = path.split("site-packages", 1)
             if len(parts) > 1:
-                path = "site:." + parts[1]
+                path = "site::" + parts[1]
         elif path and str(Path.cwd()) in path:
             # Replace current working directory with CWD::
-            path = path.replace(str(Path.cwd()), "CWD:.")
+            path = path.replace(str(Path.cwd()), "CWD::")
         res.append(f"{pkg} version {pkg_version} from {path}")
     return res
 
@@ -90,6 +100,10 @@ def debug_mode() -> Iterator[DebugMode]:
 
 @pytest.fixture
 def wd(tmp_path: Path) -> WorkDir:
+    """Base WorkDir fixture that returns an unconfigured working directory.
+
+    Individual test modules should override this fixture to set up specific SCM configurations.
+    """
     target_wd = tmp_path.resolve() / "wd"
     target_wd.mkdir()
     return WorkDir(target_wd)
@@ -109,12 +123,7 @@ def repositories_hg_git(tmp_path: Path) -> tuple[WorkDir, WorkDir]:
     path_git = tmp_path / "repo_git"
     path_git.mkdir()
 
-    wd = WorkDir(path_git)
-    wd("git init")
-    wd("git config user.email test@example.com")
-    wd('git config user.name "a test"')
-    wd.add_command = "git add ."
-    wd.commit_command = "git commit -m test-{reason}"
+    wd = WorkDir(path_git).setup_git()
 
     path_hg = tmp_path / "repo_hg"
     run(["hg", "clone", path_git, path_hg, "--config", "extensions.hggit="], tmp_path)
@@ -124,7 +133,6 @@ def repositories_hg_git(tmp_path: Path) -> tuple[WorkDir, WorkDir]:
         file.write("[extensions]\nhggit =\n")
 
     wd_hg = WorkDir(path_hg)
-    wd_hg.add_command = "hg add ."
-    wd_hg.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
+    wd_hg.configure_hg_commands()
 
     return wd_hg, wd

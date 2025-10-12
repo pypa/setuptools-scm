@@ -67,6 +67,7 @@ test = [
   "build",
   "pytest",
   "pytest-timeout",  # Timeout protection for CI/CD
+  "pytest-xdist",
   "rich",
   "ruff",
   "mypy~=1.13.0", # pinned to old for python 3.8

@@ -3,7 +3,28 @@ from __future__ import annotations
 import itertools
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 from typing import Any
+from typing import Callable
+
+import pytest
+
+from setuptools_scm._run_cmd import has_command
+
+if TYPE_CHECKING:
+    from setuptools_scm import Configuration
+    from setuptools_scm.version import ScmVersion
+    from setuptools_scm.version import VersionExpectations
+
+    if itertools:  # Make mypy happy about unused import
+        pass
+
+    import sys
+
+    if sys.version_info >= (3, 11):
+        from typing import Unpack
+    else:
+        from typing_extensions import Unpack
 
 
 class WorkDir:
@@ -12,6 +33,8 @@ class WorkDir:
     commit_command: str
     signed_commit_command: str
     add_command: str
+    tag_command: str
+    parse: Callable[[Path, Configuration], ScmVersion | None] | None = None
 
     def __repr__(self) -> str:
         return f"<WD {self.cwd}>"
@@ -68,3 +91,160 @@ class WorkDir:
         version = get_version(root=self.cwd, fallback_root=self.cwd, **kw)
         print(self.cwd.name, version, sep=": ")
         return version
+
+    def create_basic_setup_py(
+        self, name: str = "test-package", use_scm_version: str = "True"
+    ) -> None:
+        """Create a basic setup.py file with setuptools_scm configuration."""
+        self.write(
+            "setup.py",
+            f"""__import__('setuptools').setup(
+    name="{name}",
+    use_scm_version={use_scm_version},
+)""",
+        )
+
+    def create_basic_pyproject_toml(
+        self, name: str = "test-package", dynamic_version: bool = True
+    ) -> None:
+        """Create a basic pyproject.toml file with setuptools_scm configuration."""
+        dynamic_section = 'dynamic = ["version"]' if dynamic_version else ""
+        self.write(
+            "pyproject.toml",
+            f"""[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "{name}"
+{dynamic_section}
+
+[tool.setuptools_scm]
+""",
+        )
+
+    def create_basic_setup_cfg(self, name: str = "test-package") -> None:
+        """Create a basic setup.cfg file with metadata."""
+        self.write(
+            "setup.cfg",
+            f"""[metadata]
+name = {name}
+""",
+        )
+
+    def create_test_file(
+        self, filename: str = "test.txt", content: str = "test content"
+    ) -> None:
+        """Create a test file and commit it to the repository."""
+        # Create parent directories if they don't exist
+        path = self.cwd / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.write(filename, content)
+        self.add_and_commit()
+
+    def create_tag(self, tag: str = "1.0.0") -> None:
+        """Create a tag using the configured tag_command."""
+        if hasattr(self, "tag_command"):
+            self(self.tag_command, tag=tag)
+        else:
+            raise RuntimeError("No tag_command configured")
+
+    def configure_git_commands(self) -> None:
+        """Configure git commands without initializing the repository."""
+        from setuptools_scm.git import parse as git_parse
+
+        self.add_command = "git add ."
+        self.commit_command = "git commit -m test-{reason}"
+        self.tag_command = "git tag {tag}"
+        self.parse = git_parse
+
+    def configure_hg_commands(self) -> None:
+        """Configure mercurial commands without initializing the repository."""
+        from setuptools_scm.hg import parse as hg_parse
+
+        self.add_command = "hg add ."
+        self.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
+        self.tag_command = "hg tag {tag}"
+        self.parse = hg_parse
+
+    def setup_git(
+        self, monkeypatch: pytest.MonkeyPatch | None = None, *, init: bool = True
+    ) -> WorkDir:
+        """Set up git SCM for this WorkDir.
+
+        Args:
+            monkeypatch: Optional pytest MonkeyPatch to clear HOME environment
+            init: Whether to initialize the git repository (default: True)
+
+        Returns:
+            Self for method chaining
+
+        Raises:
+            pytest.skip: If git executable is not found
+        """
+        if not has_command("git", warn=False):
+            pytest.skip("git executable not found")
+
+        self.configure_git_commands()
+
+        if init:
+            if monkeypatch:
+                monkeypatch.delenv("HOME", raising=False)
+            self("git init")
+            self("git config user.email test@example.com")
+            self('git config user.name "a test"')
+
+        return self
+
+    def setup_hg(self, *, init: bool = True) -> WorkDir:
+        """Set up mercurial SCM for this WorkDir.
+
+        Args:
+            init: Whether to initialize the mercurial repository (default: True)
+
+        Returns:
+            Self for method chaining
+
+        Raises:
+            pytest.skip: If hg executable is not found
+        """
+        if not has_command("hg", warn=False):
+            pytest.skip("hg executable not found")
+
+        self.configure_hg_commands()
+
+        if init:
+            self("hg init")
+
+        return self
+
+    def expect_parse(
+        self,
+        **expectations: Unpack[VersionExpectations],
+    ) -> None:
+        """Parse version from this working directory and assert it matches expected properties.
+
+        Uses the same signature as ScmVersion.matches() via TypedDict Unpack.
+        """
+        __tracebackhide__ = True
+        from setuptools_scm import Configuration
+
+        if self.parse is None:
+            raise RuntimeError(
+                "No SCM configured - call setup_git() or setup_hg() first"
+            )
+
+        config = Configuration(root=self.cwd)
+        scm_version = self.parse(self.cwd, config)
+
+        if scm_version is None:
+            raise AssertionError("Failed to parse version")
+
+        # Call matches with all expectations
+        result = scm_version.matches(**expectations)
+
+        # If result is mismatches (falsy), raise assertion with details
+        if not result:
+            raise AssertionError(
+                f"Version mismatch:\n{result}\nActual version: {scm_version!r}"
+            )
