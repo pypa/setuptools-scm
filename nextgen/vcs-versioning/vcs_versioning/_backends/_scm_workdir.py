@@ -8,8 +8,8 @@ from datetime import datetime
 from datetime import timezone
 from pathlib import Path
 
+from .._version_schemes import ScmVersion
 from ..config import Configuration
-from ..scm_version import ScmVersion
 
 log = logging.getLogger(__name__)
 

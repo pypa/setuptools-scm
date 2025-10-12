@@ -14,10 +14,10 @@ from .._run_cmd import CompletedProcess
 from .._run_cmd import require_command as _require_command
 from .._run_cmd import run as _run
 from .._version_cls import Version
+from .._version_schemes import ScmVersion
+from .._version_schemes import meta
+from .._version_schemes import tag_to_version
 from ..config import Configuration
-from ..scm_version import ScmVersion
-from ..scm_version import meta
-from ..scm_version import tag_to_version
 from ._scm_workdir import Workdir
 from ._scm_workdir import get_latest_file_mtime
 

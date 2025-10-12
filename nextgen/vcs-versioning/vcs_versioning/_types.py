@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     else:
         from typing_extensions import TypeAlias
 
-    from . import scm_version as version
+    from . import _version_schemes as version
     from ._pyproject_reading import PyProjectData
     from ._toml import InvalidTomlError
 
