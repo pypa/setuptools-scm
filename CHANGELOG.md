@@ -1,7 +1,7 @@
 # Changelog
 
 
-## v9.2.1 (unreleased)
+## v9.2.1
 
 ### Fixed
 
