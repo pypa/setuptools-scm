@@ -61,7 +61,10 @@ def assert_root(monkeypatch: pytest.MonkeyPatch, expected_root: str) -> None:
 
         return ScmVersion(Version("1.0"), config=config)
 
-    monkeypatch.setattr(setuptools_scm._get_version_impl, "parse_version", assertion)
+    # Patch at vcs_versioning level since that's where the implementation lives
+    import vcs_versioning._get_version_impl
+
+    monkeypatch.setattr(vcs_versioning._get_version_impl, "parse_version", assertion)
 
 
 def test_root_parameter_creation(monkeypatch: pytest.MonkeyPatch) -> None:
