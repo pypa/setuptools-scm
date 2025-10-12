@@ -178,16 +178,19 @@ def read_pyproject(
 ) -> PyProjectData:
     """Read and parse pyproject configuration.
 
-    This function supports dependency injection for tests via `_given_result`.
+    This function supports dependency injection for tests via ``_given_result``
+    and ``_given_definition``.
 
-    Parameters:
-    - path: Path to the pyproject file
-    - tool_name: The tool section name (default: `setuptools_scm`)
-    - canonical_build_package_name: Normalized build requirement name
-    - _given_result: Optional testing hook. Can be:
-        - PyProjectData: returned directly
-        - InvalidTomlError | FileNotFoundError: raised directly
-        - None: read from filesystem
+    :param path: Path to the pyproject file
+    :param tool_name: The tool section name (default: ``setuptools_scm``)
+    :param canonical_build_package_name: Normalized build requirement name
+    :param _given_result: Optional testing hook. Can be:
+        - ``PyProjectData``: returned directly
+        - ``InvalidTomlError`` | ``FileNotFoundError``: raised directly
+        - ``None``: read from filesystem (default)
+    :param _given_definition: Optional testing hook to provide parsed TOML content.
+        When provided, this dictionary is used instead of reading and parsing
+        the file from disk. Ignored if ``_given_result`` is provided.
     """
 
     if _given_result is not None:
