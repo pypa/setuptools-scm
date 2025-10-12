@@ -35,20 +35,23 @@ jobs:
         uses: hynek/build-and-inspect-python-package@v2
         with:
           path: nextgen/vcs-versioning
+          upload-name-suffix: -vcs-versioning
 
       - name: Build setuptools-scm
         uses: hynek/build-and-inspect-python-package@v2
+        with:
+          upload-name-suffix: -setuptools-scm
 
       - name: Download vcs-versioning packages
         uses: actions/download-artifact@v4
         with:
-          name: Packages-nextgen-vcs-versioning
+          name: Packages-vcs-versioning
           path: dist/
 
       - name: Download setuptools-scm packages
         uses: actions/download-artifact@v4
         with:
-          name: Packages
+          name: Packages-setuptools-scm
           path: dist/
 
       - name: Upload combined packages
