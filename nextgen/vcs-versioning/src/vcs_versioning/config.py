@@ -9,9 +9,9 @@ import re
 import warnings
 
 from pathlib import Path
+from re import Pattern
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Pattern
 from typing import Protocol
 
 if TYPE_CHECKING:
@@ -24,7 +24,7 @@ from ._pyproject_reading import get_args_for_pyproject as _get_args_for_pyprojec
 from ._pyproject_reading import read_pyproject as _read_pyproject
 from ._version_cls import Version as _Version
 from ._version_cls import _validate_version_cls
-from ._version_cls import _VersionT
+from ._version_cls import _Version as _VersionAlias
 
 log = logging.getLogger(__name__)
 
@@ -213,7 +213,7 @@ class Configuration:
     )
 
     dist_name: str | None = None
-    version_cls: type[_VersionT] = _Version
+    version_cls: type[_VersionAlias] = _Version
     search_parent_directories: bool = False
 
     parent: _t.PathT | None = None

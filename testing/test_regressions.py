@@ -4,11 +4,11 @@ import pprint
 import subprocess
 import sys
 
+from collections.abc import Sequence
 from dataclasses import replace
 from importlib.metadata import EntryPoint
 from importlib.metadata import distribution
 from pathlib import Path
-from typing import Sequence
 
 import pytest
 

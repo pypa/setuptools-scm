@@ -4,9 +4,9 @@ import dataclasses
 import logging
 import os
 
+from collections.abc import Mapping
 from difflib import get_close_matches
 from typing import Any
-from typing import Mapping
 
 from packaging.utils import canonicalize_name
 

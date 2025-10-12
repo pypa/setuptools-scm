@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import itertools
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Callable
 
 import pytest
 

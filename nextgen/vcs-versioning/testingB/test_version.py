@@ -74,7 +74,7 @@ def test_next_semver_bad_tag() -> None:
     # Create a mock version class that represents an invalid version for testing error handling
     from typing import cast
 
-    from vcs_versioning._version_cls import _VersionT
+    from vcs_versioning._version_cls import _Version
 
     class BrokenVersionForTest:
         """A mock version that behaves like a string but passes type checking."""
@@ -89,7 +89,7 @@ def test_next_semver_bad_tag() -> None:
             return f"BrokenVersionForTest({self._version_str!r})"
 
     # Cast to the expected type to avoid type checking issues
-    broken_tag = cast(_VersionT, BrokenVersionForTest("1.0.0-foo"))
+    broken_tag = cast(_Version, BrokenVersionForTest("1.0.0-foo"))
     version = meta(broken_tag, preformatted=True, config=c)
 
     with pytest.raises(

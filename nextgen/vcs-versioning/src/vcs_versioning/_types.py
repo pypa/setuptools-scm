@@ -2,38 +2,30 @@ from __future__ import annotations
 
 import os
 
+from collections.abc import Callable
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
-from typing import Callable
-from typing import List
 from typing import Protocol
-from typing import Sequence
-from typing import Tuple
+from typing import TypeAlias
 from typing import Union
 
 from setuptools import Distribution
 
 if TYPE_CHECKING:
-    import sys
-
-    if sys.version_info >= (3, 10):
-        from typing import TypeAlias
-    else:
-        from typing_extensions import TypeAlias
-
     from . import _version_schemes as version
     from ._pyproject_reading import PyProjectData
     from ._toml import InvalidTomlError
 
 PathT: TypeAlias = Union["os.PathLike[str]", str]
 
-CMD_TYPE: TypeAlias = Union[Sequence[PathT], str]
+CMD_TYPE: TypeAlias = Sequence[PathT] | str
 
-VERSION_SCHEME: TypeAlias = Union[str, Callable[["version.ScmVersion"], str]]
-VERSION_SCHEMES: TypeAlias = Union[List[str], Tuple[str, ...], VERSION_SCHEME]
+VERSION_SCHEME: TypeAlias = str | Callable[["version.ScmVersion"], str]
+VERSION_SCHEMES: TypeAlias = list[str] | tuple[str, ...] | VERSION_SCHEME
 SCMVERSION: TypeAlias = "version.ScmVersion"
 
 # Git pre-parse function types
-GIT_PRE_PARSE: TypeAlias = Union[str, None]
+GIT_PRE_PARSE: TypeAlias = str | None
 
 # Testing injection types for configuration reading
 GivenPyProjectResult: TypeAlias = Union[

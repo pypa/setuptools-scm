@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import logging
-import sys
 
+from collections.abc import Callable
+from collections.abc import Iterator
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Callable
-from typing import Iterator
 from typing import cast
 
 __all__ = [
@@ -24,24 +23,15 @@ from importlib import metadata as im
 log = logging.getLogger(__name__)
 
 
-if sys.version_info[:2] < (3, 10):
+def entry_points(*, group: str, name: str | None = None) -> im.EntryPoints:
+    """Get entry points for a specific group (and optionally name).
 
-    def entry_points(*, group: str, name: str | None = None) -> list[im.EntryPoint]:
-        # Python 3.9: entry_points() returns dict, need to handle filtering manually
-
-        eps = im.entry_points()  # Returns dict
-
-        group_eps = eps.get(group, [])
-        if name is not None:
-            return [ep for ep in group_eps if ep.name == name]
-        return group_eps
-else:
-
-    def entry_points(*, group: str, name: str | None = None) -> im.EntryPoints:
-        kw = {"group": group}
-        if name is not None:
-            kw["name"] = name
-        return im.entry_points(**kw)
+    In Python 3.10+, entry_points() with group= returns EntryPoints directly.
+    """
+    if name is not None:
+        return im.entry_points(group=group, name=name)
+    else:
+        return im.entry_points(group=group)
 
 
 def version_from_entrypoint(

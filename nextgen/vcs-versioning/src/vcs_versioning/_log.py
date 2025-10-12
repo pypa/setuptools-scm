@@ -9,9 +9,9 @@ import logging
 import os
 import sys
 
+from collections.abc import Iterator
+from collections.abc import Mapping
 from typing import IO
-from typing import Iterator
-from typing import Mapping
 
 # Logger names that need configuration
 LOGGER_NAMES = [

@@ -6,41 +6,34 @@ import os
 import re
 import warnings
 
+from collections.abc import Callable
 from datetime import date
 from datetime import datetime
 from datetime import timezone
+from re import Match
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Callable
-from typing import Match
+from typing import Concatenate
+from typing import ParamSpec
+from typing import TypedDict
 
 from . import _entrypoints
 from . import _modify_version
+from . import _version_cls as _v
+from . import config as _config
 from ._node_utils import _format_node_for_output
+from ._version_cls import Version as PkgVersion
+from ._version_cls import _Version
 
 if TYPE_CHECKING:
     import sys
-
-    if sys.version_info >= (3, 10):
-        from typing import Concatenate
-        from typing import ParamSpec
-    else:
-        from typing_extensions import Concatenate
-        from typing_extensions import ParamSpec
 
     if sys.version_info >= (3, 11):
         from typing import Unpack
     else:
         from typing_extensions import Unpack
 
-    _P = ParamSpec("_P")
-
-from typing import TypedDict
-
-from . import _version_cls as _v
-from . import config as _config
-from ._version_cls import Version as PkgVersion
-from ._version_cls import _VersionT
+_P = ParamSpec("_P")
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +52,7 @@ class _TagDict(TypedDict):
 class VersionExpectations(TypedDict, total=False):
     """Expected properties for ScmVersion matching."""
 
-    tag: str | _VersionT
+    tag: str | _Version
     distance: int
     dirty: bool
     node_prefix: str  # Prefix of the node/commit hash
@@ -147,8 +140,8 @@ def callable_or_entrypoint(group: str, callable_or_name: str | Any) -> Any:
 
 
 def tag_to_version(
-    tag: _VersionT | str, config: _config.Configuration
-) -> _VersionT | None:
+    tag: _Version | str, config: _config.Configuration
+) -> _Version | None:
     """
     take a tag that might be prefixed with a keyword and return only the version part
     """
@@ -164,7 +157,7 @@ def tag_to_version(
 
     # Try to create version from base version first
     try:
-        version: _VersionT = config.version_cls(version_str)
+        version: _Version = config.version_cls(version_str)
         log.debug("version=%r", version)
     except Exception:
         warnings.warn(
@@ -180,7 +173,7 @@ def tag_to_version(
         log.debug("tag %r includes local build data %r, preserving it", tag, suffix)
         # Try creating version with suffix - if it fails, we'll use the base version
         try:
-            version_with_suffix = config.version_cls(version_str + suffix)
+            version_with_suffix: _Version = config.version_cls(version_str + suffix)
             log.debug("version with suffix=%r", version_with_suffix)
             return version_with_suffix
         except Exception:
@@ -325,8 +318,8 @@ class ScmVersion:
 
 
 def _parse_tag(
-    tag: _VersionT | str, preformatted: bool, config: _config.Configuration
-) -> _VersionT:
+    tag: _Version | str, preformatted: bool, config: _config.Configuration
+) -> _Version:
     if preformatted:
         # For preformatted versions, tag should already be validated as a version object
         # String validation is handled in meta function before calling this
@@ -345,7 +338,7 @@ def _parse_tag(
 
 
 def meta(
-    tag: str | _VersionT,
+    tag: str | _Version,
     *,
     distance: int = 0,
     dirty: bool = False,
@@ -356,7 +349,7 @@ def meta(
     node_date: date | None = None,
     time: datetime | None = None,
 ) -> ScmVersion:
-    parsed_version: _VersionT
+    parsed_version: _Version
     # Enhanced string validation for preformatted versions
     if preformatted and isinstance(tag, str):
         # Validate PEP 440 compliance using NonNormalizedVersion

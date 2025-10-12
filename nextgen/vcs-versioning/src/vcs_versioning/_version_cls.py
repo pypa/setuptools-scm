@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from typing import Type
-from typing import Union
+from typing import TypeAlias
 from typing import cast
 
 try:
@@ -69,7 +68,7 @@ def _version_as_tuple(version_str: str) -> tuple[int | str, ...]:
         return version_fields
 
 
-_VersionT = Union[Version, NonNormalizedVersion]
+_Version: TypeAlias = Version | NonNormalizedVersion
 
 
 def import_name(name: str) -> object:
@@ -81,8 +80,8 @@ def import_name(name: str) -> object:
 
 
 def _validate_version_cls(
-    version_cls: type[_VersionT] | str | None, normalize: bool
-) -> type[_VersionT]:
+    version_cls: type[_Version] | str | None, normalize: bool
+) -> type[_Version]:
     if not normalize:
         if version_cls is not None:
             raise ValueError(
@@ -95,7 +94,7 @@ def _validate_version_cls(
         return Version
     elif isinstance(version_cls, str):
         try:
-            return cast(Type[_VersionT], import_name(version_cls))
+            return cast(type[_Version], import_name(version_cls))
         except Exception:
             raise ValueError(f"Unable to import version_cls='{version_cls}'") from None
     else:

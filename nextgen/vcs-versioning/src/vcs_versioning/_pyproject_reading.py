@@ -6,9 +6,9 @@ import logging
 import sys
 import warnings
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
 
 if sys.version_info >= (3, 11):
     from typing import Self

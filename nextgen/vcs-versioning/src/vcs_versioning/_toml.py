@@ -3,11 +3,10 @@ from __future__ import annotations
 import logging
 import sys
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING
 from typing import Any
-from typing import Callable
-from typing import Dict
+from typing import TypeAlias
 from typing import TypedDict
 from typing import cast
 
@@ -16,16 +15,10 @@ if sys.version_info >= (3, 11):
 else:
     from tomli import loads as load_toml
 
-if TYPE_CHECKING:
-    if sys.version_info >= (3, 10):
-        from typing import TypeAlias
-    else:
-        from typing_extensions import TypeAlias
-
 
 log = logging.getLogger(__name__)
 
-TOML_RESULT: TypeAlias = Dict[str, Any]
+TOML_RESULT: TypeAlias = dict[str, Any]
 TOML_LOADER: TypeAlias = Callable[[str], TOML_RESULT]
 
 

@@ -3,10 +3,10 @@ from __future__ import annotations
 import logging
 import os
 
+from collections.abc import Iterable
+from collections.abc import Iterator
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import Iterable
-from typing import Iterator
 
 from . import _entrypoints
 from . import _types as _t
