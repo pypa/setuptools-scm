@@ -8,11 +8,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from setuptools_scm import Configuration
-from setuptools_scm._file_finders import find_files
-from setuptools_scm._get_version_impl import _get_version
-from setuptools_scm._integration.pyproject_reading import PyProjectData
-from setuptools_scm.discover import walk_potential_roots
+from . import _discover as discover
+from ._get_version_impl import _get_version
+from ._pyproject_reading import PyProjectData
+from .config import Configuration
 
 
 def main(
@@ -159,7 +158,13 @@ def command(opts: argparse.Namespace, version: str, config: Configuration) -> in
         data["version"] = version
 
     if "files" in opts.query:
-        data["files"] = find_files(config.root)
+        # Note: file finding is setuptools-specific and not available in vcs_versioning
+        try:
+            from setuptools_scm._file_finders import find_files
+
+            data["files"] = find_files(config.root)
+        except ImportError:
+            data["files"] = ["file finding requires setuptools_scm package"]
 
     for q in opts.query:
         if q in ["files", "queries", "version"]:
@@ -209,7 +214,7 @@ def _print_key_value(data: dict[str, Any]) -> None:
 
 
 def _find_pyproject(parent: str) -> str:
-    for directory in walk_potential_roots(os.path.abspath(parent)):
+    for directory in discover.walk_potential_roots(os.path.abspath(parent)):
         pyproject = os.path.join(directory, "pyproject.toml")
         if os.path.isfile(pyproject):
             return pyproject

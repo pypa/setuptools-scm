@@ -30,11 +30,43 @@ dynamic = [
   "version",
 ]
 dependencies = [
+  "packaging>=20",
+  'tomli>=1; python_version < "3.11"',
+  'typing-extensions; python_version < "3.10"',
 ]
 [project.urls]
 Documentation = "https://github.com/unknown/vcs-versioning#readme"
 Issues = "https://github.com/unknown/vcs-versioning/issues"
 Source = "https://github.com/unknown/vcs-versioning"
+
+[project.scripts]
+"vcs-versioning" = "vcs_versioning._cli:main"
+
+[project.entry-points."setuptools_scm.parse_scm"]
+".git" = "vcs_versioning._backends._git:parse"
+".hg" = "vcs_versioning._backends._hg:parse"
+
+[project.entry-points."setuptools_scm.parse_scm_fallback"]
+".git_archival.txt" = "vcs_versioning._backends._git:parse_archival"
+".hg_archival.txt" = "vcs_versioning._backends._hg:parse_archival"
+"PKG-INFO" = "vcs_versioning._fallbacks:parse_pkginfo"
+"pyproject.toml" = "vcs_versioning._fallbacks:fallback_version"
+"setup.py" = "vcs_versioning._fallbacks:fallback_version"
+
+[project.entry-points."setuptools_scm.local_scheme"]
+dirty-tag = "vcs_versioning._version_schemes:get_local_dirty_tag"
+no-local-version = "vcs_versioning._version_schemes:get_no_local_node"
+node-and-date = "vcs_versioning._version_schemes:get_local_node_and_date"
+node-and-timestamp = "vcs_versioning._version_schemes:get_local_node_and_timestamp"
+
+[project.entry-points."setuptools_scm.version_scheme"]
+"calver-by-date" = "vcs_versioning._version_schemes:calver_by_date"
+"guess-next-dev" = "vcs_versioning._version_schemes:guess_next_dev_version"
+"no-guess-dev" = "vcs_versioning._version_schemes:no_guess_dev_version"
+"only-version" = "vcs_versioning._version_schemes:only_version"
+"post-release" = "vcs_versioning._version_schemes:postrelease_version"
+"python-simplified-semver" = "vcs_versioning._version_schemes:simplified_semver_version"
+"release-branch-semver" = "vcs_versioning._version_schemes:release_branch_semver_version"
 
 [tool.hatch.version]
 path = "vcs_versioning/__about__.py"

@@ -37,8 +37,8 @@ if TYPE_CHECKING:
 
 from typing import TypedDict
 
-from . import _config
 from . import _version_cls as _v
+from . import config as _config
 from ._version_cls import Version as PkgVersion
 from ._version_cls import _VersionT
 

@@ -20,9 +20,9 @@ if TYPE_CHECKING:
     else:
         from typing_extensions import TypeAlias
 
-    from . import version
-    from ._integration.pyproject_reading import PyProjectData
-    from ._integration.toml import InvalidTomlError
+    from . import scm_version as version
+    from ._pyproject_reading import PyProjectData
+    from ._toml import InvalidTomlError
 
 PathT: TypeAlias = Union["os.PathLike[str]", str]
 

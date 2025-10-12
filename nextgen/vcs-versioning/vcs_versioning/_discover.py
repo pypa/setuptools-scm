@@ -10,7 +10,7 @@ from typing import Iterator
 from . import _entrypoints
 from . import _log
 from . import _types as _t
-from ._config import Configuration
+from .config import Configuration
 
 if TYPE_CHECKING:
     from ._entrypoints import im

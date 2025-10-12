@@ -8,21 +8,21 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
 
-from . import Configuration
-from ._version_cls import Version
-from .integration import data_from_mime
-from .scm_workdir import Workdir
-from .scm_workdir import get_latest_file_mtime
-from .version import ScmVersion
-from .version import meta
-from .version import tag_to_version
+from .. import _types as _t
+from .._integration import data_from_mime
+from .._run_cmd import CompletedProcess
+from .._run_cmd import require_command as _require_command
+from .._run_cmd import run as _run
+from .._version_cls import Version
+from ..config import Configuration
+from ..scm_version import ScmVersion
+from ..scm_version import meta
+from ..scm_version import tag_to_version
+from ._scm_workdir import Workdir
+from ._scm_workdir import get_latest_file_mtime
 
 if TYPE_CHECKING:
-    from . import _types as _t
-
-from ._run_cmd import CompletedProcess
-from ._run_cmd import require_command as _require_command
-from ._run_cmd import run as _run
+    pass
 
 log = logging.getLogger(__name__)
 
@@ -268,8 +268,8 @@ def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
                 if line.startswith("default ="):
                     path = Path(line.split()[2])
                     if path.name.endswith(".git") or (path / ".git").exists():
-                        from .git import _git_parse_inner
-                        from .hg_git import GitWorkdirHgClient
+                        from ._git import _git_parse_inner
+                        from ._hg_git import GitWorkdirHgClient
 
                         wd_hggit = GitWorkdirHgClient.from_potential_worktree(root)
                         if wd_hggit:

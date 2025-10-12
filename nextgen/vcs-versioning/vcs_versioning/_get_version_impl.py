@@ -10,15 +10,15 @@ from typing import Any
 from typing import NoReturn
 from typing import Pattern
 
-from . import _config
 from . import _entrypoints
 from . import _run_cmd
 from . import _types as _t
-from ._config import Configuration
+from . import config as _config
 from ._overrides import _read_pretended_version_for
 from ._version_cls import _validate_version_cls
-from .version import ScmVersion
-from .version import format_version as _format_version
+from ._version_schemes import format_version as _format_version
+from .config import Configuration
+from .scm_version import ScmVersion
 
 EMPTY_TAG_REGEX_DEPRECATION = DeprecationWarning(
     "empty regex for tag regex is invalid, using default"
@@ -74,17 +74,25 @@ def write_version_files(
     config: Configuration, version: str, scm_version: ScmVersion
 ) -> None:
     if config.write_to is not None:
-        from ._integration.dump_version import dump_version
-
-        dump_version(
-            root=config.root,
-            version=version,
-            scm_version=scm_version,
-            write_to=config.write_to,
-            template=config.write_to_template,
-        )
+        try:
+            # dump_version is setuptools-specific, may not be available
+            from setuptools_scm._integration.dump_version import dump_version
+        except ImportError:
+            warnings.warn("write_to requires setuptools_scm package", stacklevel=2)
+        else:
+            dump_version(
+                root=config.root,
+                version=version,
+                scm_version=scm_version,
+                write_to=config.write_to,
+                template=config.write_to_template,
+            )
     if config.version_file:
-        from ._integration.dump_version import write_version_to_path
+        try:
+            from setuptools_scm._integration.dump_version import write_version_to_path
+        except ImportError:
+            warnings.warn("version_file requires setuptools_scm package", stacklevel=2)
+            return
 
         version_file = Path(config.version_file)
         assert not version_file.is_absolute(), f"{version_file=}"
@@ -130,7 +138,7 @@ def _find_scm_in_parents(config: Configuration) -> Path | None:
 
     searching_config = dataclasses.replace(config, search_parent_directories=True)
 
-    from .discover import iter_matching_entrypoints
+    from ._discover import iter_matching_entrypoints
 
     for _ep in iter_matching_entrypoints(
         config.absolute_root, "setuptools_scm.parse_scm", searching_config

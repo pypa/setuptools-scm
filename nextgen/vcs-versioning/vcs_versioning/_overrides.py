@@ -9,10 +9,10 @@ from typing import Mapping
 
 from packaging.utils import canonicalize_name
 
-from . import _config
 from . import _log
-from . import version
-from ._integration.toml import load_toml_or_inline_map
+from . import _version_schemes as version
+from . import config as _config
+from ._toml import load_toml_or_inline_map
 
 log = _log.log.getChild("overrides")
 

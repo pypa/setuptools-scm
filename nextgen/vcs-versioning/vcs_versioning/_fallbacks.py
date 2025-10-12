@@ -8,11 +8,11 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from . import _types as _t
-from . import Configuration
-from .integration import data_from_mime
-from .version import ScmVersion
-from .version import meta
-from .version import tag_to_version
+from ._integration import data_from_mime
+from .config import Configuration
+from .scm_version import ScmVersion
+from .scm_version import meta
+from .scm_version import tag_to_version
 
 log = logging.getLogger(__name__)
 

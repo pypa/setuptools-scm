@@ -9,7 +9,7 @@ from typing import Iterator
 from typing import cast
 
 from . import _log
-from . import version
+from . import scm_version as version
 
 __all__ = [
     "entry_points",
@@ -17,8 +17,8 @@ __all__ = [
 ]
 if TYPE_CHECKING:
     from . import _types as _t
-    from ._config import Configuration
-    from ._config import ParseFunction
+    from .config import Configuration
+    from .config import ParseFunction
 
 from importlib import metadata as im
 
@@ -48,7 +48,7 @@ else:
 def version_from_entrypoint(
     config: Configuration, *, entrypoint: str, root: _t.PathT
 ) -> version.ScmVersion | None:
-    from .discover import iter_matching_entrypoints
+    from ._discover import iter_matching_entrypoints
 
     log.debug("version_from_ep %s in %s", entrypoint, root)
     for ep in iter_matching_entrypoints(root, entrypoint, config):

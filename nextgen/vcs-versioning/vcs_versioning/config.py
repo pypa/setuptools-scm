@@ -14,16 +14,14 @@ from typing import Pattern
 from typing import Protocol
 
 if TYPE_CHECKING:
-    from . import git
+    from ._backends import _git
 
 from . import _log
 from . import _types as _t
-from ._integration.pyproject_reading import PyProjectData
-from ._integration.pyproject_reading import (
-    get_args_for_pyproject as _get_args_for_pyproject,
-)
-from ._integration.pyproject_reading import read_pyproject as _read_pyproject
 from ._overrides import read_toml_overrides
+from ._pyproject_reading import PyProjectData
+from ._pyproject_reading import get_args_for_pyproject as _get_args_for_pyproject
+from ._pyproject_reading import read_pyproject as _read_pyproject
 from ._version_cls import Version as _Version
 from ._version_cls import _validate_version_cls
 from ._version_cls import _VersionT
@@ -107,11 +105,11 @@ def _check_tag_regex(value: str | Pattern[str] | None) -> Pattern[str]:
     return regex
 
 
-def _get_default_git_pre_parse() -> git.GitPreParse:
+def _get_default_git_pre_parse() -> _git.GitPreParse:
     """Get the default git pre_parse enum value"""
-    from . import git
+    from ._backends import _git
 
-    return git.GitPreParse.WARN_ON_SHALLOW
+    return _git.GitPreParse.WARN_ON_SHALLOW
 
 
 class ParseFunction(Protocol):
@@ -149,7 +147,7 @@ def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
 class GitConfiguration:
     """Git-specific configuration options"""
 
-    pre_parse: git.GitPreParse = dataclasses.field(
+    pre_parse: _git.GitPreParse = dataclasses.field(
         default_factory=lambda: _get_default_git_pre_parse()
     )
     describe_command: _t.CMD_TYPE | None = None
@@ -161,12 +159,12 @@ class GitConfiguration:
 
         # Convert string pre_parse values to enum instances
         if "pre_parse" in git_data and isinstance(git_data["pre_parse"], str):
-            from . import git
+            from ._backends import _git
 
             try:
-                git_data["pre_parse"] = git.GitPreParse(git_data["pre_parse"])
+                git_data["pre_parse"] = _git.GitPreParse(git_data["pre_parse"])
             except ValueError as e:
-                valid_options = [option.value for option in git.GitPreParse]
+                valid_options = [option.value for option in _git.GitPreParse]
                 raise ValueError(
                     f"Invalid git pre_parse function '{git_data['pre_parse']}'. "
                     f"Valid options are: {', '.join(valid_options)}"

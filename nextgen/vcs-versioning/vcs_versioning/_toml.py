@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     else:
         from typing_extensions import TypeAlias
 
-from .. import _log
+from . import _log
 
 log = _log.log.getChild("toml")
 

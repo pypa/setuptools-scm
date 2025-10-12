@@ -18,21 +18,21 @@ from typing import TYPE_CHECKING
 from typing import Callable
 from typing import Sequence
 
-from . import Configuration
-from . import _types as _t
-from . import discover
-from ._run_cmd import CompletedProcess as _CompletedProcess
-from ._run_cmd import require_command as _require_command
-from ._run_cmd import run as _run
-from .integration import data_from_mime
-from .scm_workdir import Workdir
-from .scm_workdir import get_latest_file_mtime
-from .version import ScmVersion
-from .version import meta
-from .version import tag_to_version
+from .. import _discover as discover
+from .. import _types as _t
+from .._integration import data_from_mime
+from .._run_cmd import CompletedProcess as _CompletedProcess
+from .._run_cmd import require_command as _require_command
+from .._run_cmd import run as _run
+from ..config import Configuration
+from ..scm_version import ScmVersion
+from ..scm_version import meta
+from ..scm_version import tag_to_version
+from ._scm_workdir import Workdir
+from ._scm_workdir import get_latest_file_mtime
 
 if TYPE_CHECKING:
-    from . import hg_git
+    from . import _hg_git as hg_git
 log = logging.getLogger(__name__)
 
 REF_TAG_RE = re.compile(r"(?<=\btag: )([^,]+)\b")
@@ -93,7 +93,7 @@ class GitWorkdir(Workdir):
             real_wd = os.fspath(wd)
         else:
             str_wd = os.fspath(wd)
-            from ._compat import strip_path_suffix
+            from .._compat import strip_path_suffix
 
             real_wd = strip_path_suffix(str_wd, real_wd)
         log.debug("real root %s", real_wd)
