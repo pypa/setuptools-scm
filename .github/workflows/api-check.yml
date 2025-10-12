@@ -28,18 +28,20 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v6
+
       - name: Install dependencies
         run: |
-          pip install -U pip setuptools
-          pip install -e .[test]
-          pip install griffe
+          uv sync --group test
+          uv pip install griffe
 
       - name: Run griffe API check
         id: griffe-check
         continue-on-error: true
         run: |
           echo "Running griffe API stability check..."
-          if griffe check setuptools_scm -ssrc -f github; then
+          if uv run griffe check setuptools_scm -ssrc -f github; then
             echo "api_check_result=success" >> $GITHUB_OUTPUT
             echo "exit_code=0" >> $GITHUB_OUTPUT
           else
