@@ -81,6 +81,33 @@ def has_build_package_with_extra(
     return False
 
 
+def _check_setuptools_dynamic_version_conflict(
+    path: Path, build_requires: Sequence[str], definition: TOML_RESULT
+) -> None:
+    """Warn if tool.setuptools.dynamic.version conflicts with setuptools-scm."""
+    # Check if setuptools-scm[simple] is in build requirements
+    if not has_build_package_with_extra(build_requires, "setuptools-scm", "simple"):
+        return
+
+    # Check if tool.setuptools.dynamic.version exists
+    tool = definition.get("tool", {})
+    if not isinstance(tool, dict):
+        return
+
+    setuptools_config = tool.get("setuptools", {})
+    if not isinstance(setuptools_config, dict):
+        return
+
+    dynamic_config = setuptools_config.get("dynamic", {})
+    if not isinstance(dynamic_config, dict):
+        return
+
+    if "version" in dynamic_config:
+        from .deprecation import warn_pyproject_setuptools_dynamic_version
+
+        warn_pyproject_setuptools_dynamic_version(path)
+
+
 def read_pyproject(
     path: Path = DEFAULT_PYPROJECT_PATH,
     tool_name: str = DEFAULT_TOOL_NAME,
@@ -96,6 +123,12 @@ def read_pyproject(
     vcs_data = _vcs_read_pyproject(
         path, tool_name, canonical_build_package_name, _given_result, _given_definition
     )
+
+    # Check for conflicting tool.setuptools.dynamic configuration
+    if _given_definition is not None:
+        _check_setuptools_dynamic_version_conflict(
+            path, vcs_data.build_requires, _given_definition
+        )
 
     # Convert to setuptools-extended PyProjectData
     return PyProjectData(
