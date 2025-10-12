@@ -508,7 +508,7 @@ def test_git_getdate_badgit(
     git_wd = git.GitWorkdir(wd.cwd)
     fake_date_result = CompletedProcess(args=[], stdout="%cI", stderr="", returncode=0)
     with patch.object(
-        git,
+        _git,
         "run_git",
         Mock(return_value=fake_date_result),
     ):
@@ -524,7 +524,7 @@ def test_git_getdate_git_2_45_0_plus(
         args=[], stdout="2024-04-30T22:33:10Z", stderr="", returncode=0
     )
     with patch.object(
-        git,
+        _git,
         "run_git",
         Mock(return_value=fake_date_result),
     ):

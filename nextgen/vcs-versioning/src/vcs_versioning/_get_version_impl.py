@@ -248,9 +248,14 @@ def get_version(
 
 
 def parse_tag_regex(tag_regex: str | Pattern[str]) -> Pattern[str]:
+    """Pre-validate and convert tag_regex to Pattern before Configuration.
+
+    This ensures get_version() emits the deprecation warning for empty strings
+    before Configuration.__post_init__ runs.
+    """
     if isinstance(tag_regex, str):
         if tag_regex == "":
-            warnings.warn(EMPTY_TAG_REGEX_DEPRECATION)
+            warnings.warn(EMPTY_TAG_REGEX_DEPRECATION, stacklevel=3)
             return _config.DEFAULT_TAG_REGEX
         else:
             return re.compile(tag_regex)

@@ -39,7 +39,7 @@ def _git_toplevel(path: str) -> str | None:
             # ``cwd`` is absolute path to current working directory.
             # the below method removes the length of ``out`` from
             # ``cwd``, which gives the git toplevel
-            from .._compat import strip_path_suffix
+            from vcs_versioning._compat import strip_path_suffix
 
             out = strip_path_suffix(cwd, out, f"cwd={cwd!r}\nout={out!r}")
         log.debug("find files toplevel %s", out)

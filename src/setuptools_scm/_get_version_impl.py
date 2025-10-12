@@ -23,15 +23,12 @@ def get_version(root: str | PathLike[str] | None = None, **kwargs: object) -> st
         root: Optional root directory (can be passed as positional arg for backward compat)
         **kwargs: Additional configuration parameters
     """
-    from vcs_versioning.config import Configuration
+    from vcs_versioning._get_version_impl import get_version as _vcs_get_version
 
     if root is not None:
         kwargs["root"] = root
-    config = Configuration(**kwargs)  # type: ignore[arg-type]
-    version = _get_version(config, force_write_version_files=False)
-    if version is None:
-        raise RuntimeError("Unable to determine version")
-    return version
+    # Delegate to vcs_versioning's get_version which handles all validation including tag_regex
+    return _vcs_get_version(**kwargs)  # type: ignore[arg-type]
 
 
 __all__ = [
