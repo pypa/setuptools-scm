@@ -12,8 +12,8 @@ def test_warn_dynamic_version_full_text() -> None:
     test_path = Path("test_file.toml")
     expected_warning = (
         f"{test_path}: at [test.section]\n"
-        "test_expression forcing setuptools to override the version setuptools-scm sets\n"
-        "When using setuptools-scm its invalid to use setuptools dynamic version as well, please removeit.\n"
+        "test_expression is forcing setuptools to override the version setuptools-scm did already set\n"
+        "When using setuptools-scm it's invalid to use setuptools dynamic version as well, please remove it.\n"
         "Setuptools-scm is responsible for setting the version, forcing setuptools to override creates errors."
     )
 
