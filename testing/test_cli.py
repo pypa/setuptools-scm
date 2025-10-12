@@ -40,8 +40,7 @@ def _create_version_file_pyproject_data() -> PyProjectData:
         section_present=True, project_present=True, project_name="test"
     )
     data.section["version_file"] = "ver.py"
-    # Type: PyProjectData.for_testing returns the correct type
-    return data  # type: ignore[return-value]
+    return data
 
 
 def get_output(

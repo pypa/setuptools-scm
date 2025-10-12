@@ -103,7 +103,7 @@ def version_keyword(
         pyproject_data = read_pyproject(_given_result=_given_pyproject_data)
     except FileNotFoundError:
         log.debug("pyproject.toml not found, proceeding with empty configuration")
-        pyproject_data = PyProjectData.empty()  # type: ignore[assignment]
+        pyproject_data = PyProjectData.empty()
     except InvalidTomlError as e:
         log.debug("Configuration issue in pyproject.toml: %s", e)
         return

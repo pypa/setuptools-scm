@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import logging
+import sys
 import warnings
 
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 from . import _types as _t
 from ._requirement_cls import extract_package_name
@@ -48,7 +54,7 @@ class PyProjectData:
         has_dynamic_version: bool = True,
         build_requires: list[str] | None = None,
         local_scheme: str | None = None,
-    ) -> PyProjectData:
+    ) -> Self:
         """Create a PyProjectData instance for testing purposes."""
         project: TOML_RESULT
         if project_name is not None:
@@ -82,7 +88,7 @@ class PyProjectData:
     @classmethod
     def empty(
         cls, path: Path = DEFAULT_PYPROJECT_PATH, tool_name: str = DEFAULT_TOOL_NAME
-    ) -> PyProjectData:
+    ) -> Self:
         return cls(
             path=path,
             tool_name=tool_name,
