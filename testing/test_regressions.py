@@ -104,17 +104,20 @@ def test_case_mismatch_on_windows_git(tmp_path: Path) -> None:
 @pytest.mark.skipif(sys.platform != "win32", reason="this bug is only valid on windows")
 def test_case_mismatch_nested_dir_windows_git(tmp_path: Path) -> None:
     """Test case where we have a nested directory with different casing"""
+    from testing.wd_wrapper import WorkDir
+
     # Create git repo in my_repo
     repo_path = tmp_path / "my_repo"
     repo_path.mkdir()
-    run("git init", repo_path)
+    wd = WorkDir(repo_path).setup_git()
 
     # Create a nested directory with specific casing
     nested_dir = repo_path / "CasedDir"
     nested_dir.mkdir()
 
     # Create a pyproject.toml in the nested directory
-    (nested_dir / "pyproject.toml").write_text(
+    wd.write(
+        "CasedDir/pyproject.toml",
         """
 [build-system]
 requires = ["setuptools>=64", "setuptools-scm"]
@@ -126,12 +129,10 @@ dynamic = ["version"]
 
 [tool.setuptools_scm]
 """,
-        encoding="utf-8",
     )
 
     # Add and commit the file
-    run("git add .", repo_path)
-    run("git commit -m 'Initial commit'", repo_path)
+    wd.add_and_commit("Initial commit")
 
     # Now try to parse from the nested directory with lowercase path
     # This simulates: cd my_repo/caseddir (lowercase) when actual dir is CasedDir
@@ -151,20 +152,20 @@ dynamic = ["version"]
 def test_case_mismatch_force_assertion_failure(tmp_path: Path) -> None:
     """Force the assertion failure by directly calling _git_toplevel with mismatched paths"""
     from setuptools_scm._file_finders.git import _git_toplevel
+    from testing.wd_wrapper import WorkDir
 
     # Create git repo structure
     repo_path = tmp_path / "my_repo"
     repo_path.mkdir()
-    run("git init", repo_path)
+    wd = WorkDir(repo_path).setup_git()
 
     # Create nested directory
     nested_dir = repo_path / "CasedDir"
     nested_dir.mkdir()
 
     # Add and commit something to make it a valid repo
-    (nested_dir / "test.txt").write_text("test", encoding="utf-8")
-    run("git add .", repo_path)
-    run("git commit -m 'Initial commit'", repo_path)
+    wd.write("CasedDir/test.txt", "test")
+    wd.add_and_commit("Initial commit")
 
     # Now call _git_toplevel with a path that has different casing
     # This should cause the assertion to fail

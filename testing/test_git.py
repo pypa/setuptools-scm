@@ -826,9 +826,7 @@ def test_git_no_commits_uses_fallback_version(wd: WorkDir) -> None:
     """Test that when git describe fails (no commits), fallback_version is used instead of 0.0."""
     # Reinitialize as empty repo to remove any existing commits
     wd("rm -rf .git")
-    wd("git init")
-    wd("git config user.email test@example.com")
-    wd('git config user.name "a test"')
+    wd.setup_git()
 
     # Test with fallback_version set - should use the fallback instead of "0.0"
     config = Configuration(fallback_version="1.2.3")
