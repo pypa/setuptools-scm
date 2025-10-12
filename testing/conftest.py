@@ -88,22 +88,6 @@ def debug_mode() -> Iterator[DebugMode]:
         yield debug_mode
 
 
-def setup_git_wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch | None = None) -> WorkDir:
-    """Set up a WorkDir with git initialized and configured for testing.
-
-    Note: This is a compatibility wrapper. Consider using wd.setup_git() directly.
-    """
-    return wd.setup_git(monkeypatch)
-
-
-def setup_hg_wd(wd: WorkDir) -> WorkDir:
-    """Set up a WorkDir with mercurial initialized and configured for testing.
-
-    Note: This is a compatibility wrapper. Consider using wd.setup_hg() directly.
-    """
-    return wd.setup_hg()
-
-
 @pytest.fixture
 def wd(tmp_path: Path) -> WorkDir:
     """Base WorkDir fixture that returns an unconfigured working directory.
