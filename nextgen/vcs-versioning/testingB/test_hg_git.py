@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import pytest
 
+from vcs_versioning.test_api import WorkDir
+
 from setuptools_scm import Configuration
 from setuptools_scm._run_cmd import CommandNotFoundError
 from setuptools_scm._run_cmd import has_command
 from setuptools_scm._run_cmd import run
 from setuptools_scm.hg import parse
-from testing.wd_wrapper import WorkDir
 
 
 @pytest.fixture(scope="module", autouse=True)

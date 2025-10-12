@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from .wd_wrapper import WorkDir
+from vcs_versioning.test_api import WorkDir
 
 
 def test_main() -> None:

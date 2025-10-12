@@ -6,11 +6,12 @@ from contextlib import redirect_stdout
 
 import pytest
 
+from vcs_versioning.test_api import WorkDir
+
 from setuptools_scm._cli import main
 from setuptools_scm._integration.pyproject_reading import PyProjectData
 
 from .conftest import DebugMode
-from .wd_wrapper import WorkDir
 
 
 @pytest.fixture
@@ -39,7 +40,8 @@ def _create_version_file_pyproject_data() -> PyProjectData:
         section_present=True, project_present=True, project_name="test"
     )
     data.section["version_file"] = "ver.py"
-    return data
+    # Type: PyProjectData.for_testing returns the correct type
+    return data  # type: ignore[return-value]
 
 
 def get_output(

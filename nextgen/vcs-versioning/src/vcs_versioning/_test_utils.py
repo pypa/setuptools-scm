@@ -9,17 +9,14 @@ from typing import Callable
 
 import pytest
 
-from setuptools_scm._run_cmd import has_command
+from vcs_versioning._run_cmd import has_command
 
 if TYPE_CHECKING:
-    from setuptools_scm import Configuration
-    from setuptools_scm.version import ScmVersion
-    from setuptools_scm.version import VersionExpectations
-
-    if itertools:  # Make mypy happy about unused import
-        pass
-
     import sys
+
+    from vcs_versioning._version_schemes import ScmVersion
+    from vcs_versioning._version_schemes import VersionExpectations
+    from vcs_versioning.config import Configuration
 
     if sys.version_info >= (3, 11):
         from typing import Unpack
@@ -47,7 +44,7 @@ class WorkDir:
         if kw:
             assert isinstance(cmd, str), "formatting the command requires text input"
             cmd = cmd.format(**kw)
-        from setuptools_scm._run_cmd import run
+        from vcs_versioning._run_cmd import run
 
         return run(cmd, cwd=self.cwd, timeout=timeout).stdout
 
@@ -86,7 +83,7 @@ class WorkDir:
 
     def get_version(self, **kw: Any) -> str:
         __tracebackhide__ = True
-        from setuptools_scm import get_version
+        from vcs_versioning._get_version_impl import get_version
 
         version = get_version(root=self.cwd, fallback_root=self.cwd, **kw)
         print(self.cwd.name, version, sep=": ")
@@ -151,7 +148,7 @@ name = {name}
 
     def configure_git_commands(self) -> None:
         """Configure git commands without initializing the repository."""
-        from setuptools_scm.git import parse as git_parse
+        from vcs_versioning._backends._git import parse as git_parse
 
         self.add_command = "git add ."
         self.commit_command = "git commit -m test-{reason}"
@@ -160,7 +157,7 @@ name = {name}
 
     def configure_hg_commands(self) -> None:
         """Configure mercurial commands without initializing the repository."""
-        from setuptools_scm.hg import parse as hg_parse
+        from vcs_versioning._backends._hg import parse as hg_parse
 
         self.add_command = "hg add ."
         self.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
@@ -227,7 +224,7 @@ name = {name}
         Uses the same signature as ScmVersion.matches() via TypedDict Unpack.
         """
         __tracebackhide__ = True
-        from setuptools_scm import Configuration
+        from vcs_versioning.config import Configuration
 
         if self.parse is None:
             raise RuntimeError(

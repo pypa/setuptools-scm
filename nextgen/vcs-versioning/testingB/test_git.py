@@ -19,22 +19,31 @@ from unittest.mock import patch
 import pytest
 
 from vcs_versioning._backends import _git
+from vcs_versioning._run_cmd import CommandNotFoundError
+from vcs_versioning._run_cmd import CompletedProcess
+from vcs_versioning._run_cmd import has_command
+from vcs_versioning._run_cmd import run
+from vcs_versioning._version_cls import NonNormalizedVersion
+from vcs_versioning._version_schemes import format_version
+from vcs_versioning.config import Configuration
 
-import setuptools_scm._file_finders
+# File finder imports from setuptools_scm (setuptools-specific)
+try:
+    import setuptools_scm._file_finders
 
-from setuptools_scm import Configuration
-from setuptools_scm import NonNormalizedVersion
-from setuptools_scm import git
-from setuptools_scm._file_finders.git import git_find_files
-from setuptools_scm._run_cmd import CommandNotFoundError
-from setuptools_scm._run_cmd import CompletedProcess
-from setuptools_scm._run_cmd import has_command
-from setuptools_scm._run_cmd import run
-from setuptools_scm.git import archival_to_version
-from setuptools_scm.version import format_version
+    from setuptools_scm import git
+    from setuptools_scm._file_finders.git import git_find_files
+    from setuptools_scm.git import archival_to_version
 
-from .conftest import DebugMode
-from .wd_wrapper import WorkDir
+    HAVE_SETUPTOOLS_SCM = True
+except ImportError:
+    HAVE_SETUPTOOLS_SCM = False
+    git = _git  # type: ignore[misc]
+    archival_to_version = _git.archival_to_version
+    git_find_files = None  # type: ignore[assignment]
+
+from vcs_versioning.test_api import DebugMode
+from vcs_versioning.test_api import WorkDir
 
 # Note: Git availability is now checked in WorkDir.setup_git() method
 

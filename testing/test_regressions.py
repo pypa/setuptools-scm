@@ -104,7 +104,7 @@ def test_case_mismatch_on_windows_git(tmp_path: Path) -> None:
 @pytest.mark.skipif(sys.platform != "win32", reason="this bug is only valid on windows")
 def test_case_mismatch_nested_dir_windows_git(tmp_path: Path) -> None:
     """Test case where we have a nested directory with different casing"""
-    from testing.wd_wrapper import WorkDir
+    from vcs_versioning.test_api import WorkDir
 
     # Create git repo in my_repo
     repo_path = tmp_path / "my_repo"
@@ -151,8 +151,9 @@ dynamic = ["version"]
 
 def test_case_mismatch_force_assertion_failure(tmp_path: Path) -> None:
     """Force the assertion failure by directly calling _git_toplevel with mismatched paths"""
+    from vcs_versioning.test_api import WorkDir
+
     from setuptools_scm._file_finders.git import _git_toplevel
-    from testing.wd_wrapper import WorkDir
 
     # Create git repo structure
     repo_path = tmp_path / "my_repo"

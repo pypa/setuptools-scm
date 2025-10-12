@@ -9,13 +9,14 @@ from pathlib import Path
 
 import pytest
 
+from vcs_versioning.test_api import WorkDir
+
 from setuptools_scm import Configuration
 from setuptools_scm.version import ScmVersion
 from setuptools_scm.version import meta
 from setuptools_scm.version import mismatches
 
 from .conftest import TEST_SOURCE_DATE
-from .wd_wrapper import WorkDir
 
 
 def test_scm_version_matches_basic() -> None:

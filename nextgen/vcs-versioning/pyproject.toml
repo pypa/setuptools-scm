@@ -101,7 +101,7 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["testing"]
+testpaths = ["testingB"]
 python_files = ["test_*.py"]
 addopts = ["-ra", "--strict-markers"]
 markers = [

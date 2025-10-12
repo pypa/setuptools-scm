@@ -26,12 +26,11 @@ if TYPE_CHECKING:
 
 from vcs_versioning._overrides import PRETEND_KEY
 from vcs_versioning._overrides import PRETEND_KEY_NAMED
+from vcs_versioning.test_api import WorkDir
 
 from setuptools_scm import Configuration
 from setuptools_scm._integration.setuptools import _warn_on_old_setuptools
 from setuptools_scm._run_cmd import run
-
-from .wd_wrapper import WorkDir
 
 c = Configuration()
 

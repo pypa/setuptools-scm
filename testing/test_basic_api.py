@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from vcs_versioning._overrides import PRETEND_KEY
+from vcs_versioning.test_api import WorkDir
 
 import setuptools_scm
 
@@ -18,7 +19,6 @@ from setuptools_scm._run_cmd import run
 from setuptools_scm.integration import data_from_mime
 from setuptools_scm.version import ScmVersion
 from setuptools_scm.version import meta
-from testing.wd_wrapper import WorkDir
 
 c = Configuration()
 

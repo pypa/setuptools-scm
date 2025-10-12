@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+from vcs_versioning.test_api import WorkDir
+
 import setuptools_scm._file_finders
 
 from setuptools_scm import Configuration
@@ -13,7 +15,6 @@ from setuptools_scm._run_cmd import CommandNotFoundError
 from setuptools_scm.hg import archival_to_version
 from setuptools_scm.hg import parse
 from setuptools_scm.version import format_version
-from testing.wd_wrapper import WorkDir
 
 # Note: Mercurial availability is now checked in WorkDir.setup_hg() method
 
