@@ -20,7 +20,7 @@ env:
 jobs:
 
   package:
-    name: Build & inspect our package.
+    name: Build & inspect our packages
     runs-on: ubuntu-latest
     env:
       # Use no-local-version for package builds to ensure clean versions for PyPI uploads
@@ -31,7 +31,32 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: hynek/build-and-inspect-python-package@v2
+      - name: Build vcs-versioning
+        uses: hynek/build-and-inspect-python-package@v2
+        with:
+          path: nextgen/vcs-versioning
+
+      - name: Build setuptools-scm
+        uses: hynek/build-and-inspect-python-package@v2
+
+      - name: Download vcs-versioning packages
+        uses: actions/download-artifact@v5
+        with:
+          name: Packages-nextgen-vcs-versioning
+          path: dist/
+
+      - name: Download setuptools-scm packages
+        uses: actions/download-artifact@v5
+        with:
+          name: Packages
+          path: dist/
+
+      - name: Upload combined packages
+        uses: actions/upload-artifact@v5
+        with:
+          name: All-Packages
+          path: dist/
+          if-no-files-found: error
 
   test:
     needs: [package]
@@ -98,16 +123,22 @@ jobs:
       - run: uv sync --group test --group docs --extra rich
       - uses: actions/download-artifact@v5
         with:
-          name: Packages
+          name: All-Packages
           path: dist
-      - shell: bash
-        run: uv pip install "$(echo -n dist/*whl)"
+      - name: Install built wheels
+        shell: bash
+        run: |
+          # Install vcs-versioning first (dependency of setuptools-scm)
+          uv pip install dist/vcs_versioning-*.whl
+          # Then install setuptools-scm
+          uv pip install dist/setuptools_scm-*.whl
       - run: |
           $(hg debuginstall --template "{pythonexe}") -m pip install hg-git --user
         if: matrix.os == 'ubuntu-latest'
       # this hopefully helps with os caches, hg init sometimes gets 20s timeouts
       - run: hg version
-      - run: uv run pytest
+      - name: Run tests for both packages
+        run: uv run pytest testing/ nextgen/vcs-versioning/testingB/
         timeout-minutes: 25
 
   dist_upload:
@@ -120,7 +151,7 @@ jobs:
     steps:
     - uses: actions/download-artifact@v5
       with:
-        name: Packages
+        name: All-Packages
         path: dist
     - name: Publish package to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
@@ -134,7 +165,7 @@ jobs:
     steps:
     - uses: actions/download-artifact@v5
       with:
-        name: Packages
+        name: All-Packages
         path: dist
     - name: Upload release assets
       uses: softprops/action-gh-release@v2
@@ -151,7 +182,7 @@ jobs:
     steps:
     - uses: actions/download-artifact@v5
       with:
-        name: Packages
+        name: All-Packages
         path: dist
     - name: Publish package to PyPI
       continue-on-error: true
