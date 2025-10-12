@@ -24,7 +24,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -32,22 +32,48 @@ jobs:
         run: |
           pip install -U pip setuptools
           pip install -e .[test]
+          pip install griffe
 
       - name: Run griffe API check
         id: griffe-check
+        continue-on-error: true
         run: |
+          echo "Running griffe API stability check..."
           if griffe check setuptools_scm -ssrc -f github; then
             echo "api_check_result=success" >> $GITHUB_OUTPUT
+            echo "exit_code=0" >> $GITHUB_OUTPUT
           else
+            exit_code=$?
             echo "api_check_result=warning" >> $GITHUB_OUTPUT
-            echo "API stability check detected changes but will not fail the build" >> $GITHUB_STEP_SUMMARY
+            echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
+            exit $exit_code
           fi
 
       - name: Report API check result
-        if: steps.griffe-check.outputs.api_check_result == 'warning'
-        uses: actions/github-script@v7
+        if: always()
+        uses: actions/github-script@v8
         with:
           script: |
-            core.warning('API stability check detected breaking changes. Please review the API changes above.')
-            core.summary.addRaw('⚠️ API Stability Warning: Breaking changes detected in the public API')
-            await core.summary.write()
+            const result = '${{ steps.griffe-check.outputs.api_check_result }}'
+            const exitCode = '${{ steps.griffe-check.outputs.exit_code }}'
+
+            if (result === 'success') {
+              core.notice('API stability check passed - no breaking changes detected')
+              await core.summary
+                .addHeading('✅ API Stability Check: Passed', 2)
+                .addRaw('No breaking changes detected in the public API')
+                .write()
+            } else if (result === 'warning') {
+              core.warning(`API stability check detected breaking changes (exit code: ${exitCode}). Please review the API changes above.`)
+              await core.summary
+                .addHeading('⚠️ API Stability Warning', 2)
+                .addRaw('Breaking changes detected in the public API. Please review the changes reported above.')
+                .addRaw(`\n\nExit code: ${exitCode}`)
+                .write()
+            } else {
+              core.error('API stability check failed to run properly')
+              await core.summary
+                .addHeading('❌ API Stability Check: Failed', 2)
+                .addRaw('The griffe check failed to execute. This may indicate griffe is not installed or there was an error.')
+                .write()
+            }

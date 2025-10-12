@@ -174,19 +174,23 @@ def read_pyproject(
     tool_name: str = DEFAULT_TOOL_NAME,
     canonical_build_package_name: str = "setuptools-scm",
     _given_result: _t.GivenPyProjectResult = None,
+    _given_definition: TOML_RESULT | None = None,
 ) -> PyProjectData:
     """Read and parse pyproject configuration.
 
-    This function supports dependency injection for tests via `_given_result`.
+    This function supports dependency injection for tests via ``_given_result``
+    and ``_given_definition``.
 
-    Parameters:
-    - path: Path to the pyproject file
-    - tool_name: The tool section name (default: `setuptools_scm`)
-    - canonical_build_package_name: Normalized build requirement name
-    - _given_result: Optional testing hook. Can be:
-        - PyProjectData: returned directly
-        - InvalidTomlError | FileNotFoundError: raised directly
-        - None: read from filesystem
+    :param path: Path to the pyproject file
+    :param tool_name: The tool section name (default: ``setuptools_scm``)
+    :param canonical_build_package_name: Normalized build requirement name
+    :param _given_result: Optional testing hook. Can be:
+        - ``PyProjectData``: returned directly
+        - ``InvalidTomlError`` | ``FileNotFoundError``: raised directly
+        - ``None``: read from filesystem (default)
+    :param _given_definition: Optional testing hook to provide parsed TOML content.
+        When provided, this dictionary is used instead of reading and parsing
+        the file from disk. Ignored if ``_given_result`` is provided.
     """
 
     if _given_result is not None:
@@ -195,7 +199,10 @@ def read_pyproject(
         if isinstance(_given_result, (InvalidTomlError, FileNotFoundError)):
             raise _given_result
 
-    defn = read_toml_content(path)
+    if _given_definition is not None:
+        defn = _given_definition
+    else:
+        defn = read_toml_content(path)
 
     requires: list[str] = defn.get("build-system", {}).get("requires", [])
     is_required = has_build_package(requires, canonical_build_package_name)
@@ -223,6 +230,17 @@ def read_pyproject(
         project_present,
         requires,
     )
+
+    setuptools_dynamic_version = (
+        defn.get("tool", {})
+        .get("setuptools", {})
+        .get("dynamic", {})
+        .get("version", None)
+    )
+    if setuptools_dynamic_version is not None:
+        from .deprecation import warn_pyproject_setuptools_dynamic_version
+
+        warn_pyproject_setuptools_dynamic_version(path)
 
     return pyproject_data
 

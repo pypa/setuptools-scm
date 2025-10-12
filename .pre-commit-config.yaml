@@ -7,18 +7,17 @@ repos:
     -   id: debug-statements
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.12.8
+  rev: v0.13.3
   hooks:
     - id: ruff-check
       args: [--fix, --exit-non-zero-on-fix, --show-fixes]
     - id: ruff-format
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.17.1
+    rev: v1.18.2
     hooks:
     -   id: mypy
         args: [--strict]
-        language_version: "3.10"
         additional_dependencies:
             - types-setuptools
             - tokenize-rt==3.2.0
@@ -28,7 +27,7 @@ repos:
             - rich
 
 -   repo: https://github.com/scientific-python/cookie
-    rev: 2025.05.02
+    rev: 2025.10.01
     hooks:
       - id: sp-repo-review
 

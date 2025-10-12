@@ -1,5 +1,14 @@
 # Changelog
 
+
+## v9.2.1
+
+### Fixed
+
+- fix #1216: accept and create a warning for usages of `version = attr:` in setuptools config.
+  unfortunately dozens of projects cargo-culted that antipattern
+
+
 ## v9.2.0
 
 ### Added
@@ -11,31 +20,24 @@
   version inference is automatically enabled with default settings.
 
 
-### removed
+### Removed
 
 - unchecked simplified activation - too many projects use setups where it would fail
 
-### changed
+### Changed
 
-- refine activation logic and add unittest for the relevant cases instead of trying to speedrun setuptools 
+- refine activation logic and add unittest for the relevant cases instead of trying to speedrun setuptools
 
-## v9.1.1
+## v9.1.1 (yanked)
 
-### fixed
-
-- fix #1194: correctly handle version keyword when pyproject metadata is missing
-
-
-## v9.1.1
-
-### fixed
+### Fixed
 
 - fix #1194: correctly handle version keyword when pyproject metadata is missing
 
 
-## v9.1.0
+## v9.1.0 (yanked)
 
-### fixed
+### Fixed
 
 - complete reiteration of the decision logic for enabling version inference on setuptools_scm
 
@@ -47,9 +49,9 @@
 
 ## v9.0.3 (yanked)
 
-### fixed
+### Fixed
 
-- fix 1184: verify version is dynamic if the dependency is used as indicator for enabling
+- fix #1184: verify version is dynamic if the dependency is used as indicator for enabling
 
 ## v9.0.2 (yanked)
 
