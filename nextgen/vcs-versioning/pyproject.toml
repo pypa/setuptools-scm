@@ -69,7 +69,10 @@ node-and-timestamp = "vcs_versioning._version_schemes:get_local_node_and_timesta
 "release-branch-semver" = "vcs_versioning._version_schemes:release_branch_semver_version"
 
 [tool.hatch.version]
-path = "vcs_versioning/__about__.py"
+path = "src/vcs_versioning/__about__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vcs_versioning"]
 
 [tool.hatch.envs.default]
 dependencies = [
@@ -95,4 +98,12 @@ exclude_lines = [
   "no cov",
   "if __name__ == .__main__.:",
   "if TYPE_CHECKING:",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["testing"]
+python_files = ["test_*.py"]
+addopts = ["-ra", "--strict-markers"]
+markers = [
+  "issue: marks tests related to specific issues",
 ]
