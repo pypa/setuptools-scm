@@ -34,7 +34,7 @@ All planned phases of the refactoring have been successfully completed. The code
 - `setuptools_scm.version_scheme` - Version schemes
 - `vcs-versioning` script
 
-**Tests**: 79 passing
+**Tests**: 111 passing (includes backend tests: git, mercurial, hg-git)
 
 ### setuptools-scm (Integration Package)
 **Location**: Root directory
@@ -61,18 +61,25 @@ All planned phases of the refactoring have been successfully completed. The code
 - `setuptools.finalize_distribution_options` hooks
 - `setuptools_scm.files_command` - File finders
 
-**Tests**: 329 passing, 10 skipped, 1 xfailed
+**Tests**: 297 passing (setuptools and integration tests), 10 skipped, 1 xfailed
 
 ## Test Results
 
 ```
-✅ vcs-versioning:  79 passed
-✅ setuptools_scm:  329 passed, 10 skipped, 1 xfailed
+✅ vcs-versioning:  111 passed (core + backend tests)
+✅ setuptools_scm:  297 passed, 10 skipped, 1 xfailed
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    Total:          408 tests passing
 ```
 
-**Parallel execution time**: ~15 seconds with `-n12`
+**Parallel execution time**: ~16 seconds with `-n12`
+
+### Test Infrastructure
+- **Unified pytest plugin**: `vcs_versioning.test_api`
+  - Provides `WorkDir`, `DebugMode`, and shared fixtures
+  - Used by both packages via `pytest_plugins = ["vcs_versioning.test_api"]`
+- **Test directory**: `testingB/` (renamed to avoid pytest conftest path conflict)
+- **Backend tests migrated**: `test_git.py`, `test_mercurial.py`, `test_hg_git.py` now in vcs-versioning
 
 ## Key Achievements
 
@@ -150,11 +157,13 @@ setuptools_scm/
     ├── src/vcs_versioning/
     │   ├── __init__.py          # Public API
     │   ├── config.py            # Configuration (public)
+    │   ├── test_api.py          # Pytest plugin (public)
+    │   ├── _test_utils.py       # WorkDir class (private)
     │   ├── _backends/           # VCS implementations (private)
     │   ├── _version_schemes.py  # Schemes (private)
     │   ├── _cli.py              # CLI (private)
     │   └── ...                  # Other private modules
-    └── testing/                 # Core tests (79)
+    └── testingB/                # Core + backend tests (111)
 ```
 
 ## Commands Reference
