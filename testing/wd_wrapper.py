@@ -5,13 +5,26 @@ import itertools
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
+from typing import Callable
 
 import pytest
 
 from setuptools_scm._run_cmd import has_command
 
 if TYPE_CHECKING:
-    pass
+    from setuptools_scm import Configuration
+    from setuptools_scm.version import ScmVersion
+    from setuptools_scm.version import VersionExpectations
+
+    if itertools:  # Make mypy happy about unused import
+        pass
+
+    import sys
+
+    if sys.version_info >= (3, 11):
+        from typing import Unpack
+    else:
+        from typing_extensions import Unpack
 
 
 class WorkDir:
@@ -21,6 +34,7 @@ class WorkDir:
     signed_commit_command: str
     add_command: str
     tag_command: str
+    parse: Callable[[Path, Configuration], ScmVersion | None] | None = None
 
     def __repr__(self) -> str:
         return f"<WD {self.cwd}>"
@@ -137,15 +151,21 @@ name = {name}
 
     def configure_git_commands(self) -> None:
         """Configure git commands without initializing the repository."""
+        from setuptools_scm.git import parse as git_parse
+
         self.add_command = "git add ."
         self.commit_command = "git commit -m test-{reason}"
         self.tag_command = "git tag {tag}"
+        self.parse = git_parse
 
     def configure_hg_commands(self) -> None:
         """Configure mercurial commands without initializing the repository."""
+        from setuptools_scm.hg import parse as hg_parse
+
         self.add_command = "hg add ."
         self.commit_command = 'hg commit -m test-{reason} -u test -d "0 0"'
         self.tag_command = "hg tag {tag}"
+        self.parse = hg_parse
 
     def setup_git(
         self, monkeypatch: pytest.MonkeyPatch | None = None, *, init: bool = True
@@ -197,3 +217,34 @@ name = {name}
             self("hg init")
 
         return self
+
+    def expect_parse(
+        self,
+        **expectations: Unpack[VersionExpectations],
+    ) -> None:
+        """Parse version from this working directory and assert it matches expected properties.
+
+        Uses the same signature as ScmVersion.matches() via TypedDict Unpack.
+        """
+        __tracebackhide__ = True
+        from setuptools_scm import Configuration
+
+        if self.parse is None:
+            raise RuntimeError(
+                "No SCM configured - call setup_git() or setup_hg() first"
+            )
+
+        config = Configuration(root=self.cwd)
+        scm_version = self.parse(self.cwd, config)
+
+        if scm_version is None:
+            raise AssertionError("Failed to parse version")
+
+        # Call matches with all expectations
+        result = scm_version.matches(**expectations)
+
+        # If result is mismatches (falsy), raise assertion with details
+        if not result:
+            raise AssertionError(
+                f"Version mismatch:\n{result}\nActual version: {scm_version!r}"
+            )

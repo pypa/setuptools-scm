@@ -29,42 +29,52 @@ def _check_hg_git() -> None:
 def test_base(repositories_hg_git: tuple[WorkDir, WorkDir]) -> None:
     wd, wd_git = repositories_hg_git
 
-    assert wd_git.get_version() == "0.1.dev0+d20090213"
-    assert wd.get_version() == "0.1.dev0+d20090213"
+    # Both should parse the same initial state
+    wd_git.expect_parse(tag="0.0", distance=0, dirty=True)
+    wd.expect_parse(tag="0.0", distance=0, dirty=True)
+
+    # Also verify they produce the same formatted output
+    assert wd_git.get_version() == wd.get_version()
 
     wd_git.commit_testfile()
     version_git = wd_git.get_version()
 
     wd("hg pull -u")
-
     version = wd.get_version()
 
+    # Both should parse the same after commit
+    wd_git.expect_parse(tag="0.0", distance=1, dirty=False, node_prefix="g")
+    wd.expect_parse(tag="0.0", distance=1, dirty=False, node_prefix="g")
+
+    # Check formatted output is similar (starts with same prefix)
     assert version_git.startswith("0.1.dev1+g")
     assert version.startswith("0.1.dev1+g")
 
-    assert not version_git.endswith("1-")
-    assert not version.endswith("1-")
-
     wd_git("git tag v0.1")
     wd("hg pull -u")
-    assert wd_git.get_version() == "0.1"
-    assert wd.get_version() == "0.1"
+
+    # Both should recognize the tag
+    wd_git.expect_parse(tag="0.1", distance=0, dirty=False, exact=True)
+    wd.expect_parse(tag="0.1", distance=0, dirty=False, exact=True)
 
     wd_git.write("test.txt", "test2")
     wd.write("test.txt", "test2")
-    assert wd_git.get_version().startswith("0.2.dev0+g")
-    assert wd.get_version().startswith("0.2.dev0+g")
+    # Both should be dirty
+    wd_git.expect_parse(tag="0.1", distance=0, dirty=True)
+    wd.expect_parse(tag="0.1", distance=0, dirty=True)
 
     wd_git.commit_testfile()
     wd("hg pull")
     wd("hg up -C")
-    assert wd_git.get_version().startswith("0.2.dev1+g")
-    assert wd.get_version().startswith("0.2.dev1+g")
+    # Both should be at distance 1 from 0.1
+    wd_git.expect_parse(tag="0.1", distance=1, dirty=False, node_prefix="g")
+    wd.expect_parse(tag="0.1", distance=1, dirty=False, node_prefix="g")
 
     wd_git("git tag version-0.2")
     wd("hg pull -u")
-    assert wd_git.get_version().startswith("0.2")
-    assert wd.get_version().startswith("0.2")
+    # Both should recognize the new tag
+    wd_git.expect_parse(tag="0.2", distance=0, dirty=False, exact=True)
+    wd.expect_parse(tag="0.2", distance=0, dirty=False, exact=True)
 
     wd_git.commit_testfile()
     wd_git("git tag version-0.2.post210+gbe48adfpost3+g0cc25f2")
@@ -72,12 +82,12 @@ def test_base(repositories_hg_git: tuple[WorkDir, WorkDir]) -> None:
     with pytest.warns(
         UserWarning, match="tag '.*' will be stripped of its suffix '.*'"
     ):
-        assert wd_git.get_version().startswith("0.2")
+        wd_git.expect_parse(tag="0.2.post210", distance=0, dirty=False)
 
     with pytest.warns(
         UserWarning, match="tag '.*' will be stripped of its suffix '.*'"
     ):
-        assert wd.get_version().startswith("0.2")
+        wd.expect_parse(tag="0.2.post210", distance=0, dirty=False)
 
     wd_git.commit_testfile()
     wd_git("git tag 17.33.0-rc")

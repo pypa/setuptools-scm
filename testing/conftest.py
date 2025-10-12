@@ -5,6 +5,8 @@ import os
 import shutil
 import sys
 
+from datetime import datetime
+from datetime import timezone
 from pathlib import Path
 from types import TracebackType
 from typing import Any
@@ -21,10 +23,18 @@ else:
 
 from .wd_wrapper import WorkDir
 
+# Test time constants: 2009-02-13T23:31:30+00:00
+TEST_SOURCE_DATE = datetime(2009, 2, 13, 23, 31, 30, tzinfo=timezone.utc)
+TEST_SOURCE_DATE_EPOCH = int(TEST_SOURCE_DATE.timestamp())
+TEST_SOURCE_DATE_FORMATTED = "20090213"  # As used in node-and-date local scheme
+TEST_SOURCE_DATE_TIMESTAMP = (
+    "20090213233130"  # As used in node-and-timestamp local scheme
+)
+
 
 def pytest_configure(config: pytest.Config) -> None:
     # 2009-02-13T23:31:30+00:00
-    os.environ["SOURCE_DATE_EPOCH"] = "1234567890"
+    os.environ["SOURCE_DATE_EPOCH"] = str(TEST_SOURCE_DATE_EPOCH)
     os.environ["SETUPTOOLS_SCM_DEBUG"] = "1"
 
 

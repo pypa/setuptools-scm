@@ -109,31 +109,32 @@ def test_find_files_stop_at_root_hg(
 
 # XXX: better tests for tag prefixes
 def test_version_from_hg_id(wd: WorkDir) -> None:
-    assert wd.get_version() == "0.0"
+    # Initial state with no commits
+    wd.expect_parse(tag="0.0", distance=0, dirty=False, exact=True)
 
     wd.commit_testfile()
-    assert wd.get_version().startswith("0.1.dev1+")
+    wd.expect_parse(tag="0.0", distance=1, dirty=False, node_prefix="h")
 
     # tagging commit is considered the tag
     wd('hg tag v0.1 -u test -d "0 0"')
-    assert wd.get_version() == "0.1"
+    wd.expect_parse(tag="0.1", distance=0, dirty=False, exact=True)
 
     wd.commit_testfile()
-    assert wd.get_version().startswith("0.2.dev2")
+    wd.expect_parse(tag="0.1", distance=2, dirty=False)
 
     wd("hg up v0.1")
-    assert wd.get_version() == "0.1"
+    wd.expect_parse(tag="0.1", distance=0, dirty=False, exact=True)
 
     # commit originating from the tagged revision
     # that is not an actual tag
     wd.commit_testfile()
-    assert wd.get_version().startswith("0.2.dev1+")
+    wd.expect_parse(tag="0.1", distance=1, dirty=False)
 
     # several tags
     wd("hg up")
     wd('hg tag v0.2 -u test -d "0 0"')
     wd('hg tag v0.3 -u test -d "0 0" -r v0.2')
-    assert wd.get_version() == "0.3"
+    wd.expect_parse(tag="0.3", distance=0, dirty=False, exact=True)
 
 
 def test_version_from_archival(wd: WorkDir) -> None:

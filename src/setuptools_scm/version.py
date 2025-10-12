@@ -28,6 +28,11 @@ if TYPE_CHECKING:
         from typing_extensions import Concatenate
         from typing_extensions import ParamSpec
 
+    if sys.version_info >= (3, 11):
+        from typing import Unpack
+    else:
+        from typing_extensions import Unpack
+
     _P = ParamSpec("_P")
 
 from typing import TypedDict
@@ -49,6 +54,52 @@ class _TagDict(TypedDict):
     version: str
     prefix: str
     suffix: str
+
+
+class VersionExpectations(TypedDict, total=False):
+    """Expected properties for ScmVersion matching."""
+
+    tag: str | _VersionT
+    distance: int
+    dirty: bool
+    node_prefix: str  # Prefix of the node/commit hash
+    branch: str | None
+    exact: bool
+    preformatted: bool
+    node_date: date | None
+    time: datetime | None
+
+
+@dataclasses.dataclass
+class mismatches:
+    """Represents mismatches between expected and actual ScmVersion properties."""
+
+    expected: dict[str, Any]
+    actual: dict[str, Any]
+
+    def __bool__(self) -> bool:
+        """mismatches is falsy to allow `if not version.matches(...)`."""
+        return False
+
+    def __str__(self) -> str:
+        """Format mismatches for error reporting."""
+        lines = []
+        for key, exp_val in self.expected.items():
+            if key == "node_prefix":
+                # Special handling for node prefix matching
+                actual_node = self.actual.get("node")
+                if not actual_node or not actual_node.startswith(exp_val):
+                    lines.append(
+                        f"  node: expected prefix '{exp_val}', got '{actual_node}'"
+                    )
+            else:
+                act_val = self.actual.get(key)
+                if str(exp_val) != str(act_val):
+                    lines.append(f"  {key}: expected {exp_val!r}, got {act_val!r}")
+        return "\n".join(lines)
+
+    def __repr__(self) -> str:
+        return f"mismatches(expected={self.expected!r}, actual={self.actual!r})"
 
 
 def _parse_version_tag(
@@ -219,6 +270,58 @@ class ScmVersion:
     ) -> str:
         guessed = guess_next(self, *k, **kw)
         return self.format_with(fmt, guessed=guessed)
+
+    def matches(self, **expectations: Unpack[VersionExpectations]) -> bool | mismatches:
+        """Check if this ScmVersion matches the given expectations.
+
+        Returns True if all specified properties match, or a mismatches
+        object (which is falsy) containing details of what didn't match.
+
+        Args:
+            **expectations: Properties to check, using VersionExpectations TypedDict
+        """
+        # Map expectation keys to ScmVersion attributes
+        attr_map: dict[str, Callable[[], Any]] = {
+            "tag": lambda: str(self.tag),
+            "node_prefix": lambda: self.node,
+            "distance": lambda: self.distance,
+            "dirty": lambda: self.dirty,
+            "branch": lambda: self.branch,
+            "exact": lambda: self.exact,
+            "preformatted": lambda: self.preformatted,
+            "node_date": lambda: self.node_date,
+            "time": lambda: self.time,
+        }
+
+        # Build actual values dict
+        actual: dict[str, Any] = {
+            key: attr_map[key]() for key in expectations if key in attr_map
+        }
+
+        # Process expectations
+        expected = {
+            "tag" if k == "tag" else k: str(v) if k == "tag" else v
+            for k, v in expectations.items()
+        }
+
+        # Check for mismatches
+        def has_mismatch() -> bool:
+            for key, exp_val in expected.items():
+                if key == "node_prefix":
+                    act_val = actual.get("node_prefix")
+                    if not act_val or not act_val.startswith(exp_val):
+                        return True
+                else:
+                    if str(exp_val) != str(actual.get(key)):
+                        return True
+            return False
+
+        if has_mismatch():
+            # Rename node_prefix back to node for actual values in mismatch reporting
+            if "node_prefix" in actual:
+                actual["node"] = actual.pop("node_prefix")
+            return mismatches(expected=expected, actual=actual)
+        return True
 
 
 def _parse_tag(

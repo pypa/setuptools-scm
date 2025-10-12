@@ -478,6 +478,63 @@ def test_calver_guess_next_data(tag: str, node_date: date, expected: str) -> Non
     assert next == expected
 
 
+def test_scm_version_matches() -> None:
+    """Test ScmVersion.matches() method."""
+    # Create a test version
+    version = meta(
+        "1.2.3",
+        distance=5,
+        dirty=True,
+        node="abc123def456",
+        branch="main",
+        config=c,
+    )
+
+    # Test exact matches
+    assert version.matches(tag="1.2.3")
+    assert version.matches(distance=5)
+    assert version.matches(dirty=True)
+    assert version.matches(branch="main")
+    assert version.matches(exact=False)  # distance > 0
+
+    # Test multiple matches
+    assert version.matches(tag="1.2.3", distance=5, dirty=True)
+
+    # Test node prefix matching
+    assert version.matches(node_prefix="abc")
+    assert version.matches(node_prefix="abc123")
+    assert version.matches(node_prefix="abc123def456")
+
+    # Test mismatches - we only care that they're falsy
+    assert not version.matches(tag="1.2.4")
+    assert not version.matches(distance=3)
+    assert not version.matches(dirty=False)
+    assert not version.matches(node_prefix="xyz")
+
+    # Test multiple mismatches
+    assert not version.matches(tag="1.2.4", distance=3, dirty=False)
+
+
+def test_scm_version_matches_exact() -> None:
+    """Test ScmVersion.matches() with exact versions."""
+    # Exact version (tag with no distance and not dirty)
+    exact_version = meta("2.0.0", distance=0, dirty=False, config=c)
+    assert exact_version.matches(exact=True)
+    assert exact_version.matches(tag="2.0.0", exact=True)
+
+    # Non-exact version
+    non_exact = meta("2.0.0", distance=1, dirty=False, config=c)
+    assert not non_exact.matches(exact=True)
+
+
+def test_scm_version_matches_none_node() -> None:
+    """Test ScmVersion.matches() when node is None."""
+    version = meta("1.0.0", node=None, config=c)
+
+    # Should fail node_prefix match when node is None
+    assert not version.matches(node_prefix="abc")
+
+
 def test_custom_version_cls() -> None:
     """Test that we can pass our own version class instead of pkg_resources"""
 

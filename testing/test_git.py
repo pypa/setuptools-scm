@@ -154,34 +154,34 @@ def test_not_owner(wd: WorkDir) -> None:
 
 
 def test_version_from_git(wd: WorkDir) -> None:
-    assert wd.get_version() == "0.1.dev0+d20090213"
+    # No commits yet - fallback version
+    wd.expect_parse(tag="0.0", distance=0, dirty=True)
 
     parsed = git.parse(str(wd.cwd), Configuration(), git.DEFAULT_DESCRIBE)
     assert parsed is not None
     assert parsed.branch in ("master", "main")
 
     wd.commit_testfile()
-    assert wd.get_version().startswith("0.1.dev1+g")
-    assert not wd.get_version().endswith("1-")
+    wd.expect_parse(tag="0.0", distance=1, dirty=False, node_prefix="g")
 
     wd("git tag v0.1")
-    assert wd.get_version() == "0.1"
+    wd.expect_parse(tag="0.1", distance=0, dirty=False, exact=True)
 
     wd.write("test.txt", "test2")
-    assert wd.get_version().startswith("0.2.dev0+g")
+    wd.expect_parse(tag="0.1", distance=0, dirty=True)
 
     wd.commit_testfile()
-    assert wd.get_version().startswith("0.2.dev1+g")
+    wd.expect_parse(tag="0.1", distance=1, dirty=False, node_prefix="g")
 
     wd("git tag version-0.2")
-    assert wd.get_version().startswith("0.2")
+    wd.expect_parse(tag="0.2", distance=0, dirty=False, exact=True)
 
     wd.commit_testfile()
     wd("git tag version-0.2.post210+gbe48adfpost3+g0cc25f2")
     with pytest.warns(
         UserWarning, match="tag '.*' will be stripped of its suffix '.*'"
     ):
-        assert wd.get_version().startswith("0.2")
+        wd.expect_parse(tag="0.2.post210", distance=0, dirty=False)
 
     wd.commit_testfile()
     wd("git tag 17.33.0-rc")
@@ -261,7 +261,6 @@ def test_git_version_unnormalized_setuptools(
     assert wd.cwd.joinpath("VERSION.txt").read_text(encoding="utf-8") == "17.33.0-rc1"
 
 
-@pytest.mark.issue(179)
 def test_unicode_version_scheme(wd: WorkDir) -> None:
     scheme = b"guess-next-dev".decode("ascii")
     assert wd.get_version(version_scheme=scheme)
@@ -272,10 +271,12 @@ def test_unicode_version_scheme(wd: WorkDir) -> None:
 def test_git_worktree(wd: WorkDir) -> None:
     wd.write("test.txt", "test2")
     # untracked files dont change the state
-    assert wd.get_version() == "0.1.dev0+d20090213"
+    # No commits yet, so it's dirty and tag is 0.0
+    wd.expect_parse(tag="0.0", distance=0, dirty=True)
 
     wd("git add test.txt")
-    assert wd.get_version().startswith("0.1.dev0+d")
+    # Still no commits, but now we have staged changes
+    wd.expect_parse(tag="0.0", distance=0, dirty=True)
 
 
 @pytest.mark.issue(86)
@@ -361,7 +362,8 @@ def test_parse_no_worktree(tmp_path: Path) -> None:
 def test_alphanumeric_tags_match(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd("git tag newstyle-development-started")
-    assert wd.get_version().startswith("0.1.dev1+g")
+    # Non-version tag should not be recognized, so we're still at distance 1 from 0.0
+    wd.expect_parse(tag="0.0", distance=1, dirty=False, node_prefix="g")
 
 
 def test_git_archive_export_ignore(
@@ -445,13 +447,16 @@ def test_non_dotted_version(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd("git tag apache-arrow-1")
     wd.commit_testfile()
-    assert wd.get_version().startswith("2")
+    # Tag is recognized as version 1, so next commit is distance 1 from it
+    wd.expect_parse(tag="1", distance=1, dirty=False, node_prefix="g")
 
 
 def test_non_dotted_version_with_updated_regex(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd("git tag apache-arrow-1")
     wd.commit_testfile()
+    # With custom regex, tag is still recognized as version 1
+    # This test is really about the regex configuration, so keep using get_version
     assert wd.get_version(tag_regex=r"^apache-arrow-([\.0-9]+)$").startswith("2")
 
 
@@ -461,7 +466,8 @@ def test_non_dotted_tag_no_version_match(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd("git tag apache-arrow")
     wd.commit_testfile()
-    assert wd.get_version().startswith("0.11.2.dev2")
+    # "apache-arrow" tag without version is not recognized, so we're at distance 2 from 0.11.1
+    wd.expect_parse(tag="0.11.1", distance=2, dirty=False, node_prefix="g")
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/381")
