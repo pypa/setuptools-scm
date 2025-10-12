@@ -20,7 +20,7 @@ def get_version(**kwargs: object) -> str:
     from vcs_versioning.config import Configuration
 
     config = Configuration(**kwargs)  # type: ignore[arg-type]
-    version = _get_version(config)
+    version = _get_version(config, force_write_version_files=False)
     if version is None:
         raise RuntimeError("Unable to determine version")
     return version

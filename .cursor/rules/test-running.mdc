@@ -4,9 +4,11 @@ globs:
 alwaysApply: true
 ---
 
-use `uv run pytest` to run tests
+use `uv run pytest -n12` to run tests
 use uv to manage dependencies
 
 follow preexisting conventions in the project
 
 - use the fixtures
+
+to test the next gen project use `uv run pytest nextgen -n12`
