@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import sys
 
 from typing import TYPE_CHECKING
@@ -7,8 +8,6 @@ from typing import Any
 from typing import Callable
 from typing import Iterator
 from typing import cast
-
-from . import _log
 
 __all__ = [
     "entry_points",
@@ -22,7 +21,7 @@ if TYPE_CHECKING:
 
 from importlib import metadata as im
 
-log = _log.log.getChild("entrypoints")
+log = logging.getLogger(__name__)
 
 
 if sys.version_info[:2] < (3, 10):

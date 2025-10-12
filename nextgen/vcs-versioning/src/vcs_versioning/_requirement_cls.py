@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 __all__ = ["Requirement", "extract_package_name"]
 
 try:
@@ -13,9 +15,8 @@ except ImportError:
         canonicalize_name as canonicalize_name,
     )
 
-from . import _log
 
-log = _log.log.getChild("requirement_cls")
+log = logging.getLogger(__name__)
 
 
 def extract_package_name(requirement_string: str) -> str:

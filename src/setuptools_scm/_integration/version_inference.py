@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from typing import Any
@@ -7,12 +9,10 @@ from typing import Union
 
 from setuptools import Distribution
 
-from .. import _log
-
 if TYPE_CHECKING:
     from .pyproject_reading import PyProjectData
 
-log = _log.log.getChild("version_inference")
+log = logging.getLogger(__name__)
 
 
 @dataclass

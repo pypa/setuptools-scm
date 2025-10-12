@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 
 from pathlib import Path
@@ -8,7 +9,6 @@ from typing import Iterable
 from typing import Iterator
 
 from . import _entrypoints
-from . import _log
 from . import _types as _t
 from .config import Configuration
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from ._entrypoints import im
 
 
-log = _log.log.getChild("discover")
+log = logging.getLogger(__name__)
 
 
 def walk_potential_roots(root: _t.PathT, search_parents: bool = True) -> Iterator[Path]:

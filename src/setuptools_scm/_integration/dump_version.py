@@ -1,15 +1,15 @@
 from __future__ import annotations
 
+import logging
 import warnings
 
 from pathlib import Path
 
 from .. import _types as _t
-from .._log import log as parent_log
 from .._version_cls import _version_as_tuple
 from ..version import ScmVersion
 
-log = parent_log.getChild("dump_version")
+log = logging.getLogger(__name__)
 
 
 TEMPLATES = {

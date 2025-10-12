@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import logging
 import os
 import re
 import warnings
@@ -16,7 +17,6 @@ from typing import Protocol
 if TYPE_CHECKING:
     from ._backends import _git
 
-from . import _log
 from . import _types as _t
 from ._overrides import read_toml_overrides
 from ._pyproject_reading import PyProjectData
@@ -26,7 +26,7 @@ from ._version_cls import Version as _Version
 from ._version_cls import _validate_version_cls
 from ._version_cls import _VersionT
 
-log = _log.log.getChild("config")
+log = logging.getLogger(__name__)
 
 
 def _is_called_from_dataclasses() -> bool:

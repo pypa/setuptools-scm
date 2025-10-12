@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import shlex
 import subprocess
@@ -14,7 +15,6 @@ from typing import Sequence
 from typing import TypeVar
 from typing import overload
 
-from . import _log
 from . import _types as _t
 
 if TYPE_CHECKING:
@@ -33,7 +33,7 @@ def _get_timeout(env: Mapping[str, str]) -> int:
 
 BROKEN_TIMEOUT: Final[int] = _get_timeout(os.environ)
 
-log = _log.log.getChild("run_cmd")
+log = logging.getLogger(__name__)
 
 PARSE_RESULT = TypeVar("PARSE_RESULT")
 T = TypeVar("T")

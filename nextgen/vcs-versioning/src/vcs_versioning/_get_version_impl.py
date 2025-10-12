@@ -24,7 +24,7 @@ EMPTY_TAG_REGEX_DEPRECATION = DeprecationWarning(
     "empty regex for tag regex is invalid, using default"
 )
 
-_log = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 def parse_scm_version(config: Configuration) -> ScmVersion | None:
@@ -44,7 +44,7 @@ def parse_scm_version(config: Configuration) -> ScmVersion | None:
                 root=config.absolute_root,
             )
     except _run_cmd.CommandNotFoundError as e:
-        _log.exception("command %s not found while parsing the scm, using fallbacks", e)
+        log.exception("command %s not found while parsing the scm, using fallbacks", e)
         return None
 
 

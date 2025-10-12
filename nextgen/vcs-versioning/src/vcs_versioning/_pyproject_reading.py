@@ -2,20 +2,20 @@
 
 from __future__ import annotations
 
+import logging
 import warnings
 
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
-from . import _log
 from . import _types as _t
 from ._requirement_cls import extract_package_name
 from ._toml import TOML_RESULT
 from ._toml import InvalidTomlError
 from ._toml import read_toml_content
 
-log = _log.log.getChild("pyproject_reading")
+log = logging.getLogger(__name__)
 
 _ROOT = "root"
 

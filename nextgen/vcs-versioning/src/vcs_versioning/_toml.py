@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import sys
 
 from pathlib import Path
@@ -21,9 +22,8 @@ if TYPE_CHECKING:
     else:
         from typing_extensions import TypeAlias
 
-from . import _log
 
-log = _log.log.getChild("toml")
+log = logging.getLogger(__name__)
 
 TOML_RESULT: TypeAlias = Dict[str, Any]
 TOML_LOADER: TypeAlias = Callable[[str], TOML_RESULT]

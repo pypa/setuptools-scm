@@ -8,6 +8,7 @@ from typing import Callable
 
 import setuptools
 
+from .. import _log
 from .. import _types as _t
 from .pyproject_reading import PyProjectData
 from .pyproject_reading import read_pyproject
@@ -71,11 +72,13 @@ def version_keyword(
     *,
     _given_pyproject_data: _t.GivenPyProjectResult = None,
     _given_legacy_data: SetuptoolsBasicData | None = None,
-    _get_version_inference_config: _t.GetVersionInferenceConfig = get_version_inference_config,
+    _get_version_inference_config: _t.GetVersionInferenceConfig = get_version_inference_config,  # type: ignore[assignment]
 ) -> None:
     """apply version infernce when setup(use_scm_version=...) is used
     this takes priority over the finalize_options based version
     """
+    # Configure logging at setuptools entry point
+    _log.configure_logging()
 
     _log_hookstart("version_keyword", dist)
 
@@ -100,7 +103,7 @@ def version_keyword(
         pyproject_data = read_pyproject(_given_result=_given_pyproject_data)
     except FileNotFoundError:
         log.debug("pyproject.toml not found, proceeding with empty configuration")
-        pyproject_data = PyProjectData.empty()
+        pyproject_data = PyProjectData.empty()  # type: ignore[assignment]
     except InvalidTomlError as e:
         log.debug("Configuration issue in pyproject.toml: %s", e)
         return
@@ -127,7 +130,7 @@ def infer_version(
     *,
     _given_pyproject_data: _t.GivenPyProjectResult = None,
     _given_legacy_data: SetuptoolsBasicData | None = None,
-    _get_version_inference_config: _t.GetVersionInferenceConfig = get_version_inference_config,
+    _get_version_inference_config: _t.GetVersionInferenceConfig = get_version_inference_config,  # type: ignore[assignment]
 ) -> None:
     """apply version inference from the finalize_options hook
     this is the default for pyproject.toml based projects that don't use the use_scm_version keyword
@@ -135,6 +138,8 @@ def infer_version(
     if the version keyword is used, it will override the version from this hook
     as user might have passed custom code version schemes
     """
+    # Configure logging at setuptools entry point
+    _log.configure_logging()
 
     _log_hookstart("infer_version", dist)
 

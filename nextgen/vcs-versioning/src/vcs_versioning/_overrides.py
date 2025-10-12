@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import logging
 import os
 
 from difflib import get_close_matches
@@ -9,12 +10,11 @@ from typing import Mapping
 
 from packaging.utils import canonicalize_name
 
-from . import _log
 from . import _version_schemes as version
 from . import config as _config
 from ._toml import load_toml_or_inline_map
 
-log = _log.log.getChild("overrides")
+log = logging.getLogger(__name__)
 
 PRETEND_KEY = "SETUPTOOLS_SCM_PRETEND_VERSION"
 PRETEND_KEY_NAMED = PRETEND_KEY + "_FOR_{name}"

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from . import _discover as discover
+from . import _log
 from ._get_version_impl import _get_version
 from ._pyproject_reading import PyProjectData
 from .config import Configuration
@@ -17,6 +18,9 @@ from .config import Configuration
 def main(
     args: list[str] | None = None, *, _given_pyproject_data: PyProjectData | None = None
 ) -> int:
+    # Configure logging at CLI entry point
+    _log.configure_logging()
+
     opts = _get_cli_opts(args)
     inferred_root: str = opts.root or "."
 

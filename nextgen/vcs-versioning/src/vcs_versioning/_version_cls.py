@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from typing import Type
 from typing import Union
 from typing import cast
@@ -14,9 +16,8 @@ except ImportError:
     from setuptools.extern.packaging.version import (  # type: ignore[no-redef]
         Version as Version,
     )
-from . import _log
 
-log = _log.log.getChild("version_cls")
+log = logging.getLogger(__name__)
 
 
 class NonNormalizedVersion(Version):

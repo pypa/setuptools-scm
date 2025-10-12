@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from pathlib import Path
 from typing import Sequence
 
@@ -14,10 +16,9 @@ from vcs_versioning._requirement_cls import Requirement
 from vcs_versioning._requirement_cls import extract_package_name
 from vcs_versioning._toml import TOML_RESULT
 
-from .. import _log
 from .. import _types as _t
 
-log = _log.log.getChild("pyproject_reading")
+log = logging.getLogger(__name__)
 
 _ROOT = "root"
 
