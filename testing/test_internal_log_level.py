@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from setuptools_scm import _log
+from vcs_versioning import _log
 
 
 def test_log_levels_when_set() -> None:

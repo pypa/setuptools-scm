@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from vcs_versioning._overrides import PRETEND_KEY
+
 import setuptools_scm
 
 from setuptools_scm import Configuration
@@ -150,7 +152,7 @@ def test_get_version_blank_tag_regex() -> None:
     "version", ["1.0", "1.2.3.dev1+ge871260", "1.2.3.dev15+ge871260.d20180625", "2345"]
 )
 def test_pretended(version: str, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv(setuptools_scm._overrides.PRETEND_KEY, version)
+    monkeypatch.setenv(PRETEND_KEY, version)
     assert setuptools_scm.get_version() == version
 
 

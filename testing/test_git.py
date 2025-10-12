@@ -18,6 +18,8 @@ from unittest.mock import patch
 
 import pytest
 
+from vcs_versioning._backends import _git
+
 import setuptools_scm._file_finders
 
 from setuptools_scm import Configuration
@@ -56,7 +58,7 @@ def wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch, debug_mode: DebugMode) -> W
 def test_parse_describe_output(
     given: str, tag: str, number: int, node: str, dirty: bool
 ) -> None:
-    parsed = git._git_parse_describe(given)
+    parsed = _git._git_parse_describe(given)
     assert parsed == (tag, number, node, dirty)
 
 

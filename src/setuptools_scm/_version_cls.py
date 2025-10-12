@@ -10,7 +10,6 @@ from vcs_versioning._version_cls import _version_as_tuple
 __all__ = [
     "NonNormalizedVersion",
     "Version",
-    "_VersionT",
     "_validate_version_cls",
     "_version_as_tuple",
 ]

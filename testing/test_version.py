@@ -74,7 +74,7 @@ def test_next_semver_bad_tag() -> None:
     # Create a mock version class that represents an invalid version for testing error handling
     from typing import cast
 
-    from setuptools_scm._version_cls import _VersionT
+    from vcs_versioning._version_cls import _VersionT
 
     class BrokenVersionForTest:
         """A mock version that behaves like a string but passes type checking."""

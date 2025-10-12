@@ -14,20 +14,21 @@ from typing import Any
 import pytest
 
 from packaging.version import Version
+from vcs_versioning._requirement_cls import extract_package_name
 
 from setuptools_scm._integration import setuptools as setuptools_integration
 from setuptools_scm._integration.pyproject_reading import PyProjectData
 from setuptools_scm._integration.setup_cfg import SetuptoolsBasicData
 from setuptools_scm._integration.setup_cfg import read_setup_cfg
-from setuptools_scm._requirement_cls import extract_package_name
 
 if TYPE_CHECKING:
     import setuptools
 
+from vcs_versioning._overrides import PRETEND_KEY
+from vcs_versioning._overrides import PRETEND_KEY_NAMED
+
 from setuptools_scm import Configuration
 from setuptools_scm._integration.setuptools import _warn_on_old_setuptools
-from setuptools_scm._overrides import PRETEND_KEY
-from setuptools_scm._overrides import PRETEND_KEY_NAMED
 from setuptools_scm._run_cmd import run
 
 from .wd_wrapper import WorkDir
@@ -104,7 +105,7 @@ def test_pretend_metadata_with_version(
     monkeypatch: pytest.MonkeyPatch, wd: WorkDir
 ) -> None:
     """Test pretend metadata overrides work with pretend version."""
-    from setuptools_scm._overrides import PRETEND_METADATA_KEY
+    from vcs_versioning._overrides import PRETEND_METADATA_KEY
 
     monkeypatch.setenv(PRETEND_KEY, "1.2.3.dev4+g1337beef")
     monkeypatch.setenv(PRETEND_METADATA_KEY, '{node="g1337beef", distance=4}')
@@ -134,7 +135,7 @@ num_commit = {scm_version.distance}
 
 def test_pretend_metadata_named(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> None:
     """Test pretend metadata with named package support."""
-    from setuptools_scm._overrides import PRETEND_METADATA_KEY_NAMED
+    from vcs_versioning._overrides import PRETEND_METADATA_KEY_NAMED
 
     monkeypatch.setenv(
         PRETEND_KEY_NAMED.format(name="test".upper()), "1.2.3.dev5+gabcdef12"
@@ -152,7 +153,7 @@ def test_pretend_metadata_without_version_warns(
     monkeypatch: pytest.MonkeyPatch, wd: WorkDir, caplog: pytest.LogCaptureFixture
 ) -> None:
     """Test that pretend metadata without any base version logs a warning."""
-    from setuptools_scm._overrides import PRETEND_METADATA_KEY
+    from vcs_versioning._overrides import PRETEND_METADATA_KEY
 
     # Only set metadata, no version - but there will be a git repo so there will be a base version
     # Let's create an empty git repo without commits to truly have no base version
@@ -169,7 +170,7 @@ def test_pretend_metadata_with_scm_version(
     wd: WorkDir, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Test that pretend metadata works with actual SCM-detected version."""
-    from setuptools_scm._overrides import PRETEND_METADATA_KEY
+    from vcs_versioning._overrides import PRETEND_METADATA_KEY
 
     # Set up a git repo with a tag so we have a base version
     wd("git init")
@@ -208,7 +209,7 @@ def test_pretend_metadata_type_conversion(
     monkeypatch: pytest.MonkeyPatch, wd: WorkDir
 ) -> None:
     """Test that pretend metadata properly uses TOML native types."""
-    from setuptools_scm._overrides import PRETEND_METADATA_KEY
+    from vcs_versioning._overrides import PRETEND_METADATA_KEY
 
     monkeypatch.setenv(PRETEND_KEY, "2.0.0")
     monkeypatch.setenv(
@@ -225,7 +226,7 @@ def test_pretend_metadata_invalid_fields_filtered(
     monkeypatch: pytest.MonkeyPatch, wd: WorkDir, caplog: pytest.LogCaptureFixture
 ) -> None:
     """Test that invalid metadata fields are filtered out with a warning."""
-    from setuptools_scm._overrides import PRETEND_METADATA_KEY
+    from vcs_versioning._overrides import PRETEND_METADATA_KEY
 
     monkeypatch.setenv(PRETEND_KEY, "1.0.0")
     monkeypatch.setenv(
@@ -246,7 +247,7 @@ def test_pretend_metadata_date_parsing(
     monkeypatch: pytest.MonkeyPatch, wd: WorkDir
 ) -> None:
     """Test that TOML date values work in pretend metadata."""
-    from setuptools_scm._overrides import PRETEND_METADATA_KEY
+    from vcs_versioning._overrides import PRETEND_METADATA_KEY
 
     monkeypatch.setenv(PRETEND_KEY, "1.5.0")
     monkeypatch.setenv(
@@ -261,7 +262,7 @@ def test_pretend_metadata_invalid_toml_error(
     monkeypatch: pytest.MonkeyPatch, wd: WorkDir, caplog: pytest.LogCaptureFixture
 ) -> None:
     """Test that invalid TOML in pretend metadata logs an error."""
-    from setuptools_scm._overrides import PRETEND_METADATA_KEY
+    from vcs_versioning._overrides import PRETEND_METADATA_KEY
 
     monkeypatch.setenv(PRETEND_KEY, "1.0.0")
     monkeypatch.setenv(PRETEND_METADATA_KEY, "{invalid toml syntax here}")
