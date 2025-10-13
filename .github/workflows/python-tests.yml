@@ -37,6 +37,13 @@ jobs:
           path: nextgen/vcs-versioning
           upload-name-suffix: -vcs-versioning
 
+      - name: Clean up baipp artifacts between builds
+        run: |
+          if [ -d "/tmp/baipp/dist/out" ]; then
+            echo "::warning::Found leftover /tmp/baipp/dist/out directory from previous build, removing it"
+            rm -rf /tmp/baipp/dist/out
+          fi
+
       - name: Build setuptools-scm
         uses: hynek/build-and-inspect-python-package@v2
         with:
