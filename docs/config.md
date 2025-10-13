@@ -80,7 +80,7 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
     The regex needs to contain either a single match group, or a group
     named `version`, that captures the actual version information.
 
-    Defaults to the value of [setuptools_scm._config.DEFAULT_TAG_REGEX][]
+    Defaults to the value of [vcs_versioning._config.DEFAULT_TAG_REGEX][]
     which supports tags with optional "v" prefix (recommended), project prefixes,
     and various version formats.
 
@@ -127,7 +127,7 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
 `scm.git.describe_command`
 :   This command will be used instead the default `git describe --long` command.
 
-    Defaults to the value set by [setuptools_scm.git.DEFAULT_DESCRIBE][]
+    Defaults to the value set by [vcs_versioning._backends._git.DEFAULT_DESCRIBE][]
 
 `scm.git.pre_parse`
 :   A string specifying which git pre-parse function to use before parsing version information.
@@ -151,7 +151,7 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
 `normalize`
 :   A boolean flag indicating if the version string should be normalized.
     Defaults to `True`. Setting this to `False` is equivalent to setting
-    `version_cls` to [setuptools_scm.NonNormalizedVersion][]
+    `version_cls` to [vcs_versioning.NonNormalizedVersion][]
 
 `version_cls: type|str = packaging.version.Version`
 :   An optional class used to parse, verify and possibly normalize the version
@@ -159,7 +159,7 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
     `str` should return the normalized version string to use.
     This option can also receive a class qualified name as a string.
 
-    The [setuptools_scm.NonNormalizedVersion][] convenience class is
+    The [vcs_versioning.NonNormalizedVersion][] convenience class is
     provided to disable the normalization step done by
     `packaging.version.Version`. If this is used while `setuptools-scm`
     is integrated in a setuptools packaging process, the non-normalized
@@ -279,16 +279,16 @@ tar -tzf dist/package-*.tar.gz
 
 ### constants
 
-::: setuptools_scm._config.DEFAULT_TAG_REGEX
+::: vcs_versioning._config.DEFAULT_TAG_REGEX
     options:
       heading_level: 4
 
-::: setuptools_scm.git.DEFAULT_DESCRIBE
+::: vcs_versioning._backends._git.DEFAULT_DESCRIBE
     options:
       heading_level: 4
 
 
 ### the configuration class
-::: setuptools_scm.Configuration
+::: vcs_versioning.Configuration
     options:
       heading_level: 4
