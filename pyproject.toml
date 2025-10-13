@@ -1,14 +1,8 @@
-# Workspace configuration for setuptools-scm monorepo
-#
-# This workspace contains two packages:
-#   - vcs-versioning: Core VCS versioning library
-#   - setuptools-scm: setuptools integration (depends on vcs-versioning)
-#
-# Usage:
 #   uv sync --all-packages --all-groups  # Install all packages with all dependency groups
 
 [project]
 name = "vcs-versioning.workspace"
+description = "workspace configuration for this monorepo"
 version = "0.1+private"
 requires-python = ">=3.10"
 dependencies = [
