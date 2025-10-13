@@ -5,9 +5,10 @@ import os
 from collections.abc import Callable
 from typing import TypeGuard
 
+from vcs_versioning import _types as _t
+from vcs_versioning._entrypoints import entry_points
+
 from .. import _log
-from .. import _types as _t
-from .._entrypoints import entry_points
 from .pathtools import norm_real
 
 log = _log.log.getChild("file_finder")

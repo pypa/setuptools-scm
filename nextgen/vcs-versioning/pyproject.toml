@@ -101,7 +101,7 @@ exclude_lines = [
 [tool.pytest.ini_options]
 testpaths = ["testingB"]
 python_files = ["test_*.py"]
-addopts = ["-ra", "--strict-markers"]
+addopts = ["-ra", "--strict-markers", "-p", "vcs_versioning.test_api"]
 markers = [
   "issue: marks tests related to specific issues",
 ]

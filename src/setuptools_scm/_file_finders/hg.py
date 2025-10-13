@@ -4,7 +4,8 @@ import logging
 import os
 import subprocess
 
-from .. import _types as _t
+from vcs_versioning import _types as _t
+
 from .._file_finders import is_toplevel_acceptable
 from .._file_finders import scm_find_files
 from ..hg import run_hg

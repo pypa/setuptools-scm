@@ -7,8 +7,9 @@ import tarfile
 
 from typing import IO
 
-from .. import _types as _t
-from .._run_cmd import run as _run
+from vcs_versioning import _types as _t
+from vcs_versioning._run_cmd import run as _run
+
 from ..integration import data_from_mime
 from . import is_toplevel_acceptable
 from . import scm_find_files

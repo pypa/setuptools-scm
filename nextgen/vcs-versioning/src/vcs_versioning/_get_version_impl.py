@@ -74,25 +74,17 @@ def write_version_files(
     config: Configuration, version: str, scm_version: ScmVersion
 ) -> None:
     if config.write_to is not None:
-        try:
-            # dump_version is setuptools-specific, may not be available
-            from setuptools_scm._integration.dump_version import dump_version
-        except ImportError:
-            warnings.warn("write_to requires setuptools_scm package", stacklevel=2)
-        else:
-            dump_version(
-                root=config.root,
-                version=version,
-                scm_version=scm_version,
-                write_to=config.write_to,
-                template=config.write_to_template,
-            )
+        from ._dump_version import dump_version
+
+        dump_version(
+            root=config.root,
+            version=version,
+            scm_version=scm_version,
+            write_to=config.write_to,
+            template=config.write_to_template,
+        )
     if config.version_file:
-        try:
-            from setuptools_scm._integration.dump_version import write_version_to_path
-        except ImportError:
-            warnings.warn("version_file requires setuptools_scm package", stacklevel=2)
-            return
+        from ._dump_version import write_version_to_path
 
         version_file = Path(config.version_file)
         assert not version_file.is_absolute(), f"{version_file=}"

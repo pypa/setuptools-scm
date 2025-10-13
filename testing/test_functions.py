@@ -8,11 +8,11 @@ from pathlib import Path
 import pytest
 
 from vcs_versioning._overrides import PRETEND_KEY
+from vcs_versioning._run_cmd import has_command
 
 from setuptools_scm import Configuration
 from setuptools_scm import dump_version
 from setuptools_scm import get_version
-from setuptools_scm._run_cmd import has_command
 from setuptools_scm.version import format_version
 from setuptools_scm.version import guess_next_version
 from setuptools_scm.version import meta
@@ -215,7 +215,7 @@ def test_dump_version_modern(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
 
 
 def dump_a_version(tmp_path: Path) -> None:
-    from setuptools_scm._integration.dump_version import write_version_to_path
+    from vcs_versioning._dump_version import write_version_to_path
 
     version = "1.2.3"
     scm_version = meta(version, config=c)
@@ -298,7 +298,7 @@ def test_tag_to_version(tag: str, expected_version: str) -> None:
 
 def test_write_version_to_path_deprecation_warning_none(tmp_path: Path) -> None:
     """Test that write_version_to_path warns when scm_version=None is passed."""
-    from setuptools_scm._integration.dump_version import write_version_to_path
+    from vcs_versioning._dump_version import write_version_to_path
 
     target_file = tmp_path / "version.py"
 
@@ -327,7 +327,7 @@ def test_write_version_to_path_deprecation_warning_none(tmp_path: Path) -> None:
 
 def test_write_version_to_path_deprecation_warning_missing(tmp_path: Path) -> None:
     """Test that write_version_to_path warns when scm_version parameter is not provided."""
-    from setuptools_scm._integration.dump_version import write_version_to_path
+    from vcs_versioning._dump_version import write_version_to_path
 
     target_file = tmp_path / "version.py"
 

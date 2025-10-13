@@ -14,9 +14,9 @@ import os
 from collections.abc import Callable
 
 from setuptools import build_meta as build_meta
+from vcs_versioning import _types as _t
 
 from setuptools_scm import Configuration
-from setuptools_scm import _types as _t
 from setuptools_scm import get_version
 from setuptools_scm import git
 from setuptools_scm import hg

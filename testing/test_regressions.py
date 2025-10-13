@@ -12,8 +12,9 @@ from pathlib import Path
 
 import pytest
 
+from vcs_versioning._run_cmd import run
+
 from setuptools_scm import Configuration
-from setuptools_scm._run_cmd import run
 from setuptools_scm.git import parse
 from setuptools_scm.integration import data_from_mime
 from setuptools_scm.version import meta
@@ -223,6 +224,6 @@ def test_write_to_absolute_path_passes_when_subdir_of_root(tmp_path: Path) -> No
     ],
 )
 def test_version_as_tuple(input: str, expected: Sequence[int | str]) -> None:
-    from setuptools_scm._version_cls import _version_as_tuple
+    from vcs_versioning._version_cls import _version_as_tuple
 
     assert _version_as_tuple(input) == expected

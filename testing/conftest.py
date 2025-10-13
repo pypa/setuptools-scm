@@ -22,7 +22,8 @@ from vcs_versioning.test_api import DebugMode
 from vcs_versioning.test_api import WorkDir
 
 # Use vcs_versioning test infrastructure as a pytest plugin
-pytest_plugins = ["vcs_versioning.test_api"]
+# Moved to pyproject.toml addopts to avoid non-top-level conftest issues
+# pytest_plugins = ["vcs_versioning.test_api"]
 
 __all__ = [
     "TEST_SOURCE_DATE",

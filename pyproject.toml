@@ -136,6 +136,7 @@ ignore = ["PP305", "GH103", "GH212", "MY100", "PC111", "PC160", "PC170", "PC180"
 [tool.pytest.ini_options]
 minversion = "8"
 testpaths = ["testing"]
+addopts = ["-ra", "--strict-config", "--strict-markers", "-p", "vcs_versioning.test_api"]
 timeout = 300  # 5 minutes timeout per test for CI protection
 filterwarnings = [
   "error",
@@ -145,7 +146,6 @@ filterwarnings = [
 log_level = "debug"
 log_cli_level = "info"
 # disable unraisable until investigated
-addopts = ["-ra", "--strict-config", "--strict-markers"]
 markers = [
   "issue(id): reference to github issue",
   "skip_commit: allows to skip committing in the helpers",

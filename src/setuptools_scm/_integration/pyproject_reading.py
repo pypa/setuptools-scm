@@ -5,6 +5,7 @@ import logging
 from collections.abc import Sequence
 from pathlib import Path
 
+from vcs_versioning import _types as _t
 from vcs_versioning._pyproject_reading import DEFAULT_PYPROJECT_PATH
 from vcs_versioning._pyproject_reading import DEFAULT_TOOL_NAME
 from vcs_versioning._pyproject_reading import PyProjectData as _VcsPyProjectData
@@ -15,8 +16,6 @@ from vcs_versioning._pyproject_reading import read_pyproject as _vcs_read_pyproj
 from vcs_versioning._requirement_cls import Requirement
 from vcs_versioning._requirement_cls import extract_package_name
 from vcs_versioning._toml import TOML_RESULT
-
-from .. import _types as _t
 
 log = logging.getLogger(__name__)
 

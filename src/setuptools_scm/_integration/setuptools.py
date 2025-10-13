@@ -8,13 +8,14 @@ from typing import Any
 
 import setuptools
 
+from vcs_versioning import _types as _t
+from vcs_versioning._toml import InvalidTomlError
+
 from .. import _log
-from .. import _types as _t
 from .pyproject_reading import PyProjectData
 from .pyproject_reading import read_pyproject
 from .setup_cfg import SetuptoolsBasicData
 from .setup_cfg import extract_from_legacy
-from .toml import InvalidTomlError
 from .version_inference import get_version_inference_config
 
 log = logging.getLogger(__name__)
