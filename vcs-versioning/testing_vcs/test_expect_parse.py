@@ -2,21 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import date
-from datetime import datetime
-from datetime import timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import pytest
-
-from vcs_versioning._version_schemes import mismatches
-from vcs_versioning.test_api import WorkDir
-
 from setuptools_scm import Configuration
-from setuptools_scm.version import ScmVersion
-from setuptools_scm.version import meta
-
-from .conftest import TEST_SOURCE_DATE
+from setuptools_scm.version import ScmVersion, meta
+from vcs_versioning._version_schemes import mismatches
+from vcs_versioning.test_api import TEST_SOURCE_DATE, WorkDir
 
 
 def test_scm_version_matches_basic() -> None:
