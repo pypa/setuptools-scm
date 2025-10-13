@@ -14,9 +14,9 @@ from vcs_versioning._run_cmd import has_command
 if TYPE_CHECKING:
     import sys
 
+    from vcs_versioning._config import Configuration
     from vcs_versioning._version_schemes import ScmVersion
     from vcs_versioning._version_schemes import VersionExpectations
-    from vcs_versioning.config import Configuration
 
     if sys.version_info >= (3, 11):
         from typing import Unpack
@@ -224,7 +224,7 @@ name = {name}
         Uses the same signature as ScmVersion.matches() via TypedDict Unpack.
         """
         __tracebackhide__ = True
-        from vcs_versioning.config import Configuration
+        from vcs_versioning._config import Configuration
 
         if self.parse is None:
             raise RuntimeError(

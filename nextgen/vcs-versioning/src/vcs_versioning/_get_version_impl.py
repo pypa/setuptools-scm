@@ -10,15 +10,15 @@ from re import Pattern
 from typing import Any
 from typing import NoReturn
 
+from . import _config
 from . import _entrypoints
 from . import _run_cmd
 from . import _types as _t
-from . import config as _config
+from ._config import Configuration
 from ._overrides import _read_pretended_version_for
 from ._version_cls import _validate_version_cls
 from ._version_schemes import ScmVersion
 from ._version_schemes import format_version as _format_version
-from .config import Configuration
 
 EMPTY_TAG_REGEX_DEPRECATION = DeprecationWarning(
     "empty regex for tag regex is invalid, using default"

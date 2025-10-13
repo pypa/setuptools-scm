@@ -35,9 +35,9 @@ def infer_version_string(
     Raises:
         SystemExit: If version cannot be determined (via _version_missing)
     """
+    from ._config import Configuration
     from ._get_version_impl import _get_version
     from ._get_version_impl import _version_missing
-    from .config import Configuration
 
     config = Configuration.from_file(
         dist_name=dist_name, pyproject_data=pyproject_data, **(overrides or {})

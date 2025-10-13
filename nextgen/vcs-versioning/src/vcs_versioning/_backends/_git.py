@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING
 
 from .. import _discover as discover
 from .. import _types as _t
+from .._config import Configuration
 from .._integration import data_from_mime
 from .._run_cmd import CompletedProcess as _CompletedProcess
 from .._run_cmd import require_command as _require_command
@@ -27,7 +28,6 @@ from .._run_cmd import run as _run
 from .._version_schemes import ScmVersion
 from .._version_schemes import meta
 from .._version_schemes import tag_to_version
-from ..config import Configuration
 from ._scm_workdir import Workdir
 from ._scm_workdir import get_latest_file_mtime
 

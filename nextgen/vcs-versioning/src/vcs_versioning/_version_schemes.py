@@ -17,10 +17,10 @@ from typing import Concatenate
 from typing import ParamSpec
 from typing import TypedDict
 
+from . import _config
 from . import _entrypoints
 from . import _modify_version
 from . import _version_cls as _v
-from . import config as _config
 from ._node_utils import _format_node_for_output
 from ._version_cls import Version as PkgVersion
 from ._version_cls import _Version

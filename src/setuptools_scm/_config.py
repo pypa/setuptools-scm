@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from vcs_versioning.config import *  # noqa: F403
+from vcs_versioning._config import *  # noqa: F403
 
 __all__ = [
     "DEFAULT_LOCAL_SCHEME",

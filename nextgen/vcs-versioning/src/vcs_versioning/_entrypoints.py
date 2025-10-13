@@ -15,8 +15,8 @@ __all__ = [
 if TYPE_CHECKING:
     from . import _types as _t
     from . import _version_schemes
-    from .config import Configuration
-    from .config import ParseFunction
+    from ._config import Configuration
+    from ._config import ParseFunction
 
 from importlib import metadata as im
 

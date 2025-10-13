@@ -10,9 +10,9 @@ from typing import Any
 
 from . import _discover as discover
 from . import _log
+from ._config import Configuration
 from ._get_version_impl import _get_version
 from ._pyproject_reading import PyProjectData
-from .config import Configuration
 
 
 def main(

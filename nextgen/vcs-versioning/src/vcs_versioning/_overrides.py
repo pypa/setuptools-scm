@@ -10,8 +10,8 @@ from typing import Any
 
 from packaging.utils import canonicalize_name
 
+from . import _config
 from . import _version_schemes as version
-from . import config as _config
 from ._toml import load_toml_or_inline_map
 
 log = logging.getLogger(__name__)

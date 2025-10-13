@@ -18,6 +18,7 @@ from unittest.mock import patch
 
 import pytest
 
+from vcs_versioning import Configuration
 from vcs_versioning._backends import _git
 from vcs_versioning._run_cmd import CommandNotFoundError
 from vcs_versioning._run_cmd import CompletedProcess
@@ -25,7 +26,6 @@ from vcs_versioning._run_cmd import has_command
 from vcs_versioning._run_cmd import run
 from vcs_versioning._version_cls import NonNormalizedVersion
 from vcs_versioning._version_schemes import format_version
-from vcs_versioning.config import Configuration
 
 # File finder imports from setuptools_scm (setuptools-specific)
 try:
