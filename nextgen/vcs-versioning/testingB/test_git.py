@@ -716,8 +716,8 @@ def test_git_pre_parse_config_integration(wd: WorkDir) -> None:
     assert result is not None
 
     # Test with explicit configuration
-    from setuptools_scm._config import GitConfiguration
-    from setuptools_scm._config import ScmConfiguration
+    from vcs_versioning._config import GitConfiguration
+    from vcs_versioning._config import ScmConfiguration
 
     config_with_pre_parse = Configuration(
         scm=ScmConfiguration(
@@ -823,8 +823,8 @@ def test_git_describe_command_init_argument_deprecation() -> None:
 
 def test_git_describe_command_init_conflict() -> None:
     """Test that specifying both old and new configuration raises ValueError."""
-    from setuptools_scm._config import GitConfiguration
-    from setuptools_scm._config import ScmConfiguration
+    from vcs_versioning._config import GitConfiguration
+    from vcs_versioning._config import ScmConfiguration
 
     # Both old init arg and new configuration specified - should raise ValueError
     with pytest.warns(DeprecationWarning, match=r"git_describe_command.*deprecated"):

@@ -85,14 +85,14 @@ documentation = "https://setuptools-scm.readthedocs.io/"
 repository = "https://github.com/pypa/setuptools-scm/"
 
 [project.entry-points.console_scripts]
-setuptools-scm = "setuptools_scm._cli:main"
+setuptools-scm = "vcs_versioning._cli:main"
 
 [project.entry-points."distutils.setup_keywords"]
 use_scm_version = "setuptools_scm._integration.setuptools:version_keyword"
 
 [project.entry-points."pipx.run"]
-setuptools-scm = "setuptools_scm._cli:main"
-setuptools_scm = "setuptools_scm._cli:main"
+setuptools-scm = "vcs_versioning._cli:main"
+setuptools_scm = "vcs_versioning._cli:main"
 
 [project.entry-points."setuptools.file_finders"]
 setuptools_scm = "setuptools_scm._file_finders:find_files"

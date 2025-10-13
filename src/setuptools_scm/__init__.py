@@ -5,16 +5,16 @@
 
 from __future__ import annotations
 
+from vcs_versioning import Configuration
+from vcs_versioning import NonNormalizedVersion
+from vcs_versioning import ScmVersion
+from vcs_versioning import Version
+from vcs_versioning._config import DEFAULT_LOCAL_SCHEME
+from vcs_versioning._config import DEFAULT_VERSION_SCHEME
 from vcs_versioning._dump_version import dump_version  # soft deprecated
+from vcs_versioning._get_version_impl import _get_version
 
-from ._config import DEFAULT_LOCAL_SCHEME
-from ._config import DEFAULT_VERSION_SCHEME
-from ._config import Configuration
-from ._get_version_impl import _get_version
 from ._get_version_impl import get_version
-from ._version_cls import NonNormalizedVersion
-from ._version_cls import Version
-from .version import ScmVersion
 
 # Public API
 __all__ = [
