@@ -9,12 +9,12 @@ from pathlib import Path
 
 import pytest
 
+from vcs_versioning._version_schemes import mismatches
 from vcs_versioning.test_api import WorkDir
 
 from setuptools_scm import Configuration
 from setuptools_scm.version import ScmVersion
 from setuptools_scm.version import meta
-from setuptools_scm.version import mismatches
 
 from .conftest import TEST_SOURCE_DATE
 

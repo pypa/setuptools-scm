@@ -319,6 +319,18 @@ wheels = [
 ]
 
 [[package]]
+name = "griffe-public-wildcard-imports"
+version = "0.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "griffe" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c3/3c/53330b357cd7e52463159e33880bdd7aad7bb2cbef16be63a0e20cca84b1/griffe_public_wildcard_imports-0.2.1.tar.gz", hash = "sha256:2f8279e5e0520a19d15d1215f1a236d8bdc8722c59e14565dd216cd0d979e2e6", size = 31212, upload-time = "2024-08-18T13:53:32.071Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f0/b0/670b26b8237ff9b47fa1ba4427cee5b9ebfd5f4125941049f9c3ddb82cd1/griffe_public_wildcard_imports-0.2.1-py3-none-any.whl", hash = "sha256:5def6502e5af61bba1dffa0e7129c1e147b3c1e609f841cffae470b91db93672", size = 4815, upload-time = "2024-08-18T13:53:30.219Z" },
+]
+
+[[package]]
 name = "idna"
 version = "3.10"
 source = { registry = "https://pypi.org/simple" }
@@ -1173,6 +1185,7 @@ dependencies = [
     { name = "packaging" },
     { name = "setuptools" },
     { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
     { name = "vcs-versioning" },
 ]
 
@@ -1183,6 +1196,7 @@ rich = [
 
 [package.dev-dependencies]
 docs = [
+    { name = "griffe-public-wildcard-imports" },
     { name = "mkdocs" },
     { name = "mkdocs-entangled-plugin", version = "0.2.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "mkdocs-entangled-plugin", version = "0.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -1195,6 +1209,7 @@ test = [
     { name = "build" },
     { name = "flake8" },
     { name = "griffe" },
+    { name = "griffe-public-wildcard-imports" },
     { name = "mypy" },
     { name = "pip" },
     { name = "pytest" },
@@ -1212,13 +1227,14 @@ requires-dist = [
     { name = "rich", marker = "extra == 'rich'" },
     { name = "setuptools" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=1" },
-    { name = "typing-extensions", marker = "python_full_version < '3.10'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
     { name = "vcs-versioning", editable = "nextgen/vcs-versioning" },
 ]
 provides-extras = ["rich", "simple", "toml"]
 
 [package.metadata.requires-dev]
 docs = [
+    { name = "griffe-public-wildcard-imports" },
     { name = "mkdocs" },
     { name = "mkdocs-entangled-plugin" },
     { name = "mkdocs-include-markdown-plugin" },
@@ -1230,6 +1246,7 @@ test = [
     { name = "build" },
     { name = "flake8" },
     { name = "griffe" },
+    { name = "griffe-public-wildcard-imports" },
     { name = "mypy", specifier = "~=1.13.0" },
     { name = "pip" },
     { name = "pytest" },
@@ -1334,13 +1351,14 @@ source = { editable = "nextgen/vcs-versioning" }
 dependencies = [
     { name = "packaging" },
     { name = "tomli", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "packaging", specifier = ">=20" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=1" },
-    { name = "typing-extensions", marker = "python_full_version < '3.10'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
 
 [[package]]

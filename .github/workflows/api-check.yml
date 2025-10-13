@@ -45,4 +45,5 @@ jobs:
       - name: Check API stability against latest release
         run: |
           echo "Comparing current code against tag: ${{ steps.latest-tag.outputs.tag }}"
-          uv run griffe check setuptools_scm -ssrc --verbose --against ${{ steps.latest-tag.outputs.tag }}
+          # Use local check_api.py script which includes griffe-public-wildcard-imports extension
+          uv run python check_api.py --against ${{ steps.latest-tag.outputs.tag }}

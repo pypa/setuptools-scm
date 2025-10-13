@@ -31,10 +31,13 @@ plugins:
     default_handler: python
     handlers:
       python:
-        paths: [ src ]
-
+        paths: [ src, nextgen/vcs-versioning/src ]
+        import:
+          - https://docs.python.org/3/objects.inv
         options:
           separate_signature: true
           show_signature_annotations: true
           allow_inspection: true
           show_root_heading: true
+          extensions:
+            - griffe_public_wildcard_imports

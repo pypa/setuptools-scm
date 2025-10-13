@@ -65,6 +65,7 @@ docs = [
   "mkdocs-material",
   "mkdocstrings[python]",
   "pygments",
+  "griffe-public-wildcard-imports",
 ]
 test = [
   "pip",
@@ -78,6 +79,7 @@ test = [
   'typing-extensions; python_version < "3.11"',
   "wheel",
   "griffe",
+  "griffe-public-wildcard-imports",
   "flake8",
 ]
 
