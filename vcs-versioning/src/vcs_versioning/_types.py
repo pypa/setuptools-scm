@@ -1,13 +1,8 @@
 from __future__ import annotations
 
 import os
-
-from collections.abc import Callable
-from collections.abc import Sequence
-from typing import TYPE_CHECKING
-from typing import Protocol
-from typing import TypeAlias
-from typing import Union
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Protocol, TypeAlias, Union
 
 if TYPE_CHECKING:
     from setuptools import Distribution

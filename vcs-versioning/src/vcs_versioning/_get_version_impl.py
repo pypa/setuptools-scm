@@ -4,15 +4,11 @@ import dataclasses
 import logging
 import re
 import warnings
-
 from pathlib import Path
 from re import Pattern
-from typing import Any
-from typing import NoReturn
+from typing import Any, NoReturn
 
-from . import _config
-from . import _entrypoints
-from . import _run_cmd
+from . import _config, _entrypoints, _run_cmd
 from . import _types as _t
 from ._config import Configuration
 from ._overrides import _read_pretended_version_for
@@ -112,6 +108,7 @@ def _get_version(
             "force_write_version_files ought to be set,"
             " presuming the legacy True value",
             DeprecationWarning,
+            stacklevel=2,
         )
 
     if force_write_version_files:

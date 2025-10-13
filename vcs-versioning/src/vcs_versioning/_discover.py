@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
-
-from collections.abc import Iterable
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import TYPE_CHECKING
 

@@ -6,14 +6,8 @@ import shlex
 import subprocess
 import textwrap
 import warnings
-
-from collections.abc import Callable
-from collections.abc import Mapping
-from collections.abc import Sequence
-from typing import TYPE_CHECKING
-from typing import Final
-from typing import TypeVar
-from typing import overload
+from collections.abc import Callable, Mapping, Sequence
+from typing import TYPE_CHECKING, Final, TypeVar, overload
 
 from . import _types as _t
 
@@ -208,7 +202,7 @@ def has_command(
     else:
         res = not p.returncode
     if not res and warn:
-        warnings.warn(f"{name!r} was not found", category=RuntimeWarning)
+        warnings.warn(f"{name!r} was not found", category=RuntimeWarning, stacklevel=2)
     return res
 
 

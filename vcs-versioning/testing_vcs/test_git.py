@@ -5,32 +5,28 @@ import os
 import shutil
 import subprocess
 import sys
-
 from collections.abc import Generator
-from datetime import date
-from datetime import datetime
-from datetime import timezone
+from datetime import date, datetime, timezone
 from os.path import join as opj
 from pathlib import Path
 from textwrap import dedent
-from unittest.mock import Mock
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
-
 from vcs_versioning import Configuration
 from vcs_versioning._backends import _git
-from vcs_versioning._run_cmd import CommandNotFoundError
-from vcs_versioning._run_cmd import CompletedProcess
-from vcs_versioning._run_cmd import has_command
-from vcs_versioning._run_cmd import run
+from vcs_versioning._run_cmd import (
+    CommandNotFoundError,
+    CompletedProcess,
+    has_command,
+    run,
+)
 from vcs_versioning._version_cls import NonNormalizedVersion
 from vcs_versioning._version_schemes import format_version
 
 # File finder imports from setuptools_scm (setuptools-specific)
 try:
     import setuptools_scm._file_finders
-
     from setuptools_scm import git
     from setuptools_scm._file_finders.git import git_find_files
     from setuptools_scm.git import archival_to_version
@@ -42,8 +38,7 @@ except ImportError:
     archival_to_version = _git.archival_to_version
     git_find_files = None  # type: ignore[assignment]
 
-from vcs_versioning.test_api import DebugMode
-from vcs_versioning.test_api import WorkDir
+from vcs_versioning.test_api import DebugMode, WorkDir
 
 # Note: Git availability is now checked in WorkDir.setup_git() method
 
@@ -716,8 +711,7 @@ def test_git_pre_parse_config_integration(wd: WorkDir) -> None:
     assert result is not None
 
     # Test with explicit configuration
-    from vcs_versioning._config import GitConfiguration
-    from vcs_versioning._config import ScmConfiguration
+    from vcs_versioning._config import GitConfiguration, ScmConfiguration
 
     config_with_pre_parse = Configuration(
         scm=ScmConfiguration(
@@ -823,8 +817,7 @@ def test_git_describe_command_init_argument_deprecation() -> None:
 
 def test_git_describe_command_init_conflict() -> None:
     """Test that specifying both old and new configuration raises ValueError."""
-    from vcs_versioning._config import GitConfiguration
-    from vcs_versioning._config import ScmConfiguration
+    from vcs_versioning._config import GitConfiguration, ScmConfiguration
 
     # Both old init arg and new configuration specified - should raise ValueError
     with pytest.warns(DeprecationWarning, match=r"git_describe_command.*deprecated"):

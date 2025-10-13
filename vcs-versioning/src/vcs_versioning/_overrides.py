@@ -3,7 +3,6 @@ from __future__ import annotations
 import dataclasses
 import logging
 import os
-
 from collections.abc import Mapping
 from difflib import get_close_matches
 from typing import Any
@@ -238,8 +237,7 @@ def _apply_metadata_overrides(
     log.info("Applying metadata overrides: %s", metadata_overrides)
 
     # Define type checks and field mappings
-    from datetime import date
-    from datetime import datetime
+    from datetime import date, datetime
 
     field_specs: dict[str, tuple[type | tuple[type, type], str]] = {
         "distance": (int, "int"),

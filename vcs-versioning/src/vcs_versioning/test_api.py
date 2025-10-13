@@ -11,10 +11,8 @@ import contextlib
 import os
 import shutil
 import sys
-
 from collections.abc import Iterator
-from datetime import datetime
-from datetime import timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from types import TracebackType
 

@@ -5,21 +5,12 @@ import logging
 import os
 import re
 import warnings
-
 from collections.abc import Callable
-from datetime import date
-from datetime import datetime
-from datetime import timezone
+from datetime import date, datetime, timezone
 from re import Match
-from typing import TYPE_CHECKING
-from typing import Any
-from typing import Concatenate
-from typing import ParamSpec
-from typing import TypedDict
+from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypedDict
 
-from . import _config
-from . import _entrypoints
-from . import _modify_version
+from . import _config, _entrypoints, _modify_version
 from . import _version_cls as _v
 from ._node_utils import _format_node_for_output
 from ._version_cls import Version as PkgVersion
@@ -149,7 +140,7 @@ def tag_to_version(
 
     tag_dict = _parse_version_tag(tag, config)
     if tag_dict is None or not tag_dict.get("version", None):
-        warnings.warn(f"tag {tag!r} no version found")
+        warnings.warn(f"tag {tag!r} no version found", stacklevel=2)
         return None
 
     version_str = tag_dict["version"]
@@ -161,7 +152,8 @@ def tag_to_version(
         log.debug("version=%r", version)
     except Exception:
         warnings.warn(
-            f"tag {tag!r} will be stripped of its suffix {tag_dict.get('suffix', '')!r}"
+            f"tag {tag!r} will be stripped of its suffix {tag_dict.get('suffix', '')!r}",
+            stacklevel=2,
         )
         # Fall back to trying without any suffix
         version = config.version_cls(version_str)
@@ -177,7 +169,9 @@ def tag_to_version(
             log.debug("version with suffix=%r", version_with_suffix)
             return version_with_suffix
         except Exception:
-            warnings.warn(f"tag {tag!r} will be stripped of its suffix {suffix!r}")
+            warnings.warn(
+                f"tag {tag!r} will be stripped of its suffix {suffix!r}", stacklevel=2
+            )
             # Return the base version without suffix
             return version
 
@@ -391,13 +385,7 @@ def guess_next_dev_version(version: ScmVersion) -> str:
 def guess_next_simple_semver(
     version: ScmVersion, retain: int, increment: bool = True
 ) -> str:
-    if isinstance(version.tag, _v.Version):
-        parts = list(version.tag.release[:retain])
-    else:
-        try:
-            parts = [int(i) for i in str(version.tag).split(".")[:retain]]
-        except ValueError:
-            raise ValueError(f"{version} can't be parsed as numeric version") from None
+    parts = list(version.tag.release[:retain])
     while len(parts) < retain:
         parts.append(0)
     if increment:
@@ -497,7 +485,8 @@ def guess_next_date_ver(
     if match is None:
         warnings.warn(
             f"{version} does not correspond to a valid versioning date, "
-            "assuming legacy version"
+            "assuming legacy version",
+            stacklevel=2,
         )
         if date_fmt is None:
             date_fmt = "%y.%m.%d"
@@ -533,7 +522,8 @@ def guess_next_date_ver(
         if tag_date > head_date and match is not None:
             # warn on future times (only for actual date tags, not legacy)
             warnings.warn(
-                f"your previous tag  ({tag_date}) is ahead your node date ({head_date})"
+                f"your previous tag  ({tag_date}) is ahead your node date ({head_date})",
+                stacklevel=2,
             )
         patch = 0
     next_version = "{node_date:{date_fmt}}.{patch}".format(

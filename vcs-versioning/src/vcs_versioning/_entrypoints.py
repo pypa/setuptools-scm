@@ -1,12 +1,8 @@
 from __future__ import annotations
 
 import logging
-
-from collections.abc import Callable
-from collections.abc import Iterator
-from typing import TYPE_CHECKING
-from typing import Any
-from typing import cast
+from collections.abc import Callable, Iterator
+from typing import TYPE_CHECKING, Any, cast
 
 __all__ = [
     "entry_points",
@@ -15,8 +11,7 @@ __all__ = [
 if TYPE_CHECKING:
     from . import _types as _t
     from . import _version_schemes
-    from ._config import Configuration
-    from ._config import ParseFunction
+    from ._config import Configuration, ParseFunction
 
 from importlib import metadata as im
 
@@ -81,7 +76,7 @@ def _iter_version_schemes(
             or _get_from_object_reference_str(scheme_value, entrypoint),
         )
 
-    if isinstance(scheme_value, (list, tuple)):
+    if isinstance(scheme_value, list | tuple):
         for variant in scheme_value:
             if variant not in _memo:
                 _memo.add(variant)

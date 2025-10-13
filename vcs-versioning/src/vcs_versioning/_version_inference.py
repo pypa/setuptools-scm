@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ._pyproject_reading import PyProjectData
@@ -36,8 +35,7 @@ def infer_version_string(
         SystemExit: If version cannot be determined (via _version_missing)
     """
     from ._config import Configuration
-    from ._get_version_impl import _get_version
-    from ._get_version_impl import _version_missing
+    from ._get_version_impl import _get_version, _version_missing
 
     config = Configuration.from_file(
         dist_name=dist_name, pyproject_data=pyproject_data, **(overrides or {})

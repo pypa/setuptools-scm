@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import sys
 import warnings
-
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,9 +16,7 @@ else:
 
 from . import _types as _t
 from ._requirement_cls import extract_package_name
-from ._toml import TOML_RESULT
-from ._toml import InvalidTomlError
-from ._toml import read_toml_content
+from ._toml import TOML_RESULT, InvalidTomlError, read_toml_content
 
 log = logging.getLogger(__name__)
 
@@ -152,7 +149,7 @@ def read_pyproject(
     if _given_result is not None:
         if isinstance(_given_result, PyProjectData):
             return _given_result
-        if isinstance(_given_result, (InvalidTomlError, FileNotFoundError)):
+        if isinstance(_given_result, InvalidTomlError | FileNotFoundError):
             raise _given_result
 
     if _given_definition is not None:
@@ -215,7 +212,8 @@ def get_args_for_pyproject(
         warnings.warn(
             f"{pyproject.path}: at [tool.{pyproject.tool_name}]\n"
             f"ignoring value relative_to={relative!r}"
-            " as its always relative to the config file"
+            " as its always relative to the config file",
+            stacklevel=2,
         )
     if "dist_name" in section:
         if dist_name is None:
@@ -233,7 +231,8 @@ def get_args_for_pyproject(
             if section[_ROOT] != kwargs[_ROOT]:
                 warnings.warn(
                     f"root {section[_ROOT]} is overridden"
-                    f" by the cli arg {kwargs[_ROOT]}"
+                    f" by the cli arg {kwargs[_ROOT]}",
+                    stacklevel=2,
                 )
             section.pop(_ROOT, None)
     return {"dist_name": dist_name, **section, **kwargs}

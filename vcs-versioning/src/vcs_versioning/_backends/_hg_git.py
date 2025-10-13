@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import os
-
 from contextlib import suppress
 from datetime import date
 from pathlib import Path
@@ -10,8 +9,7 @@ from pathlib import Path
 from .. import _types as _t
 from .._run_cmd import CompletedProcess as _CompletedProcess
 from ._git import GitWorkdir
-from ._hg import HgWorkdir
-from ._hg import run_hg
+from ._hg import HgWorkdir, run_hg
 from ._scm_workdir import get_latest_file_mtime
 
 log = logging.getLogger(__name__)

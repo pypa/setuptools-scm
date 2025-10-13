@@ -38,8 +38,7 @@ def main() -> int:
         "-ssetuptools-scm/src",
         "-svcs-versioning/src",
         "--verbose",
-        "--extensions",
-        "griffe_public_wildcard_imports",
+        *("--extensions", "griffe_public_wildcard_imports"),
         "--against",
         against,
     ]

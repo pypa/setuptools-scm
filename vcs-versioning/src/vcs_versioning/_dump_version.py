@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import warnings
-
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -80,7 +79,9 @@ def _validate_template(target: Path, template: str | None) -> str:
         ValueError: If no suitable template is found
     """
     if template == "":
-        warnings.warn(f"{template=} looks like a error, using default instead")
+        warnings.warn(
+            f"{template=} looks like a error, using default instead", stacklevel=2
+        )
         template = None
     if template is None:
         template = DEFAULT_TEMPLATES.get(target.suffix)
@@ -155,6 +156,7 @@ def dump_version(
             f"{write_to=!s} is a absolute path,"
             " please switch to using a relative version file",
             DeprecationWarning,
+            stacklevel=2,
         )
         target = write_to
     else:

@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import pytest
-
-from vcs_versioning._compat import normalize_path_for_assertion
-from vcs_versioning._compat import strip_path_suffix
+from vcs_versioning._compat import normalize_path_for_assertion, strip_path_suffix
 
 
 def test_normalize_path_for_assertion() -> None:

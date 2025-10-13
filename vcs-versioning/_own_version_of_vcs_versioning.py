@@ -11,20 +11,20 @@ from __future__ import annotations
 
 import logging
 import os
-
 from collections.abc import Callable
 
 from vcs_versioning import Configuration
 from vcs_versioning import _types as _t
 from vcs_versioning._backends import _git as git
 from vcs_versioning._backends import _hg as hg
-from vcs_versioning._fallbacks import fallback_version
-from vcs_versioning._fallbacks import parse_pkginfo
+from vcs_versioning._fallbacks import fallback_version, parse_pkginfo
 from vcs_versioning._get_version_impl import get_version
-from vcs_versioning._version_schemes import ScmVersion
-from vcs_versioning._version_schemes import get_local_node_and_date
-from vcs_versioning._version_schemes import get_no_local_node
-from vcs_versioning._version_schemes import guess_next_dev_version
+from vcs_versioning._version_schemes import (
+    ScmVersion,
+    get_local_node_and_date,
+    get_no_local_node,
+    guess_next_dev_version,
+)
 
 log = logging.getLogger("vcs_versioning")
 

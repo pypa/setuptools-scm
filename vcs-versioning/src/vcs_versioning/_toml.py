@@ -2,13 +2,9 @@ from __future__ import annotations
 
 import logging
 import sys
-
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
-from typing import TypeAlias
-from typing import TypedDict
-from typing import cast
+from typing import Any, TypeAlias, TypedDict, cast
 
 if sys.version_info >= (3, 11):
     from tomllib import loads as load_toml

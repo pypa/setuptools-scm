@@ -13,7 +13,6 @@ Tag prefix configuration:
 from __future__ import annotations
 
 import os
-import sys
 
 from setuptools import build_meta as build_meta
 
@@ -31,9 +30,10 @@ def scm_version() -> str:
     # Note: tag_regex is currently NOT set to allow backward compatibility
     # with existing tags. To migrate to 'setuptools-scm-' prefix, uncomment:
     # tag_regex=r"^setuptools-scm-(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$",
-    
+
     # Use relative_to parent to find git root (one level up from setuptools-scm/)
     import pathlib
+
     return get_version(
         root=pathlib.Path(__file__).parent.parent,
         version_scheme="guess-next-dev",

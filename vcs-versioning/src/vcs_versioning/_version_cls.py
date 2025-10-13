@@ -1,20 +1,19 @@
 from __future__ import annotations
 
 import logging
-
-from typing import TypeAlias
-from typing import cast
+from typing import TypeAlias, cast
 
 try:
     from packaging.version import InvalidVersion
     from packaging.version import Version as Version
 except ImportError:
-    from setuptools.extern.packaging.version import (  # type: ignore[import-not-found, no-redef]
+    from setuptools.extern.packaging.version import (  # type: ignore[import-not-found,no-redef]
         InvalidVersion,
     )
     from setuptools.extern.packaging.version import (  # type: ignore[no-redef]
         Version as Version,
     )
+
 
 log = logging.getLogger(__name__)
 

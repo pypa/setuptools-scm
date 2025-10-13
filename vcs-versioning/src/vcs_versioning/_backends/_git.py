@@ -7,12 +7,8 @@ import re
 import shlex
 import sys
 import warnings
-
-from collections.abc import Callable
-from collections.abc import Sequence
-from datetime import date
-from datetime import datetime
-from datetime import timezone
+from collections.abc import Callable, Sequence
+from datetime import date, datetime, timezone
 from enum import Enum
 from os.path import samefile
 from pathlib import Path
@@ -25,11 +21,8 @@ from .._integration import data_from_mime
 from .._run_cmd import CompletedProcess as _CompletedProcess
 from .._run_cmd import require_command as _require_command
 from .._run_cmd import run as _run
-from .._version_schemes import ScmVersion
-from .._version_schemes import meta
-from .._version_schemes import tag_to_version
-from ._scm_workdir import Workdir
-from ._scm_workdir import get_latest_file_mtime
+from .._version_schemes import ScmVersion, meta, tag_to_version
+from ._scm_workdir import Workdir, get_latest_file_mtime
 
 if TYPE_CHECKING:
     from . import _hg_git as hg_git
@@ -199,13 +192,15 @@ class GitWorkdir(Workdir):
 def warn_on_shallow(wd: GitWorkdir) -> None:
     """experimental, may change at any time"""
     if wd.is_shallow():
-        warnings.warn(f'"{wd.path}" is shallow and may cause errors')
+        warnings.warn(f'"{wd.path}" is shallow and may cause errors', stacklevel=2)
 
 
 def fetch_on_shallow(wd: GitWorkdir) -> None:
     """experimental, may change at any time"""
     if wd.is_shallow():
-        warnings.warn(f'"{wd.path}" was shallow, git fetch was used to rectify')
+        warnings.warn(
+            f'"{wd.path}" was shallow, git fetch was used to rectify', stacklevel=2
+        )
         wd.fetch_shallow()
 
 
@@ -424,7 +419,7 @@ def archival_to_version(
     log.debug("data %s", data)
     archival_describe = data.get("describe-name", DESCRIBE_UNSUPPORTED)
     if DESCRIBE_UNSUPPORTED in archival_describe:
-        warnings.warn("git archive did not support describe output")
+        warnings.warn("git archive did not support describe output", stacklevel=2)
     else:
         tag, number, node, _ = _git_parse_describe(archival_describe)
         return meta(
@@ -442,7 +437,9 @@ def archival_to_version(
     if node is None:
         return None
     elif "$FORMAT" in node.upper():
-        warnings.warn("unprocessed git archival found (no export subst applied)")
+        warnings.warn(
+            "unprocessed git archival found (no export subst applied)", stacklevel=2
+        )
         return None
     else:
         return meta("0.0", node=node, config=config)

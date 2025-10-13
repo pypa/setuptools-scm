@@ -1,28 +1,24 @@
 from __future__ import annotations
 
 import re
-
 from dataclasses import replace
-from datetime import date
-from datetime import datetime
-from datetime import timedelta
-from datetime import timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import pytest
-
-from setuptools_scm import Configuration
-from setuptools_scm import NonNormalizedVersion
-from setuptools_scm.version import ScmVersion
-from setuptools_scm.version import calver_by_date
-from setuptools_scm.version import format_version
-from setuptools_scm.version import guess_next_date_ver
-from setuptools_scm.version import guess_next_version
-from setuptools_scm.version import meta
-from setuptools_scm.version import no_guess_dev_version
-from setuptools_scm.version import only_version
-from setuptools_scm.version import release_branch_semver_version
-from setuptools_scm.version import simplified_semver_version
+from setuptools_scm import Configuration, NonNormalizedVersion
+from setuptools_scm.version import (
+    ScmVersion,
+    calver_by_date,
+    format_version,
+    guess_next_date_ver,
+    guess_next_version,
+    meta,
+    no_guess_dev_version,
+    only_version,
+    release_branch_semver_version,
+    simplified_semver_version,
+)
 
 c = Configuration()
 c_non_normalize = Configuration(version_cls=NonNormalizedVersion)
@@ -241,7 +237,6 @@ def test_tag_regex1(tag: str, expected: str) -> None:
             result = meta(tag, config=c)
     else:
         result = meta(tag, config=c)
-    assert not isinstance(result.tag, str)
     assert result.tag.public == expected
 
 

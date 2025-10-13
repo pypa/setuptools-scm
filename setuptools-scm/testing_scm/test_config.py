@@ -45,7 +45,7 @@ def test_config_from_pyproject(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-    assert Configuration.from_file(str(fn))
+    Configuration.from_file(str(fn))
 
 
 def test_config_regex_init() -> None:
@@ -74,7 +74,7 @@ def test_config_from_file_protects_relative_to(tmp_path: Path) -> None:
         "ignoring value relative_to='dont_use_me'"
         " as its always relative to the config file",
     ):
-        assert Configuration.from_file(str(fn))
+        Configuration.from_file(str(fn))
 
 
 def test_config_overrides(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

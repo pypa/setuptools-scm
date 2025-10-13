@@ -10,10 +10,11 @@
 [project]
 name = "vcs-versioning.workspace"
 version = "0.1+private"
-
+requires-python = ">=3.10"
 dependencies = [
     "vcs-versioning",
     "setuptools-scm",
+
 ]
 
 [dependency-groups]
@@ -26,14 +27,51 @@ docs = [
   "pygments",
   "griffe-public-wildcard-imports",
 ]
+typing = [
+    "types-setuptools",
+]
+
 
 [tool.pytest.ini_options]
+minversion = "8.2"
 testpaths = ["setuptools-scm/testing_scm", "vcs-versioning/testing_vcs"]
+strict = true
+xfail_strict = true
 addopts = ["-ra", "--strict-config", "--strict-markers", "-p", "vcs_versioning.test_api"]
 markers = [
   "issue(id): reference to github issue",
   "skip_commit: allows to skip committing in the helpers",
 ]
+
+[tool.mypy]
+
+enable_error_code = [
+    "ignore-without-code",
+    "redundant-expr",
+    "truthy-bool",
+]
+strict = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+warn_unreachable = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+check_untyped_defs = true
+no_implicit_reexport = true
+
+# Workspace-specific paths
+mypy_path = "vcs-versioning/src:setuptools-scm/src"
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = [
+  "vcs-versioning._own_version_of_vcs_versioning",
+  "setuptools-scm._own_version_helper",
+]
+# Version helper files use imports before they're installed
+ignore_errors = true
 
 [tool.uv.workspace]
 members = ["vcs-versioning", "setuptools-scm"]
@@ -42,3 +80,17 @@ members = ["vcs-versioning", "setuptools-scm"]
 vcs-versioning = { workspace = true }
 setuptools-scm = { workspace = true }
 
+[tool.ruff]
+lint.extend-select = ["UP", "I", "B"]
+
+[tool.repo-review]
+ignore = [
+    "PP002", # this is a uv workspace
+    "PP003", # this tool is drunk
+    "PP304", # log_cli shoudltn be the default
+    "PP309", # filterwarnings is evil unless needed, it should never be error
+    "PY007", # no to tasks
+    "PY005", # no tests folder for the workspace
+    "PY003", # each subproject has one
+
+    "GH103", "GH212", "MY100", "PC111", "PC160", "PC170", "PC180", "PC901"]

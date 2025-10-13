@@ -7,12 +7,9 @@ import logging
 import os
 import re
 import warnings
-
 from pathlib import Path
 from re import Pattern
-from typing import TYPE_CHECKING
-from typing import Any
-from typing import Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
     from ._backends import _git
@@ -127,13 +124,15 @@ def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
             and not os.path.commonpath([root, relative_to]) == root
         ):
             warnings.warn(
-                f"absolute root path '{root}' overrides relative_to '{relative_to}'"
+                f"absolute root path '{root}' overrides relative_to '{relative_to}'",
+                stacklevel=2,
             )
         if os.path.isdir(relative_to):
             warnings.warn(
                 "relative_to is expected to be a file,"
                 f" its the directory {relative_to}\n"
-                "assuming the parent directory was passed"
+                "assuming the parent directory was passed",
+                stacklevel=2,
             )
             log.debug("dir %s", relative_to)
             root = os.path.join(relative_to, root)

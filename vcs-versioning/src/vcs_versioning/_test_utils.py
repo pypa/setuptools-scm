@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import itertools
-
 from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -15,8 +13,7 @@ if TYPE_CHECKING:
     import sys
 
     from vcs_versioning._config import Configuration
-    from vcs_versioning._version_schemes import ScmVersion
-    from vcs_versioning._version_schemes import VersionExpectations
+    from vcs_versioning._version_schemes import ScmVersion, VersionExpectations
 
     if sys.version_info >= (3, 11):
         from typing import Unpack
