@@ -9,13 +9,9 @@ in a parent directory.
 from __future__ import annotations
 
 import pytest
-
-from vcs_versioning._get_version_impl import _find_scm_in_parents
-from vcs_versioning._get_version_impl import _version_missing
+from setuptools_scm import Configuration, get_version
+from vcs_versioning._get_version_impl import _find_scm_in_parents, _version_missing
 from vcs_versioning.test_api import WorkDir
-
-from setuptools_scm import Configuration
-from setuptools_scm import get_version
 
 # No longer need to import setup functions - using WorkDir methods directly
 
