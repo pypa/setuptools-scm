@@ -199,7 +199,7 @@ def test_entrypoints_load() -> None:
 def test_write_to_absolute_path_passes_when_subdir_of_root(tmp_path: Path) -> None:
     c = Configuration(root=tmp_path, write_to=tmp_path / "VERSION.py")
     v = meta("1.0", config=c)
-    from setuptools_scm._get_version_impl import write_version_files
+    from vcs_versioning._get_version_impl import write_version_files
 
     with pytest.warns(DeprecationWarning, match=".*write_to=.* is a absolute.*"):
         write_version_files(c, "1.0", v)

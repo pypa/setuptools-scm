@@ -10,12 +10,12 @@ from __future__ import annotations
 
 import pytest
 
+from vcs_versioning._get_version_impl import _find_scm_in_parents
+from vcs_versioning._get_version_impl import _version_missing
 from vcs_versioning.test_api import WorkDir
 
 from setuptools_scm import Configuration
 from setuptools_scm import get_version
-from setuptools_scm._get_version_impl import _find_scm_in_parents
-from setuptools_scm._get_version_impl import _version_missing
 
 # No longer need to import setup functions - using WorkDir methods directly
 
