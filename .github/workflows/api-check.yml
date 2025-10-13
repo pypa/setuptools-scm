@@ -40,7 +40,7 @@ jobs:
           echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
-        run: uv sync --group test
+        run: uv sync --all-packages --all-groups
 
       - name: Check API stability against latest release
         run: |
