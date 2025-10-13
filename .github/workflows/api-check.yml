@@ -31,19 +31,18 @@ jobs:
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v6
 
+      - name: Get latest PyPI version
+        id: pypi-version
+        run: |
+          # Query PyPI for the latest stable version before building current code
+          LATEST_VERSION=$(curl -s https://pypi.org/pypi/setuptools-scm/json | python -c "import sys, json; print(json.load(sys.stdin)['info']['version'])")
+          echo "Latest PyPI version: $LATEST_VERSION"
+          echo "version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+
       - name: Install dependencies
         run: uv sync --group test
 
       - name: Check API stability against PyPI
         run: |
-          # Get the latest version from PyPI
-          LATEST_VERSION=$(uv pip show setuptools-scm 2>/dev/null | grep "^Version:" | cut -d' ' -f2 || echo "")
-          if [ -z "$LATEST_VERSION" ]; then
-            echo "No PyPI version found, installing latest release..."
-            uv pip install setuptools-scm
-            LATEST_VERSION=$(uv pip show setuptools-scm | grep "^Version:" | cut -d' ' -f2)
-          fi
-          echo "Comparing against PyPI version: $LATEST_VERSION"
-
-          # Compare current code against PyPI version
-          uv run griffe check setuptools_scm -ssrc --verbose --against "setuptools-scm==$LATEST_VERSION"
+          echo "Comparing current code against PyPI version: ${{ steps.pypi-version.outputs.version }}"
+          uv run griffe check setuptools_scm -ssrc --verbose --against "setuptools-scm==${{ steps.pypi-version.outputs.version }}"
