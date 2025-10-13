@@ -9,9 +9,9 @@ from typing import Any
 import setuptools
 
 from vcs_versioning import _types as _t
+from vcs_versioning._log import configure_logging
 from vcs_versioning._toml import InvalidTomlError
 
-from .. import _log
 from .pyproject_reading import PyProjectData
 from .pyproject_reading import read_pyproject
 from .setup_cfg import SetuptoolsBasicData
@@ -79,7 +79,7 @@ def version_keyword(
     this takes priority over the finalize_options based version
     """
     # Configure logging at setuptools entry point
-    _log.configure_logging()
+    configure_logging()
 
     _log_hookstart("version_keyword", dist)
 
@@ -140,7 +140,7 @@ def infer_version(
     as user might have passed custom code version schemes
     """
     # Configure logging at setuptools entry point
-    _log.configure_logging()
+    configure_logging()
 
     _log_hookstart("infer_version", dist)
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 
 from collections.abc import Callable
@@ -8,10 +9,9 @@ from typing import TypeGuard
 from vcs_versioning import _types as _t
 from vcs_versioning._entrypoints import entry_points
 
-from .. import _log
 from .pathtools import norm_real
 
-log = _log.log.getChild("file_finder")
+log = logging.getLogger("setuptools_scm.file_finder")
 
 
 def scm_find_files(

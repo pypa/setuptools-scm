@@ -7,30 +7,15 @@ from __future__ import annotations
 import contextlib
 import logging
 import os
-import sys
 
 from collections.abc import Iterator
 from collections.abc import Mapping
-from typing import IO
 
 # Logger names that need configuration
 LOGGER_NAMES = [
     "vcs_versioning",
     "setuptools_scm",
 ]
-
-
-class AlwaysStdErrHandler(logging.StreamHandler):  # type: ignore[type-arg]
-    def __init__(self) -> None:
-        super().__init__(sys.stderr)
-
-    @property
-    def stream(self) -> IO[str]:
-        return sys.stderr
-
-    @stream.setter
-    def stream(self, value: IO[str]) -> None:
-        assert value is sys.stderr
 
 
 def make_default_handler() -> logging.Handler:
