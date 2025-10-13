@@ -17,9 +17,9 @@
 
 | API | Location | Notes |
 |-----|----------|-------|
-| `setuptools_scm.get_version` | `setuptools_scm._get_version_impl` | Soft deprecated, wraps vcs_versioning |
-| `setuptools_scm._get_version` | `setuptools_scm._get_version_impl` | Internal, wraps vcs_versioning |
-| `setuptools_scm.dump_version` | `setuptools_scm._integration.dump_version` | Soft deprecated |
+| `setuptools_scm.get_version` | `vcs_versioning._get_version_impl` | Soft deprecated, re-exported from vcs_versioning |
+| `setuptools_scm._get_version` | `vcs_versioning._get_version_impl` | Re-exported from vcs_versioning |
+| `setuptools_scm.dump_version` | `vcs_versioning._dump_version` | Soft deprecated, re-exported from vcs_versioning |
 
 ### Private Modules (moved to vcs_versioning)
 
@@ -35,12 +35,17 @@
 
 ### Backward Compatibility Stubs (setuptools_scm)
 
-These modules re-export from vcs_versioning for backward compatibility:
+These **public** modules re-export from vcs_versioning for backward compatibility:
 
 - `setuptools_scm.git` → re-exports from `vcs_versioning._backends._git`
 - `setuptools_scm.hg` → re-exports from `vcs_versioning._backends._hg`
 - `setuptools_scm.version` → re-exports from `vcs_versioning._version_schemes`
-- `setuptools_scm._config` → re-exports from `vcs_versioning.config`
+- `setuptools_scm.integration` → re-exports from `vcs_versioning._integration`
+- `setuptools_scm.discover` → re-exports from `vcs_versioning._discover`
+- `setuptools_scm.fallbacks` → re-exports from `vcs_versioning._fallbacks`
+
+**Note**: Private shims (_config.py, _version_cls.py, _cli.py, _get_version_impl.py) have been removed.
+setuptools_scm/__init__.py now imports directly from vcs_versioning.
 
 ### Utilities
 
@@ -67,4 +72,11 @@ These modules re-export from vcs_versioning for backward compatibility:
 | `setuptools_scm.parse_scm_fallback` | setuptools_scm | vcs_versioning | Both register |
 | `setuptools_scm.files_command` | setuptools_scm | stays in setuptools_scm | setuptools_scm only |
 | `setuptools_scm.files_command_fallback` | setuptools_scm | stays in setuptools_scm | setuptools_scm only |
+
+### Console Scripts
+
+| Script | Package | Entry Point |
+|--------|---------|-------------|
+| `setuptools-scm` | setuptools_scm | `vcs_versioning._cli:main` |
+| `vcs-versioning` | vcs_versioning | `vcs_versioning._cli:main` |
 

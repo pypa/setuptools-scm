@@ -25,6 +25,8 @@ All planned phases of the refactoring have been successfully completed. The code
   - `_fallbacks.py` - Fallback version parsing
   - `_cli.py` - CLI implementation
   - `_get_version_impl.py` - Core version logic
+  - `_dump_version.py` - Version file writing (templates and logic)
+  - `_config.py` - Configuration class (private module, Configuration is public)
   - And more utility modules...
 
 **Entry Points**:
@@ -32,7 +34,7 @@ All planned phases of the refactoring have been successfully completed. The code
 - `setuptools_scm.parse_scm_fallback` - Fallback parsers
 - `setuptools_scm.local_scheme` - Local version schemes
 - `setuptools_scm.version_scheme` - Version schemes
-- `vcs-versioning` script
+- `vcs-versioning` script → `vcs_versioning._cli:main`
 
 **Tests**: 111 passing (includes backend tests: git, mercurial, hg-git)
 
@@ -44,20 +46,27 @@ All planned phases of the refactoring have been successfully completed. The code
 **Contents**:
 - **Integration modules**:
   - `_integration/setuptools.py` - Setuptools hooks
-  - `_integration/dump_version.py` - Version file writing
   - `_integration/pyproject_reading.py` - Extended with setuptools-specific logic
-  - `_integration/version_inference.py` - Version inference
+  - `_integration/version_inference.py` - Version inference wrapper
 
 - **File finders** (setuptools-specific):
   - `_file_finders/` - Git/Hg file finder implementations
 
-- **Re-export stubs** for backward compatibility:
-  - Most core modules re-export from vcs_versioning
+- **Internal modules**:
+  - `_log.py` - Used by _integration and _file_finders
 
-- **Public API**: Re-exports Configuration, get_version, etc.
+- **Re-export stubs** for backward compatibility (public API):
+  - `git.py`, `hg.py` - Re-export backend functions
+  - `discover.py`, `fallbacks.py` - Re-export discovery/fallback functions
+  - `version.py`, `integration.py` - Re-export version schemes and utilities
+
+- **Public API** (`__init__.py`): Imports directly from vcs_versioning
+  - Configuration, Version, ScmVersion, NonNormalizedVersion
+  - _get_version, get_version, dump_version
+  - DEFAULT_* constants
 
 **Entry Points**:
-- `setuptools_scm` script
+- `setuptools-scm` script → `vcs_versioning._cli:main`
 - `setuptools.finalize_distribution_options` hooks
 - `setuptools_scm.files_command` - File finders
 
@@ -115,6 +124,10 @@ All planned phases of the refactoring have been successfully completed. The code
 3. **Backward compatibility**: Added `__main__.py` shim, fixed imports
 4. **Setuptools conflict warning**: Warns when `tool.setuptools.dynamic.version` conflicts with `setuptools-scm[simple]`
 5. **Module privacy**: Tests import private APIs directly from vcs_versioning
+6. **Private shim removal**: Removed unnecessary re-export shims (_config.py, _version_cls.py, _cli.py, _get_version_impl.py)
+7. **Direct imports**: setuptools_scm/__init__.py imports directly from vcs_versioning
+8. **dump_version migration**: Moved to vcs_versioning._dump_version with shared templates
+9. **Config privacy**: Renamed config.py → _config.py in vcs_versioning (Configuration class is public)
 
 ## Next Steps (Recommended)
 
