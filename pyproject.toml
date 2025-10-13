@@ -6,6 +6,7 @@ requires = [
   "setuptools>=77.0.3",
   "vcs-versioning",
   'tomli<=2.0.2; python_version < "3.11"',
+  'typing-extensions; python_version < "3.11"',
 ]
 backend-path = [
   ".",
@@ -45,7 +46,7 @@ dependencies = [
   # https://github.com/pypa/setuptools-scm/issues/1112 - re-pin in a breaking release
   "setuptools", # >= 61",
   'tomli>=1; python_version < "3.11"',
-  'typing-extensions; python_version < "3.10"',
+  'typing-extensions; python_version < "3.11"',
 ]
 
 [tool.uv.sources]
