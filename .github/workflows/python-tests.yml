@@ -20,8 +20,17 @@ env:
 jobs:
 
   package:
-    name: Build & inspect our packages
+    name: Build & inspect ${{ matrix.name }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: vcs-versioning
+            path: nextgen/vcs-versioning
+            suffix: -vcs-versioning
+          - name: setuptools-scm
+            path: .
+            suffix: -setuptools-scm
     env:
       # Use no-local-version for package builds to ensure clean versions for PyPI uploads
       SETUPTOOLS_SCM_NO_LOCAL: "1"
@@ -31,23 +40,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build vcs-versioning
+      - name: Build ${{ matrix.name }}
         uses: hynek/build-and-inspect-python-package@v2
         with:
-          path: nextgen/vcs-versioning
-          upload-name-suffix: -vcs-versioning
-
-      - name: Clean up baipp artifacts between builds
-        run: |
-          if [ -d "/tmp/baipp/dist/out" ]; then
-            echo "::warning::Found leftover /tmp/baipp/dist/out directory from previous build, removing it"
-            rm -rf /tmp/baipp/dist/out
-          fi
-
-      - name: Build setuptools-scm
-        uses: hynek/build-and-inspect-python-package@v2
-        with:
-          upload-name-suffix: -setuptools-scm
+          path: ${{ matrix.path }}
+          upload-name-suffix: ${{ matrix.suffix }}
 
   test:
     needs: [package]
