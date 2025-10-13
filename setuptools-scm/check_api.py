@@ -32,15 +32,12 @@ def main() -> int:
 
     # Build griffe command
     cmd = [
-        "griffe",
-        "check",
-        "setuptools_scm",
+        *("griffe", "check", "--verbose", "setuptools_scm"),
+        "-ssrc",
         "-ssetuptools-scm/src",
         "-svcs-versioning/src",
-        "--verbose",
         *("--extensions", "griffe_public_wildcard_imports"),
-        "--against",
-        against,
+        *("--against", against),
     ]
 
     result = subprocess.run(cmd, cwd=repo_root)
