@@ -31,18 +31,18 @@ jobs:
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v6
 
-      - name: Get latest PyPI version
-        id: pypi-version
+      - name: Get latest release tag
+        id: latest-tag
         run: |
-          # Query PyPI for the latest stable version before building current code
-          LATEST_VERSION=$(curl -s https://pypi.org/pypi/setuptools-scm/json | python -c "import sys, json; print(json.load(sys.stdin)['info']['version'])")
-          echo "Latest PyPI version: $LATEST_VERSION"
-          echo "version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+          # Get the latest git tag (griffe needs a git ref)
+          LATEST_TAG=$(git describe --tags --abbrev=0 origin/main 2>/dev/null || echo "v9.2.1")
+          echo "Latest release tag: $LATEST_TAG"
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
         run: uv sync --group test
 
-      - name: Check API stability against PyPI
+      - name: Check API stability against latest release
         run: |
-          echo "Comparing current code against PyPI version: ${{ steps.pypi-version.outputs.version }}"
-          uv run griffe check setuptools_scm -ssrc --verbose --against "setuptools-scm==${{ steps.pypi-version.outputs.version }}"
+          echo "Comparing current code against tag: ${{ steps.latest-tag.outputs.tag }}"
+          uv run griffe check setuptools_scm -ssrc --verbose --against ${{ steps.latest-tag.outputs.tag }}
