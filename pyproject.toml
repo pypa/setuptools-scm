@@ -35,7 +35,6 @@ typing = [
 [tool.pytest.ini_options]
 minversion = "8.2"
 testpaths = ["setuptools-scm/testing_scm", "vcs-versioning/testing_vcs"]
-strict = true
 xfail_strict = true
 addopts = ["-ra", "--strict-config", "--strict-markers", "-p", "vcs_versioning.test_api"]
 markers = [
