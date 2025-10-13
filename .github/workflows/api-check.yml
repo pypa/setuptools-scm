@@ -32,50 +32,18 @@ jobs:
         uses: astral-sh/setup-uv@v6
 
       - name: Install dependencies
-        run: |
-          uv sync --group test
-          uv pip install griffe
+        run: uv sync --group test
 
-      - name: Run griffe API check
-        id: griffe-check
-        continue-on-error: true
+      - name: Check API stability against PyPI
         run: |
-          echo "Running griffe API stability check..."
-          if uv run griffe check setuptools_scm -ssrc -f github; then
-            echo "api_check_result=success" >> $GITHUB_OUTPUT
-            echo "exit_code=0" >> $GITHUB_OUTPUT
-          else
-            exit_code=$?
-            echo "api_check_result=warning" >> $GITHUB_OUTPUT
-            echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
-            exit $exit_code
+          # Get the latest version from PyPI
+          LATEST_VERSION=$(uv pip show setuptools-scm 2>/dev/null | grep "^Version:" | cut -d' ' -f2 || echo "")
+          if [ -z "$LATEST_VERSION" ]; then
+            echo "No PyPI version found, installing latest release..."
+            uv pip install setuptools-scm
+            LATEST_VERSION=$(uv pip show setuptools-scm | grep "^Version:" | cut -d' ' -f2)
           fi
+          echo "Comparing against PyPI version: $LATEST_VERSION"
 
-      - name: Report API check result
-        if: always()
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const result = '${{ steps.griffe-check.outputs.api_check_result }}'
-            const exitCode = '${{ steps.griffe-check.outputs.exit_code }}'
-
-            if (result === 'success') {
-              core.notice('API stability check passed - no breaking changes detected')
-              await core.summary
-                .addHeading('✅ API Stability Check: Passed', 2)
-                .addRaw('No breaking changes detected in the public API')
-                .write()
-            } else if (result === 'warning') {
-              core.warning(`API stability check detected breaking changes (exit code: ${exitCode}). Please review the API changes above.`)
-              await core.summary
-                .addHeading('⚠️ API Stability Warning', 2)
-                .addRaw('Breaking changes detected in the public API. Please review the changes reported above.')
-                .addRaw(`\n\nExit code: ${exitCode}`)
-                .write()
-            } else {
-              core.error('API stability check failed to run properly')
-              await core.summary
-                .addHeading('❌ API Stability Check: Failed', 2)
-                .addRaw('The griffe check failed to execute. This may indicate griffe is not installed or there was an error.')
-                .write()
-            }
+          # Compare current code against PyPI version
+          uv run griffe check setuptools_scm -ssrc --verbose --against "setuptools-scm==$LATEST_VERSION"
