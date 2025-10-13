@@ -77,7 +77,7 @@ def _get_version() -> str:
         local_scheme=local_scheme,
         tag_regex=r"^vcs-versioning-(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$",
         git_describe_command="git describe --dirty --tags --long --match 'vcs-versioning-*'",
-        fallback_version="0.1.0+pre.tag",
+        fallback_version="0.1.1+pre.tag",
     )
 
 

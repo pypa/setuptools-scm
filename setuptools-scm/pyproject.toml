@@ -4,15 +4,17 @@
 build-backend = "_own_version_helper:build_meta"
 requires = [
   "setuptools>=77.0.3",
-  "vcs-versioning",
+  "vcs-versioning>=0.1.1",
   'tomli<=2.0.2; python_version < "3.11"',
   'typing-extensions; python_version < "3.11"',
 ]
 backend-path = [
   ".",
-  "src",
+  "./src",
+  "../vcs-versioning/src"
 ]
-
+[tools.uv.sources]
+vcs-versioning= "../vcs-versioning"
 [project]
 name = "setuptools-scm"
 description = "the blessed package to manage your versions by scm tags"
@@ -49,8 +51,6 @@ dependencies = [
   'typing-extensions; python_version < "3.11"',
 ]
 
-[tool.uv.sources]
-vcs-versioning = { workspace = true }
 
 [project.optional-dependencies]
 rich = ["rich"]
@@ -59,7 +59,6 @@ toml = []
 
 [dependency-groups]
 docs = [
-  #"entangled-cli~=2.0",
   "mkdocs",
   "mkdocs-entangled-plugin",
   "mkdocs-include-markdown-plugin",
@@ -76,9 +75,8 @@ test = [
   "pytest-xdist",
   "rich",
   "ruff",
-  "mypy~=1.13.0", # pinned to old for python 3.8
+  "mypy",
   'typing-extensions; python_version < "3.11"',
-  "wheel",
   "griffe",
   "griffe-public-wildcard-imports",
   "flake8",
@@ -157,4 +155,4 @@ markers = [
 ]
 
 [tool.uv]
-default-groups = ["test", "docs"]
+default-groups = ["test"]

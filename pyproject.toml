@@ -1,6 +1,42 @@
-# Workspace-only configuration (no project defined at root)
+# Workspace configuration for setuptools-scm monorepo
+#
+# This workspace contains two packages:
+#   - vcs-versioning: Core VCS versioning library
+#   - setuptools-scm: setuptools integration (depends on vcs-versioning)
+#
+# Usage:
+#   uv sync --all-packages --all-groups  # Install all packages with all dependency groups
+
+[project]
+name = "vcs-versioning.workspace"
+version = "0.1+private"
+
+dependencies = [
+    "vcs-versioning",
+    "setuptools-scm",
+]
+
+[dependency-groups]
+docs = [
+  "mkdocs",
+  "mkdocs-entangled-plugin",
+  "mkdocs-include-markdown-plugin",
+  "mkdocs-material",
+  "mkdocstrings[python]",
+  "pygments",
+  "griffe-public-wildcard-imports",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["setuptools-scm/testing_scm", "vcs-versioning/testing_vcs"]
+addopts = ["-ra", "--strict-config", "--strict-markers", "-p", "vcs_versioning.test_api"]
+markers = [
+  "issue(id): reference to github issue",
+  "skip_commit: allows to skip committing in the helpers",
+]
+
 [tool.uv.workspace]
-members = ["./vcs-versioning", "./setuptools-scm"]
+members = ["vcs-versioning", "setuptools-scm"]
 
 [tool.uv.sources]
 vcs-versioning = { workspace = true }

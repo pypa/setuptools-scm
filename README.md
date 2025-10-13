@@ -20,6 +20,13 @@ Core VCS versioning functionality extracted as a standalone library that can be 
 
 This workspace uses [uv](https://github.com/astral-sh/uv) for dependency management.
 
+### Setup
+
+```bash
+# Install all packages with all dependency groups (tests, docs, etc.)
+uv sync --all-packages --all-groups
+```
+
 ### Running Tests
 
 ```bash
