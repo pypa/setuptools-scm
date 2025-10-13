@@ -4,17 +4,8 @@ import logging
 
 __all__ = ["Requirement", "extract_package_name"]
 
-try:
-    from packaging.requirements import Requirement
-    from packaging.utils import canonicalize_name
-except ImportError:
-    from setuptools.extern.packaging.requirements import (  # type: ignore[import-not-found,no-redef]
-        Requirement as Requirement,
-    )
-    from setuptools.extern.packaging.utils import (  # type: ignore[import-not-found,no-redef]
-        canonicalize_name as canonicalize_name,
-    )
-
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
 
 log = logging.getLogger(__name__)
 

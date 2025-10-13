@@ -2,6 +2,7 @@
 build-backend = "hatchling.build"
 requires = [
   "hatchling",
+  "packaging>=20",
 ]
 
 [project]
@@ -67,7 +68,9 @@ node-and-timestamp = "vcs_versioning._version_schemes:get_local_node_and_timesta
 "release-branch-semver" = "vcs_versioning._version_schemes:release_branch_semver_version"
 
 [tool.hatch.version]
-path = "src/vcs_versioning/__about__.py"
+source = "code"
+path = "_own_version_of_vcs_versioning.py"
+search-paths = ["src"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/vcs_versioning"]

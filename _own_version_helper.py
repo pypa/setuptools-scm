@@ -1,15 +1,20 @@
 """
-this module is a hack only in place to allow for setuptools
-to use the attribute for the versions
+Version helper for setuptools-scm package.
 
-it works only if the backend-path of the build-system section
-from pyproject.toml is respected
+This module allows setuptools-scm to use VCS metadata for its own version.
+It works only if the backend-path of the build-system section from
+pyproject.toml is respected.
+
+Tag prefix configuration:
+- Currently: No prefix (for backward compatibility with existing tags)
+- Future: Will migrate to 'setuptools-scm-' prefix
 """
 
 from __future__ import annotations
 
 import logging
 import os
+import sys
 
 from collections.abc import Callable
 
@@ -57,6 +62,9 @@ def scm_version() -> str:
         else get_local_node_and_date
     )
 
+    # Note: tag_regex is currently NOT set to allow backward compatibility
+    # with existing tags. To migrate to 'setuptools-scm-' prefix, uncomment:
+    # tag_regex=r"^setuptools-scm-(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$",
     return get_version(
         relative_to=__file__,
         parse=parse,
@@ -66,6 +74,7 @@ def scm_version() -> str:
 
 
 version: str
+print("__file__", __file__, file=sys.stderr)
 
 
 def __getattr__(name: str) -> str:

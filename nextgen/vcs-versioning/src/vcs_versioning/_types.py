@@ -9,9 +9,9 @@ from typing import Protocol
 from typing import TypeAlias
 from typing import Union
 
-from setuptools import Distribution
-
 if TYPE_CHECKING:
+    from setuptools import Distribution
+
     from . import _version_schemes as version
     from ._pyproject_reading import PyProjectData
     from ._toml import InvalidTomlError
