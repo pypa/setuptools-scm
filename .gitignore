@@ -52,4 +52,7 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
+# MkDocs documentation
+site/
+
 .serena/cache/
