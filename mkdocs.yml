@@ -13,7 +13,8 @@ theme:
   name: material
 
 watch:
-- src/setuptools_scm
+- setuptools-scm/src/setuptools_scm
+- vcs-versioning/src/vcs_versioning
 - docs
 markdown_extensions:
   - def_list
@@ -31,7 +32,7 @@ plugins:
     default_handler: python
     handlers:
       python:
-        paths: [ src, nextgen/vcs-versioning/src ]
+        paths: [ setuptools-scm/src, vcs-versioning/src ]
         import:
           - https://docs.python.org/3/objects.inv
         options:

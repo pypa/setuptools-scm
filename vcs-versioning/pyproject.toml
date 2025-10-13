@@ -34,10 +34,18 @@ dependencies = [
   'tomli>=1; python_version < "3.11"',
   'typing-extensions; python_version < "3.11"',
 ]
+
+[dependency-groups]
+test = [
+  "pytest",
+  "pytest-cov",
+  "pytest-xdist",
+]
+
 [project.urls]
-Documentation = "https://github.com/unknown/vcs-versioning#readme"
-Issues = "https://github.com/unknown/vcs-versioning/issues"
-Source = "https://github.com/unknown/vcs-versioning"
+Documentation = "https://github.com/pypa/setuptools-scm#readme"
+Issues = "https://github.com/pypa/setuptools-scm/issues"
+Source = "https://github.com/pypa/setuptools-scm"
 
 [project.scripts]
 "vcs-versioning" = "vcs_versioning._cli:main"
@@ -103,9 +111,12 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["testingB"]
+testpaths = ["testing_vcs"]
 python_files = ["test_*.py"]
 addopts = ["-ra", "--strict-markers", "-p", "vcs_versioning.test_api"]
 markers = [
   "issue: marks tests related to specific issues",
 ]
+
+[tool.uv]
+default-groups = ["test"]

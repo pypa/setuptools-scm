@@ -1,132 +1,53 @@
-# setuptools-scm
-[![github ci](https://github.com/pypa/setuptools-scm/actions/workflows/python-tests.yml/badge.svg)](https://github.com/pypa/setuptools-scm/actions/workflows/python-tests.yml)
-[![Documentation Status](https://readthedocs.org/projects/setuptools-scm/badge/?version=latest)](https://setuptools-scm.readthedocs.io/en/latest/?badge=latest)
-[![tidelift](https://tidelift.com/badges/package/pypi/setuptools-scm) ](https://tidelift.com/subscription/pkg/pypi-setuptools-scm?utm_source=pypi-setuptools-scm&utm_medium=readme)
+# setuptools-scm Monorepo
 
-## about
+This is the monorepo for the setuptools-scm ecosystem, containing two main projects:
 
-[setuptools-scm] extracts Python package versions from `git` or `hg` metadata
-instead of declaring them as the version argument
-or in a Source Code Managed (SCM) managed file.
+## Projects
 
-Additionally [setuptools-scm] provides `setuptools` with a list of
-files that are managed by the SCM
-<br/>
-(i.e. it automatically adds all the SCM-managed files to the sdist).
-<br/>
-Unwanted files must be excluded via `MANIFEST.in`
-or [configuring Git archive][git-archive-docs].
+### [setuptools-scm](./setuptools-scm/)
 
-> **⚠️ Important:** Installing setuptools-scm automatically enables a file finder that includes **all SCM-tracked files** in your source distributions. This can be surprising if you have development files tracked in Git/Mercurial that you don't want in your package. Use `MANIFEST.in` to exclude unwanted files. See the [documentation] for details.
+The main package that extracts Python package versions from Git or Mercurial metadata and provides setuptools integration.
 
-## `pyproject.toml` usage
+**[Read setuptools-scm documentation →](./setuptools-scm/README.md)**
 
-The preferred way to configure [setuptools-scm] is to author
-settings in a `tool.setuptools_scm` section of `pyproject.toml`.
+### [vcs-versioning](./vcs-versioning/)
 
-This feature requires setuptools 61 or later (recommended: >=80 for best compatibility).
-First, ensure that [setuptools-scm] is present during the project's
-build step by specifying it as one of the build requirements.
+Core VCS versioning functionality extracted as a standalone library that can be used independently of setuptools.
 
-```toml title="pyproject.toml"
-[build-system]
-requires = ["setuptools>=80", "setuptools-scm>=8"]
-build-backend = "setuptools.build_meta"
+**[Read vcs-versioning documentation →](./vcs-versioning/README.md)**
+
+## Development
+
+This workspace uses [uv](https://github.com/astral-sh/uv) for dependency management.
+
+### Running Tests
+
+```bash
+# Run all tests
+uv run pytest -n12
+
+# Run tests for setuptools-scm only
+uv run pytest setuptools-scm/testing_scm -n12
+
+# Run tests for vcs-versioning only
+uv run pytest vcs-versioning/testing_vcs -n12
 ```
 
-That will be sufficient to require [setuptools-scm] for projects
-that support [PEP 518] like [pip] and [build].
+### Building Documentation
 
-[pip]: https://pypi.org/project/pip
-[build]: https://pypi.org/project/build
-[PEP 518]: https://peps.python.org/pep-0518/
+Documentation is shared across projects:
 
-
-To enable version inference, you need to set the version
-dynamically in the `project` section of `pyproject.toml`:
-
-```toml title="pyproject.toml"
-[project]
-# version = "0.0.1"  # Remove any existing version parameter.
-dynamic = ["version"]
-
-[tool.setuptools_scm]
+```bash
+uv run mkdocs serve
 ```
 
-!!! note "Simplified Configuration"
+## Links
 
-    Starting with setuptools-scm 8.1+, if `setuptools_scm` (or `setuptools-scm`) is
-    present in your `build-system.requires`, the `[tool.setuptools_scm]` section
-    becomes optional! You can now enable setuptools-scm with just:
+- **Documentation**: https://setuptools-scm.readthedocs.io/
+- **Repository**: https://github.com/pypa/setuptools-scm/
+- **Issues**: https://github.com/pypa/setuptools-scm/issues
 
-    ```toml title="pyproject.toml"
-    [build-system]
-    requires = ["setuptools>=80", "setuptools-scm>=8"]
-    build-backend = "setuptools.build_meta"
+## License
 
-    [project]
-    dynamic = ["version"]
-    ```
+Both projects are distributed under the terms of the MIT license.
 
-    The `[tool.setuptools_scm]` section is only needed if you want to customize
-    configuration options.
-
-Additionally, a version file can be written by specifying:
-
-```toml title="pyproject.toml"
-[tool.setuptools_scm]
-version_file = "pkg/_version.py"
-```
-
-Where `pkg` is the name of your package.
-
-If you need to confirm which version string is being generated or debug the configuration,
-you can install [setuptools-scm] directly in your working environment and run:
-
-```console
-$ python -m setuptools_scm
-# To explore other options, try:
-$ python -m setuptools_scm --help
-```
-
-For further configuration see the [documentation].
-
-[setuptools-scm]: https://github.com/pypa/setuptools-scm
-[documentation]: https://setuptools-scm.readthedocs.io/
-[git-archive-docs]: https://setuptools-scm.readthedocs.io/en/stable/usage/#builtin-mechanisms-for-obtaining-version-numbers
-
-
-## Interaction with Enterprise Distributions
-
-Some enterprise distributions like RHEL7
-ship rather old setuptools versions.
-
-In those cases its typically possible to build by using an sdist against `setuptools-scm<2.0`.
-As those old setuptools versions lack sensible types for versions,
-modern [setuptools-scm] is unable to support them sensibly.
-
-It's strongly recommended to build a wheel artifact using modern Python and setuptools,
-then installing the artifact instead of trying to run against old setuptools versions.
-
-!!! note "Legacy Setuptools Support"
-    While setuptools-scm recommends setuptools >=80, it maintains compatibility with setuptools 61+
-    to support legacy deployments that cannot easily upgrade. Support for setuptools <80 is deprecated
-    and will be removed in a future release. This allows enterprise environments and older CI/CD systems
-    to continue using setuptools-scm while still encouraging adoption of newer versions.
-
-
-## Code of Conduct
-
-
-Everyone interacting in the [setuptools-scm] project's codebases, issue
-trackers, chat rooms, and mailing lists is expected to follow the
-[PSF Code of Conduct].
-
-[PSF Code of Conduct]: https://github.com/pypa/.github/blob/main/CODE_OF_CONDUCT.md
-
-
-## Security Contact
-
-To report a security vulnerability, please use the
-[Tidelift security contact](https://tidelift.com/security).
-Tidelift will coordinate the fix and disclosure.

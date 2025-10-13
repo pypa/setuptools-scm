@@ -28,15 +28,15 @@ def main() -> int:
             against = sys.argv[1]
 
     # Ensure we're in the right directory
-    repo_root = Path(__file__).parent
+    repo_root = Path(__file__).parent.parent
 
     # Build griffe command
     cmd = [
         "griffe",
         "check",
         "setuptools_scm",
-        "-ssrc",
-        "-snextgen/vcs-versioning/src",
+        "-ssetuptools-scm/src",
+        "-svcs-versioning/src",
         "--verbose",
         "--extensions",
         "griffe_public_wildcard_imports",

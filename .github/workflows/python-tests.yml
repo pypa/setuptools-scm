@@ -26,10 +26,10 @@ jobs:
       matrix:
         include:
           - name: vcs-versioning
-            path: nextgen/vcs-versioning
+            path: vcs-versioning
             suffix: -vcs-versioning
           - name: setuptools-scm
-            path: .
+            path: setuptools-scm
             suffix: -setuptools-scm
     env:
       # Use no-local-version for package builds to ensure clean versions for PyPI uploads
@@ -132,7 +132,7 @@ jobs:
       # this hopefully helps with os caches, hg init sometimes gets 20s timeouts
       - run: hg version
       - name: Run tests for both packages
-        run: uv run pytest testing/ nextgen/vcs-versioning/testingB/
+        run: uv run pytest setuptools-scm/testing_scm/ vcs-versioning/testing_vcs/
         timeout-minutes: 25
 
   dist_upload:
