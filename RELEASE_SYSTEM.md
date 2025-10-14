@@ -1,213 +1,48 @@
-# Release System Implementation Summary
+# Release System
 
-This document summarizes the towncrier-based release system implemented for the setuptools-scm monorepo.
+Towncrier-based release system for the setuptools-scm monorepo.
 
-## What Was Implemented
+## Components
 
-### 1. Towncrier Configuration ✅
+- `towncrier-fragments` version scheme: Determines version bumps from changelog fragment types
+- `changelog.d/` directories per project with fragment templates
+- GitHub workflows for release proposals and tag creation
+- Project-prefixed tags: `setuptools-scm-vX.Y.Z`, `vcs-versioning-vX.Y.Z`
 
-**Files Modified:**
-- `pyproject.toml` - Added towncrier to release dependency group
-- `setuptools-scm/pyproject.toml` - Added towncrier configuration
-- `vcs-versioning/pyproject.toml` - Added towncrier configuration with entry point for `towncrier-fragments` version scheme
+## Version Scheme
 
-**Configuration includes:**
-- Fragment types: `removal`, `deprecation`, `feature`, `bugfix`, `doc`, `misc`
-- Automatic version bump determination based on fragment types
-- Issue link formatting for GitHub
+Fragment types determine version bumps:
+- `removal` → major bump
+- `feature`, `deprecation` → minor bump
+- `bugfix`, `doc`, `misc` → patch bump
 
-### 2. Changelog Fragment Directories ✅
+Entry point: `vcs_versioning._version_schemes_towncrier:version_from_fragments`
 
-**Created:**
-- `setuptools-scm/changelog.d/` - With template, README, and .gitkeep
-- `vcs-versioning/changelog.d/` - With template, README, and .gitkeep
-- `setuptools-scm/CHANGELOG.md` - Added towncrier start marker
-- `vcs-versioning/CHANGELOG.md` - Created with towncrier start marker
+Tests: `vcs-versioning/testing_vcs/test_version_scheme_towncrier.py`
 
-### 3. Fragment-Based Version Scheme ✅
+## Workflows
 
-**New File:** `vcs-versioning/src/vcs_versioning/_version_schemes_towncrier.py`
+**Release Proposal** (`.github/workflows/release-proposal.yml`):
+Manual trigger, runs towncrier, creates labeled PR
 
-The `towncrier-fragments` version scheme:
-- Analyzes `changelog.d/` for fragment types
-- Determines version bump: major (removal) → minor (feature/deprecation) → patch (bugfix/doc/misc)
-- Falls back to `guess-next-dev` if no fragments
-- Works consistently in both development and release contexts
-- **Single source of truth** for version determination - no duplicate logic in scripts!
+**Tag Creation** (`.github/workflows/create-release-tags.yml`):
+On PR merge, creates tags from PR title, triggers PyPI upload
 
-**Entry Point Added:** `vcs_versioning.pyproject.toml`
-```toml
-"towncrier-fragments" = "vcs_versioning._version_schemes_towncrier:version_from_fragments"
-```
+**Modified Upload** (`.github/workflows/python-tests.yml`):
+Split per-project upload jobs filtered by tag prefix
 
-**Tests:** `vcs-versioning/testing_vcs/test_version_scheme_towncrier.py`
-- 33 comprehensive tests covering all fragment types and version bump logic
-- Tests precedence (removal > feature > bugfix)
-- Tests edge cases (0.x versions, missing directories, dirty working tree)
-- All tests passing ✅
+## Usage
 
-### 4. GitHub Workflows ✅
+**Contributors:** Add changelog fragment to `{project}/changelog.d/{number}.{type}.md`
 
-#### Release Proposal Workflow
-**File:** `.github/workflows/release-proposal.yml`
+**Maintainers:** Trigger release proposal workflow, review PR, merge to create tags and upload to PyPI
 
-- **Trigger:** Manual workflow_dispatch with checkboxes for which projects to release
-- **Process:**
-  1. Checks for changelog fragments in each project
-  2. Uses `vcs-versioning` CLI to query version scheme (no custom scripts!)
-  3. Runs `towncrier build` with the determined version
-  4. Creates/updates release PR
-  5. Automatically labels PR with `release:setuptools-scm` and/or `release:vcs-versioning`
+## Design Notes
 
-#### Tag Creation Workflow
-**File:** `.github/workflows/create-release-tags.yml`
+- Version scheme is single source of truth, no custom scripts
+- Manual approval via PR review
+- Workflows fail explicitly if required data is missing
+- Tag prefix filtering controls package uploads
 
-- **Trigger:** PR merge to main with release labels
-- **Process:**
-  1. Detects which projects to release from PR labels
-  2. Extracts version from updated CHANGELOG.md
-  3. Creates project-prefixed tags: `setuptools-scm-vX.Y.Z`, `vcs-versioning-vX.Y.Z`
-  4. Creates GitHub releases with changelog excerpts
-  5. Tag push triggers PyPI upload
-
-#### Modified Upload Workflow
-**File:** `.github/workflows/python-tests.yml`
-
-- Split `dist_upload` into separate jobs per project:
-  - `dist_upload_setuptools_scm` - Only triggers on `setuptools-scm-v*` tags
-  - `dist_upload_vcs_versioning` - Only triggers on `vcs-versioning-v*` tags
-- Split `upload-release-assets` similarly
-- Prevents accidental uploads of wrong packages
-
-### 5. Reusable Workflow for Other Projects ✅
-
-**File:** `.github/workflows/reusable-towncrier-release.yml`
-
-Reusable workflow that other projects can reference:
-```yaml
-jobs:
-  release:
-    uses: pypa/setuptools-scm/.github/workflows/reusable-towncrier-release.yml@main
-    with:
-      project_name: my-project
-      project_directory: ./
-```
-
-**Documentation:** `.github/workflows/README.md`
-
-### 6. Helper Scripts ✅
-
-**No custom scripts needed!** ✅
-
-All version handling is done through:
-- Version scheme for version calculation
-- PR title parsing for tag creation
-- vcs-versioning CLI for querying versions
-
-**Removed duplicate logic:**
-- ❌ No version bump calculation scripts
-- ❌ No duplicate version determination logic
-- ❌ No fallback values or default versions
-- ❌ No helper scripts for version extraction
-- ✅ Version scheme is the **single source of truth**
-- ✅ Workflows fail explicitly if required data is missing
-- ✅ Simple PR title parsing for tags
-
-### 7. Comprehensive Documentation ✅
-
-**Created:**
-- `CONTRIBUTING.md` - Complete guide for contributors
-  - How to add changelog fragments
-  - Fragment types and naming conventions
-  - Release process walkthrough
-  - Benefits and architecture
-
-**Updated:**
-- `TESTING.md` - Added sections on:
-  - Testing the version scheme locally
-  - Testing towncrier builds
-  - Testing release workflows
-  - Workflow validation
-
-## How It Works
-
-### For Contributors
-
-1. Make your changes
-2. Create a changelog fragment:
-   ```bash
-   echo "Add support for feature X" > setuptools-scm/changelog.d/123.feature.md
-   ```
-3. Commit and create PR
-4. During development, version reflects the next release:
-   ```
-   9.3.0.dev5+g1234567  # Next version will be 9.3.0
-   ```
-
-### For Maintainers
-
-1. **Trigger Release Proposal:**
-   - Go to Actions → "Create Release Proposal"
-   - Select projects to release
-   - Workflow creates labeled PR with updated changelog
-
-2. **Review PR:**
-   - Check changelog entries
-   - Verify version numbers
-   - Ensure tests pass
-
-3. **Merge PR:**
-   - Merge triggers tag creation automatically
-   - Tags trigger PyPI upload
-   - Done!
-
-## Key Benefits
-
-✅ **No custom scripts** - Version scheme handles all logic
-✅ **Consistent versioning** - Development and release use same scheme
-✅ **Manual approval** - PRs provide human review gate
-✅ **Atomic releases** - Tied to merge commits
-✅ **Project-specific tags** - `setuptools-scm-v9.3.0`, `vcs-versioning-v0.2.0`
-✅ **Monorepo support** - Release one or both projects
-✅ **Reusable** - Other projects can use the workflows
-✅ **Auditable** - Full history in PRs and tags
-✅ **Fail fast** - No fallbacks; workflows fail if required data is missing
-
-## Architecture Highlights
-
-```
-Changelog Fragments
-       ↓
-Version Scheme (single source of truth)
-       ↓
-Development Builds ← version_from_fragments() → Release Workflow
-       ↓                                              ↓
-   9.3.0.dev5                                    9.3.0
-                                                   ↓
-                                              PyPI Upload
-```
-
-## Tag Format
-
-Tags use project prefixes with dashes:
-- `setuptools-scm-v9.3.0`
-- `vcs-versioning-v0.2.0`
-
-This enables:
-- Monorepo support (different projects can have different versions)
-- Controlled releases (tag prefix filters which package uploads)
-- Clear git history (`git tag -l "setuptools-scm-*"`)
-
-## Next Steps
-
-1. Install dependencies: `uv sync --all-packages --group release`
-2. Test version scheme: See TESTING.md
-3. Create a test fragment and verify version calculation
-4. Try a dry-run of towncrier: `uv run towncrier build --draft`
-
-## Questions?
-
-- See [CONTRIBUTING.md](./CONTRIBUTING.md) for contributor guide
-- See [TESTING.md](./TESTING.md) for testing instructions
-- See [.github/workflows/README.md](.github/workflows/README.md) for reusable workflow docs
+See [CONTRIBUTING.md](./CONTRIBUTING.md) and [TESTING.md](./TESTING.md) for details.
 
