@@ -130,6 +130,7 @@ The workflow system is designed with these principles:
 4. **Project-prefixed tags** - Enable monorepo releases (`project-vX.Y.Z`)
 5. **Automated but controlled** - Automation with human approval gates
 6. **Fail fast** - No fallback values; workflows fail explicitly if required data is missing
+7. **No custom scripts** - Uses PR title parsing and built-in tools only
 
 ## Version Bump Logic
 

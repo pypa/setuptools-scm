@@ -97,15 +97,21 @@ jobs:
 
 ### 6. Helper Scripts ✅
 
-**Only one simple script:**
-- `.github/scripts/extract_version.py` - Extracts version from CHANGELOG.md after towncrier builds it
+**No custom scripts needed!** ✅
+
+All version handling is done through:
+- Version scheme for version calculation
+- PR title parsing for tag creation
+- vcs-versioning CLI for querying versions
 
 **Removed duplicate logic:**
 - ❌ No version bump calculation scripts
 - ❌ No duplicate version determination logic
 - ❌ No fallback values or default versions
+- ❌ No helper scripts for version extraction
 - ✅ Version scheme is the **single source of truth**
 - ✅ Workflows fail explicitly if required data is missing
+- ✅ Simple PR title parsing for tags
 
 ### 7. Comprehensive Documentation ✅
 

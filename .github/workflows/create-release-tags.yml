@@ -39,21 +39,17 @@ jobs:
           set -e
 
           TAGS_CREATED=""
+          PR_TITLE="${{ github.event.pull_request.title }}"
 
           # Check if we should release setuptools-scm
           if echo "${{ toJson(github.event.pull_request.labels.*.name) }}" | grep -q "release:setuptools-scm"; then
-            cd setuptools-scm
-
-            if [ ! -f "CHANGELOG.md" ]; then
-              echo "ERROR: CHANGELOG.md not found for setuptools-scm"
-              exit 1
-            fi
-
-            VERSION=$(python ../.github/scripts/extract_version.py CHANGELOG.md)
+            # Extract version from PR title: "Release: setuptools-scm v9.3.0, ..."
+            VERSION=$(echo "$PR_TITLE" | grep -oP 'setuptools-scm v\K[0-9]+\.[0-9]+\.[0-9]+')
 
             if [ -z "$VERSION" ]; then
-              echo "ERROR: Failed to extract version from setuptools-scm CHANGELOG.md"
-              echo "The CHANGELOG.md file must contain a version heading"
+              echo "ERROR: Failed to extract setuptools-scm version from PR title"
+              echo "PR title: $PR_TITLE"
+              echo "Expected format: 'Release: setuptools-scm vX.Y.Z'"
               exit 1
             fi
 
@@ -66,24 +62,17 @@ jobs:
             TAGS_CREATED="$TAGS_CREATED $TAG"
             echo "setuptools_scm_tag=$TAG" >> $GITHUB_OUTPUT
             echo "setuptools_scm_version=$VERSION" >> $GITHUB_OUTPUT
-
-            cd ..
           fi
 
           # Check if we should release vcs-versioning
           if echo "${{ toJson(github.event.pull_request.labels.*.name) }}" | grep -q "release:vcs-versioning"; then
-            cd vcs-versioning
-
-            if [ ! -f "CHANGELOG.md" ]; then
-              echo "ERROR: CHANGELOG.md not found for vcs-versioning"
-              exit 1
-            fi
-
-            VERSION=$(python ../.github/scripts/extract_version.py CHANGELOG.md)
+            # Extract version from PR title: "Release: ..., vcs-versioning v0.2.0"
+            VERSION=$(echo "$PR_TITLE" | grep -oP 'vcs-versioning v\K[0-9]+\.[0-9]+\.[0-9]+')
 
             if [ -z "$VERSION" ]; then
-              echo "ERROR: Failed to extract version from vcs-versioning CHANGELOG.md"
-              echo "The CHANGELOG.md file must contain a version heading"
+              echo "ERROR: Failed to extract vcs-versioning version from PR title"
+              echo "PR title: $PR_TITLE"
+              echo "Expected format: 'Release: vcs-versioning vX.Y.Z'"
               exit 1
             fi
 
@@ -96,8 +85,6 @@ jobs:
             TAGS_CREATED="$TAGS_CREATED $TAG"
             echo "vcs_versioning_tag=$TAG" >> $GITHUB_OUTPUT
             echo "vcs_versioning_version=$VERSION" >> $GITHUB_OUTPUT
-
-            cd ..
           fi
 
           echo "tags_created=$TAGS_CREATED" >> $GITHUB_OUTPUT
