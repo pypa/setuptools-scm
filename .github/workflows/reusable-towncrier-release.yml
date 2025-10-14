@@ -1,0 +1,121 @@
+name: Reusable Towncrier Release
+
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        description: 'Name of the project (used for labeling and tag prefix)'
+        required: true
+        type: string
+      project_directory:
+        description: 'Directory containing the project (relative to repository root)'
+        required: true
+        type: string
+    outputs:
+      version:
+        description: 'The determined next version'
+        value: ${{ jobs.determine-version.outputs.version }}
+      has_fragments:
+        description: 'Whether fragments were found'
+        value: ${{ jobs.determine-version.outputs.has_fragments }}
+
+jobs:
+  determine-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      has_fragments: ${{ steps.check.outputs.has_fragments }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: |
+          uv sync --all-packages --group release
+
+      - name: Check for fragments
+        id: check
+        working-directory: ${{ inputs.project_directory }}
+        run: |
+          if [ ! -d "changelog.d" ]; then
+            echo "ERROR: changelog.d directory not found for ${{ inputs.project_name }}"
+            exit 1
+          fi
+
+          FRAGMENT_COUNT=$(find changelog.d -type f -name "*.*.md" ! -name "template.md" ! -name "README.md" 2>/dev/null | wc -l)
+
+          if [ "$FRAGMENT_COUNT" -eq 0 ]; then
+            echo "ERROR: No changelog fragments found for ${{ inputs.project_name }}"
+            echo "Cannot create release without changelog fragments"
+            exit 1
+          fi
+
+          echo "has_fragments=true" >> $GITHUB_OUTPUT
+          echo "Found $FRAGMENT_COUNT fragment(s) for ${{ inputs.project_name }}"
+
+      - name: Determine version
+        if: steps.check.outputs.has_fragments == 'true'
+        id: version
+        run: |
+          # Use vcs-versioning CLI to get the next version from the version scheme
+          NEXT_VERSION=$(uv run --directory ${{ inputs.project_directory }} python -m vcs_versioning \
+            --root . \
+            --version-scheme towncrier-fragments \
+            --local-scheme no-local-version 2>&1 | grep -oP '^\d+\.\d+\.\d+' || echo "")
+
+          if [ -z "$NEXT_VERSION" ]; then
+            echo "ERROR: Failed to determine version for ${{ inputs.project_name }}"
+            echo "Version scheme did not return a valid version"
+            exit 1
+          fi
+
+          echo "version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+          echo "Determined version: $NEXT_VERSION for ${{ inputs.project_name }}"
+
+  build-changelog:
+    needs: determine-version
+    if: needs.determine-version.outputs.has_fragments == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: |
+          uv sync --all-packages --group release
+
+      - name: Run towncrier
+        working-directory: ${{ inputs.project_directory }}
+        run: |
+          if ! uv run towncrier build --version "${{ needs.determine-version.outputs.version }}" --yes; then
+            echo "ERROR: towncrier build failed for ${{ inputs.project_name }}"
+            exit 1
+          fi
+
+      - name: Upload changelog artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog-${{ inputs.project_name }}
+          path: |
+            ${{ inputs.project_directory }}/CHANGELOG.md
+            ${{ inputs.project_directory }}/changelog.d/
+          retention-days: 5
+

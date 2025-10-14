@@ -135,10 +135,24 @@ jobs:
         run: uv run --no-sync pytest setuptools-scm/testing_scm/ vcs-versioning/testing_vcs/
         timeout-minutes: 25
 
-  dist_upload:
-
+  dist_upload_setuptools_scm:
     runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')) || (github.event_name == 'release' && github.event.action == 'published')
+    if: (github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/setuptools-scm-v')) || (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'setuptools-scm-v'))
+    permissions:
+      id-token: write
+    needs: [test]
+    steps:
+    - name: Download setuptools-scm packages
+      uses: actions/download-artifact@v4
+      with:
+        name: Packages-setuptools-scm
+        path: dist
+    - name: Publish setuptools-scm to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+
+  dist_upload_vcs_versioning:
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/vcs-versioning-v')) || (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'vcs-versioning-v'))
     permissions:
       id-token: write
     needs: [test]
@@ -148,17 +162,30 @@ jobs:
       with:
         name: Packages-vcs-versioning
         path: dist
+    - name: Publish vcs-versioning to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+
+  upload-release-assets-setuptools-scm:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'setuptools-scm-v')
+    needs: [test]
+    permissions:
+      contents: write
+    steps:
     - name: Download setuptools-scm packages
       uses: actions/download-artifact@v4
       with:
         name: Packages-setuptools-scm
         path: dist
-    - name: Publish package to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
+    - name: Upload release assets
+      uses: softprops/action-gh-release@v2
+      with:
+        files: dist/*
+        fail_on_unmatched_files: true
 
-  upload-release-assets:
+  upload-release-assets-vcs-versioning:
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'vcs-versioning-v')
     needs: [test]
     permissions:
       contents: write
@@ -167,11 +194,6 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: Packages-vcs-versioning
-        path: dist
-    - name: Download setuptools-scm packages
-      uses: actions/download-artifact@v4
-      with:
-        name: Packages-setuptools-scm
         path: dist
     - name: Upload release assets
       uses: softprops/action-gh-release@v2

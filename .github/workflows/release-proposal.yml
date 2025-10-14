@@ -1,0 +1,184 @@
+name: Create Release Proposal
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_setuptools_scm:
+        description: 'Release setuptools-scm'
+        required: true
+        type: boolean
+        default: false
+      release_vcs_versioning:
+        description: 'Release vcs-versioning'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-release-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: |
+          uv sync --all-packages --group release
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine versions and run towncrier
+        id: versions
+        run: |
+          set -e
+
+          BRANCH_NAME="release/$(date +%Y%m%d-%H%M%S)"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+          # Track what we're releasing
+          RELEASES=""
+          LABELS=""
+
+          # Process setuptools-scm
+          if [ "${{ inputs.release_setuptools_scm }}" == "true" ]; then
+            cd setuptools-scm
+
+            # Check if there are any fragments
+            FRAGMENT_COUNT=$(find changelog.d -type f -name "*.*.md" ! -name "template.md" ! -name "README.md" | wc -l)
+
+            if [ "$FRAGMENT_COUNT" -eq 0 ]; then
+              echo "ERROR: No changelog fragments found for setuptools-scm"
+              echo "Cannot create release without changelog fragments"
+              exit 1
+            fi
+
+            echo "Found $FRAGMENT_COUNT fragment(s) for setuptools-scm"
+
+            # Use vcs-versioning CLI to get the next version from the version scheme
+            cd ..
+            NEXT_VERSION=$(uv run --directory setuptools-scm python -m vcs_versioning --root . --version-scheme towncrier-fragments --local-scheme no-local-version 2>&1 | grep -oP '^\d+\.\d+\.\d+')
+
+            if [ -z "$NEXT_VERSION" ]; then
+              echo "ERROR: Failed to determine next version for setuptools-scm"
+              echo "Version scheme did not return a valid version"
+              exit 1
+            fi
+
+            cd setuptools-scm
+            echo "setuptools-scm next version: $NEXT_VERSION"
+            echo "setuptools_scm_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+
+            # Run towncrier
+            if ! uv run towncrier build --version "$NEXT_VERSION" --yes; then
+              echo "ERROR: towncrier build failed for setuptools-scm"
+              exit 1
+            fi
+
+            RELEASES="$RELEASES setuptools-scm v$NEXT_VERSION"
+            LABELS="$LABELS,release:setuptools-scm"
+
+            cd ..
+          fi
+
+          # Process vcs-versioning
+          if [ "${{ inputs.release_vcs_versioning }}" == "true" ]; then
+            cd vcs-versioning
+
+            # Check if there are any fragments
+            FRAGMENT_COUNT=$(find changelog.d -type f -name "*.*.md" ! -name "template.md" ! -name "README.md" | wc -l)
+
+            if [ "$FRAGMENT_COUNT" -eq 0 ]; then
+              echo "ERROR: No changelog fragments found for vcs-versioning"
+              echo "Cannot create release without changelog fragments"
+              exit 1
+            fi
+
+            echo "Found $FRAGMENT_COUNT fragment(s) for vcs-versioning"
+
+            # Use vcs-versioning CLI to get the next version from the version scheme
+            cd ..
+            NEXT_VERSION=$(uv run --directory vcs-versioning python -m vcs_versioning --root . --version-scheme towncrier-fragments --local-scheme no-local-version 2>&1 | grep -oP '^\d+\.\d+\.\d+')
+
+            if [ -z "$NEXT_VERSION" ]; then
+              echo "ERROR: Failed to determine next version for vcs-versioning"
+              echo "Version scheme did not return a valid version"
+              exit 1
+            fi
+
+            cd vcs-versioning
+            echo "vcs-versioning next version: $NEXT_VERSION"
+            echo "vcs_versioning_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
+
+            # Run towncrier
+            if ! uv run towncrier build --version "$NEXT_VERSION" --yes; then
+              echo "ERROR: towncrier build failed for vcs-versioning"
+              exit 1
+            fi
+
+            RELEASES="$RELEASES, vcs-versioning v$NEXT_VERSION"
+            LABELS="$LABELS,release:vcs-versioning"
+
+            cd ..
+          fi
+
+          # Remove leading comma/space from LABELS
+          LABELS=$(echo "$LABELS" | sed 's/^,//')
+
+          # Final validation
+          if [ -z "$RELEASES" ]; then
+            echo "ERROR: No releases were prepared"
+            echo "At least one project must have changelog fragments"
+            exit 1
+          fi
+
+          echo "releases=$RELEASES" >> $GITHUB_OUTPUT
+          echo "labels=$LABELS" >> $GITHUB_OUTPUT
+          echo "Successfully prepared releases: $RELEASES"
+
+      - name: Create release branch and commit
+        run: |
+          git checkout -b ${{ steps.versions.outputs.branch_name }}
+          git add -A
+          git commit -m "Prepare release: ${{ steps.versions.outputs.releases }}" || echo "No changes to commit"
+          git push origin ${{ steps.versions.outputs.branch_name }}
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: ${{ steps.versions.outputs.branch_name }}
+          title: "Release: ${{ steps.versions.outputs.releases }}"
+          body: |
+            ## Release Proposal
+
+            This PR prepares the following releases:
+            ${{ steps.versions.outputs.releases }}
+
+            ### Changes
+            - Updated CHANGELOG.md with towncrier fragments
+            - Removed processed fragments from changelog.d/
+
+            ### Review Checklist
+            - [ ] Changelog entries are accurate
+            - [ ] Version numbers are correct
+            - [ ] All tests pass
+
+            **Merging this PR will automatically create tags and trigger PyPI uploads.**
+          labels: ${{ steps.versions.outputs.labels }}
+          draft: false
+

@@ -24,6 +24,9 @@ docs = [
 typing = [
     "types-setuptools",
 ]
+release = [
+    "towncrier>=23.11.0",
+]
 
 
 [tool.pytest.ini_options]
