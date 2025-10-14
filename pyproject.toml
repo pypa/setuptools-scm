@@ -26,7 +26,7 @@ typing = [
 ]
 release = [
     "towncrier>=23.11.0",
-    "PyGithub>=2.0.0",
+    "PyGithub>=2.0.0; sys_platform != 'win32'",
 ]
 
 
