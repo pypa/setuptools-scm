@@ -8,9 +8,11 @@ from pathlib import Path
 
 from github import Github
 from github.Repository import Repository
-
-from vcs_versioning import get_version
 from vcs_versioning._config import Configuration
+from vcs_versioning._get_version_impl import (  # type: ignore[attr-defined]
+    _format_version,
+    parse_version,
+)
 
 
 def find_fragments(project_dir: Path) -> list[Path]:
@@ -40,19 +42,26 @@ def find_fragments(project_dir: Path) -> list[Path]:
 def get_next_version(project_dir: Path, repo_root: Path) -> str | None:
     """Get the next version for a project using vcs-versioning API."""
     try:
-        config = Configuration(
+        # Load configuration from project's pyproject.toml
+        pyproject = project_dir / "pyproject.toml"
+        config = Configuration.from_file(
+            pyproject,
             root=str(repo_root),
             version_scheme="towncrier-fragments",
             local_scheme="no-local-version",
         )
-        
-        version = get_version(config)
-        
+
+        # Get the ScmVersion object
+        scm_version = parse_version(config)
+        if scm_version is None:
+            print(f"ERROR: Could not parse version for {project_dir}", file=sys.stderr)
+            return None
+
+        # Format the version string
+        version_string = _format_version(scm_version)
+
         # Extract just the public version (X.Y.Z)
-        if hasattr(version, "public"):
-            return str(version.public)
-        else:
-            return str(version).split("+")[0]  # Remove local part if present
+        return version_string.split("+")[0]  # Remove local part if present
 
     except Exception as e:
         print(f"Error determining version: {e}", file=sys.stderr)
@@ -81,7 +90,9 @@ def run_towncrier(project_dir: Path, version: str) -> bool:
         return False
 
 
-def check_existing_pr(repo: Repository, source_branch: str) -> tuple[bool, int | None, str]:
+def check_existing_pr(
+    repo: Repository, source_branch: str
+) -> tuple[bool, int | None, str]:
     """
     Check for existing release PR.
 
@@ -221,9 +232,7 @@ def main() -> None:
 
         # Run towncrier
         if not run_towncrier(project_dir, version):
-            print(
-                f"ERROR: Towncrier build failed for {project_name}", file=sys.stderr
-            )
+            print(f"ERROR: Towncrier build failed for {project_name}", file=sys.stderr)
             sys.exit(1)
 
         releases.append(f"{project_name} v{version}")
@@ -271,4 +280,3 @@ This PR prepares the following releases:
 
 if __name__ == "__main__":
     main()
-

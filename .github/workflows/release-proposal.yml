@@ -49,13 +49,13 @@ jobs:
           # Get release branch from script output
           RELEASE_BRANCH="${{ steps.release.outputs.release_branch }}"
           RELEASES="${{ steps.release.outputs.releases }}"
-          
+
           # Checkout release branch (force)
           git checkout -B "$RELEASE_BRANCH"
-          
+
           # Commit towncrier changes
           git add -A
           git commit -m "Prepare release: $RELEASES" || echo "No changes to commit"
-          
+
           # Force push
           git push origin "$RELEASE_BRANCH" --force
