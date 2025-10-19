@@ -1,6 +1,16 @@
 # Changelog
 
 
+## v9.2.2
+
+### Fixed
+
+- fix #1231: don't warn about `tool.setuptools.dynamic.version` when only using file finder.
+  The warning about combining version guessing with setuptools dynamic versions should only
+  be issued when setuptools-scm is performing version inference, not when it's only being
+  used for its file finder functionality.
+
+
 ## v9.2.1
 
 ### Fixed
