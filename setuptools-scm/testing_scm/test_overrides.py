@@ -6,7 +6,24 @@ import pytest
 
 from vcs_versioning._overrides import _find_close_env_var_matches
 from vcs_versioning._overrides import _search_env_vars_with_prefix
-from vcs_versioning.overrides import read_named_env
+from vcs_versioning.overrides import EnvReader
+
+
+# Helper function that matches the old read_named_env signature for tests
+def read_named_env(
+    *,
+    name: str,
+    dist_name: str | None,
+    env: dict[str, str],
+    tool: str = "SETUPTOOLS_SCM",
+) -> str | None:
+    """Test helper that wraps EnvReader to match old read_named_env signature."""
+    reader = EnvReader(
+        tools_names=(tool, "VCS_VERSIONING"),
+        env=env,
+        dist_name=dist_name,
+    )
+    return reader.read(name)
 
 
 class TestSearchEnvVarsWithPrefix:

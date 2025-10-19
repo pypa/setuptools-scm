@@ -289,3 +289,293 @@ def test_export_integration_with_subprocess_pattern() -> None:
 
         # Can be used with subprocess.run
         # subprocess.run(["cmd"], env=subprocess_env)
+
+
+class TestEnvReader:
+    """Tests for the EnvReader class."""
+
+    def test_requires_tools_names(self) -> None:
+        """Test that EnvReader requires tools_names to be provided."""
+        from vcs_versioning.overrides import EnvReader
+
+        with pytest.raises(TypeError, match="tools_names must be a non-empty tuple"):
+            EnvReader(tools_names=(), env={})
+
+    def test_empty_tools_names_raises(self) -> None:
+        """Test that empty tools_names raises an error."""
+        from vcs_versioning.overrides import EnvReader
+
+        with pytest.raises(TypeError, match="tools_names must be a non-empty tuple"):
+            EnvReader(tools_names=(), env={})
+
+    def test_read_generic_first_tool(self) -> None:
+        """Test reading generic env var from first tool."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {"TOOL_A_DEBUG": "1"}
+        reader = EnvReader(tools_names=("TOOL_A", "TOOL_B"), env=env)
+        assert reader.read("DEBUG") == "1"
+
+    def test_read_generic_fallback_to_second_tool(self) -> None:
+        """Test falling back to second tool when first not found."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {"TOOL_B_DEBUG": "2"}
+        reader = EnvReader(tools_names=("TOOL_A", "TOOL_B"), env=env)
+        assert reader.read("DEBUG") == "2"
+
+    def test_read_generic_first_tool_wins(self) -> None:
+        """Test that first tool takes precedence."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {"TOOL_A_DEBUG": "1", "TOOL_B_DEBUG": "2"}
+        reader = EnvReader(tools_names=("TOOL_A", "TOOL_B"), env=env)
+        assert reader.read("DEBUG") == "1"
+
+    def test_read_not_found(self) -> None:
+        """Test that None is returned when env var not found."""
+        from vcs_versioning.overrides import EnvReader
+
+        reader = EnvReader(tools_names=("TOOL_A", "TOOL_B"), env={})
+        assert reader.read("DEBUG") is None
+
+    def test_read_dist_specific_first_tool(self) -> None:
+        """Test reading dist-specific env var from first tool."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {"TOOL_A_PRETEND_VERSION_FOR_MY_PACKAGE": "1.0.0"}
+        reader = EnvReader(
+            tools_names=("TOOL_A", "TOOL_B"), env=env, dist_name="my-package"
+        )
+        assert reader.read("PRETEND_VERSION") == "1.0.0"
+
+    def test_read_dist_specific_fallback_to_second_tool(self) -> None:
+        """Test falling back to second tool for dist-specific."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {"TOOL_B_PRETEND_VERSION_FOR_MY_PACKAGE": "2.0.0"}
+        reader = EnvReader(
+            tools_names=("TOOL_A", "TOOL_B"), env=env, dist_name="my-package"
+        )
+        assert reader.read("PRETEND_VERSION") == "2.0.0"
+
+    def test_read_dist_specific_takes_precedence_over_generic(self) -> None:
+        """Test that dist-specific takes precedence over generic."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {
+            "TOOL_A_PRETEND_VERSION_FOR_MY_PACKAGE": "1.0.0",
+            "TOOL_A_PRETEND_VERSION": "2.0.0",
+        }
+        reader = EnvReader(
+            tools_names=("TOOL_A", "TOOL_B"), env=env, dist_name="my-package"
+        )
+        assert reader.read("PRETEND_VERSION") == "1.0.0"
+
+    def test_read_dist_specific_second_tool_over_generic_first_tool(self) -> None:
+        """Test that dist-specific from second tool beats generic from first tool."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {
+            "TOOL_B_PRETEND_VERSION_FOR_MY_PACKAGE": "2.0.0",
+            "TOOL_A_PRETEND_VERSION": "1.0.0",
+        }
+        reader = EnvReader(
+            tools_names=("TOOL_A", "TOOL_B"), env=env, dist_name="my-package"
+        )
+        # Dist-specific from TOOL_B should win
+        assert reader.read("PRETEND_VERSION") == "2.0.0"
+
+    def test_read_falls_back_to_generic_when_no_dist_specific(self) -> None:
+        """Test falling back to generic when dist-specific not found."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {"TOOL_B_PRETEND_VERSION": "2.0.0"}
+        reader = EnvReader(
+            tools_names=("TOOL_A", "TOOL_B"), env=env, dist_name="my-package"
+        )
+        assert reader.read("PRETEND_VERSION") == "2.0.0"
+
+    def test_read_normalizes_dist_name(self) -> None:
+        """Test that distribution names are normalized correctly."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {"TOOL_A_PRETEND_VERSION_FOR_MY_PACKAGE": "1.0.0"}
+        # Try various equivalent dist names
+        for dist_name in ["my-package", "My.Package", "my_package", "MY-PACKAGE"]:
+            reader = EnvReader(tools_names=("TOOL_A",), env=env, dist_name=dist_name)
+            assert reader.read("PRETEND_VERSION") == "1.0.0"
+
+    def test_read_finds_alternative_normalization(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Test that read warns about alternative normalizations."""
+        from vcs_versioning.overrides import EnvReader
+
+        # Use a non-standard normalization
+        env = {"TOOL_A_PRETEND_VERSION_FOR_MY-PACKAGE": "1.0.0"}
+        reader = EnvReader(tools_names=("TOOL_A",), env=env, dist_name="my-package")
+
+        with caplog.at_level(logging.WARNING):
+            result = reader.read("PRETEND_VERSION")
+
+        assert result == "1.0.0"
+        assert "Found environment variable" in caplog.text
+        assert "but expected" in caplog.text
+        assert "TOOL_A_PRETEND_VERSION_FOR_MY_PACKAGE" in caplog.text
+
+    def test_read_suggests_close_matches(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Test that read suggests close matches for typos."""
+        from vcs_versioning.overrides import EnvReader
+
+        # Use a typo in dist name
+        env = {"TOOL_A_PRETEND_VERSION_FOR_MY_PACKGE": "1.0.0"}
+        reader = EnvReader(tools_names=("TOOL_A",), env=env, dist_name="my-package")
+
+        with caplog.at_level(logging.WARNING):
+            result = reader.read("PRETEND_VERSION")
+
+        assert result is None
+        assert "Did you mean" in caplog.text
+
+    def test_read_returns_exact_match_without_warning(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Test that exact matches don't trigger diagnostics."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {"TOOL_A_PRETEND_VERSION_FOR_MY_PACKAGE": "1.0.0"}
+        reader = EnvReader(tools_names=("TOOL_A",), env=env, dist_name="my-package")
+
+        with caplog.at_level(logging.WARNING):
+            result = reader.read("PRETEND_VERSION")
+
+        assert result == "1.0.0"
+        # No warnings should be logged for exact matches
+        assert not caplog.records
+
+    def test_read_toml_inline_map(self) -> None:
+        """Test reading an inline TOML map."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {
+            "TOOL_A_OVERRIDES": '{local_scheme = "no-local-version", version_scheme = "release-branch-semver"}'
+        }
+        reader = EnvReader(tools_names=("TOOL_A",), env=env)
+
+        result = reader.read_toml("OVERRIDES")
+        assert result == {
+            "local_scheme": "no-local-version",
+            "version_scheme": "release-branch-semver",
+        }
+
+    def test_read_toml_full_document(self) -> None:
+        """Test reading a full TOML document."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {
+            "TOOL_A_PRETEND_METADATA": 'tag = "v1.0.0"\ndistance = 4\nnode = "g123abc"'
+        }
+        reader = EnvReader(tools_names=("TOOL_A",), env=env)
+
+        result = reader.read_toml("PRETEND_METADATA")
+        assert result == {"tag": "v1.0.0", "distance": 4, "node": "g123abc"}
+
+    def test_read_toml_not_found_returns_empty_dict(self) -> None:
+        """Test that read_toml returns empty dict when not found."""
+        from vcs_versioning.overrides import EnvReader
+
+        reader = EnvReader(tools_names=("TOOL_A",), env={})
+
+        result = reader.read_toml("OVERRIDES")
+        assert result == {}
+
+    def test_read_toml_empty_string_returns_empty_dict(self) -> None:
+        """Test that empty string returns empty dict."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {"TOOL_A_OVERRIDES": ""}
+        reader = EnvReader(tools_names=("TOOL_A",), env=env)
+
+        result = reader.read_toml("OVERRIDES")
+        assert result == {}
+
+    def test_read_toml_with_tool_fallback(self) -> None:
+        """Test that read_toml respects tool fallback order."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {"TOOL_B_OVERRIDES": "{debug = true}"}
+        reader = EnvReader(tools_names=("TOOL_A", "TOOL_B"), env=env)
+
+        result = reader.read_toml("OVERRIDES")
+        assert result == {"debug": True}
+
+    def test_read_toml_with_dist_specific(self) -> None:
+        """Test reading dist-specific TOML data."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {
+            "TOOL_A_OVERRIDES_FOR_MY_PACKAGE": '{local_scheme = "no-local-version"}',
+            "TOOL_A_OVERRIDES": '{version_scheme = "guess-next-dev"}',
+        }
+        reader = EnvReader(tools_names=("TOOL_A",), env=env, dist_name="my-package")
+
+        # Should get dist-specific version
+        result = reader.read_toml("OVERRIDES")
+        assert result == {"local_scheme": "no-local-version"}
+
+    def test_read_toml_dist_specific_fallback_to_generic(self) -> None:
+        """Test falling back to generic when dist-specific not found."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {"TOOL_A_OVERRIDES": '{version_scheme = "guess-next-dev"}'}
+        reader = EnvReader(tools_names=("TOOL_A",), env=env, dist_name="my-package")
+
+        result = reader.read_toml("OVERRIDES")
+        assert result == {"version_scheme": "guess-next-dev"}
+
+    def test_read_toml_invalid_raises(self) -> None:
+        """Test that invalid TOML raises InvalidTomlError."""
+        from vcs_versioning._toml import InvalidTomlError
+        from vcs_versioning.overrides import EnvReader
+
+        env = {"TOOL_A_OVERRIDES": "this is not valid toml {{{"}
+        reader = EnvReader(tools_names=("TOOL_A",), env=env)
+
+        with pytest.raises(InvalidTomlError, match="Invalid TOML content"):
+            reader.read_toml("OVERRIDES")
+
+    def test_read_toml_with_alternative_normalization(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Test that read_toml works with diagnostic warnings."""
+        from vcs_versioning.overrides import EnvReader
+
+        # Use a non-standard normalization
+        env = {"TOOL_A_OVERRIDES_FOR_MY-PACKAGE": '{key = "value"}'}
+        reader = EnvReader(tools_names=("TOOL_A",), env=env, dist_name="my-package")
+
+        with caplog.at_level(logging.WARNING):
+            result = reader.read_toml("OVERRIDES")
+
+        assert result == {"key": "value"}
+        assert "Found environment variable" in caplog.text
+        assert "but expected" in caplog.text
+
+    def test_read_toml_complex_metadata(self) -> None:
+        """Test reading complex ScmVersion metadata."""
+        from vcs_versioning.overrides import EnvReader
+
+        env = {
+            "TOOL_A_PRETEND_METADATA": '{tag = "v2.0.0", distance = 10, node = "gabcdef123", dirty = true, branch = "main"}'
+        }
+        reader = EnvReader(tools_names=("TOOL_A",), env=env)
+
+        result = reader.read_toml("PRETEND_METADATA")
+        assert result["tag"] == "v2.0.0"
+        assert result["distance"] == 10
+        assert result["node"] == "gabcdef123"
+        assert result["dirty"] is True
+        assert result["branch"] == "main"

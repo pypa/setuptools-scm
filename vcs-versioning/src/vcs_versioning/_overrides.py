@@ -99,11 +99,18 @@ def _read_pretended_metadata_for(
     Returns a dictionary with metadata field overrides like:
     {"node": "g1337beef", "distance": 4}
     """
-    from .overrides import read_named_env
+    import os
+
+    from .overrides import EnvReader
 
     log.debug("dist name: %s", config.dist_name)
 
-    pretended = read_named_env(name="PRETEND_METADATA", dist_name=config.dist_name)
+    reader = EnvReader(
+        tools_names=("SETUPTOOLS_SCM", "VCS_VERSIONING"),
+        env=os.environ,
+        dist_name=config.dist_name,
+    )
+    pretended = reader.read("PRETEND_METADATA")
 
     if pretended:
         try:
@@ -215,11 +222,18 @@ def _read_pretended_version_for(
     tries ``SETUPTOOLS_SCM_PRETEND_VERSION``
     and ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_$UPPERCASE_DIST_NAME``
     """
-    from .overrides import read_named_env
+    import os
+
+    from .overrides import EnvReader
 
     log.debug("dist name: %s", config.dist_name)
 
-    pretended = read_named_env(name="PRETEND_VERSION", dist_name=config.dist_name)
+    reader = EnvReader(
+        tools_names=("SETUPTOOLS_SCM", "VCS_VERSIONING"),
+        env=os.environ,
+        dist_name=config.dist_name,
+    )
+    pretended = reader.read("PRETEND_VERSION")
 
     if pretended:
         return version.meta(tag=pretended, preformatted=True, config=config)
@@ -229,7 +243,13 @@ def _read_pretended_version_for(
 
 def read_toml_overrides(dist_name: str | None) -> dict[str, Any]:
     """Read TOML overrides from environment."""
-    from .overrides import read_named_env
+    import os
 
-    data = read_named_env(name="OVERRIDES", dist_name=dist_name)
-    return load_toml_or_inline_map(data)
+    from .overrides import EnvReader
+
+    reader = EnvReader(
+        tools_names=("SETUPTOOLS_SCM", "VCS_VERSIONING"),
+        env=os.environ,
+        dist_name=dist_name,
+    )
+    return reader.read_toml("OVERRIDES")

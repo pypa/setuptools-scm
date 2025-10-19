@@ -32,11 +32,162 @@ from ._overrides import (
     _find_close_env_var_matches,
     _search_env_vars_with_prefix,
 )
+from ._toml import load_toml_or_inline_map
 
 if TYPE_CHECKING:
     from pytest import MonkeyPatch
 
 log = logging.getLogger(__name__)
+
+
+class EnvReader:
+    """Helper class to read environment variables with tool prefix fallback.
+
+    This class provides a structured way to read environment variables by trying
+    multiple tool prefixes in order, with support for distribution-specific variants.
+
+    Attributes:
+        tools_names: Tuple of tool prefixes to try in order (e.g., ("HATCH_VCS", "VCS_VERSIONING"))
+        env: Environment mapping to read from
+        dist_name: Optional distribution name for dist-specific env vars
+
+    Example:
+        >>> reader = EnvReader(
+        ...     tools_names=("HATCH_VCS", "VCS_VERSIONING"),
+        ...     env=os.environ,
+        ...     dist_name="my-package"
+        ... )
+        >>> debug_val = reader.read("DEBUG")  # tries HATCH_VCS_DEBUG, then VCS_VERSIONING_DEBUG
+        >>> pretend = reader.read("PRETEND_VERSION")  # tries dist-specific first, then generic
+    """
+
+    tools_names: tuple[str, ...]
+    env: Mapping[str, str]
+    dist_name: str | None
+
+    def __init__(
+        self,
+        tools_names: tuple[str, ...],
+        env: Mapping[str, str],
+        dist_name: str | None = None,
+    ):
+        """Initialize the EnvReader.
+
+        Args:
+            tools_names: Tuple of tool prefixes to try in order (e.g., ("HATCH_VCS", "VCS_VERSIONING"))
+            env: Environment mapping to read from
+            dist_name: Optional distribution name for dist-specific variables
+        """
+        if not tools_names:
+            raise TypeError("tools_names must be a non-empty tuple")
+        self.tools_names = tools_names
+        self.env = env
+        self.dist_name = dist_name
+
+    def read(self, name: str) -> str | None:
+        """Read a named environment variable, trying each tool in tools_names order.
+
+        If dist_name is provided, tries distribution-specific variants first
+        (e.g., TOOL_NAME_FOR_DIST), then falls back to generic variants (e.g., TOOL_NAME).
+
+        Also provides helpful diagnostics when similar environment variables are found
+        but don't match exactly (e.g., typos or incorrect normalizations in distribution names).
+
+        Args:
+            name: The environment variable name component (e.g., "DEBUG", "PRETEND_VERSION")
+
+        Returns:
+            The first matching environment variable value, or None if not found
+        """
+        # If dist_name is provided, try dist-specific variants first
+        if self.dist_name is not None:
+            canonical_dist_name = canonicalize_name(self.dist_name)
+            env_var_dist_name = canonical_dist_name.replace("-", "_").upper()
+
+            # Try each tool's dist-specific variant
+            for tool in self.tools_names:
+                expected_env_var = f"{tool}_{name}_FOR_{env_var_dist_name}"
+                val = self.env.get(expected_env_var)
+                if val is not None:
+                    return val
+
+        # Try generic versions for each tool
+        for tool in self.tools_names:
+            val = self.env.get(f"{tool}_{name}")
+            if val is not None:
+                return val
+
+        # Not found - if dist_name is provided, check for common mistakes
+        if self.dist_name is not None:
+            canonical_dist_name = canonicalize_name(self.dist_name)
+            env_var_dist_name = canonical_dist_name.replace("-", "_").upper()
+
+            # Try each tool prefix for fuzzy matching
+            for tool in self.tools_names:
+                expected_env_var = f"{tool}_{name}_FOR_{env_var_dist_name}"
+                prefix = f"{tool}_{name}_FOR_"
+
+                # Search for alternative normalizations
+                matches = _search_env_vars_with_prefix(prefix, self.dist_name, self.env)
+                if matches:
+                    env_var_name, value = matches[0]
+                    log.warning(
+                        "Found environment variable '%s' for dist name '%s', "
+                        "but expected '%s'. Consider using the standard normalized name.",
+                        env_var_name,
+                        self.dist_name,
+                        expected_env_var,
+                    )
+                    if len(matches) > 1:
+                        other_vars = [var for var, _ in matches[1:]]
+                        log.warning(
+                            "Multiple alternative environment variables found: %s. Using '%s'.",
+                            other_vars,
+                            env_var_name,
+                        )
+                    return value
+
+                # Search for close matches (potential typos)
+                close_matches = _find_close_env_var_matches(
+                    prefix, env_var_dist_name, self.env
+                )
+                if close_matches:
+                    log.warning(
+                        "Environment variable '%s' not found for dist name '%s' "
+                        "(canonicalized as '%s'). Did you mean one of these? %s",
+                        expected_env_var,
+                        self.dist_name,
+                        canonical_dist_name,
+                        close_matches,
+                    )
+
+        return None
+
+    def read_toml(self, name: str) -> dict[str, Any]:
+        """Read and parse a TOML-formatted environment variable.
+
+        This method is useful for reading structured configuration like:
+        - Config overrides (e.g., TOOL_OVERRIDES_FOR_DIST)
+        - ScmVersion metadata (e.g., TOOL_PRETEND_METADATA_FOR_DIST)
+
+        Supports both full TOML documents and inline TOML maps (starting with '{').
+
+        Args:
+            name: The environment variable name component (e.g., "OVERRIDES", "PRETEND_METADATA")
+
+        Returns:
+            Parsed TOML data as a dictionary, or an empty dict if not found or empty.
+            Raises InvalidTomlError if the TOML content is malformed.
+
+        Example:
+            >>> reader = EnvReader(tools_names=("TOOL",), env={
+            ...     "TOOL_OVERRIDES": '{"local_scheme": "no-local-version"}',
+            ... })
+            >>> reader.read_toml("OVERRIDES")
+            {'local_scheme': 'no-local-version'}
+        """
+        data = self.read(name)
+        return load_toml_or_inline_map(data)
 
 
 @dataclass(frozen=True)
@@ -82,17 +233,11 @@ class GlobalOverrides:
             GlobalOverrides instance ready to use as context manager
         """
 
-        # Helper to read with fallback to VCS_VERSIONING prefix
-        def read_with_fallback(name: str) -> str | None:
-            # Try tool-specific prefix first
-            val = env.get(f"{tool}_{name}")
-            if val is not None:
-                return val
-            # Fallback to VCS_VERSIONING prefix
-            return env.get(f"VCS_VERSIONING_{name}")
+        # Use EnvReader to read all environment variables with fallback
+        reader = EnvReader(tools_names=(tool, "VCS_VERSIONING"), env=env)
 
         # Read debug flag - support multiple formats
-        debug_val = read_with_fallback("DEBUG")
+        debug_val = reader.read("DEBUG")
         if debug_val is None:
             debug: int | Literal[False] = False
         else:
@@ -117,7 +262,7 @@ class GlobalOverrides:
                     debug = logging.DEBUG
 
         # Read subprocess timeout
-        timeout_val = read_with_fallback("SUBPROCESS_TIMEOUT")
+        timeout_val = reader.read("SUBPROCESS_TIMEOUT")
         subprocess_timeout = 40  # default
         if timeout_val is not None:
             try:
@@ -130,7 +275,7 @@ class GlobalOverrides:
                 )
 
         # Read hg command
-        hg_command = read_with_fallback("HG_COMMAND") or "hg"
+        hg_command = reader.read("HG_COMMAND") or "hg"
 
         # Read SOURCE_DATE_EPOCH (standard env var, no prefix)
         source_date_epoch_val = env.get("SOURCE_DATE_EPOCH")
@@ -362,106 +507,13 @@ def source_epoch_or_utc_now() -> datetime:
     return get_active_overrides().source_epoch_or_utc_now()
 
 
-def read_named_env(
-    *,
-    tool: str = "SETUPTOOLS_SCM",
-    name: str,
-    dist_name: str | None,
-    env: Mapping[str, str] = os.environ,
-) -> str | None:
-    """Read a named environment variable, with fallback search for dist-specific variants.
-
-    This function first tries the standard normalized environment variable name with the
-    tool prefix, then falls back to VCS_VERSIONING prefix if not found.
-    If that's not found and a dist_name is provided, it searches for alternative
-    normalizations and warns about potential issues.
-
-    Args:
-        tool: The tool prefix (default: "SETUPTOOLS_SCM")
-        name: The environment variable name component
-        dist_name: The distribution name for dist-specific variables
-        env: Environment dictionary to search in (defaults to os.environ)
-
-    Returns:
-        The environment variable value if found, None otherwise
-    """
-
-    # First try the generic version with tool prefix
-    generic_val = env.get(f"{tool}_{name}")
-
-    # If not found, try VCS_VERSIONING prefix as fallback
-    if generic_val is None:
-        generic_val = env.get(f"VCS_VERSIONING_{name}")
-
-    if dist_name is not None:
-        # Normalize the dist name using packaging.utils.canonicalize_name
-        canonical_dist_name = canonicalize_name(dist_name)
-        env_var_dist_name = canonical_dist_name.replace("-", "_").upper()
-        expected_env_var = f"{tool}_{name}_FOR_{env_var_dist_name}"
-
-        # Try the standard normalized name with tool prefix first
-        val = env.get(expected_env_var)
-        if val is not None:
-            return val
-
-        # Try VCS_VERSIONING prefix as fallback for dist-specific
-        vcs_versioning_var = f"VCS_VERSIONING_{name}_FOR_{env_var_dist_name}"
-        val = env.get(vcs_versioning_var)
-        if val is not None:
-            return val
-
-        # If not found, search for alternative normalizations with tool prefix
-        prefix = f"{tool}_{name}_FOR_"
-        alternative_matches = _search_env_vars_with_prefix(prefix, dist_name, env)
-
-        # Also search in VCS_VERSIONING prefix
-        if not alternative_matches:
-            vcs_prefix = f"VCS_VERSIONING_{name}_FOR_"
-            alternative_matches = _search_env_vars_with_prefix(
-                vcs_prefix, dist_name, env
-            )
-
-        if alternative_matches:
-            # Found alternative matches - use the first one but warn
-            env_var, value = alternative_matches[0]
-            log.warning(
-                "Found environment variable '%s' for dist name '%s', "
-                "but expected '%s'. Consider using the standard normalized name.",
-                env_var,
-                dist_name,
-                expected_env_var,
-            )
-            if len(alternative_matches) > 1:
-                other_vars = [var for var, _ in alternative_matches[1:]]
-                log.warning(
-                    "Multiple alternative environment variables found: %s. Using '%s'.",
-                    other_vars,
-                    env_var,
-                )
-            return value
-
-        # No exact or alternative matches found - look for potential typos
-        close_matches = _find_close_env_var_matches(prefix, env_var_dist_name, env)
-        if close_matches:
-            log.warning(
-                "Environment variable '%s' not found for dist name '%s' "
-                "(canonicalized as '%s'). Did you mean one of these? %s",
-                expected_env_var,
-                dist_name,
-                canonical_dist_name,
-                close_matches,
-            )
-
-    return generic_val
-
-
 __all__ = [
+    "EnvReader",
     "GlobalOverrides",
     "get_active_overrides",
     "get_debug_level",
     "get_hg_command",
     "get_source_date_epoch",
     "get_subprocess_timeout",
-    "read_named_env",
     "source_epoch_or_utc_now",
 ]
