@@ -291,6 +291,51 @@ def test_export_integration_with_subprocess_pattern() -> None:
         # subprocess.run(["cmd"], env=subprocess_env)
 
 
+def test_env_reader_property() -> None:
+    """Test that GlobalOverrides provides a configured EnvReader."""
+    env = {
+        "TOOL_CUSTOM_VAR": "value1",
+        "VCS_VERSIONING_FALLBACK_VAR": "value2",
+        "TOOL_VAR_FOR_MY_PKG": "dist_specific",
+    }
+
+    # Without dist_name
+    with GlobalOverrides.from_env("TOOL", env=env) as overrides:
+        reader = overrides.env_reader
+        assert reader.read("CUSTOM_VAR") == "value1"
+        assert reader.read("FALLBACK_VAR") == "value2"  # Uses VCS_VERSIONING fallback
+        assert reader.read("NONEXISTENT") is None
+
+    # With dist_name
+    with GlobalOverrides.from_env("TOOL", env=env, dist_name="my-pkg") as overrides:
+        reader = overrides.env_reader
+        assert reader.read("VAR") == "dist_specific"  # Dist-specific takes precedence
+
+
+def test_env_reader_property_with_dist_name() -> None:
+    """Test EnvReader property with distribution-specific variables."""
+    env = {
+        "TOOL_CONFIG_FOR_MY_PACKAGE": '{local_scheme = "no-local"}',
+        "TOOL_CONFIG": '{version_scheme = "guess-next-dev"}',
+    }
+
+    from typing import TypedDict
+
+    class TestSchema(TypedDict, total=False):
+        local_scheme: str
+        version_scheme: str
+
+    with GlobalOverrides.from_env("TOOL", env=env, dist_name="my-package") as overrides:
+        # Should read dist-specific TOML
+        config = overrides.env_reader.read_toml("CONFIG", schema=TestSchema)
+        assert config == {"local_scheme": "no-local"}
+
+    # Without dist_name, gets generic
+    with GlobalOverrides.from_env("TOOL", env=env) as overrides:
+        config = overrides.env_reader.read_toml("CONFIG", schema=TestSchema)
+        assert config == {"version_scheme": "guess-next-dev"}
+
+
 class TestEnvReader:
     """Tests for the EnvReader class."""
 

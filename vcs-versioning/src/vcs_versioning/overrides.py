@@ -212,11 +212,16 @@ class GlobalOverrides:
         hg_command: Command to use for Mercurial operations
         source_date_epoch: Unix timestamp for reproducible builds (None if not set)
         tool: Tool prefix used to read these overrides
+        dist_name: Optional distribution name for dist-specific env var lookups
 
     Usage:
-        with GlobalOverrides.from_env("HATCH_VCS"):
+        with GlobalOverrides.from_env("HATCH_VCS", dist_name="my-package") as overrides:
             # All modules now have access to these overrides
             # Logging is automatically configured based on HATCH_VCS_DEBUG
+
+            # Read custom environment variables
+            custom_val = overrides.env_reader.read("MY_CUSTOM_VAR")
+
             version = get_version(...)
     """
 
@@ -225,12 +230,15 @@ class GlobalOverrides:
     hg_command: str
     source_date_epoch: int | None
     tool: str
+    dist_name: str | None = None
+    _env_reader: EnvReader | None = None  # Cached reader, set by from_env
 
     @classmethod
     def from_env(
         cls,
         tool: str,
         env: Mapping[str, str] = os.environ,
+        dist_name: str | None = None,
     ) -> GlobalOverrides:
         """Read all global overrides from environment variables.
 
@@ -239,13 +247,16 @@ class GlobalOverrides:
         Args:
             tool: Tool prefix (e.g., "HATCH_VCS", "SETUPTOOLS_SCM")
             env: Environment dict to read from (defaults to os.environ)
+            dist_name: Optional distribution name for dist-specific env var lookups
 
         Returns:
             GlobalOverrides instance ready to use as context manager
         """
 
-        # Use EnvReader to read all environment variables with fallback
-        reader = EnvReader(tools_names=(tool, "VCS_VERSIONING"), env=env)
+        # Create EnvReader for reading environment variables with fallback
+        reader = EnvReader(
+            tools_names=(tool, "VCS_VERSIONING"), env=env, dist_name=dist_name
+        )
 
         # Read debug flag - support multiple formats
         debug_val = reader.read("DEBUG")
@@ -306,6 +317,8 @@ class GlobalOverrides:
             hg_command=hg_command,
             source_date_epoch=source_date_epoch,
             tool=tool,
+            dist_name=dist_name,
+            _env_reader=reader,
         )
 
     def __enter__(self) -> GlobalOverrides:
@@ -350,6 +363,31 @@ class GlobalOverrides:
             return datetime.fromtimestamp(self.source_date_epoch, timezone.utc)
         else:
             return datetime.now(timezone.utc)
+
+    @property
+    def env_reader(self) -> EnvReader:
+        """Get the EnvReader configured for this tool and distribution.
+
+        Returns the EnvReader that was created during initialization, configured
+        with this GlobalOverrides' tool prefix, VCS_VERSIONING as fallback, and
+        the optional dist_name for distribution-specific lookups.
+
+        Returns:
+            EnvReader instance ready to read custom environment variables
+
+        Example:
+            >>> with GlobalOverrides.from_env("HATCH_VCS", dist_name="my-package") as overrides:
+            ...     custom_val = overrides.env_reader.read("MY_CUSTOM_VAR")
+            ...     config = overrides.env_reader.read_toml("CONFIG", schema=MySchema)
+        """
+        if self._env_reader is None:
+            # Fallback for instances not created via from_env
+            return EnvReader(
+                tools_names=(self.tool, "VCS_VERSIONING"),
+                env=os.environ,
+                dist_name=self.dist_name,
+            )
+        return self._env_reader
 
     @classmethod
     def from_active(cls, **changes: Any) -> GlobalOverrides:
