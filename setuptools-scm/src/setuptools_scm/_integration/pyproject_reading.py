@@ -117,10 +117,19 @@ def read_pyproject(
     """Read and parse pyproject configuration with setuptools-specific extensions.
 
     This wraps vcs_versioning's read_pyproject and adds setuptools-specific behavior.
+    Uses internal multi-tool support to read both setuptools_scm and vcs-versioning sections.
     """
-    # Use vcs_versioning's reader
+    # Use vcs_versioning's reader with multi-tool support (internal API)
+    # This allows setuptools_scm to transition to vcs-versioning section
     vcs_data = _vcs_read_pyproject(
-        path, tool_name, canonical_build_package_name, _given_result, _given_definition
+        path,
+        canonical_build_package_name=canonical_build_package_name,
+        _given_result=_given_result,
+        _given_definition=_given_definition,
+        tool_names=[
+            "setuptools_scm",
+            "vcs-versioning",
+        ],  # Try both, setuptools_scm first
     )
 
     # Check for conflicting tool.setuptools.dynamic configuration

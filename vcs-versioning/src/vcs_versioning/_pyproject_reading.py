@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 import warnings
 from collections.abc import Sequence
@@ -97,6 +98,49 @@ class PyProjectData:
             build_requires=[],
         )
 
+    @classmethod
+    def from_file(
+        cls,
+        path: str | os.PathLike[str] = "pyproject.toml",
+        *,
+        _tool_names: list[str] | None = None,
+    ) -> Self:
+        """Load PyProjectData from pyproject.toml.
+
+        Public API: reads tool.vcs-versioning section.
+        Internal use: pass _tool_names for multi-tool support (e.g., setuptools_scm transition).
+
+        Args:
+            path: Path to pyproject.toml file
+            _tool_names: Internal parameter for multi-tool support.
+                        If None, uses ["vcs-versioning"] (public API behavior).
+
+        Returns:
+            PyProjectData instance loaded from file
+
+        Raises:
+            FileNotFoundError: If pyproject.toml not found
+            InvalidTomlError: If pyproject.toml has invalid TOML syntax
+
+        Example:
+            >>> # Public API usage
+            >>> pyproject = PyProjectData.from_file("pyproject.toml")
+            >>>
+            >>> # Internal usage (setuptools_scm transition)
+            >>> pyproject = PyProjectData.from_file(
+            ...     "pyproject.toml",
+            ...     _tool_names=["setuptools_scm", "vcs-versioning"]
+            ... )
+        """
+        if _tool_names is None:
+            # Public API path - only vcs-versioning
+            _tool_names = ["vcs-versioning"]
+
+        result = read_pyproject(Path(path), tool_names=_tool_names)
+        # Type narrowing for mypy: read_pyproject returns PyProjectData,
+        # but subclasses (like setuptools_scm's extended version) need Self
+        return result  # type: ignore[return-value]
+
     @property
     def project_name(self) -> str | None:
         return self.project.get("name")
@@ -124,10 +168,10 @@ def has_build_package(
 
 def read_pyproject(
     path: Path = DEFAULT_PYPROJECT_PATH,
-    tool_name: str = DEFAULT_TOOL_NAME,
     canonical_build_package_name: str = "setuptools-scm",
     _given_result: _t.GivenPyProjectResult = None,
     _given_definition: TOML_RESULT | None = None,
+    tool_names: list[str] | None = None,
 ) -> PyProjectData:
     """Read and parse pyproject configuration.
 
@@ -135,7 +179,6 @@ def read_pyproject(
     and ``_given_definition``.
 
     :param path: Path to the pyproject file
-    :param tool_name: The tool section name (default: ``setuptools_scm``)
     :param canonical_build_package_name: Normalized build requirement name
     :param _given_result: Optional testing hook. Can be:
         - ``PyProjectData``: returned directly
@@ -144,6 +187,8 @@ def read_pyproject(
     :param _given_definition: Optional testing hook to provide parsed TOML content.
         When provided, this dictionary is used instead of reading and parsing
         the file from disk. Ignored if ``_given_result`` is provided.
+    :param tool_names: List of tool section names to try in order.
+        If None, defaults to ["vcs-versioning", "setuptools_scm"]
     """
 
     if _given_result is not None:
@@ -162,13 +207,17 @@ def read_pyproject(
 
     tool_section = defn.get("tool", {})
 
-    # Support both [tool.vcs-versioning] and [tool.setuptools_scm] for backward compatibility
+    # Determine which tool names to try
+    if tool_names is None:
+        # Default: try vcs-versioning first, then setuptools_scm for backward compat
+        tool_names = ["vcs-versioning", "setuptools_scm"]
+
+    # Try each tool name in order
     section = {}
     section_present = False
-    actual_tool_name = tool_name
+    actual_tool_name = tool_names[0] if tool_names else DEFAULT_TOOL_NAME
 
-    # Try vcs-versioning first, then setuptools_scm for backward compat
-    for name in ["vcs-versioning", "setuptools_scm"]:
+    for name in tool_names:
         if name in tool_section:
             section = tool_section[name]
             section_present = True
@@ -177,9 +226,9 @@ def read_pyproject(
 
     if not section_present:
         log.warning(
-            "toml section missing %r does not contain a tool.%s section",
+            "toml section missing %r does not contain any of the tool sections: %s",
             path,
-            tool_name,
+            tool_names,
         )
 
     project = defn.get("project", {})

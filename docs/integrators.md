@@ -737,6 +737,263 @@ def my_function():
 
 All internal vcs-versioning modules automatically use the active override context, so you don't need to change their usage.
 
+## Experimental Integrator API
+
+!!! warning "Experimental"
+    This API is marked as experimental and may change in future versions.
+    Use with caution in production code.
+
+vcs-versioning provides helper functions for integrators to build configurations with proper override priority handling.
+
+### Overview
+
+The experimental API provides:
+- `PyProjectData`: Public class for composing pyproject.toml data
+- `build_configuration_from_pyproject()`: Substantial orchestration helper for building Configuration
+
+### Priority Order
+
+When building configurations, overrides are applied in this priority order (highest to lowest):
+
+1. **Environment TOML overrides** - `TOOL_OVERRIDES_FOR_DIST`, `TOOL_OVERRIDES`
+2. **Integrator overrides** - Python arguments passed by the integrator
+3. **Config file** - `pyproject.toml` `[tool.vcs-versioning]` section
+4. **Defaults** - vcs-versioning defaults
+
+This ensures that:
+- Users can always override via environment variables
+- Integrators can provide their own defaults/transformations
+- Config file settings are respected
+- Sensible defaults are always available
+
+### Basic Workflow
+
+```python
+from vcs_versioning import (
+    PyProjectData,
+    build_configuration_from_pyproject,
+    infer_version_string,
+)
+from vcs_versioning.overrides import GlobalOverrides
+
+def get_version_for_my_tool(pyproject_path="pyproject.toml", dist_name=None):
+    """Complete integrator workflow."""
+    # 1. Setup global overrides context (handles env vars, logging, etc.)
+    with GlobalOverrides.from_env("MY_TOOL", dist_name=dist_name):
+
+        # 2. Load pyproject data
+        pyproject = PyProjectData.from_file(pyproject_path)
+
+        # 3. Build configuration with proper override priority
+        config = build_configuration_from_pyproject(
+            pyproject_data=pyproject,
+            dist_name=dist_name,
+            # Optional: integrator overrides (override config file, not env)
+            # local_scheme="no-local-version",
+        )
+
+        # 4. Infer version
+        version = infer_version_string(
+            dist_name=dist_name or pyproject.project_name,
+            pyproject_data=pyproject,
+        )
+
+        return version
+```
+
+### PyProjectData Composition
+
+Integrators can create `PyProjectData` in two ways:
+
+#### 1. From File (Recommended)
+
+```python
+from vcs_versioning import PyProjectData
+
+# Load from pyproject.toml (reads tool.vcs-versioning section)
+pyproject = PyProjectData.from_file("pyproject.toml")
+```
+
+#### 2. Manual Composition
+
+If your tool already has its own TOML reading logic:
+
+```python
+from pathlib import Path
+from vcs_versioning import PyProjectData
+
+pyproject = PyProjectData(
+    path=Path("pyproject.toml"),
+    tool_name="vcs-versioning",
+    project={"name": "my-pkg", "dynamic": ["version"]},
+    section={"local_scheme": "no-local-version"},
+    is_required=True,
+    section_present=True,
+    project_present=True,
+    build_requires=["vcs-versioning"],
+)
+```
+
+### Building Configuration with Overrides
+
+The `build_configuration_from_pyproject()` function orchestrates the complete configuration workflow:
+
+```python
+from vcs_versioning import build_configuration_from_pyproject
+
+config = build_configuration_from_pyproject(
+    pyproject_data=pyproject,
+    dist_name="my-package",  # Optional: override project.name
+    # Integrator overrides (middle priority):
+    version_scheme="release-branch-semver",
+    local_scheme="no-local-version",
+)
+```
+
+**What it does:**
+1. Extracts config from `pyproject_data.section`
+2. Determines `dist_name` (argument > config > project.name)
+3. Merges integrator overrides (kwargs)
+4. Reads and applies environment TOML overrides
+5. Builds and validates `Configuration` instance
+
+### Environment TOML Overrides
+
+Users can override configuration via environment variables:
+
+```bash
+# Inline TOML format
+export MY_TOOL_OVERRIDES='{local_scheme = "no-local-version"}'
+
+# Distribution-specific
+export MY_TOOL_OVERRIDES_FOR_MY_PACKAGE='{version_scheme = "guess-next-dev"}'
+```
+
+These always have the highest priority, even over integrator overrides.
+
+### Complete Example: Hatch Integration
+
+```python
+# In your hatch plugin
+from pathlib import Path
+from vcs_versioning import (
+    PyProjectData,
+    build_configuration_from_pyproject,
+    infer_version_string,
+)
+from vcs_versioning.overrides import GlobalOverrides
+
+
+class HatchVCSVersion:
+    """Hatch version source plugin using vcs-versioning."""
+
+    def get_version_data(self):
+        """Get version from VCS."""
+        # Setup global context with HATCH_VCS prefix
+        with GlobalOverrides.from_env("HATCH_VCS", dist_name=self.config["dist-name"]):
+
+            # Load pyproject data
+            pyproject_path = Path(self.root) / "pyproject.toml"
+            pyproject = PyProjectData.from_file(pyproject_path)
+
+            # Build configuration
+            # Hatch-specific transformations can go here as kwargs
+            config = build_configuration_from_pyproject(
+                pyproject_data=pyproject,
+                dist_name=self.config["dist-name"],
+                root=self.root,  # Hatch provides the root
+            )
+
+            # Get version
+            version = infer_version_string(
+                dist_name=self.config["dist-name"],
+                pyproject_data=pyproject,
+            )
+
+            return {"version": version}
+```
+
+### Tool Section Naming
+
+**Important:** The public experimental API only accepts `tool.vcs-versioning` sections.
+
+```toml
+# ✅ Correct - use tool.vcs-versioning
+[tool.vcs-versioning]
+version_scheme = "guess-next-dev"
+local_scheme = "no-local-version"
+
+# ❌ Wrong - tool.setuptools_scm not supported in public API
+[tool.setuptools_scm]
+version_scheme = "guess-next-dev"
+```
+
+Only `setuptools_scm` should use `tool.setuptools_scm` (for backward compatibility during transition).
+
+### API Reference
+
+#### `PyProjectData.from_file()`
+
+```python
+@classmethod
+def from_file(
+    cls,
+    path: str | os.PathLike = "pyproject.toml",
+    *,
+    _tool_names: list[str] | None = None,
+) -> PyProjectData:
+    """Load PyProjectData from pyproject.toml.
+
+    Public API reads tool.vcs-versioning section.
+    Internal: pass _tool_names for multi-tool support.
+    """
+```
+
+#### `build_configuration_from_pyproject()`
+
+```python
+def build_configuration_from_pyproject(
+    pyproject_data: PyProjectData,
+    *,
+    dist_name: str | None = None,
+    **integrator_overrides: Any,
+) -> Configuration:
+    """Build Configuration with full workflow orchestration.
+
+    Priority order:
+    1. Environment TOML overrides (highest)
+    2. Integrator **integrator_overrides
+    3. pyproject_data.section configuration
+    4. Configuration defaults (lowest)
+    """
+```
+
+### Migration from Direct API Usage
+
+If you were previously using internal APIs directly:
+
+**Before:**
+```python
+from vcs_versioning._config import Configuration
+
+config = Configuration.from_file("pyproject.toml", dist_name="my-pkg")
+```
+
+**After (Experimental API):**
+```python
+from vcs_versioning import PyProjectData, build_configuration_from_pyproject
+from vcs_versioning.overrides import GlobalOverrides
+
+with GlobalOverrides.from_env("MY_TOOL", dist_name="my-pkg"):
+    pyproject = PyProjectData.from_file("pyproject.toml")
+    config = build_configuration_from_pyproject(
+        pyproject_data=pyproject,
+        dist_name="my-pkg",
+    )
+```
+
+The experimental API provides better separation of concerns and proper override priority handling.
+
 ## See Also
 
 - [Overrides Documentation](overrides.md) - User-facing documentation for setuptools-scm
