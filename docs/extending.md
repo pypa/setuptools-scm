@@ -39,10 +39,6 @@
 
 ## Version number construction
 
-
-
-
-
 ### `setuptools_scm.version_scheme`
 Configures how the version number is constructed given a
 [ScmVersion][vcs_versioning.ScmVersion] instance and should return a string

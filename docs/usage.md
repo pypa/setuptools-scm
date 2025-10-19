@@ -139,6 +139,9 @@ $ python -m setuptools_scm --help
 
 ## At runtime
 
+!!! tip "Recommended Approach"
+    Use standard Python metadata (`importlib.metadata`) for runtime version access. This is the standard, recommended approach that works with any packaging system.
+
 ### Python Metadata
 
 The standard method to retrieve the version number at runtime is via
@@ -173,6 +176,9 @@ print(v.version_tuple)
 ```
 
 ### Via setuptools_scm (strongly discouraged)
+
+!!! warning "Discouraged API"
+    Direct use of `setuptools_scm.get_version()` at runtime is strongly discouraged. Use `importlib.metadata` instead.
 
 While the most simple **looking** way to use `setuptools_scm` at
 runtime is:
