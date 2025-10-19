@@ -134,24 +134,24 @@ def test_from_active_and_export_together(monkeypatch: pytest.MonkeyPatch) -> Non
 def test_nested_from_active_contexts() -> None:
     """Test nested contexts using from_active()."""
     with GlobalOverrides.from_env("TEST", env={"TEST_DEBUG": "DEBUG"}):
-        from vcs_versioning import _log
+        from vcs_versioning.overrides import get_active_overrides
 
         # Original: DEBUG level
-        assert _log._default_log_level() == logging.DEBUG
+        assert get_active_overrides().debug == logging.DEBUG
 
         with GlobalOverrides.from_active(debug=logging.INFO):
             # Modified: INFO level
-            assert _log._default_log_level() == logging.INFO
+            assert get_active_overrides().debug == logging.INFO
 
             with GlobalOverrides.from_active(debug=logging.WARNING):
                 # Further modified: WARNING level
-                assert _log._default_log_level() == logging.WARNING
+                assert get_active_overrides().debug == logging.WARNING
 
             # Back to INFO
-            assert _log._default_log_level() == logging.INFO
+            assert get_active_overrides().debug == logging.INFO
 
         # Back to DEBUG
-        assert _log._default_log_level() == logging.DEBUG
+        assert get_active_overrides().debug == logging.DEBUG
 
 
 def test_export_without_source_date_epoch() -> None:

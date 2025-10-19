@@ -29,20 +29,6 @@ def make_default_handler() -> logging.Handler:
         return last_resort
 
 
-def _default_log_level() -> int:
-    """Get default log level from active GlobalOverrides context.
-
-    Returns:
-        logging level constant (DEBUG, WARNING, etc.)
-    """
-    # Import here to avoid circular imports
-    from .overrides import get_active_overrides
-
-    # Get log level from active override context
-    overrides = get_active_overrides()
-    return overrides.log_level()
-
-
 def _get_all_scm_loggers() -> list[logging.Logger]:
     """Get all SCM-related loggers that need configuration."""
     return [logging.getLogger(name) for name in LOGGER_NAMES]
@@ -52,12 +38,15 @@ _configured = False
 _default_handler: logging.Handler | None = None
 
 
-def configure_logging() -> None:
+def configure_logging(log_level: int = logging.WARNING) -> None:
     """Configure logging for all SCM-related loggers.
 
     This should be called once at entry point (CLI, setuptools integration, etc.)
-    before any actual logging occurs. Uses the active GlobalOverrides context
-    to determine the log level.
+    before any actual logging occurs.
+
+    Args:
+        log_level: Logging level constant from logging module (DEBUG, INFO, WARNING, etc.)
+                   Defaults to WARNING.
     """
     global _configured, _default_handler
     if _configured:
@@ -66,12 +55,10 @@ def configure_logging() -> None:
     if _default_handler is None:
         _default_handler = make_default_handler()
 
-    level = _default_log_level()
-
     for logger in _get_all_scm_loggers():
         if not logger.handlers:
             logger.addHandler(_default_handler)
-        logger.setLevel(level)
+        logger.setLevel(log_level)
         logger.propagate = False
 
     _configured = True

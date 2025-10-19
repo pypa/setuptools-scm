@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any
 
 from . import _discover as discover
-from . import _log
 from ._config import Configuration
 from ._get_version_impl import _get_version
 from ._pyproject_reading import PyProjectData
@@ -20,10 +19,8 @@ def main(
     from .overrides import GlobalOverrides
 
     # Apply global overrides for the entire CLI execution
+    # Logging is automatically configured when entering the context
     with GlobalOverrides.from_env("SETUPTOOLS_SCM"):
-        # Configure logging at CLI entry point (uses overrides for debug level)
-        _log.configure_logging()
-
         opts = _get_cli_opts(args)
         inferred_root: str = opts.root or "."
 

@@ -17,7 +17,7 @@ The simplest way to use the overrides system is with the `GlobalOverrides` conte
 
 ```python
 from vcs_versioning.overrides import GlobalOverrides
-from vcs_versioning._version_inference import infer_version_string
+from vcs_versioning import infer_version_string
 
 # Use your own prefix
 with GlobalOverrides.from_env("HATCH_VCS"):
@@ -47,7 +47,7 @@ with GlobalOverrides.from_env("YOUR_TOOL"):
 
 ### What Gets Configured
 
-The `GlobalOverrides` context manager reads and applies these configuration values:
+The `GlobalOverrides` context manager reads and applies these configuration values, and automatically configures logging:
 
 | Field | Environment Variables | Default | Description |
 |-------|----------------------|---------|-------------|
@@ -55,6 +55,8 @@ The `GlobalOverrides` context manager reads and applies these configuration valu
 | `subprocess_timeout` | `{TOOL}_SUBPROCESS_TIMEOUT`<br>`VCS_VERSIONING_SUBPROCESS_TIMEOUT` | `40` | Timeout for subprocess commands in seconds |
 | `hg_command` | `{TOOL}_HG_COMMAND`<br>`VCS_VERSIONING_HG_COMMAND` | `"hg"` | Command to use for Mercurial operations |
 | `source_date_epoch` | `SOURCE_DATE_EPOCH` | `None` | Unix timestamp for reproducible builds |
+
+**Note:** Logging is automatically configured when entering the `GlobalOverrides` context. The debug level is used to set the log level for all vcs-versioning and setuptools-scm loggers.
 
 ### Debug Logging Levels
 
@@ -169,19 +171,21 @@ This means:
 
 ## Distribution-Specific Overrides
 
-For dist-specific overrides like pretend versions and metadata, use `read_named_env()`:
+For dist-specific overrides like pretend versions and metadata, use `EnvReader`:
 
 ```python
-from vcs_versioning import read_named_env
+from vcs_versioning.overrides import EnvReader
+import os
 
 # Read pretend version for a specific distribution
-pretend_version = read_named_env(
-    tool="HATCH_VCS",
-    name="PRETEND_VERSION",
+reader = EnvReader(
+    tools_names=("HATCH_VCS", "VCS_VERSIONING"),
+    env=os.environ,
     dist_name="my-package",
 )
+pretend_version = reader.read("PRETEND_VERSION")
 
-# This checks:
+# This checks in order:
 # 1. HATCH_VCS_PRETEND_VERSION_FOR_MY_PACKAGE
 # 2. VCS_VERSIONING_PRETEND_VERSION_FOR_MY_PACKAGE
 # 3. HATCH_VCS_PRETEND_VERSION (generic)
@@ -202,6 +206,222 @@ The normalization:
 1. Uses `packaging.utils.canonicalize_name()` (PEP 503)
 2. Replaces `-` with `_`
 3. Converts to uppercase
+
+## EnvReader: Advanced Environment Variable Reading
+
+The `EnvReader` class is the core utility for reading environment variables with automatic fallback between tool prefixes. While `GlobalOverrides` handles the standard global overrides automatically, `EnvReader` is useful when you need to read custom or distribution-specific environment variables.
+
+### Basic Usage
+
+```python
+from vcs_versioning.overrides import EnvReader
+import os
+
+# Create reader with tool prefix fallback
+reader = EnvReader(
+    tools_names=("HATCH_VCS", "VCS_VERSIONING"),
+    env=os.environ,
+)
+
+# Read simple values
+debug = reader.read("DEBUG")
+timeout = reader.read("SUBPROCESS_TIMEOUT")
+custom = reader.read("MY_CUSTOM_VAR")
+
+# Returns None if not found
+value = reader.read("NONEXISTENT")  # None
+```
+
+### Reading Distribution-Specific Variables
+
+When you provide a `dist_name`, `EnvReader` automatically checks distribution-specific variants first:
+
+```python
+reader = EnvReader(
+    tools_names=("HATCH_VCS", "VCS_VERSIONING"),
+    env=os.environ,
+    dist_name="my-package",
+)
+
+# Reading "PRETEND_VERSION" checks in order:
+# 1. HATCH_VCS_PRETEND_VERSION_FOR_MY_PACKAGE (tool + dist)
+# 2. VCS_VERSIONING_PRETEND_VERSION_FOR_MY_PACKAGE (fallback + dist)
+# 3. HATCH_VCS_PRETEND_VERSION (tool generic)
+# 4. VCS_VERSIONING_PRETEND_VERSION (fallback generic)
+pretend = reader.read("PRETEND_VERSION")
+```
+
+### Reading TOML Configuration
+
+For structured configuration, use `read_toml()` with TypedDict schemas:
+
+```python
+from typing import TypedDict
+from vcs_versioning.overrides import EnvReader
+
+class MyConfigSchema(TypedDict, total=False):
+    """Schema for configuration validation."""
+    local_scheme: str
+    version_scheme: str
+    timeout: int
+    enabled: bool
+
+reader = EnvReader(
+    tools_names=("MY_TOOL", "VCS_VERSIONING"),
+    env={
+        "MY_TOOL_CONFIG": '{local_scheme = "no-local-version", timeout = 120}'
+    }
+)
+
+# Parse TOML with schema validation
+config = reader.read_toml("CONFIG", schema=MyConfigSchema)
+# Result: {'local_scheme': 'no-local-version', 'timeout': 120}
+
+# Invalid fields are automatically removed and logged as warnings
+```
+
+**TOML Format Support:**
+
+- **Inline maps**: `{key = "value", number = 42}`
+- **Full documents**: Multi-line TOML with proper structure
+- **Type coercion**: TOML types are preserved (int, bool, datetime, etc.)
+
+### Error Handling and Diagnostics
+
+`EnvReader` provides helpful diagnostics for common mistakes:
+
+#### Alternative Normalizations
+
+If you use a slightly different normalization, you'll get a warning:
+
+```python
+reader = EnvReader(
+    tools_names=("TOOL",),
+    env={"TOOL_VAR_FOR_MY-PACKAGE": "value"},  # Using dashes
+    dist_name="my-package"
+)
+
+value = reader.read("VAR")
+# Warning: Found environment variable 'TOOL_VAR_FOR_MY-PACKAGE' for dist name 'my-package',
+# but expected 'TOOL_VAR_FOR_MY_PACKAGE'. Consider using the standard normalized name.
+# Returns: "value" (still works!)
+```
+
+#### Typo Detection
+
+If you have a typo in the distribution name suffix, you'll get suggestions:
+
+```python
+reader = EnvReader(
+    tools_names=("TOOL",),
+    env={"TOOL_VAR_FOR_MY_PACKGE": "value"},  # Typo: PACKAGE
+    dist_name="my-package"
+)
+
+value = reader.read("VAR")
+# Warning: Environment variable 'TOOL_VAR_FOR_MY_PACKAGE' not found for dist name 'my-package'
+# (canonicalized as 'my-package'). Did you mean one of these? ['TOOL_VAR_FOR_MY_PACKGE']
+# Returns: None (doesn't match)
+```
+
+### Common Patterns
+
+#### Pattern: Reading Pretend Metadata (TOML)
+
+```python
+from vcs_versioning._overrides import PretendMetadataDict
+from vcs_versioning.overrides import EnvReader
+
+reader = EnvReader(
+    tools_names=("MY_TOOL", "VCS_VERSIONING"),
+    env=os.environ,
+    dist_name="my-package"
+)
+
+# Read TOML metadata
+metadata = reader.read_toml("PRETEND_METADATA", schema=PretendMetadataDict)
+# Example result: {'node': 'g1337beef', 'distance': 4, 'dirty': False}
+```
+
+#### Pattern: Reading Configuration Overrides
+
+```python
+from vcs_versioning._overrides import ConfigOverridesDict
+from vcs_versioning.overrides import EnvReader
+
+reader = EnvReader(
+    tools_names=("MY_TOOL", "VCS_VERSIONING"),
+    env=os.environ,
+    dist_name="my-package"
+)
+
+# Read config overrides
+overrides = reader.read_toml("OVERRIDES", schema=ConfigOverridesDict)
+# Example: {'local_scheme': 'no-local-version', 'version_scheme': 'release-branch-semver'}
+```
+
+#### Pattern: Reusing Reader for Multiple Reads
+
+```python
+reader = EnvReader(
+    tools_names=("MY_TOOL", "VCS_VERSIONING"),
+    env=os.environ,
+    dist_name="my-package"
+)
+
+# Efficient: reuse reader for multiple variables
+pretend_version = reader.read("PRETEND_VERSION")
+pretend_metadata = reader.read_toml("PRETEND_METADATA", schema=PretendMetadataDict)
+config_overrides = reader.read_toml("OVERRIDES", schema=ConfigOverridesDict)
+custom_setting = reader.read("CUSTOM_SETTING")
+```
+
+### When to Use EnvReader
+
+**Use `EnvReader` when you need to:**
+
+- Read custom environment variables beyond the standard global overrides
+- Support distribution-specific configuration
+- Parse structured TOML data from environment variables
+- Implement your own override system on top of vcs-versioning
+
+**Don't use `EnvReader` for:**
+
+- Standard global overrides (debug, timeout, etc.) - use `GlobalOverrides` instead
+- One-time reads - it's designed for efficiency with multiple reads
+
+### EnvReader vs GlobalOverrides
+
+| Feature | `GlobalOverrides` | `EnvReader` |
+|---------|------------------|-------------|
+| **Purpose** | Manage standard global overrides | Read any custom env vars |
+| **Context Manager** | ✅ Yes | ❌ No |
+| **Auto-configures logging** | ✅ Yes | ❌ No |
+| **Tool fallback** | ✅ Automatic | ✅ Automatic |
+| **Dist-specific vars** | ❌ No | ✅ Yes |
+| **TOML parsing** | ❌ No | ✅ Yes |
+| **Use case** | Entry point setup | Custom config reading |
+
+**Typical usage together:**
+
+```python
+from vcs_versioning.overrides import GlobalOverrides, EnvReader
+import os
+
+# Apply global overrides
+with GlobalOverrides.from_env("MY_TOOL"):
+    # Read custom configuration
+    reader = EnvReader(
+        tools_names=("MY_TOOL", "VCS_VERSIONING"),
+        env=os.environ,
+        dist_name="my-package"
+    )
+
+    custom_config = reader.read_toml("CUSTOM_CONFIG", schema=MySchema)
+
+    # Both global overrides and custom config are now available
+    version = detect_version_with_config(custom_config)
+```
 
 ## Environment Variable Patterns
 
@@ -232,46 +452,56 @@ Here's a complete example of integrating vcs-versioning into a build backend:
 # my_build_backend.py
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from vcs_versioning.overrides import GlobalOverrides
-from vcs_versioning._config import Configuration
-from vcs_versioning._get_version_impl import _get_version
+from vcs_versioning import infer_version_string
 
 
-def get_version_for_build(root: str, config_data: dict[str, Any]) -> str:
-    """Get version for build, using MYBUILD_* environment variables."""
+def get_version_for_build(
+    dist_name: str,
+    pyproject_data: dict[str, Any],
+    config_overrides: dict[str, Any] | None = None,
+) -> str:
+    """Get version for build, using MYBUILD_* environment variables.
+
+    Args:
+        dist_name: The distribution/package name (e.g., "my-package")
+        pyproject_data: Parsed pyproject.toml data
+        config_overrides: Optional configuration overrides
+
+    Returns:
+        The computed version string
+    """
 
     # Apply global overrides with custom prefix
+    # Logging is automatically configured based on MYBUILD_DEBUG
     with GlobalOverrides.from_env("MYBUILD"):
-        # Configure your build tool's logging if needed
-        _configure_logging()
-
-        # Create configuration
-        config = Configuration(
-            root=root,
-            **config_data,
+        # Get version - all subprocess calls and logging respect MYBUILD_* vars
+        # dist_name is used for distribution-specific env var lookups
+        version = infer_version_string(
+            dist_name=dist_name,
+            pyproject_data=pyproject_data,
+            overrides=config_overrides,
         )
 
-        # Get version - all subprocess calls and logging respect MYBUILD_* vars
-        version = _get_version(config)
-
-        if version is None:
-            raise ValueError("Could not determine version from VCS")
-
         return version
-
-
-def _configure_logging() -> None:
-    """Configure logging based on active overrides."""
-    from vcs_versioning._log import configure_logging
-
-    # This will use the debug level from GlobalOverrides context
-    configure_logging()
 ```
 
 ### Usage
+
+The function is called with the distribution name, enabling package-specific overrides:
+
+```python
+# Example: Using in a build backend
+version = get_version_for_build(
+    dist_name="my-package",
+    pyproject_data=parsed_pyproject,
+    config_overrides={"local_scheme": "no-local-version"},
+)
+```
+
+Environment variables can override behavior per package:
 
 ```bash
 # Enable debug logging for this tool only
@@ -283,8 +513,11 @@ export VCS_VERSIONING_DEBUG=1
 # Override subprocess timeout
 export MYBUILD_SUBPROCESS_TIMEOUT=120
 
-# Pretend version for CI builds
+# Pretend version for specific package (dist_name="my-package")
 export MYBUILD_PRETEND_VERSION_FOR_MY_PACKAGE=1.2.3.dev4
+
+# Or generic pretend version (applies to all packages)
+export MYBUILD_PRETEND_VERSION=1.2.3
 
 python -m build
 ```
@@ -372,23 +605,25 @@ Outside a context, these functions fall back to reading `os.environ` directly fo
 If you need to read custom dist-specific overrides:
 
 ```python
-from vcs_versioning import read_named_env
+from vcs_versioning.overrides import EnvReader
+import os
 
 # Read a custom override
-custom_value = read_named_env(
-    tool="HATCH_VCS",
-    name="MY_CUSTOM_SETTING",
+reader = EnvReader(
+    tools_names=("HATCH_VCS", "VCS_VERSIONING"),
+    env=os.environ,
     dist_name="my-package",
 )
+custom_value = reader.read("MY_CUSTOM_SETTING")
 
-# This checks:
+# This checks in order:
 # 1. HATCH_VCS_MY_CUSTOM_SETTING_FOR_MY_PACKAGE
 # 2. VCS_VERSIONING_MY_CUSTOM_SETTING_FOR_MY_PACKAGE
 # 3. HATCH_VCS_MY_CUSTOM_SETTING
 # 4. VCS_VERSIONING_MY_CUSTOM_SETTING
 ```
 
-The function includes fuzzy matching and helpful warnings if users specify distribution names incorrectly.
+`EnvReader` includes fuzzy matching and helpful warnings if users specify distribution names incorrectly.
 
 ## Best Practices
 

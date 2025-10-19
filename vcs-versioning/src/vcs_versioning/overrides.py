@@ -204,6 +204,7 @@ class GlobalOverrides:
     """Global environment variable overrides for VCS versioning.
 
     Use as a context manager to apply overrides for the execution scope.
+    Logging is automatically configured when entering the context.
 
     Attributes:
         debug: Debug logging level (int from logging module) or False to disable
@@ -215,6 +216,7 @@ class GlobalOverrides:
     Usage:
         with GlobalOverrides.from_env("HATCH_VCS"):
             # All modules now have access to these overrides
+            # Logging is automatically configured based on HATCH_VCS_DEBUG
             version = get_version(...)
     """
 
@@ -307,10 +309,16 @@ class GlobalOverrides:
         )
 
     def __enter__(self) -> GlobalOverrides:
-        """Enter context: set this as the active override."""
+        """Enter context: set this as the active override and configure logging."""
         token = _active_overrides.set(self)
         # Store the token so we can restore in __exit__
         object.__setattr__(self, "_token", token)
+
+        # Automatically configure logging using the log_level property
+        from ._log import configure_logging
+
+        configure_logging(log_level=self.log_level())
+
         return self
 
     def __exit__(self, *exc_info: Any) -> None:
