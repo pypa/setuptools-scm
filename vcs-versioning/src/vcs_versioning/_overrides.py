@@ -8,17 +8,78 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import os
+import sys
 from collections.abc import Mapping
+from datetime import date, datetime
 from difflib import get_close_matches
-from typing import Any
+from re import Pattern
+from typing import TYPE_CHECKING, Any, TypedDict, get_type_hints
 
 from packaging.utils import canonicalize_name
 
 from . import _config
+from . import _types as _t
 from . import _version_schemes as version
-from ._toml import load_toml_or_inline_map
+from ._version_cls import Version as _Version
+
+if TYPE_CHECKING:
+    pass
+
+if sys.version_info >= (3, 11):
+    pass
+else:
+    pass
 
 log = logging.getLogger(__name__)
+
+
+# TypedDict schemas for TOML data validation and type hints
+
+
+class PretendMetadataDict(TypedDict, total=False):
+    """Schema for ScmVersion metadata fields that can be overridden via environment.
+
+    All fields are optional since partial overrides are allowed.
+    """
+
+    tag: str | _Version
+    distance: int
+    node: str | None
+    dirty: bool
+    preformatted: bool
+    branch: str | None
+    node_date: date | None
+    time: datetime
+
+
+class ConfigOverridesDict(TypedDict, total=False):
+    """Schema for Configuration fields that can be overridden via environment.
+
+    All fields are optional since partial overrides are allowed.
+    """
+
+    # Configuration fields
+    root: _t.PathT
+    version_scheme: _t.VERSION_SCHEME
+    local_scheme: _t.VERSION_SCHEME
+    tag_regex: str | Pattern[str]
+    parentdir_prefix_version: str | None
+    fallback_version: str | None
+    fallback_root: _t.PathT
+    write_to: _t.PathT | None
+    write_to_template: str | None
+    version_file: _t.PathT | None
+    version_file_template: str | None
+    parse: Any  # ParseFunction - avoid circular import
+    git_describe_command: _t.CMD_TYPE | None  # deprecated but still supported
+    dist_name: str | None
+    version_cls: Any  # type[_Version] - avoid circular import
+    normalize: bool  # Used in from_data
+    search_parent_directories: bool
+    parent: _t.PathT | None
+    scm: dict[str, Any]  # Nested SCM configuration
+
 
 PRETEND_KEY = "SETUPTOOLS_SCM_PRETEND_VERSION"
 PRETEND_KEY_NAMED = PRETEND_KEY + "_FOR_{name}"
@@ -90,7 +151,7 @@ def _find_close_env_var_matches(
 
 def _read_pretended_metadata_for(
     config: _config.Configuration,
-) -> dict[str, Any] | None:
+) -> PretendMetadataDict | None:
     """read overridden metadata from the environment
 
     tries ``SETUPTOOLS_SCM_PRETEND_METADATA``
@@ -99,8 +160,6 @@ def _read_pretended_metadata_for(
     Returns a dictionary with metadata field overrides like:
     {"node": "g1337beef", "distance": 4}
     """
-    import os
-
     from .overrides import EnvReader
 
     log.debug("dist name: %s", config.dist_name)
@@ -110,39 +169,15 @@ def _read_pretended_metadata_for(
         env=os.environ,
         dist_name=config.dist_name,
     )
-    pretended = reader.read("PRETEND_METADATA")
 
-    if pretended:
-        try:
-            metadata_overrides = load_toml_or_inline_map(pretended)
-            # Validate that only known ScmVersion fields are provided
-            valid_fields = {
-                "tag",
-                "distance",
-                "node",
-                "dirty",
-                "preformatted",
-                "branch",
-                "node_date",
-                "time",
-            }
-            invalid_fields = set(metadata_overrides.keys()) - valid_fields
-            if invalid_fields:
-                log.warning(
-                    "Invalid metadata fields in pretend metadata: %s. "
-                    "Valid fields are: %s",
-                    invalid_fields,
-                    valid_fields,
-                )
-                # Remove invalid fields but continue processing
-                for field in invalid_fields:
-                    metadata_overrides.pop(field)
-
-            return metadata_overrides or None
-        except Exception as e:
-            log.error("Failed to parse pretend metadata: %s", e)
-            return None
-    else:
+    try:
+        # Use schema validation during TOML parsing
+        metadata_overrides = reader.read_toml(
+            "PRETEND_METADATA", schema=PretendMetadataDict
+        )
+        return metadata_overrides or None
+    except Exception as e:
+        log.error("Failed to parse pretend metadata: %s", e)
         return None
 
 
@@ -177,36 +212,41 @@ def _apply_metadata_overrides(
 
     log.info("Applying metadata overrides: %s", metadata_overrides)
 
-    # Define type checks and field mappings
-    from datetime import date, datetime
+    # Get type hints from PretendMetadataDict for validation
+    field_types = get_type_hints(PretendMetadataDict)
 
-    field_specs: dict[str, tuple[type | tuple[type, type], str]] = {
-        "distance": (int, "int"),
-        "dirty": (bool, "bool"),
-        "preformatted": (bool, "bool"),
-        "node_date": (date, "date"),
-        "time": (datetime, "datetime"),
-        "node": ((str, type(None)), "str or None"),
-        "branch": ((str, type(None)), "str or None"),
-        # tag is special - can be multiple types, handled separately
-    }
-
-    # Apply each override individually using dataclasses.replace for type safety
+    # Apply each override individually using dataclasses.replace
     result = scm_version
 
     for field, value in metadata_overrides.items():
-        if field in field_specs:
-            expected_type, type_name = field_specs[field]
-            assert isinstance(value, expected_type), (
-                f"{field} must be {type_name}, got {type(value).__name__}: {value!r}"
-            )
-            result = dataclasses.replace(result, **{field: value})
-        elif field == "tag":
-            # tag can be Version, NonNormalizedVersion, or str - we'll let the assignment handle validation
-            result = dataclasses.replace(result, tag=value)
-        else:
-            # This shouldn't happen due to validation in _read_pretended_metadata_for
-            log.warning("Unknown field '%s' in metadata overrides", field)
+        # Validate field types using the TypedDict annotations
+        if field in field_types:
+            expected_type = field_types[field]
+            # Handle Optional/Union types (e.g., str | None)
+            if hasattr(expected_type, "__args__"):
+                # Union type - check if value is instance of any of the types
+                valid = any(
+                    isinstance(value, t) if t is not type(None) else value is None
+                    for t in expected_type.__args__
+                )
+                if not valid:
+                    type_names = " | ".join(
+                        t.__name__ if t is not type(None) else "None"
+                        for t in expected_type.__args__
+                    )
+                    raise TypeError(
+                        f"Field '{field}' must be {type_names}, "
+                        f"got {type(value).__name__}: {value!r}"
+                    )
+            else:
+                # Simple type
+                if not isinstance(value, expected_type):
+                    raise TypeError(
+                        f"Field '{field}' must be {expected_type.__name__}, "
+                        f"got {type(value).__name__}: {value!r}"
+                    )
+
+        result = dataclasses.replace(result, **{field: value})  # type: ignore[arg-type]
 
     # Ensure config is preserved (should not be overridden)
     assert result.config is config, "Config must be preserved during metadata overrides"
@@ -222,8 +262,6 @@ def _read_pretended_version_for(
     tries ``SETUPTOOLS_SCM_PRETEND_VERSION``
     and ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_$UPPERCASE_DIST_NAME``
     """
-    import os
-
     from .overrides import EnvReader
 
     log.debug("dist name: %s", config.dist_name)
@@ -241,10 +279,11 @@ def _read_pretended_version_for(
         return None
 
 
-def read_toml_overrides(dist_name: str | None) -> dict[str, Any]:
-    """Read TOML overrides from environment."""
-    import os
+def read_toml_overrides(dist_name: str | None) -> ConfigOverridesDict:
+    """Read TOML overrides from environment.
 
+    Validates that only known Configuration fields are provided.
+    """
     from .overrides import EnvReader
 
     reader = EnvReader(
@@ -252,4 +291,4 @@ def read_toml_overrides(dist_name: str | None) -> dict[str, Any]:
         env=os.environ,
         dist_name=dist_name,
     )
-    return reader.read_toml("OVERRIDES")
+    return reader.read_toml("OVERRIDES", schema=ConfigOverridesDict)

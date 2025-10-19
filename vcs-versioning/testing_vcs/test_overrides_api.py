@@ -458,6 +458,7 @@ class TestEnvReader:
 
     def test_read_toml_inline_map(self) -> None:
         """Test reading an inline TOML map."""
+        from vcs_versioning._overrides import ConfigOverridesDict
         from vcs_versioning.overrides import EnvReader
 
         env = {
@@ -465,7 +466,7 @@ class TestEnvReader:
         }
         reader = EnvReader(tools_names=("TOOL_A",), env=env)
 
-        result = reader.read_toml("OVERRIDES")
+        result = reader.read_toml("OVERRIDES", schema=ConfigOverridesDict)
         assert result == {
             "local_scheme": "no-local-version",
             "version_scheme": "release-branch-semver",
@@ -473,6 +474,7 @@ class TestEnvReader:
 
     def test_read_toml_full_document(self) -> None:
         """Test reading a full TOML document."""
+        from vcs_versioning._overrides import PretendMetadataDict
         from vcs_versioning.overrides import EnvReader
 
         env = {
@@ -480,40 +482,50 @@ class TestEnvReader:
         }
         reader = EnvReader(tools_names=("TOOL_A",), env=env)
 
-        result = reader.read_toml("PRETEND_METADATA")
+        result = reader.read_toml("PRETEND_METADATA", schema=PretendMetadataDict)
         assert result == {"tag": "v1.0.0", "distance": 4, "node": "g123abc"}
 
     def test_read_toml_not_found_returns_empty_dict(self) -> None:
         """Test that read_toml returns empty dict when not found."""
+        from vcs_versioning._overrides import ConfigOverridesDict
         from vcs_versioning.overrides import EnvReader
 
         reader = EnvReader(tools_names=("TOOL_A",), env={})
 
-        result = reader.read_toml("OVERRIDES")
+        result = reader.read_toml("OVERRIDES", schema=ConfigOverridesDict)
         assert result == {}
 
     def test_read_toml_empty_string_returns_empty_dict(self) -> None:
         """Test that empty string returns empty dict."""
+        from vcs_versioning._overrides import ConfigOverridesDict
         from vcs_versioning.overrides import EnvReader
 
         env = {"TOOL_A_OVERRIDES": ""}
         reader = EnvReader(tools_names=("TOOL_A",), env=env)
 
-        result = reader.read_toml("OVERRIDES")
+        result = reader.read_toml("OVERRIDES", schema=ConfigOverridesDict)
         assert result == {}
 
     def test_read_toml_with_tool_fallback(self) -> None:
         """Test that read_toml respects tool fallback order."""
+        from typing import TypedDict
+
         from vcs_versioning.overrides import EnvReader
+
+        class _TestSchema(TypedDict, total=False):
+            """Schema for this test without validation."""
+
+            debug: bool
 
         env = {"TOOL_B_OVERRIDES": "{debug = true}"}
         reader = EnvReader(tools_names=("TOOL_A", "TOOL_B"), env=env)
 
-        result = reader.read_toml("OVERRIDES")
+        result = reader.read_toml("OVERRIDES", schema=_TestSchema)
         assert result == {"debug": True}
 
     def test_read_toml_with_dist_specific(self) -> None:
         """Test reading dist-specific TOML data."""
+        from vcs_versioning._overrides import ConfigOverridesDict
         from vcs_versioning.overrides import EnvReader
 
         env = {
@@ -523,21 +535,23 @@ class TestEnvReader:
         reader = EnvReader(tools_names=("TOOL_A",), env=env, dist_name="my-package")
 
         # Should get dist-specific version
-        result = reader.read_toml("OVERRIDES")
+        result = reader.read_toml("OVERRIDES", schema=ConfigOverridesDict)
         assert result == {"local_scheme": "no-local-version"}
 
     def test_read_toml_dist_specific_fallback_to_generic(self) -> None:
         """Test falling back to generic when dist-specific not found."""
+        from vcs_versioning._overrides import ConfigOverridesDict
         from vcs_versioning.overrides import EnvReader
 
         env = {"TOOL_A_OVERRIDES": '{version_scheme = "guess-next-dev"}'}
         reader = EnvReader(tools_names=("TOOL_A",), env=env, dist_name="my-package")
 
-        result = reader.read_toml("OVERRIDES")
+        result = reader.read_toml("OVERRIDES", schema=ConfigOverridesDict)
         assert result == {"version_scheme": "guess-next-dev"}
 
     def test_read_toml_invalid_raises(self) -> None:
         """Test that invalid TOML raises InvalidTomlError."""
+        from vcs_versioning._overrides import ConfigOverridesDict
         from vcs_versioning._toml import InvalidTomlError
         from vcs_versioning.overrides import EnvReader
 
@@ -545,20 +559,27 @@ class TestEnvReader:
         reader = EnvReader(tools_names=("TOOL_A",), env=env)
 
         with pytest.raises(InvalidTomlError, match="Invalid TOML content"):
-            reader.read_toml("OVERRIDES")
+            reader.read_toml("OVERRIDES", schema=ConfigOverridesDict)
 
     def test_read_toml_with_alternative_normalization(
         self, caplog: pytest.LogCaptureFixture
     ) -> None:
         """Test that read_toml works with diagnostic warnings."""
+        from typing import TypedDict
+
         from vcs_versioning.overrides import EnvReader
+
+        class _TestSchema(TypedDict, total=False):
+            """Schema for this test without validation."""
+
+            key: str
 
         # Use a non-standard normalization
         env = {"TOOL_A_OVERRIDES_FOR_MY-PACKAGE": '{key = "value"}'}
         reader = EnvReader(tools_names=("TOOL_A",), env=env, dist_name="my-package")
 
         with caplog.at_level(logging.WARNING):
-            result = reader.read_toml("OVERRIDES")
+            result = reader.read_toml("OVERRIDES", schema=_TestSchema)
 
         assert result == {"key": "value"}
         assert "Found environment variable" in caplog.text
@@ -566,6 +587,7 @@ class TestEnvReader:
 
     def test_read_toml_complex_metadata(self) -> None:
         """Test reading complex ScmVersion metadata."""
+        from vcs_versioning._overrides import PretendMetadataDict
         from vcs_versioning.overrides import EnvReader
 
         env = {
@@ -573,9 +595,70 @@ class TestEnvReader:
         }
         reader = EnvReader(tools_names=("TOOL_A",), env=env)
 
-        result = reader.read_toml("PRETEND_METADATA")
+        result = reader.read_toml("PRETEND_METADATA", schema=PretendMetadataDict)
         assert result["tag"] == "v2.0.0"
         assert result["distance"] == 10
         assert result["node"] == "gabcdef123"
         assert result["dirty"] is True
         assert result["branch"] == "main"
+
+    def test_read_toml_with_schema_validation(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Test that schema validation filters invalid fields."""
+        from typing import TypedDict
+
+        from vcs_versioning.overrides import EnvReader
+
+        # Define a test schema
+        class TestSchema(TypedDict, total=False):
+            valid_field: str
+            another_valid: str
+
+        env = {
+            "TOOL_A_DATA": '{valid_field = "ok", invalid_field = "bad", another_valid = "also ok"}'
+        }
+        reader = EnvReader(tools_names=("TOOL_A",), env=env)
+
+        with caplog.at_level(logging.WARNING):
+            result = reader.read_toml("DATA", schema=TestSchema)
+
+        # Invalid field should be removed
+        assert result == {"valid_field": "ok", "another_valid": "also ok"}
+        assert "invalid_field" not in result
+
+        # Should have logged a warning about invalid fields
+        assert "Invalid fields in TOML data" in caplog.text
+        assert "invalid_field" in caplog.text
+
+
+def test_read_toml_overrides_with_schema(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Test that read_toml_overrides validates against CONFIG_OVERRIDES_SCHEMA."""
+    import os
+    from unittest.mock import patch
+
+    from vcs_versioning._overrides import read_toml_overrides
+
+    # Mock the environment with valid and invalid fields
+    mock_env = {
+        "SETUPTOOLS_SCM_OVERRIDES": '{version_scheme = "guess-next-dev", local_scheme = "no-local-version", invalid_field = "bad"}'
+    }
+
+    with (
+        patch.dict(os.environ, mock_env, clear=True),
+        caplog.at_level(logging.WARNING),
+    ):
+        result = read_toml_overrides(dist_name=None)
+
+    # Valid fields should be present
+    assert result["version_scheme"] == "guess-next-dev"
+    assert result["local_scheme"] == "no-local-version"
+
+    # Invalid field should be removed
+    assert "invalid_field" not in result
+
+    # Should have logged a warning
+    assert "Invalid fields in TOML data" in caplog.text
+    assert "invalid_field" in caplog.text

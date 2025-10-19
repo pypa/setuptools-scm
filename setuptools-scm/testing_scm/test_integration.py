@@ -237,7 +237,7 @@ def test_pretend_metadata_invalid_fields_filtered(
         version = wd.get_version()
         assert version == "1.0.0"
 
-    assert "Invalid metadata fields in pretend metadata" in caplog.text
+    assert "Invalid fields in TOML data" in caplog.text
     assert "invalid_field" in caplog.text
     assert "another_bad_field" in caplog.text
 

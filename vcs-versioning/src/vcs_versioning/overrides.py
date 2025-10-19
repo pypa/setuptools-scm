@@ -24,7 +24,7 @@ from collections.abc import Mapping, MutableMapping
 from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar
 
 from packaging.utils import canonicalize_name
 
@@ -33,6 +33,9 @@ from ._overrides import (
     _search_env_vars_with_prefix,
 )
 from ._toml import load_toml_or_inline_map
+
+# TypeVar for generic TypedDict support
+TSchema = TypeVar("TSchema", bound=TypedDict)  # type: ignore[valid-type]
 
 if TYPE_CHECKING:
     from pytest import MonkeyPatch
@@ -163,7 +166,7 @@ class EnvReader:
 
         return None
 
-    def read_toml(self, name: str) -> dict[str, Any]:
+    def read_toml(self, name: str, *, schema: type[TSchema]) -> TSchema:
         """Read and parse a TOML-formatted environment variable.
 
         This method is useful for reading structured configuration like:
@@ -174,20 +177,26 @@ class EnvReader:
 
         Args:
             name: The environment variable name component (e.g., "OVERRIDES", "PRETEND_METADATA")
+            schema: TypedDict class for schema validation.
+                   Invalid fields will be logged as warnings and removed.
 
         Returns:
-            Parsed TOML data as a dictionary, or an empty dict if not found or empty.
+            Parsed TOML data conforming to the schema type, or an empty dict if not found.
             Raises InvalidTomlError if the TOML content is malformed.
 
         Example:
+            >>> from typing import TypedDict
+            >>> class MySchema(TypedDict, total=False):
+            ...     local_scheme: str
             >>> reader = EnvReader(tools_names=("TOOL",), env={
             ...     "TOOL_OVERRIDES": '{"local_scheme": "no-local-version"}',
             ... })
-            >>> reader.read_toml("OVERRIDES")
-            {'local_scheme': 'no-local-version'}
+            >>> result: MySchema = reader.read_toml("OVERRIDES", schema=MySchema)
+            >>> result["local_scheme"]
+            'no-local-version'
         """
         data = self.read(name)
-        return load_toml_or_inline_map(data)
+        return load_toml_or_inline_map(data, schema=schema)
 
 
 @dataclass(frozen=True)
