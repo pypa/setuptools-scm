@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import logging
 import os
+import warnings
 from collections.abc import Mapping, MutableMapping
 from contextvars import ContextVar
 from dataclasses import dataclass
@@ -66,8 +67,8 @@ class GlobalOverrides:
     @classmethod
     def from_env(
         cls,
-        tool: str = "SETUPTOOLS_SCM",
-        env: Mapping[str, str] | None = None,
+        tool: str,
+        env: Mapping[str, str] = os.environ,
     ) -> GlobalOverrides:
         """Read all global overrides from environment variables.
 
@@ -80,8 +81,6 @@ class GlobalOverrides:
         Returns:
             GlobalOverrides instance ready to use as context manager
         """
-        if env is None:
-            env = os.environ
 
         # Helper to read with fallback to VCS_VERSIONING prefix
         def read_with_fallback(name: str) -> str | None:
@@ -281,6 +280,9 @@ _active_overrides: ContextVar[GlobalOverrides | None] = ContextVar(
     "vcs_versioning_overrides", default=None
 )
 
+# Flag to track if we've already warned about auto-creating context
+_auto_create_warning_issued = False
+
 
 # Accessor functions for getting current override values
 
@@ -289,14 +291,25 @@ def get_active_overrides() -> GlobalOverrides:
     """Get the currently active GlobalOverrides instance.
 
     If no context is active, creates one from the current environment
-    using SETUPTOOLS_SCM prefix.
+    using SETUPTOOLS_SCM prefix for legacy compatibility.
 
     Returns:
         GlobalOverrides instance
     """
+    global _auto_create_warning_issued
+
     overrides = _active_overrides.get()
     if overrides is None:
-        # Auto-create context from environment
+        # Auto-create context from environment for backwards compatibility
+        if not _auto_create_warning_issued:
+            warnings.warn(
+                "No GlobalOverrides context is active. "
+                "Auto-creating one with SETUPTOOLS_SCM prefix for backwards compatibility. "
+                "Consider using 'with GlobalOverrides.from_env(\"YOUR_TOOL\"):' explicitly.",
+                UserWarning,
+                stacklevel=2,
+            )
+            _auto_create_warning_issued = True
         overrides = GlobalOverrides.from_env("SETUPTOOLS_SCM")
     return overrides
 

@@ -8,6 +8,8 @@ from __future__ import annotations
 import shutil
 import subprocess
 
+from datetime import datetime
+from datetime import timezone
 from pathlib import Path
 
 import pytest
@@ -21,8 +23,15 @@ from setuptools_scm.version import meta
 
 c = Configuration()
 
+# Use explicit time to avoid triggering auto-creation of GlobalOverrides at import time
 VERSIONS = {
-    "exact": meta("1.1", distance=0, dirty=False, config=c),
+    "exact": meta(
+        "1.1",
+        distance=0,
+        dirty=False,
+        config=c,
+        time=datetime(2009, 2, 13, 23, 31, 30, tzinfo=timezone.utc),
+    ),
 }
 
 

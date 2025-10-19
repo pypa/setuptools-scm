@@ -333,6 +333,18 @@ def _parse_tag(
         return tag
 
 
+class _ScmVersionKwargs(TypedDict, total=False):
+    """TypedDict for ScmVersion constructor keyword arguments."""
+
+    distance: int
+    node: str | None
+    dirty: bool
+    preformatted: bool
+    branch: str | None
+    node_date: date | None
+    time: datetime
+
+
 def meta(
     tag: str | _Version,
     *,
@@ -357,18 +369,20 @@ def meta(
 
     log.info("version %s -> %s", tag, parsed_version)
     assert parsed_version is not None, f"Can't parse version {tag}"
-    scm_version = ScmVersion(
-        parsed_version,
-        distance=distance,
-        node=node,
-        dirty=dirty,
-        preformatted=preformatted,
-        branch=branch,
-        config=config,
-        node_date=node_date,
-    )
+
+    # Pass time explicitly to avoid triggering default_factory if provided
+    kwargs: _ScmVersionKwargs = {
+        "distance": distance,
+        "node": node,
+        "dirty": dirty,
+        "preformatted": preformatted,
+        "branch": branch,
+        "node_date": node_date,
+    }
     if time is not None:
-        scm_version = dataclasses.replace(scm_version, time=time)
+        kwargs["time"] = time
+
+    scm_version = ScmVersion(parsed_version, config=config, **kwargs)
     return scm_version
 
 
