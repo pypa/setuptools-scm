@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable, Iterator
+from importlib import metadata as im
+from importlib.metadata import entry_points
 from typing import TYPE_CHECKING, Any, cast
 
 __all__ = [
@@ -13,20 +15,7 @@ if TYPE_CHECKING:
     from . import _version_schemes
     from ._config import Configuration, ParseFunction
 
-from importlib import metadata as im
-
 log = logging.getLogger(__name__)
-
-
-def entry_points(*, group: str, name: str | None = None) -> im.EntryPoints:
-    """Get entry points for a specific group (and optionally name).
-
-    In Python 3.10+, entry_points() with group= returns EntryPoints directly.
-    """
-    if name is not None:
-        return im.entry_points(group=group, name=name)
-    else:
-        return im.entry_points(group=group)
 
 
 def version_from_entrypoint(
