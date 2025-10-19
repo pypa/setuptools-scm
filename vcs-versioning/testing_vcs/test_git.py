@@ -67,7 +67,7 @@ def test_parse_describe_output(
 
 
 def test_root_relative_to(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
+    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG", raising=False)
     p = wd.cwd.joinpath("sub/package")
     p.mkdir(parents=True)
     p.joinpath("setup.py").write_text(
@@ -84,7 +84,7 @@ setup(use_scm_version={"root": "../..",
 def test_root_search_parent_directories(
     wd: WorkDir, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
+    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG", raising=False)
     p = wd.cwd.joinpath("sub/package")
     p.mkdir(parents=True)
     p.joinpath("setup.py").write_text(
@@ -290,18 +290,23 @@ def test_git_worktree(wd: WorkDir) -> None:
 def test_git_dirty_notag(
     today: bool, wd: WorkDir, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    if today:
-        monkeypatch.delenv("SOURCE_DATE_EPOCH", raising=False)
+    from vcs_versioning.overrides import GlobalOverrides
+
     wd.commit_testfile()
     wd.write("test.txt", "test2")
     wd("git add test.txt")
-    version = wd.get_version()
 
     if today:
-        # the date on the tag is in UTC
-        tag = datetime.now(timezone.utc).date().strftime(".d%Y%m%d")
+        # Use from_active() to create overrides without SOURCE_DATE_EPOCH
+        with GlobalOverrides.from_active(source_date_epoch=None):
+            version = wd.get_version()
+            # the date on the tag is in UTC
+            tag = datetime.now(timezone.utc).date().strftime(".d%Y%m%d")
     else:
+        # Use the existing context with SOURCE_DATE_EPOCH set
+        version = wd.get_version()
         tag = ".d20090213"
+
     assert version.startswith("0.1.dev1+g")
     assert version.endswith(tag)
 

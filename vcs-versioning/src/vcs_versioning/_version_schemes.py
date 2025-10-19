@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import dataclasses
 import logging
-import os
 import re
 import warnings
 from collections.abc import Callable
@@ -179,11 +178,14 @@ def tag_to_version(
 
 
 def _source_epoch_or_utc_now() -> datetime:
-    if "SOURCE_DATE_EPOCH" in os.environ:
-        date_epoch = int(os.environ["SOURCE_DATE_EPOCH"])
-        return datetime.fromtimestamp(date_epoch, timezone.utc)
-    else:
-        return datetime.now(timezone.utc)
+    """Get datetime from SOURCE_DATE_EPOCH or current UTC time.
+
+    Uses the active GlobalOverrides context if available, otherwise returns
+    current UTC time.
+    """
+    from .overrides import source_epoch_or_utc_now
+
+    return source_epoch_or_utc_now()
 
 
 @dataclasses.dataclass

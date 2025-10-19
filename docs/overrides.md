@@ -1,9 +1,15 @@
 # Overrides
 
+!!! info "For Integrators"
+
+    If you're building a tool that integrates vcs-versioning (like hatch-vcs), see the [Integrator Guide](integrators.md) for using the overrides API with custom prefixes and the `GlobalOverrides` context manager.
+
 ## About Overrides
 
 Environment variables provide runtime configuration overrides, primarily useful in CI/CD
 environments where you need different behavior without modifying `pyproject.toml` or code.
+
+All environment variables support both `SETUPTOOLS_SCM_*` and `VCS_VERSIONING_*` prefixes. The `VCS_VERSIONING_*` prefix serves as a universal fallback that works across all tools using vcs-versioning.
 
 ## Version Detection Overrides
 
@@ -13,7 +19,7 @@ Override the version number at build time.
 
 **setuptools-scm usage:**
 
-The environment variable `SETUPTOOLS_SCM_PRETEND_VERSION` is used
+The environment variable `SETUPTOOLS_SCM_PRETEND_VERSION` (or `VCS_VERSIONING_PRETEND_VERSION`) is used
 as the override source for the version number unparsed string.
 
 !!! warning ""
@@ -21,7 +27,7 @@ as the override source for the version number unparsed string.
     it is strongly recommended to use distribution-specific pretend versions
     (see below).
 
-`SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DIST_NAME}`
+`SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DIST_NAME}` or `VCS_VERSIONING_PRETEND_VERSION_FOR_${DIST_NAME}`
 :   Used as the primary source for the version number,
     in which case it will be an unparsed string.
     Specifying distribution-specific pretend versions will
@@ -31,7 +37,7 @@ as the override source for the version number unparsed string.
     The dist name normalization follows adapted PEP 503 semantics, with one or
     more of ".-\_" being replaced by a single "\_", and the name being upper-cased.
 
-    This will take precedence over ``SETUPTOOLS_SCM_PRETEND_VERSION``.
+    This will take precedence over the generic ``SETUPTOOLS_SCM_PRETEND_VERSION`` or ``VCS_VERSIONING_PRETEND_VERSION``.
 
 ### Pretend Metadata
 
@@ -112,8 +118,13 @@ Enable debug output from vcs-versioning.
 
 **setuptools-scm usage:**
 
-`SETUPTOOLS_SCM_DEBUG`
+`SETUPTOOLS_SCM_DEBUG` or `VCS_VERSIONING_DEBUG`
 :   Enable debug logging for version detection and processing.
+    Can be set to:
+    - `1` or any non-empty value to enable DEBUG level logging
+    - A level name: `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL` (case-insensitive)
+    - A specific log level integer: `10` (DEBUG), `20` (INFO), `30` (WARNING), etc.
+    - `0` to disable debug logging
 
 ### Reproducible Builds
 

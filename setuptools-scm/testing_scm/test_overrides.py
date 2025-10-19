@@ -6,7 +6,7 @@ import pytest
 
 from vcs_versioning._overrides import _find_close_env_var_matches
 from vcs_versioning._overrides import _search_env_vars_with_prefix
-from vcs_versioning._overrides import read_named_env
+from vcs_versioning.overrides import read_named_env
 
 
 class TestSearchEnvVarsWithPrefix:

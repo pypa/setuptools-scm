@@ -57,6 +57,20 @@ def pytest_configure(config: pytest.Config) -> None:
     os.environ["VCS_VERSIONING_DEBUG"] = "1"
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _global_overrides_context() -> Iterator[None]:
+    """Automatically apply GlobalOverrides context for all tests.
+
+    This ensures that SOURCE_DATE_EPOCH and debug settings from pytest_configure
+    are properly picked up by the override system.
+    """
+    from .overrides import GlobalOverrides
+
+    # Use VCS_VERSIONING prefix since pytest_configure sets those env vars
+    with GlobalOverrides.from_env("VCS_VERSIONING"):
+        yield
+
+
 class DebugMode(contextlib.AbstractContextManager):  # type: ignore[type-arg]
     """Context manager to enable debug logging for tests."""
 

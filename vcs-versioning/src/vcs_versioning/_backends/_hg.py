@@ -23,8 +23,10 @@ log = logging.getLogger(__name__)
 
 
 def _get_hg_command() -> str:
-    """Get the hg command from environment, allowing runtime configuration."""
-    return os.environ.get("SETUPTOOLS_SCM_HG_COMMAND", "hg")
+    """Get the hg command from override context or environment."""
+    from ..overrides import get_hg_command
+
+    return get_hg_command()
 
 
 def run_hg(args: list[str], cwd: _t.PathT, **kwargs: Any) -> CompletedProcess:

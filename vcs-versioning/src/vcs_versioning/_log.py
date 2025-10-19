@@ -6,8 +6,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
-import os
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator
 
 # Logger names that need configuration
 LOGGER_NAMES = [
@@ -30,12 +29,18 @@ def make_default_handler() -> logging.Handler:
         return last_resort
 
 
-def _default_log_level(_env: Mapping[str, str] = os.environ) -> int:
-    # Check both env vars for backward compatibility
-    val: str | None = _env.get("VCS_VERSIONING_DEBUG") or _env.get(
-        "SETUPTOOLS_SCM_DEBUG"
-    )
-    return logging.WARNING if val is None else logging.DEBUG
+def _default_log_level() -> int:
+    """Get default log level from active GlobalOverrides context.
+
+    Returns:
+        logging level constant (DEBUG, WARNING, etc.)
+    """
+    # Import here to avoid circular imports
+    from .overrides import get_active_overrides
+
+    # Get log level from active override context
+    overrides = get_active_overrides()
+    return overrides.log_level()
 
 
 def _get_all_scm_loggers() -> list[logging.Logger]:
@@ -47,11 +52,12 @@ _configured = False
 _default_handler: logging.Handler | None = None
 
 
-def configure_logging(_env: Mapping[str, str] = os.environ) -> None:
+def configure_logging() -> None:
     """Configure logging for all SCM-related loggers.
 
     This should be called once at entry point (CLI, setuptools integration, etc.)
-    before any actual logging occurs.
+    before any actual logging occurs. Uses the active GlobalOverrides context
+    to determine the log level.
     """
     global _configured, _default_handler
     if _configured:
@@ -60,7 +66,7 @@ def configure_logging(_env: Mapping[str, str] = os.environ) -> None:
     if _default_handler is None:
         _default_handler = make_default_handler()
 
-    level = _default_log_level(_env)
+    level = _default_log_level()
 
     for logger in _get_all_scm_loggers():
         if not logger.handlers:

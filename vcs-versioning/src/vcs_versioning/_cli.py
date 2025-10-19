@@ -17,42 +17,46 @@ from ._pyproject_reading import PyProjectData
 def main(
     args: list[str] | None = None, *, _given_pyproject_data: PyProjectData | None = None
 ) -> int:
-    # Configure logging at CLI entry point
-    _log.configure_logging()
+    from .overrides import GlobalOverrides
 
-    opts = _get_cli_opts(args)
-    inferred_root: str = opts.root or "."
+    # Apply global overrides for the entire CLI execution
+    with GlobalOverrides.from_env("SETUPTOOLS_SCM"):
+        # Configure logging at CLI entry point (uses overrides for debug level)
+        _log.configure_logging()
 
-    pyproject = opts.config or _find_pyproject(inferred_root)
+        opts = _get_cli_opts(args)
+        inferred_root: str = opts.root or "."
 
-    try:
-        config = Configuration.from_file(
-            pyproject,
-            root=(os.path.abspath(opts.root) if opts.root is not None else None),
-            pyproject_data=_given_pyproject_data,
-        )
-    except (LookupError, FileNotFoundError) as ex:
-        # no pyproject.toml OR no [tool.setuptools_scm]
-        print(
-            f"Warning: could not use {os.path.relpath(pyproject)},"
-            " using default configuration.\n"
-            f" Reason: {ex}.",
-            file=sys.stderr,
-        )
-        config = Configuration(root=inferred_root)
-    version: str | None
-    if opts.no_version:
-        version = "0.0.0+no-version-was-requested.fake-version"
-    else:
-        version = _get_version(
-            config, force_write_version_files=opts.force_write_version_files
-        )
-    if version is None:
-        raise SystemExit("ERROR: no version found for", opts)
-    if opts.strip_dev:
-        version = version.partition(".dev")[0]
+        pyproject = opts.config or _find_pyproject(inferred_root)
 
-    return command(opts, version, config)
+        try:
+            config = Configuration.from_file(
+                pyproject,
+                root=(os.path.abspath(opts.root) if opts.root is not None else None),
+                pyproject_data=_given_pyproject_data,
+            )
+        except (LookupError, FileNotFoundError) as ex:
+            # no pyproject.toml OR no [tool.setuptools_scm]
+            print(
+                f"Warning: could not use {os.path.relpath(pyproject)},"
+                " using default configuration.\n"
+                f" Reason: {ex}.",
+                file=sys.stderr,
+            )
+            config = Configuration(root=inferred_root)
+        version: str | None
+        if opts.no_version:
+            version = "0.0.0+no-version-was-requested.fake-version"
+        else:
+            version = _get_version(
+                config, force_write_version_files=opts.force_write_version_files
+            )
+        if version is None:
+            raise SystemExit("ERROR: no version found for", opts)
+        if opts.strip_dev:
+            version = version.partition(".dev")[0]
+
+        return command(opts, version, config)
 
 
 def _get_cli_opts(args: list[str] | None) -> argparse.Namespace:

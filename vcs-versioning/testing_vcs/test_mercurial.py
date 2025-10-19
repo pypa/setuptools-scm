@@ -64,24 +64,29 @@ def test_hg_command_from_env(
     request: pytest.FixtureRequest,
     hg_exe: str,
 ) -> None:
+    from vcs_versioning.overrides import GlobalOverrides
+
     wd.write("pyproject.toml", "[tool.setuptools_scm]")
     # Need to commit something first for versioning to work
     wd.commit_testfile()
 
-    monkeypatch.setenv("SETUPTOOLS_SCM_HG_COMMAND", hg_exe)
+    # Use from_active() to create modified overrides with custom hg command
     monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
-    version = wd.get_version()
-    assert version.startswith("0.1.dev1+")
+    with GlobalOverrides.from_active(hg_command=hg_exe):
+        version = wd.get_version()
+        assert version.startswith("0.1.dev1+")
 
 
 def test_hg_command_from_env_is_invalid(
     wd: WorkDir, monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
 ) -> None:
-    with monkeypatch.context() as m:
-        m.setenv("SETUPTOOLS_SCM_HG_COMMAND", str(wd.cwd / "not-existing"))
-        # No module reloading needed - runtime configuration works immediately
-        config = Configuration()
-        wd.write("pyproject.toml", "[tool.setuptools_scm]")
+    from vcs_versioning.overrides import GlobalOverrides
+
+    config = Configuration()
+    wd.write("pyproject.toml", "[tool.setuptools_scm]")
+
+    # Use from_active() to create overrides with invalid hg command
+    with GlobalOverrides.from_active(hg_command=str(wd.cwd / "not-existing")):
         with pytest.raises(CommandNotFoundError, match=r"test.*hg.*not-existing"):
             parse(wd.cwd, config=config)
 

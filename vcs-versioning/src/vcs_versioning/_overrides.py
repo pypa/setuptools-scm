@@ -1,8 +1,13 @@
+"""Internal implementation details for the overrides module.
+
+This module contains private helpers and functions used internally
+by vcs_versioning. Public API is exposed via the overrides module.
+"""
+
 from __future__ import annotations
 
 import dataclasses
 import logging
-import os
 from collections.abc import Mapping
 from difflib import get_close_matches
 from typing import Any
@@ -74,86 +79,13 @@ def _find_close_env_var_matches(
             candidates.append(suffix)
 
     # Use difflib to find close matches
-    close_matches = get_close_matches(
+    close_matches_list = get_close_matches(
         expected_suffix, candidates, n=3, cutoff=threshold
     )
 
-    return [f"{prefix}{match}" for match in close_matches if match != expected_suffix]
-
-
-def read_named_env(
-    *,
-    tool: str = "SETUPTOOLS_SCM",
-    name: str,
-    dist_name: str | None,
-    env: Mapping[str, str] = os.environ,
-) -> str | None:
-    """Read a named environment variable, with fallback search for dist-specific variants.
-
-    This function first tries the standard normalized environment variable name.
-    If that's not found and a dist_name is provided, it searches for alternative
-    normalizations and warns about potential issues.
-
-    Args:
-        tool: The tool prefix (default: "SETUPTOOLS_SCM")
-        name: The environment variable name component
-        dist_name: The distribution name for dist-specific variables
-        env: Environment dictionary to search in (defaults to os.environ)
-
-    Returns:
-        The environment variable value if found, None otherwise
-    """
-
-    # First try the generic version
-    generic_val = env.get(f"{tool}_{name}")
-
-    if dist_name is not None:
-        # Normalize the dist name using packaging.utils.canonicalize_name
-        canonical_dist_name = canonicalize_name(dist_name)
-        env_var_dist_name = canonical_dist_name.replace("-", "_").upper()
-        expected_env_var = f"{tool}_{name}_FOR_{env_var_dist_name}"
-
-        # Try the standard normalized name first
-        val = env.get(expected_env_var)
-        if val is not None:
-            return val
-
-        # If not found, search for alternative normalizations
-        prefix = f"{tool}_{name}_FOR_"
-        alternative_matches = _search_env_vars_with_prefix(prefix, dist_name, env)
-
-        if alternative_matches:
-            # Found alternative matches - use the first one but warn
-            env_var, value = alternative_matches[0]
-            log.warning(
-                "Found environment variable '%s' for dist name '%s', "
-                "but expected '%s'. Consider using the standard normalized name.",
-                env_var,
-                dist_name,
-                expected_env_var,
-            )
-            if len(alternative_matches) > 1:
-                other_vars = [var for var, _ in alternative_matches[1:]]
-                log.warning(
-                    "Multiple alternative environment variables found: %s. Using '%s'.",
-                    other_vars,
-                    env_var,
-                )
-            return value
-
-        # No exact or alternative matches found - look for potential typos
-        close_matches = _find_close_env_var_matches(prefix, env_var_dist_name, env)
-        if close_matches:
-            log.warning(
-                "Environment variable '%s' not found for dist name '%s' "
-                "(canonicalized as '%s'). Did you mean one of these? %s",
-                expected_env_var,
-                dist_name,
-                canonical_dist_name,
-                close_matches,
-            )
-
-    return generic_val
+    return [
+        f"{prefix}{match}" for match in close_matches_list if match != expected_suffix
+    ]
 
 
 def _read_pretended_metadata_for(
@@ -167,6 +99,8 @@ def _read_pretended_metadata_for(
     Returns a dictionary with metadata field overrides like:
     {"node": "g1337beef", "distance": 4}
     """
+    from .overrides import read_named_env
+
     log.debug("dist name: %s", config.dist_name)
 
     pretended = read_named_env(name="PRETEND_METADATA", dist_name=config.dist_name)
@@ -281,6 +215,8 @@ def _read_pretended_version_for(
     tries ``SETUPTOOLS_SCM_PRETEND_VERSION``
     and ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_$UPPERCASE_DIST_NAME``
     """
+    from .overrides import read_named_env
+
     log.debug("dist name: %s", config.dist_name)
 
     pretended = read_named_env(name="PRETEND_VERSION", dist_name=config.dist_name)
@@ -292,5 +228,8 @@ def _read_pretended_version_for(
 
 
 def read_toml_overrides(dist_name: str | None) -> dict[str, Any]:
+    """Read TOML overrides from environment."""
+    from .overrides import read_named_env
+
     data = read_named_env(name="OVERRIDES", dist_name=dist_name)
     return load_toml_or_inline_map(data)

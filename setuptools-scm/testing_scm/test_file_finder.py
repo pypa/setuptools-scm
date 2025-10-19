@@ -255,8 +255,9 @@ def test_hg_command_from_env(
     request: pytest.FixtureRequest,
     hg_exe: str,
 ) -> None:
-    with monkeypatch.context() as m:
-        m.setenv("SETUPTOOLS_SCM_HG_COMMAND", hg_exe)
-        m.setenv("PATH", str(hg_wd.cwd / "not-existing"))
-        # No module reloading needed - runtime configuration works immediately
+    from vcs_versioning.overrides import GlobalOverrides
+
+    monkeypatch.setenv("PATH", str(hg_wd.cwd / "not-existing"))
+    # Use from_active() to create modified overrides with custom hg command
+    with GlobalOverrides.from_active(hg_command=hg_exe):
         assert set(find_files()) == {"file"}

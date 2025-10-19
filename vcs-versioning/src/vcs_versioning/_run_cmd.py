@@ -7,7 +7,7 @@ import subprocess
 import textwrap
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import TYPE_CHECKING, Final, TypeVar, overload
+from typing import TYPE_CHECKING, TypeVar, overload
 
 from . import _types as _t
 
@@ -22,10 +22,15 @@ else:
 
 
 def _get_timeout(env: Mapping[str, str]) -> int:
-    return int(env.get("SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT") or 40)
+    """Get subprocess timeout from override context or environment.
 
+    This function is kept for backward compatibility but now uses the
+    global override system.
+    """
+    from .overrides import get_subprocess_timeout
 
-BROKEN_TIMEOUT: Final[int] = _get_timeout(os.environ)
+    return get_subprocess_timeout()
+
 
 log = logging.getLogger(__name__)
 
@@ -147,7 +152,7 @@ def run(
     cmd_4_trace = " ".join(map(_unsafe_quote_for_display, cmd))
     log.debug("at %s\n    $ %s ", cwd, cmd_4_trace)
     if timeout is None:
-        timeout = BROKEN_TIMEOUT
+        timeout = _get_timeout(os.environ)
     res = subprocess.run(
         cmd,
         capture_output=True,
