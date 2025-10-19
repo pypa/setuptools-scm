@@ -237,7 +237,10 @@ def read_pyproject(
         .get("dynamic", {})
         .get("version", None)
     )
-    if setuptools_dynamic_version is not None:
+    # Only warn if setuptools-scm is being used for version inference
+    # (not just file finding). When only file finders are used, it's valid
+    # to use tool.setuptools.dynamic.version for versioning.
+    if setuptools_dynamic_version is not None and pyproject_data.should_infer():
         from .deprecation import warn_pyproject_setuptools_dynamic_version
 
         warn_pyproject_setuptools_dynamic_version(path)
