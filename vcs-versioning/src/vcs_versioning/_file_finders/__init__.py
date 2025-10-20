@@ -74,15 +74,26 @@ def scm_find_files(
 
 def is_toplevel_acceptable(toplevel: str | None) -> TypeGuard[str]:
     """Check if a VCS toplevel directory is acceptable (not in ignore list)"""
+    import os
+
     if toplevel is None:
         return False
 
-    ignored: list[str] = os.environ.get("SETUPTOOLS_SCM_IGNORE_VCS_ROOTS", "").split(
-        os.pathsep
-    )
-    ignored = [os.path.normcase(p) for p in ignored]
+    # Use the env_reader from the active GlobalOverrides context
+    # This ensures we respect the current environment configuration
+    from ..overrides import get_active_overrides
 
-    log.debug("toplevel: %r\n    ignored %s", toplevel, ignored)
+    overrides = get_active_overrides()
+    ignored_raw = overrides.env_reader.read(
+        "IGNORE_VCS_ROOTS", split=os.pathsep, default=[]
+    )
+    ignored = [os.path.normcase(p) for p in ignored_raw]
+
+    log.debug(
+        "toplevel: %r\n    ignored %s",
+        toplevel,
+        ignored,
+    )
 
     return toplevel not in ignored
 

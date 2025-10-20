@@ -24,7 +24,7 @@ from collections.abc import Mapping, MutableMapping
 from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar, overload
 
 from packaging.utils import canonicalize_name
 
@@ -87,7 +87,21 @@ class EnvReader:
         self.env = env
         self.dist_name = dist_name
 
-    def read(self, name: str) -> str | None:
+    @overload
+    def read(self, name: str, *, split: str) -> list[str]: ...
+
+    @overload
+    def read(self, name: str, *, split: str, default: list[str]) -> list[str]: ...
+
+    @overload
+    def read(self, name: str, *, default: str) -> str: ...
+
+    @overload
+    def read(self, name: str) -> str | None: ...
+
+    def read(
+        self, name: str, *, split: str | None = None, default: Any = None
+    ) -> str | list[str] | None:
         """Read a named environment variable, trying each tool in tools_names order.
 
         If dist_name is provided, tries distribution-specific variants first
@@ -98,11 +112,17 @@ class EnvReader:
 
         Args:
             name: The environment variable name component (e.g., "DEBUG", "PRETEND_VERSION")
+            split: Optional separator to split the value by (e.g., os.pathsep for path lists)
+            default: Default value to return if not found (defaults to None)
 
         Returns:
-            The first matching environment variable value, or None if not found
+            - If split is provided and value found: list[str] of split values
+            - If split is provided and not found: default value
+            - If split is None and value found: str value
+            - If split is None and not found: default value
         """
         # If dist_name is provided, try dist-specific variants first
+        found_value: str | None = None
         if self.dist_name is not None:
             canonical_dist_name = canonicalize_name(self.dist_name)
             env_var_dist_name = canonical_dist_name.replace("-", "_").upper()
@@ -112,16 +132,19 @@ class EnvReader:
                 expected_env_var = f"{tool}_{name}_FOR_{env_var_dist_name}"
                 val = self.env.get(expected_env_var)
                 if val is not None:
-                    return val
+                    found_value = val
+                    break
 
         # Try generic versions for each tool
-        for tool in self.tools_names:
-            val = self.env.get(f"{tool}_{name}")
-            if val is not None:
-                return val
+        if found_value is None:
+            for tool in self.tools_names:
+                val = self.env.get(f"{tool}_{name}")
+                if val is not None:
+                    found_value = val
+                    break
 
         # Not found - if dist_name is provided, check for common mistakes
-        if self.dist_name is not None:
+        if found_value is None and self.dist_name is not None:
             canonical_dist_name = canonicalize_name(self.dist_name)
             env_var_dist_name = canonical_dist_name.replace("-", "_").upper()
 
@@ -148,7 +171,8 @@ class EnvReader:
                             other_vars,
                             env_var_name,
                         )
-                    return value
+                    found_value = value
+                    break
 
                 # Search for close matches (potential typos)
                 close_matches = _find_close_env_var_matches(
@@ -164,7 +188,18 @@ class EnvReader:
                         close_matches,
                     )
 
-        return None
+        # Process the found value or return default
+        if found_value is not None:
+            if split is not None:
+                # Split the value by the provided separator, filtering out empty strings
+                return [part for part in found_value.split(split) if part]
+            return found_value
+        # Return default, honoring the type based on split parameter
+        if split is not None:
+            # When split is provided, default should be a list
+            return default if default is not None else []
+        # For non-split case, default can be None or str
+        return default  # type: ignore[no-any-return]
 
     def read_toml(self, name: str, *, schema: type[TSchema]) -> TSchema:
         """Read and parse a TOML-formatted environment variable.
@@ -211,6 +246,7 @@ class GlobalOverrides:
         subprocess_timeout: Timeout for subprocess commands in seconds
         hg_command: Command to use for Mercurial operations
         source_date_epoch: Unix timestamp for reproducible builds (None if not set)
+        ignore_vcs_roots: List of VCS root paths to ignore for file finding
         tool: Tool prefix used to read these overrides
         dist_name: Optional distribution name for dist-specific env var lookups
 
@@ -229,6 +265,7 @@ class GlobalOverrides:
     subprocess_timeout: int
     hg_command: str
     source_date_epoch: int | None
+    ignore_vcs_roots: list[str]
     tool: str
     dist_name: str | None = None
     _env_reader: EnvReader | None = None  # Cached reader, set by from_env
@@ -311,11 +348,18 @@ class GlobalOverrides:
                     source_date_epoch_val,
                 )
 
+        # Read ignore_vcs_roots - paths separated by os.pathsep
+        ignore_vcs_roots_raw = reader.read(
+            "IGNORE_VCS_ROOTS", split=os.pathsep, default=[]
+        )
+        ignore_vcs_roots = [os.path.normcase(p) for p in ignore_vcs_roots_raw]
+
         return cls(
             debug=debug,
             subprocess_timeout=subprocess_timeout,
             hg_command=hg_command,
             source_date_epoch=source_date_epoch,
+            ignore_vcs_roots=ignore_vcs_roots,
             tool=tool,
             dist_name=dist_name,
             _env_reader=reader,
@@ -493,6 +537,9 @@ def get_active_overrides() -> GlobalOverrides:
     If no context is active, creates one from the current environment
     using SETUPTOOLS_SCM prefix for legacy compatibility.
 
+    Note: The auto-created instance reads from os.environ at call time,
+    so it will pick up environment changes (e.g., from pytest monkeypatch).
+
     Returns:
         GlobalOverrides instance
     """
@@ -501,6 +548,7 @@ def get_active_overrides() -> GlobalOverrides:
     overrides = _active_overrides.get()
     if overrides is None:
         # Auto-create context from environment for backwards compatibility
+        # Note: We create a fresh instance each time to pick up env changes
         if not _auto_create_warning_issued:
             warnings.warn(
                 "No GlobalOverrides context is active. "
@@ -510,7 +558,7 @@ def get_active_overrides() -> GlobalOverrides:
                 stacklevel=2,
             )
             _auto_create_warning_issued = True
-        overrides = GlobalOverrides.from_env("SETUPTOOLS_SCM")
+        overrides = GlobalOverrides.from_env("SETUPTOOLS_SCM", env=os.environ)
     return overrides
 
 

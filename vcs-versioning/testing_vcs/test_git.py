@@ -13,6 +13,9 @@ from textwrap import dedent
 from unittest.mock import Mock, patch
 
 import pytest
+
+# File finder imports (now in vcs_versioning)
+import vcs_versioning._file_finders  # noqa: F401
 from vcs_versioning import Configuration
 from vcs_versioning._backends import _git
 from vcs_versioning._run_cmd import (
@@ -24,11 +27,9 @@ from vcs_versioning._run_cmd import (
 from vcs_versioning._version_cls import NonNormalizedVersion
 from vcs_versioning._version_schemes import format_version
 
-# File finder imports from setuptools_scm (setuptools-specific)
+# Setup SCM integration imports
 try:
-    import setuptools_scm._file_finders
     from setuptools_scm import git
-    from setuptools_scm._file_finders.git import git_find_files
     from setuptools_scm.git import archival_to_version
 
     HAVE_SETUPTOOLS_SCM = True
@@ -36,8 +37,8 @@ except ImportError:
     HAVE_SETUPTOOLS_SCM = False
     git = _git  # type: ignore[misc]
     archival_to_version = _git.archival_to_version
-    git_find_files = None  # type: ignore[assignment]
 
+from vcs_versioning._file_finders._git import git_find_files
 from vcs_versioning.test_api import DebugMode, WorkDir
 
 # Note: Git availability is now checked in WorkDir.setup_git() method
@@ -361,7 +362,7 @@ def test_find_files_stop_at_root_git(wd: WorkDir) -> None:
     project = wd.cwd / "project"
     project.mkdir()
     project.joinpath("setup.cfg").touch()
-    assert setuptools_scm._file_finders.find_files(str(project)) == []
+    assert vcs_versioning._file_finders.find_files(str(project)) == []
 
 
 @pytest.mark.issue(128)
@@ -391,7 +392,7 @@ def test_git_archive_export_ignore(
     wd("git add test1.txt test2.txt")
     wd.commit()
     monkeypatch.chdir(wd.cwd)
-    assert setuptools_scm._file_finders.find_files(".") == [opj(".", "test1.txt")]
+    assert vcs_versioning._file_finders.find_files(".") == [opj(".", "test1.txt")]
 
 
 @pytest.mark.issue(228)
@@ -401,7 +402,7 @@ def test_git_archive_subdirectory(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) 
     wd("git add foobar")
     wd.commit()
     monkeypatch.chdir(wd.cwd)
-    assert setuptools_scm._file_finders.find_files(".") == [
+    assert vcs_versioning._file_finders.find_files(".") == [
         opj(".", "foobar", "test1.txt")
     ]
 
@@ -415,7 +416,7 @@ def test_git_archive_run_from_subdirectory(
     wd("git add foobar")
     wd.commit()
     monkeypatch.chdir(wd.cwd / "foobar")
-    assert setuptools_scm._file_finders.find_files(".") == [opj(".", "test1.txt")]
+    assert vcs_versioning._file_finders.find_files(".") == [opj(".", "test1.txt")]
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/728")

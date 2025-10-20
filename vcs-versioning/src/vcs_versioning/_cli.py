@@ -164,7 +164,7 @@ def command(opts: argparse.Namespace, version: str, config: Configuration) -> in
     if "files" in opts.query:
         # Note: file finding is setuptools-specific and not available in vcs_versioning
         try:
-            from setuptools_scm._file_finders import find_files
+            from ._file_finders import find_files
 
             data["files"] = find_files(config.root)
         except ImportError:

@@ -7,9 +7,8 @@ from collections.abc import Iterable
 
 import pytest
 
+from vcs_versioning._file_finders import find_files
 from vcs_versioning.test_api import WorkDir
-
-from setuptools_scm._file_finders import find_files
 
 
 @pytest.fixture(params=["git", "hg"])

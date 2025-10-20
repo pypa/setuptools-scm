@@ -97,18 +97,18 @@ setuptools-scm = "vcs_versioning._cli:main"
 setuptools_scm = "vcs_versioning._cli:main"
 
 [project.entry-points."setuptools.file_finders"]
-setuptools_scm = "setuptools_scm._file_finders:find_files"
+setuptools_scm = "vcs_versioning._file_finders:find_files"
 
 [project.entry-points."setuptools.finalize_distribution_options"]
 setuptools_scm = "setuptools_scm._integration.setuptools:infer_version"
 
 [project.entry-points."setuptools_scm.files_command"]
-".git" = "setuptools_scm._file_finders.git:git_find_files"
-".hg" = "setuptools_scm._file_finders.hg:hg_find_files"
+".git" = "vcs_versioning._file_finders._git:git_find_files"
+".hg" = "vcs_versioning._file_finders._hg:hg_find_files"
 
 [project.entry-points."setuptools_scm.files_command_fallback"]
-".git_archival.txt" = "setuptools_scm._file_finders.git:git_archive_find_files"
-".hg_archival.txt" = "setuptools_scm._file_finders.hg:hg_archive_find_files"
+".git_archival.txt" = "vcs_versioning._file_finders._git:git_archive_find_files"
+".hg_archival.txt" = "vcs_versioning._file_finders._hg:hg_archive_find_files"
 
 # VCS-related entry points are now provided by vcs-versioning package
 # Only file-finder entry points remain in setuptools_scm

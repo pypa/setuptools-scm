@@ -66,8 +66,9 @@ def _global_overrides_context() -> Iterator[None]:
     """
     from .overrides import GlobalOverrides
 
-    # Use VCS_VERSIONING prefix since pytest_configure sets those env vars
-    with GlobalOverrides.from_env("VCS_VERSIONING"):
+    # Use SETUPTOOLS_SCM prefix for backwards compatibility.
+    # EnvReader will also check VCS_VERSIONING as a fallback.
+    with GlobalOverrides.from_env("SETUPTOOLS_SCM"):
         yield
 
 

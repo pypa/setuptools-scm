@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 import pytest
-import setuptools_scm._file_finders
+import vcs_versioning._file_finders  # noqa: F401
 from setuptools_scm import Configuration
 from setuptools_scm.hg import archival_to_version, parse
 from setuptools_scm.version import format_version
@@ -101,11 +101,11 @@ def test_find_files_stop_at_root_hg(
     project.mkdir()
     project.joinpath("setup.cfg").touch()
     # setup.cfg has not been committed
-    assert setuptools_scm._file_finders.find_files(str(project)) == []
+    assert vcs_versioning._file_finders.find_files(str(project)) == []
     # issue 251
     wd.add_and_commit()
     monkeypatch.chdir(project)
-    assert setuptools_scm._file_finders.find_files() == ["setup.cfg"]
+    assert vcs_versioning._file_finders.find_files() == ["setup.cfg"]
 
 
 # XXX: better tests for tag prefixes
