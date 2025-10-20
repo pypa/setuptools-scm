@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import os
 import sys
-
 from collections.abc import Iterable
 
 import pytest
-
 from vcs_versioning._file_finders import find_files
 from vcs_versioning.test_api import WorkDir
 

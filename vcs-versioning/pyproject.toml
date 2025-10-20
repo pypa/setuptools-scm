@@ -117,6 +117,7 @@ python_files = ["test_*.py"]
 addopts = ["-ra", "--strict-markers", "-p", "vcs_versioning.test_api"]
 markers = [
   "issue: marks tests related to specific issues",
+  "skip_commit: allows to skip committing in the helpers",
 ]
 
 [tool.uv]

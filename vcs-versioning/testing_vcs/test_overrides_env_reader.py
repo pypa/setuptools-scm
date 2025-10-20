@@ -3,9 +3,10 @@ from __future__ import annotations
 import logging
 
 import pytest
-
-from vcs_versioning._overrides import _find_close_env_var_matches
-from vcs_versioning._overrides import _search_env_vars_with_prefix
+from vcs_versioning._overrides import (
+    _find_close_env_var_matches,
+    _search_env_vars_with_prefix,
+)
 from vcs_versioning.overrides import EnvReader
 
 
