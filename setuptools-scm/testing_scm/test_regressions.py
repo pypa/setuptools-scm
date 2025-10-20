@@ -96,7 +96,7 @@ setup(use_scm_version=vcfg)
 def test_case_mismatch_force_assertion_failure(tmp_path: Path) -> None:
     """Force the assertion failure by directly calling _git_toplevel with mismatched paths"""
 
-    from setuptools_scm._file_finders.git import _git_toplevel
+    from vcs_versioning._file_finders._git import _git_toplevel
 
     # Create git repo structure
     repo_path = tmp_path / "my_repo"
