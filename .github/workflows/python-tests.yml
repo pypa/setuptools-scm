@@ -131,6 +131,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
       # this hopefully helps with os caches, hg init sometimes gets 20s timeouts
       - run: hg version
+        shell: bash
       - name: Run tests for both packages
         run: uv run --no-sync pytest setuptools-scm/testing_scm/ vcs-versioning/testing_vcs/
         timeout-minutes: 25
