@@ -87,15 +87,19 @@ def has_build_package_with_extra(
 
 
 def _check_setuptools_dynamic_version_conflict(
-    path: Path, build_requires: Sequence[str], definition: TOML_RESULT
+    path: Path, pyproject_data: PyProjectData
 ) -> None:
-    """Warn if tool.setuptools.dynamic.version conflicts with setuptools-scm."""
-    # Check if setuptools-scm[simple] is in build requirements
-    if not has_build_package_with_extra(build_requires, "setuptools-scm", "simple"):
+    """Warn if tool.setuptools.dynamic.version conflicts with setuptools-scm.
+
+    Only warns if setuptools-scm is being used for version inference (not just file finding).
+    When only file finders are used, it's valid to use tool.setuptools.dynamic.version.
+    """
+    # Only warn if setuptools-scm is performing version inference
+    if not should_infer(pyproject_data):
         return
 
     # Check if tool.setuptools.dynamic.version exists
-    tool = definition.get("tool", {})
+    tool = pyproject_data.definition.get("tool", {})
     if not isinstance(tool, dict):
         return
 
@@ -140,9 +144,7 @@ def read_pyproject(
 
     # Check for conflicting tool.setuptools.dynamic configuration
     # Use the definition from pyproject_data (read by vcs_versioning)
-    _check_setuptools_dynamic_version_conflict(
-        path, pyproject_data.build_requires, pyproject_data.definition
-    )
+    _check_setuptools_dynamic_version_conflict(path, pyproject_data)
 
     return pyproject_data
 

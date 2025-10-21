@@ -130,6 +130,7 @@ def test_read_pyproject_with_given_definition(monkeypatch: pytest.MonkeyPatch) -
 
 
 def test_read_pyproject_with_setuptools_dynamic_version_warns() -> None:
+    """Test that warning is issued when version inference is enabled."""
     with pytest.warns(
         UserWarning,
         match=r"pyproject\.toml: at \[tool\.setuptools\.dynamic\]",
@@ -146,3 +147,36 @@ def test_read_pyproject_with_setuptools_dynamic_version_warns() -> None:
             }
         )
     assert pyproject_data.project_version is None
+
+
+def test_read_pyproject_with_setuptools_dynamic_version_no_warn_when_file_finder_only() -> (
+    None
+):
+    """Test that no warning is issued when only file finder is used (no version inference)."""
+    # When setuptools-scm is used only for file finding (no [tool.setuptools_scm] section,
+    # no [simple] extra, version not in dynamic), it's valid to use tool.setuptools.dynamic.version
+    import warnings
+
+    with warnings.catch_warnings(record=True) as warning_list:
+        warnings.simplefilter("always")
+        pyproject_data = read_pyproject(
+            _given_definition={
+                "build-system": {"requires": ["setuptools-scm"]},
+                "project": {"name": "test-package", "version": "1.0.0"},
+                "tool": {
+                    "setuptools": {
+                        "dynamic": {"version": {"attr": "test_package.__version__"}}
+                    }
+                },
+            }
+        )
+
+    # Filter to check for the dynamic version warning specifically
+    relevant_warnings = [
+        w for w in warning_list if "tool.setuptools.dynamic" in str(w.message)
+    ]
+    assert len(relevant_warnings) == 0, (
+        "Should not warn about tool.setuptools.dynamic when only using file finder"
+    )
+    assert pyproject_data.project_version == "1.0.0"
+    assert not should_infer(pyproject_data)
