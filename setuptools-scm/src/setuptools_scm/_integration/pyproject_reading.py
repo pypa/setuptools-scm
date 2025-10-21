@@ -7,8 +7,7 @@ from pathlib import Path
 
 from vcs_versioning import _types as _t
 from vcs_versioning._pyproject_reading import DEFAULT_PYPROJECT_PATH
-from vcs_versioning._pyproject_reading import DEFAULT_TOOL_NAME
-from vcs_versioning._pyproject_reading import PyProjectData as _VcsPyProjectData
+from vcs_versioning._pyproject_reading import PyProjectData
 from vcs_versioning._pyproject_reading import (
     get_args_for_pyproject as _vcs_get_args_for_pyproject,
 )
@@ -21,37 +20,44 @@ log = logging.getLogger(__name__)
 
 _ROOT = "root"
 
+__all__ = [
+    "PyProjectData",
+    "get_args_for_pyproject",
+    "has_build_package_with_extra",
+    "read_pyproject",
+    "should_infer",
+]
 
-# Extend PyProjectData with setuptools-specific methods
-class PyProjectData(_VcsPyProjectData):
-    """Extended PyProjectData with setuptools-specific functionality"""
 
-    def should_infer(self) -> bool:
-        """
-        Determine if setuptools_scm should infer version based on configuration.
+def should_infer(pyproject_data: PyProjectData) -> bool:
+    """
+    Determine if setuptools_scm should infer version based on configuration.
 
-        Infer when:
-        1. An explicit [tool.setuptools_scm] section is present, OR
-        2. setuptools-scm[simple] is in build-system.requires AND
-           version is in project.dynamic
+    Infer when:
+    1. An explicit [tool.setuptools_scm] section is present, OR
+    2. setuptools-scm[simple] is in build-system.requires AND
+       version is in project.dynamic
 
-        Returns:
-            True if [tool.setuptools_scm] is present, otherwise False
-        """
-        # Original behavior: explicit tool section
-        if self.section_present:
-            return True
+    Args:
+        pyproject_data: The PyProjectData instance to check
 
-        # New behavior: simple extra + dynamic version
-        if self.project_present:
-            dynamic_fields = self.project.get("dynamic", [])
-            if "version" in dynamic_fields:
-                if has_build_package_with_extra(
-                    self.build_requires, "setuptools-scm", "simple"
-                ):
-                    return True
+    Returns:
+        True if version should be inferred, False otherwise
+    """
+    # Original behavior: explicit tool section
+    if pyproject_data.section_present:
+        return True
 
-        return False
+    # New behavior: simple extra + dynamic version
+    if pyproject_data.project_present:
+        dynamic_fields = pyproject_data.project.get("dynamic", [])
+        if "version" in dynamic_fields:
+            if has_build_package_with_extra(
+                pyproject_data.build_requires, "setuptools-scm", "simple"
+            ):
+                return True
+
+    return False
 
 
 def has_build_package_with_extra(
@@ -109,7 +115,7 @@ def _check_setuptools_dynamic_version_conflict(
 
 def read_pyproject(
     path: Path = DEFAULT_PYPROJECT_PATH,
-    tool_name: str = DEFAULT_TOOL_NAME,
+    tool_name: str = "setuptools_scm",
     canonical_build_package_name: str = "setuptools-scm",
     _given_result: _t.GivenPyProjectResult = None,
     _given_definition: TOML_RESULT | None = None,
@@ -121,7 +127,7 @@ def read_pyproject(
     """
     # Use vcs_versioning's reader with multi-tool support (internal API)
     # This allows setuptools_scm to transition to vcs-versioning section
-    vcs_data = _vcs_read_pyproject(
+    pyproject_data = _vcs_read_pyproject(
         path,
         canonical_build_package_name=canonical_build_package_name,
         _given_result=_given_result,
@@ -135,20 +141,10 @@ def read_pyproject(
     # Check for conflicting tool.setuptools.dynamic configuration
     if _given_definition is not None:
         _check_setuptools_dynamic_version_conflict(
-            path, vcs_data.build_requires, _given_definition
+            path, pyproject_data.build_requires, _given_definition
         )
 
-    # Convert to setuptools-extended PyProjectData
-    return PyProjectData(
-        path=vcs_data.path,
-        tool_name=vcs_data.tool_name,
-        project=vcs_data.project,
-        section=vcs_data.section,
-        is_required=vcs_data.is_required,
-        section_present=vcs_data.section_present,
-        project_present=vcs_data.project_present,
-        build_requires=vcs_data.build_requires,
-    )
+    return pyproject_data
 
 
 def get_args_for_pyproject(

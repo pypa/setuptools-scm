@@ -18,6 +18,7 @@ import pytest
 import vcs_versioning._file_finders  # noqa: F401
 from vcs_versioning import Configuration
 from vcs_versioning._backends import _git
+from vcs_versioning._file_finders._git import git_find_files
 from vcs_versioning._run_cmd import (
     CommandNotFoundError,
     CompletedProcess,
@@ -26,20 +27,11 @@ from vcs_versioning._run_cmd import (
 )
 from vcs_versioning._version_cls import NonNormalizedVersion
 from vcs_versioning._version_schemes import format_version
-
-# Setup SCM integration imports
-try:
-    from setuptools_scm import git
-    from setuptools_scm.git import archival_to_version
-
-    HAVE_SETUPTOOLS_SCM = True
-except ImportError:
-    HAVE_SETUPTOOLS_SCM = False
-    git = _git  # type: ignore[misc]
-    archival_to_version = _git.archival_to_version
-
-from vcs_versioning._file_finders._git import git_find_files
 from vcs_versioning.test_api import DebugMode, WorkDir
+
+# Use vcs_versioning git backend directly
+git = _git
+archival_to_version = _git.archival_to_version
 
 # Note: Git availability is now checked in WorkDir.setup_git() method
 
@@ -101,7 +93,7 @@ setup(use_scm_version={"search_parent_directories": True})
 def test_git_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
 
-    wd.write("pyproject.toml", "[tool.setuptools_scm]")
+    wd.write("pyproject.toml", "[tool.vcs-versioning]")
     with pytest.raises(CommandNotFoundError, match=r"git"):
         git.parse(wd.cwd, Configuration(), git.DEFAULT_DESCRIBE)
 

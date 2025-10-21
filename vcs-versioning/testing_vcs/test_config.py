@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 
 import pytest
-from setuptools_scm import Configuration
+from vcs_versioning import Configuration
 
 
 @pytest.mark.parametrize(

@@ -493,6 +493,7 @@ def test_setup_cfg_version_prevents_inference_version_keyword(
 
     # Construct PyProjectData directly without requiring build backend inference
     pyproject_data = PyProjectData.for_testing(
+        tool_name="setuptools_scm",
         is_required=False,  # setuptools-scm not required
         section_present=False,  # no [tool.setuptools_scm] section
         project_present=False,  # no [project] section
@@ -655,6 +656,7 @@ def test_integration_function_call_order(
     # Create PyProjectData with equivalent configuration - no file I/O!
     project_name = "test-call-order"
     pyproject_data = PyProjectData.for_testing(
+        tool_name="setuptools_scm",
         project_name=project_name,
         has_dynamic_version=True,
         project_present=True,

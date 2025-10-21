@@ -8,12 +8,6 @@ import contextlib
 import logging
 from collections.abc import Iterator
 
-# Logger names that need configuration
-LOGGER_NAMES = [
-    "vcs_versioning",
-    "setuptools_scm",
-]
-
 
 def make_default_handler() -> logging.Handler:
     try:
@@ -29,39 +23,59 @@ def make_default_handler() -> logging.Handler:
         return last_resort
 
 
-def _get_all_scm_loggers() -> list[logging.Logger]:
-    """Get all SCM-related loggers that need configuration."""
-    return [logging.getLogger(name) for name in LOGGER_NAMES]
+def _get_all_scm_loggers(
+    additional_loggers: list[logging.Logger] | None = None,
+) -> list[logging.Logger]:
+    """Get all SCM-related loggers that need configuration.
+
+    Always configures vcs_versioning logger.
+    If additional_loggers is provided, also configures those loggers.
+    If not provided, tries to get them from active GlobalOverrides context.
+    """
+    loggers = [logging.getLogger("vcs_versioning")]
+
+    if additional_loggers is not None:
+        loggers.extend(additional_loggers)
+    else:
+        # Try to get additional loggers from active overrides context
+        try:
+            from .overrides import _active_overrides
+
+            overrides = _active_overrides.get()
+            if overrides is not None:
+                loggers.extend(overrides.additional_loggers)
+        except ImportError:
+            # During early initialization, overrides module might not be available yet
+            pass
+
+    return loggers
 
 
-_configured = False
 _default_handler: logging.Handler | None = None
 
 
-def configure_logging(log_level: int = logging.WARNING) -> None:
-    """Configure logging for all SCM-related loggers.
+def _configure_loggers(
+    log_level: int, additional_loggers: list[logging.Logger] | None = None
+) -> None:
+    """Internal function to configure SCM-related loggers.
 
-    This should be called once at entry point (CLI, setuptools integration, etc.)
-    before any actual logging occurs.
+    This is called automatically by GlobalOverrides.__enter__().
+    Do not call directly - use GlobalOverrides context manager instead.
 
     Args:
-        log_level: Logging level constant from logging module (DEBUG, INFO, WARNING, etc.)
-                   Defaults to WARNING.
+        log_level: Logging level constant from logging module
+        additional_loggers: Optional list of additional logger instances to configure
     """
-    global _configured, _default_handler
-    if _configured:
-        return
+    global _default_handler
 
     if _default_handler is None:
         _default_handler = make_default_handler()
 
-    for logger in _get_all_scm_loggers():
+    for logger in _get_all_scm_loggers(additional_loggers):
         if not logger.handlers:
             logger.addHandler(_default_handler)
         logger.setLevel(log_level)
         logger.propagate = False
-
-    _configured = True
 
 
 # The vcs_versioning root logger

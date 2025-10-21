@@ -15,16 +15,28 @@ from setuptools_scm._integration.version_inference import get_version_inference_
 # Common test data
 PYPROJECT = SimpleNamespace(
     DEFAULT=PyProjectData.for_testing(
-        is_required=True, section_present=True, project_present=True
+        tool_name="setuptools_scm",
+        is_required=True,
+        section_present=True,
+        project_present=True,
     ),
     WITHOUT_TOOL_SECTION=PyProjectData.for_testing(
-        is_required=True, section_present=False, project_present=True
+        tool_name="setuptools_scm",
+        is_required=True,
+        section_present=False,
+        project_present=True,
     ),
     ONLY_REQUIRED=PyProjectData.for_testing(
-        is_required=True, section_present=False, project_present=False
+        tool_name="setuptools_scm",
+        is_required=True,
+        section_present=False,
+        project_present=False,
     ),
     WITHOUT_PROJECT=PyProjectData.for_testing(
-        is_required=True, section_present=True, project_present=False
+        tool_name="setuptools_scm",
+        is_required=True,
+        section_present=True,
+        project_present=False,
     ),
 )
 
@@ -183,6 +195,7 @@ class TestVersionInferenceDecision:
     def test_simple_extra_with_dynamic_version_infers(self) -> None:
         """We infer when setuptools-scm[simple] is in build-system.requires and version is dynamic."""
         pyproject_data = PyProjectData.for_testing(
+            tool_name="setuptools_scm",
             is_required=True,
             section_present=False,
             project_present=True,
@@ -198,6 +211,7 @@ class TestVersionInferenceDecision:
     def test_simple_extra_without_dynamic_version_no_infer(self) -> None:
         """We don't infer when setuptools-scm[simple] is present but version is not dynamic."""
         pyproject_data = PyProjectData.for_testing(
+            tool_name="setuptools_scm",
             is_required=True,
             section_present=False,
             project_present=True,
@@ -213,6 +227,7 @@ class TestVersionInferenceDecision:
     def test_no_simple_extra_with_dynamic_version_no_infer(self) -> None:
         """We don't infer when setuptools-scm (without simple extra) is present even with dynamic version."""
         pyproject_data = PyProjectData.for_testing(
+            tool_name="setuptools_scm",
             is_required=True,
             section_present=False,
             project_present=True,
@@ -228,6 +243,7 @@ class TestVersionInferenceDecision:
     def test_simple_extra_no_project_section_no_infer(self) -> None:
         """We don't infer when setuptools-scm[simple] is present but no project section."""
         pyproject_data = PyProjectData.for_testing(
+            tool_name="setuptools_scm",
             is_required=True,
             section_present=False,
             project_present=False,
@@ -242,6 +258,7 @@ class TestVersionInferenceDecision:
     def test_simple_extra_with_version_warns(self) -> None:
         """We warn when setuptools-scm[simple] is present with dynamic version but version is already set."""
         pyproject_data = PyProjectData.for_testing(
+            tool_name="setuptools_scm",
             is_required=True,
             section_present=False,
             project_present=True,

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import pytest
-from setuptools_scm import Configuration
-from setuptools_scm.hg import parse
+from vcs_versioning import Configuration
+from vcs_versioning._backends._hg import parse
 from vcs_versioning._run_cmd import CommandNotFoundError, has_command, run
 from vcs_versioning.test_api import WorkDir
 
@@ -117,5 +117,5 @@ def test_hg_command_from_env(
         m.setenv("SETUPTOOLS_SCM_HG_COMMAND", hg_exe)
         m.setenv("PATH", str(wd.cwd / "not-existing"))
         # No module reloading needed - runtime configuration works immediately
-        wd.write("pyproject.toml", "[tool.setuptools_scm]")
+        wd.write("pyproject.toml", "[tool.vcs-versioning]")
         assert wd.get_version().startswith("0.1.dev0+")

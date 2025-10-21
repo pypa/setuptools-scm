@@ -7,6 +7,7 @@ import pytest
 
 from setuptools_scm._integration.pyproject_reading import has_build_package_with_extra
 from setuptools_scm._integration.pyproject_reading import read_pyproject
+from setuptools_scm._integration.pyproject_reading import should_infer
 
 
 class TestPyProjectReading:
@@ -125,7 +126,7 @@ def test_read_pyproject_with_given_definition(monkeypatch: pytest.MonkeyPatch) -
         }
     )
 
-    assert res.should_infer()
+    assert should_infer(res)
 
 
 def test_read_pyproject_with_setuptools_dynamic_version_warns() -> None:

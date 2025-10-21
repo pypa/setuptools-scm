@@ -8,10 +8,10 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from setuptools_scm import Configuration
-from setuptools_scm.git import parse
-from setuptools_scm.version import meta
+from vcs_versioning import Configuration
+from vcs_versioning._backends._git import parse
 from vcs_versioning._run_cmd import run
+from vcs_versioning._version_schemes import meta
 from vcs_versioning.test_api import WorkDir
 
 

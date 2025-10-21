@@ -6,8 +6,8 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import pytest
-from setuptools_scm import Configuration, NonNormalizedVersion
-from setuptools_scm.version import (
+from vcs_versioning import Configuration, NonNormalizedVersion
+from vcs_versioning._version_schemes import (
     ScmVersion,
     calver_by_date,
     format_version,
@@ -264,7 +264,7 @@ def test_custom_version_schemes() -> None:
         config=replace(
             c,
             local_scheme="no-local-version",
-            version_scheme="setuptools_scm.version:no_guess_dev_version",
+            version_scheme="vcs_versioning._version_schemes:no_guess_dev_version",
         ),
     )
     custom_computed = format_version(version)

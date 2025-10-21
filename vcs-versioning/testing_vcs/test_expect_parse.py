@@ -6,9 +6,8 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 import pytest
-from setuptools_scm import Configuration
-from setuptools_scm.version import ScmVersion, meta
-from vcs_versioning._version_schemes import mismatches
+from vcs_versioning import Configuration
+from vcs_versioning._version_schemes import ScmVersion, meta, mismatches
 from vcs_versioning.test_api import TEST_SOURCE_DATE, WorkDir
 
 

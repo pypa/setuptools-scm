@@ -151,18 +151,32 @@ def _version_missing(config: Configuration) -> NoReturn:
 
     if scm_parent is not None:
         # Found an SCM repository in a parent directory
+        # Get tool-specific names for error messages
+        from .overrides import get_active_overrides
+
+        overrides = get_active_overrides()
+        tool = overrides.tool
+
+        # Generate appropriate examples based on tool
+        if tool == "SETUPTOOLS_SCM":
+            api_example = "setuptools_scm.get_version(relative_to=__file__)"
+            tool_section = "[tool.setuptools_scm]"
+        else:
+            api_example = "vcs_versioning.get_version(relative_to=__file__)"
+            tool_section = "[tool.vcs-versioning]"
+
         error_msg = (
             base_error
             + f"However, a repository was found in a parent directory: {scm_parent}\n\n"
             f"To fix this, you have a few options:\n\n"
-            f"1. Use the 'relative_to' parameter to specify the file that setuptools-scm should use as reference:\n"
-            f"   setuptools_scm.get_version(relative_to=__file__)\n\n"
+            f"1. Use the 'relative_to' parameter to specify the file as reference:\n"
+            f"   {api_example}\n\n"
             f"2. Enable parent directory search in your configuration:\n"
-            f"   [tool.setuptools_scm]\n"
+            f"   {tool_section}\n"
             f"   search_parent_directories = true\n\n"
             f"3. Change your working directory to the repository root: {scm_parent}\n\n"
             f"4. Set the root explicitly in your configuration:\n"
-            f"   [tool.setuptools_scm]\n"
+            f"   {tool_section}\n"
             f'   root = "{scm_parent}"\n\n'
             "For more information, see: https://setuptools-scm.readthedocs.io/en/latest/config/"
         )

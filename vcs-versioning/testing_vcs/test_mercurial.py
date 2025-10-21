@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pytest
 import vcs_versioning._file_finders  # noqa: F401
-from setuptools_scm import Configuration
-from setuptools_scm.hg import archival_to_version, parse
-from setuptools_scm.version import format_version
+from vcs_versioning import Configuration
+from vcs_versioning._backends._hg import archival_to_version, parse
 from vcs_versioning._run_cmd import CommandNotFoundError
+from vcs_versioning._version_schemes import format_version
 from vcs_versioning.test_api import WorkDir
 
 # Note: Mercurial availability is now checked in WorkDir.setup_hg() method
@@ -51,7 +51,7 @@ def test_archival_to_version(expected: str, data: dict[str, str]) -> None:
 def test_hg_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
     config = Configuration()
-    wd.write("pyproject.toml", "[tool.setuptools_scm]")
+    wd.write("pyproject.toml", "[tool.vcs-versioning]")
     with pytest.raises(CommandNotFoundError, match=r"hg"):
         parse(wd.cwd, config=config)
 
@@ -66,7 +66,7 @@ def test_hg_command_from_env(
 ) -> None:
     from vcs_versioning.overrides import GlobalOverrides
 
-    wd.write("pyproject.toml", "[tool.setuptools_scm]")
+    wd.write("pyproject.toml", "[tool.vcs-versioning]")
     # Need to commit something first for versioning to work
     wd.commit_testfile()
 
@@ -83,7 +83,7 @@ def test_hg_command_from_env_is_invalid(
     from vcs_versioning.overrides import GlobalOverrides
 
     config = Configuration()
-    wd.write("pyproject.toml", "[tool.setuptools_scm]")
+    wd.write("pyproject.toml", "[tool.vcs-versioning]")
 
     # Use from_active() to create overrides with invalid hg command
     with GlobalOverrides.from_active(hg_command=str(wd.cwd / "not-existing")):

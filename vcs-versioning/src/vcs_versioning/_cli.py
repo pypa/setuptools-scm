@@ -57,7 +57,7 @@ def main(
 
 
 def _get_cli_opts(args: list[str] | None) -> argparse.Namespace:
-    prog = "python -m setuptools_scm"
+    prog = "python -m vcs_versioning"
     desc = "Print project version according to SCM metadata"
     parser = argparse.ArgumentParser(prog, description=desc)
     # By default, help for `--help` starts with lower case, so we keep the pattern:
@@ -162,13 +162,13 @@ def command(opts: argparse.Namespace, version: str, config: Configuration) -> in
         data["version"] = version
 
     if "files" in opts.query:
-        # Note: file finding is setuptools-specific and not available in vcs_versioning
+        # Note: file finding is available in vcs_versioning
         try:
             from ._file_finders import find_files
 
             data["files"] = find_files(config.root)
         except ImportError:
-            data["files"] = ["file finding requires setuptools_scm package"]
+            data["files"] = ["file finding not available"]
 
     for q in opts.query:
         if q in ["files", "queries", "version"]:

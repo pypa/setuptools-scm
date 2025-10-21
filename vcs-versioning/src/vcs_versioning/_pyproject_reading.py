@@ -25,7 +25,6 @@ _ROOT = "root"
 
 
 DEFAULT_PYPROJECT_PATH = Path("pyproject.toml")
-DEFAULT_TOOL_NAME = "setuptools_scm"  # For backward compatibility
 
 
 @dataclass
@@ -45,6 +44,7 @@ class PyProjectData:
     def for_testing(
         cls,
         *,
+        tool_name: str,
         is_required: bool = False,
         section_present: bool = False,
         project_present: bool = False,
@@ -74,7 +74,7 @@ class PyProjectData:
             section = {}
         return cls(
             path=DEFAULT_PYPROJECT_PATH,
-            tool_name=DEFAULT_TOOL_NAME,
+            tool_name=tool_name,
             project=project,
             section=section,
             is_required=is_required,
@@ -84,9 +84,7 @@ class PyProjectData:
         )
 
     @classmethod
-    def empty(
-        cls, path: Path = DEFAULT_PYPROJECT_PATH, tool_name: str = DEFAULT_TOOL_NAME
-    ) -> Self:
+    def empty(cls, tool_name: str, path: Path = DEFAULT_PYPROJECT_PATH) -> Self:
         return cls(
             path=path,
             tool_name=tool_name,
@@ -215,7 +213,7 @@ def read_pyproject(
     # Try each tool name in order
     section = {}
     section_present = False
-    actual_tool_name = tool_names[0] if tool_names else DEFAULT_TOOL_NAME
+    actual_tool_name = tool_names[0] if tool_names else "vcs-versioning"
 
     for name in tool_names:
         if name in tool_section:

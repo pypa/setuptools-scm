@@ -9,8 +9,9 @@ from typing import Any
 import setuptools
 
 from vcs_versioning import _types as _t
-from vcs_versioning._log import configure_logging
 from vcs_versioning._toml import InvalidTomlError
+from vcs_versioning.overrides import GlobalOverrides
+from vcs_versioning.overrides import ensure_context
 
 from .pyproject_reading import PyProjectData
 from .pyproject_reading import read_pyproject
@@ -19,6 +20,7 @@ from .setup_cfg import extract_from_legacy
 from .version_inference import get_version_inference_config
 
 log = logging.getLogger(__name__)
+_setuptools_scm_logger = logging.getLogger("setuptools_scm")
 
 
 def _warn_on_old_setuptools(_version: str = setuptools.__version__) -> None:
@@ -66,6 +68,7 @@ def get_keyword_overrides(
         return value
 
 
+@ensure_context("SETUPTOOLS_SCM", additional_loggers=_setuptools_scm_logger)
 def version_keyword(
     dist: setuptools.Distribution,
     keyword: str,
@@ -73,14 +76,11 @@ def version_keyword(
     *,
     _given_pyproject_data: _t.GivenPyProjectResult = None,
     _given_legacy_data: SetuptoolsBasicData | None = None,
-    _get_version_inference_config: _t.GetVersionInferenceConfig = get_version_inference_config,  # type: ignore[assignment]
+    _get_version_inference_config: _t.GetVersionInferenceConfig = get_version_inference_config,
 ) -> None:
     """apply version infernce when setup(use_scm_version=...) is used
     this takes priority over the finalize_options based version
     """
-    # Configure logging at setuptools entry point
-    configure_logging()
-
     _log_hookstart("version_keyword", dist)
 
     # Parse overrides (integration point responsibility)
@@ -104,7 +104,7 @@ def version_keyword(
         pyproject_data = read_pyproject(_given_result=_given_pyproject_data)
     except FileNotFoundError:
         log.debug("pyproject.toml not found, proceeding with empty configuration")
-        pyproject_data = PyProjectData.empty()
+        pyproject_data = PyProjectData.empty(tool_name="setuptools_scm")
     except InvalidTomlError as e:
         log.debug("Configuration issue in pyproject.toml: %s", e)
         return
@@ -116,22 +116,24 @@ def version_keyword(
         else (legacy_data.version or pyproject_data.project_version)
     )
 
-    result = _get_version_inference_config(
-        dist_name=dist_name,
-        current_version=current_version,
-        pyproject_data=pyproject_data,
-        overrides=overrides,
-    )
+    # Always use from_active to inherit current context settings
+    with GlobalOverrides.from_active(dist_name=dist_name):
+        result = _get_version_inference_config(
+            dist_name=dist_name,
+            current_version=current_version,
+            pyproject_data=pyproject_data,
+            overrides=overrides,
+        )
+        result.apply(dist)
 
-    result.apply(dist)
 
-
+@ensure_context("SETUPTOOLS_SCM", additional_loggers=_setuptools_scm_logger)
 def infer_version(
     dist: setuptools.Distribution,
     *,
     _given_pyproject_data: _t.GivenPyProjectResult = None,
     _given_legacy_data: SetuptoolsBasicData | None = None,
-    _get_version_inference_config: _t.GetVersionInferenceConfig = get_version_inference_config,  # type: ignore[assignment]
+    _get_version_inference_config: _t.GetVersionInferenceConfig = get_version_inference_config,
 ) -> None:
     """apply version inference from the finalize_options hook
     this is the default for pyproject.toml based projects that don't use the use_scm_version keyword
@@ -139,14 +141,31 @@ def infer_version(
     if the version keyword is used, it will override the version from this hook
     as user might have passed custom code version schemes
     """
-    # Configure logging at setuptools entry point
-    configure_logging()
-
     _log_hookstart("infer_version", dist)
 
     legacy_data = extract_from_legacy(dist, _given_legacy_data=_given_legacy_data)
-    dist_name = legacy_data.name
+    dist_name: str | None = legacy_data.name
 
+    # Always use from_active to inherit current context settings
+    with GlobalOverrides.from_active(dist_name=dist_name):
+        _infer_version_impl(
+            dist,
+            dist_name=dist_name,
+            legacy_data=legacy_data,
+            _given_pyproject_data=_given_pyproject_data,
+            _get_version_inference_config=_get_version_inference_config,
+        )
+
+
+def _infer_version_impl(
+    dist: setuptools.Distribution,
+    *,
+    dist_name: str | None,
+    legacy_data: SetuptoolsBasicData,
+    _given_pyproject_data: _t.GivenPyProjectResult = None,
+    _get_version_inference_config: _t.GetVersionInferenceConfig = get_version_inference_config,
+) -> None:
+    """Internal implementation of infer_version."""
     try:
         pyproject_data = read_pyproject(_given_result=_given_pyproject_data)
     except FileNotFoundError:

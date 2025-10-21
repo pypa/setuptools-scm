@@ -28,16 +28,24 @@ PYPROJECT_SIMPLE = "[tool.setuptools_scm]"
 PYPROJECT_ROOT = '[tool.setuptools_scm]\nroot=".."'
 
 # PyProjectData constants for testing
-PYPROJECT_DATA_SIMPLE = PyProjectData.for_testing(section_present=True)
+PYPROJECT_DATA_SIMPLE = PyProjectData.for_testing(
+    tool_name="setuptools_scm", section_present=True
+)
 PYPROJECT_DATA_WITH_PROJECT = PyProjectData.for_testing(
-    section_present=True, project_present=True, project_name="test"
+    tool_name="setuptools_scm",
+    section_present=True,
+    project_present=True,
+    project_name="test",
 )
 
 
 def _create_version_file_pyproject_data() -> PyProjectData:
     """Create PyProjectData with version_file configuration for testing."""
     data = PyProjectData.for_testing(
-        section_present=True, project_present=True, project_name="test"
+        tool_name="setuptools_scm",
+        section_present=True,
+        project_present=True,
+        project_name="test",
     )
     data.section["version_file"] = "ver.py"
     return data

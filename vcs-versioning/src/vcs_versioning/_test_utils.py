@@ -89,7 +89,10 @@ class WorkDir:
     def create_basic_setup_py(
         self, name: str = "test-package", use_scm_version: str = "True"
     ) -> None:
-        """Create a basic setup.py file with setuptools_scm configuration."""
+        """Create a basic setup.py file with version configuration.
+
+        Note: This is for setuptools_scm compatibility testing.
+        """
         self.write(
             "setup.py",
             f"""__import__('setuptools').setup(
@@ -99,9 +102,18 @@ class WorkDir:
         )
 
     def create_basic_pyproject_toml(
-        self, name: str = "test-package", dynamic_version: bool = True
+        self,
+        name: str = "test-package",
+        dynamic_version: bool = True,
+        tool_name: str = "vcs-versioning",
     ) -> None:
-        """Create a basic pyproject.toml file with setuptools_scm configuration."""
+        """Create a basic pyproject.toml file with version configuration.
+
+        Args:
+            name: Project name
+            dynamic_version: Whether to add dynamic=['version']
+            tool_name: Tool section name (e.g., 'vcs-versioning' or 'setuptools_scm')
+        """
         dynamic_section = 'dynamic = ["version"]' if dynamic_version else ""
         self.write(
             "pyproject.toml",
@@ -113,7 +125,7 @@ build-backend = "setuptools.build_meta"
 name = "{name}"
 {dynamic_section}
 
-[tool.setuptools_scm]
+[tool.{tool_name}]
 """,
         )
 

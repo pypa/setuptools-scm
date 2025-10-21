@@ -21,6 +21,7 @@ import logging
 import os
 import warnings
 from collections.abc import Mapping, MutableMapping
+from contextlib import ContextDecorator
 from contextvars import ContextVar
 from dataclasses import dataclass
 from datetime import datetime
@@ -249,6 +250,7 @@ class GlobalOverrides:
         ignore_vcs_roots: List of VCS root paths to ignore for file finding
         tool: Tool prefix used to read these overrides
         dist_name: Optional distribution name for dist-specific env var lookups
+        additional_loggers: List of logger instances to configure alongside vcs_versioning
 
     Usage:
         with GlobalOverrides.from_env("HATCH_VCS", dist_name="my-package") as overrides:
@@ -267,8 +269,28 @@ class GlobalOverrides:
     source_date_epoch: int | None
     ignore_vcs_roots: list[str]
     tool: str
+    env_reader: EnvReader
     dist_name: str | None = None
-    _env_reader: EnvReader | None = None  # Cached reader, set by from_env
+    additional_loggers: tuple[logging.Logger, ...] = ()
+
+    def __post_init__(self) -> None:
+        """Validate that env_reader configuration matches GlobalOverrides settings."""
+        # Verify that the env_reader's dist_name matches
+        if self.env_reader.dist_name != self.dist_name:
+            raise ValueError(
+                f"EnvReader dist_name mismatch: "
+                f"GlobalOverrides has {self.dist_name!r}, "
+                f"but EnvReader has {self.env_reader.dist_name!r}"
+            )
+
+        # Verify that the env_reader has the correct tool prefix
+        expected_tools = (self.tool, "VCS_VERSIONING")
+        if self.env_reader.tools_names != expected_tools:
+            raise ValueError(
+                f"EnvReader tools_names mismatch: "
+                f"expected {expected_tools}, "
+                f"but got {self.env_reader.tools_names}"
+            )
 
     @classmethod
     def from_env(
@@ -276,6 +298,7 @@ class GlobalOverrides:
         tool: str,
         env: Mapping[str, str] = os.environ,
         dist_name: str | None = None,
+        additional_loggers: logging.Logger | list[logging.Logger] | tuple[()] = (),
     ) -> GlobalOverrides:
         """Read all global overrides from environment variables.
 
@@ -285,6 +308,8 @@ class GlobalOverrides:
             tool: Tool prefix (e.g., "HATCH_VCS", "SETUPTOOLS_SCM")
             env: Environment dict to read from (defaults to os.environ)
             dist_name: Optional distribution name for dist-specific env var lookups
+            additional_loggers: Logger instance(s) to configure alongside vcs_versioning.
+                Can be a single logger, a list of loggers, or empty tuple.
 
         Returns:
             GlobalOverrides instance ready to use as context manager
@@ -294,6 +319,15 @@ class GlobalOverrides:
         reader = EnvReader(
             tools_names=(tool, "VCS_VERSIONING"), env=env, dist_name=dist_name
         )
+
+        # Convert additional_loggers to a tuple of logger instances
+        logger_tuple: tuple[logging.Logger, ...]
+        if isinstance(additional_loggers, logging.Logger):
+            logger_tuple = (additional_loggers,)
+        elif isinstance(additional_loggers, list):
+            logger_tuple = tuple(additional_loggers)
+        else:
+            logger_tuple = ()
 
         # Read debug flag - support multiple formats
         debug_val = reader.read("DEBUG")
@@ -361,8 +395,9 @@ class GlobalOverrides:
             source_date_epoch=source_date_epoch,
             ignore_vcs_roots=ignore_vcs_roots,
             tool=tool,
+            env_reader=reader,
             dist_name=dist_name,
-            _env_reader=reader,
+            additional_loggers=logger_tuple,
         )
 
     def __enter__(self) -> GlobalOverrides:
@@ -372,9 +407,11 @@ class GlobalOverrides:
         object.__setattr__(self, "_token", token)
 
         # Automatically configure logging using the log_level property
-        from ._log import configure_logging
+        from ._log import _configure_loggers
 
-        configure_logging(log_level=self.log_level())
+        _configure_loggers(
+            log_level=self.log_level(), additional_loggers=list(self.additional_loggers)
+        )
 
         return self
 
@@ -408,31 +445,6 @@ class GlobalOverrides:
         else:
             return datetime.now(timezone.utc)
 
-    @property
-    def env_reader(self) -> EnvReader:
-        """Get the EnvReader configured for this tool and distribution.
-
-        Returns the EnvReader that was created during initialization, configured
-        with this GlobalOverrides' tool prefix, VCS_VERSIONING as fallback, and
-        the optional dist_name for distribution-specific lookups.
-
-        Returns:
-            EnvReader instance ready to read custom environment variables
-
-        Example:
-            >>> with GlobalOverrides.from_env("HATCH_VCS", dist_name="my-package") as overrides:
-            ...     custom_val = overrides.env_reader.read("MY_CUSTOM_VAR")
-            ...     config = overrides.env_reader.read_toml("CONFIG", schema=MySchema)
-        """
-        if self._env_reader is None:
-            # Fallback for instances not created via from_env
-            return EnvReader(
-                tools_names=(self.tool, "VCS_VERSIONING"),
-                env=os.environ,
-                dist_name=self.dist_name,
-            )
-        return self._env_reader
-
     @classmethod
     def from_active(cls, **changes: Any) -> GlobalOverrides:
         """Create a new GlobalOverrides instance based on the currently active one.
@@ -463,6 +475,19 @@ class GlobalOverrides:
             raise RuntimeError(
                 "Cannot call from_active() without an active GlobalOverrides context. "
                 "Use from_env() to create the initial context."
+            )
+
+        # If dist_name or tool is being changed, create a new EnvReader with the updated settings
+        new_dist_name = changes.get("dist_name", active.dist_name)
+        new_tool = changes.get("tool", active.tool)
+
+        if ("dist_name" in changes and changes["dist_name"] != active.dist_name) or (
+            "tool" in changes and changes["tool"] != active.tool
+        ):
+            changes["env_reader"] = EnvReader(
+                tools_names=(new_tool, "VCS_VERSIONING"),
+                env=active.env_reader.env,
+                dist_name=new_dist_name,
             )
 
         return replace(active, **changes)
@@ -558,7 +583,11 @@ def get_active_overrides() -> GlobalOverrides:
                 stacklevel=2,
             )
             _auto_create_warning_issued = True
-        overrides = GlobalOverrides.from_env("SETUPTOOLS_SCM", env=os.environ)
+        overrides = GlobalOverrides.from_env(
+            "SETUPTOOLS_SCM",
+            env=os.environ,
+            additional_loggers=logging.getLogger("setuptools_scm"),
+        )
     return overrides
 
 
@@ -610,9 +639,77 @@ def source_epoch_or_utc_now() -> datetime:
     return get_active_overrides().source_epoch_or_utc_now()
 
 
+class ensure_context(ContextDecorator):
+    """Context manager/decorator that ensures a GlobalOverrides context is active.
+
+    If no context is active, creates one using from_env() with the specified tool.
+    Can be used as a decorator or context manager.
+
+    Example as decorator:
+        @ensure_context("SETUPTOOLS_SCM", additional_loggers=logging.getLogger("setuptools_scm"))
+        def my_entry_point():
+            # Will automatically have context
+            pass
+
+    Example as context manager:
+        with ensure_context("SETUPTOOLS_SCM", additional_loggers=logging.getLogger("setuptools_scm")):
+            # Will have context here
+            pass
+    """
+
+    def __init__(
+        self,
+        tool: str,
+        *,
+        env: Mapping[str, str] | None = None,
+        dist_name: str | None = None,
+        additional_loggers: logging.Logger | list[logging.Logger] | tuple[()] = (),
+    ):
+        """Initialize the context ensurer.
+
+        Args:
+            tool: Tool name (e.g., "SETUPTOOLS_SCM", "vcs-versioning")
+            env: Environment variables to read from (defaults to os.environ)
+            dist_name: Optional distribution name
+            additional_loggers: Logger instance(s) to configure
+        """
+        self.tool = tool
+        self.env = env if env is not None else os.environ
+        self.dist_name = dist_name
+        self.additional_loggers = additional_loggers
+        self._context: GlobalOverrides | None = None
+        self._created_context = False
+
+    def __enter__(self) -> GlobalOverrides:
+        """Enter context: create GlobalOverrides if none is active."""
+        # Check if there's already an active context
+        existing = _active_overrides.get()
+
+        if existing is not None:
+            # Already have a context, just return it
+            self._created_context = False
+            return existing
+
+        # No context active, create one
+        self._created_context = True
+        self._context = GlobalOverrides.from_env(
+            self.tool,
+            env=self.env,
+            dist_name=self.dist_name,
+            additional_loggers=self.additional_loggers,
+        )
+        return self._context.__enter__()
+
+    def __exit__(self, *exc_info: Any) -> None:
+        """Exit context: only exit if we created the context."""
+        if self._created_context and self._context is not None:
+            self._context.__exit__(*exc_info)
+
+
 __all__ = [
     "EnvReader",
     "GlobalOverrides",
+    "ensure_context",
     "get_active_overrides",
     "get_debug_level",
     "get_hg_command",

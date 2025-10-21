@@ -3,14 +3,13 @@ from __future__ import annotations
 import logging
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 from typing import Any
 from typing import TypeAlias
 
 from setuptools import Distribution
+from vcs_versioning._pyproject_reading import PyProjectData
 
-if TYPE_CHECKING:
-    from .pyproject_reading import PyProjectData
+from .pyproject_reading import should_infer
 
 log = logging.getLogger(__name__)
 
@@ -125,7 +124,7 @@ def get_version_inference_config(
         overrides=overrides,
     )
 
-    inference_implied = pyproject_data.should_infer() or overrides is not None
+    inference_implied = should_infer(pyproject_data) or overrides is not None
 
     if inference_implied:
         if current_version is None:
