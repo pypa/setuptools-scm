@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import configparser
+
 from pathlib import Path
 from unittest.mock import Mock
 
@@ -8,6 +10,45 @@ import pytest
 from setuptools_scm._integration.pyproject_reading import has_build_package_with_extra
 from setuptools_scm._integration.pyproject_reading import read_pyproject
 from setuptools_scm._integration.pyproject_reading import should_infer
+
+
+def parametrize_build_package_tests(ini_string: str) -> pytest.MarkDecorator:
+    """Parametrize has_build_package_with_extra tests from INI string.
+
+    Specific parser for testing build package requirements with extras.
+
+    Parameters:
+    - requires: multiline list of requirement strings
+    - package_name: string
+    - extra: string
+    - expected: boolean (using ConfigParser's getboolean)
+    """
+    parser = configparser.ConfigParser()
+    parser.read_string(ini_string)
+
+    test_cases = []
+    for section_name in parser.sections():
+        section = parser[section_name]
+
+        # Parse requires as list - split on newlines and strip
+        requires_str = section.get("requires", "")
+        requires = [line.strip() for line in requires_str.splitlines() if line.strip()]
+
+        # Parse strings directly
+        package_name = section.get("package_name")
+        extra = section.get("extra")
+
+        # Parse boolean using ConfigParser's native method
+        expected = section.getboolean("expected")
+
+        test_cases.append(
+            pytest.param(requires, package_name, extra, expected, id=section_name)
+        )
+
+    return pytest.mark.parametrize(
+        ("requires", "package_name", "extra", "expected"),
+        test_cases,
+    )
 
 
 class TestPyProjectReading:
@@ -45,71 +86,76 @@ dynamic = ["version"]
         assert result.project.get("name") == "test-package"
 
 
-class TestBuildPackageWithExtra:
-    """Test the has_build_package_with_extra function."""
+@parametrize_build_package_tests(
+    """
+    [has_simple_extra]
+    requires =
+        setuptools-scm[simple]
+    package_name = setuptools-scm
+    extra = simple
+    expected = true
 
-    def test_has_simple_extra(self) -> None:
-        """Test that simple extra is detected correctly."""
-        requires = ["setuptools-scm[simple]"]
-        assert (
-            has_build_package_with_extra(requires, "setuptools-scm", "simple") is True
-        )
+    [has_no_simple_extra]
+    requires =
+        setuptools-scm
+    package_name = setuptools-scm
+    extra = simple
+    expected = false
 
-    def test_has_no_simple_extra(self) -> None:
-        """Test that missing simple extra is detected correctly."""
-        requires = ["setuptools-scm"]
-        assert (
-            has_build_package_with_extra(requires, "setuptools-scm", "simple") is False
-        )
+    [has_different_extra]
+    requires =
+        setuptools-scm[toml]
+    package_name = setuptools-scm
+    extra = simple
+    expected = false
 
-    def test_has_different_extra(self) -> None:
-        """Test that different extra is not detected as simple."""
-        requires = ["setuptools-scm[toml]"]
-        assert (
-            has_build_package_with_extra(requires, "setuptools-scm", "simple") is False
-        )
+    [has_multiple_extras_including_simple]
+    requires =
+        setuptools-scm[simple,toml]
+    package_name = setuptools-scm
+    extra = simple
+    expected = true
 
-    def test_has_multiple_extras_including_simple(self) -> None:
-        """Test that simple extra is detected when multiple extras are present."""
-        requires = ["setuptools-scm[simple,toml]"]
-        assert (
-            has_build_package_with_extra(requires, "setuptools-scm", "simple") is True
-        )
+    [different_package_with_simple_extra]
+    requires =
+        other-package[simple]
+    package_name = setuptools-scm
+    extra = simple
+    expected = false
 
-    def test_different_package_with_simple_extra(self) -> None:
-        """Test that simple extra on different package is not detected."""
-        requires = ["other-package[simple]"]
-        assert (
-            has_build_package_with_extra(requires, "setuptools-scm", "simple") is False
-        )
+    [version_specifier_with_extra]
+    requires =
+        setuptools-scm[simple]>=8.0
+    package_name = setuptools-scm
+    extra = simple
+    expected = true
 
-    def test_version_specifier_with_extra(self) -> None:
-        """Test that version specifiers work correctly with extras."""
-        requires = ["setuptools-scm[simple]>=8.0"]
-        assert (
-            has_build_package_with_extra(requires, "setuptools-scm", "simple") is True
-        )
+    [complex_requirement_with_extra]
+    requires =
+        setuptools-scm[simple]>=8.0,<9.0
+    package_name = setuptools-scm
+    extra = simple
+    expected = true
 
-    def test_complex_requirement_with_extra(self) -> None:
-        """Test that complex requirements with extras work correctly."""
-        requires = ["setuptools-scm[simple]>=8.0,<9.0"]
-        assert (
-            has_build_package_with_extra(requires, "setuptools-scm", "simple") is True
-        )
+    [empty_requires_list]
+    requires =
+    package_name = setuptools-scm
+    extra = simple
+    expected = false
 
-    def test_empty_requires_list(self) -> None:
-        """Test that empty requires list returns False."""
-        requires: list[str] = []
-        assert (
-            has_build_package_with_extra(requires, "setuptools-scm", "simple") is False
-        )
-
-    def test_invalid_requirement_string(self) -> None:
-        """Test that invalid requirement strings are handled gracefully."""
-        requires = ["invalid requirement string"]
-        assert (
-            has_build_package_with_extra(requires, "setuptools-scm", "simple") is False
-        )
+    [invalid_requirement_string]
+    requires =
+        invalid requirement string
+    package_name = setuptools-scm
+    extra = simple
+    expected = false
+    """
+)
+def test_has_build_package_with_extra(
+    requires: list[str], package_name: str, extra: str, expected: bool
+) -> None:
+    """Test the has_build_package_with_extra function with various inputs."""
+    assert has_build_package_with_extra(requires, package_name, extra) is expected
 
 
 def test_read_pyproject_with_given_definition(monkeypatch: pytest.MonkeyPatch) -> None:
