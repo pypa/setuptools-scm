@@ -70,7 +70,6 @@ def test_hg_command_from_env(
     # Need to commit something first for versioning to work
     wd.commit_testfile()
 
-    # Use from_active() to create modified overrides with custom hg command
     monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
     with GlobalOverrides.from_active(hg_command=hg_exe):
         version = wd.get_version()

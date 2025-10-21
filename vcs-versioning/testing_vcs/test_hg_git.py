@@ -112,10 +112,11 @@ def test_hg_command_from_env(
     request: pytest.FixtureRequest,
     hg_exe: str,
 ) -> None:
+    from vcs_versioning.overrides import GlobalOverrides
+
     wd = repositories_hg_git[0]
-    with monkeypatch.context() as m:
-        m.setenv("SETUPTOOLS_SCM_HG_COMMAND", hg_exe)
-        m.setenv("PATH", str(wd.cwd / "not-existing"))
-        # No module reloading needed - runtime configuration works immediately
-        wd.write("pyproject.toml", "[tool.vcs-versioning]")
+    wd.write("pyproject.toml", "[tool.vcs-versioning]")
+
+    monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
+    with GlobalOverrides.from_active(hg_command=hg_exe):
         assert wd.get_version().startswith("0.1.dev0+")

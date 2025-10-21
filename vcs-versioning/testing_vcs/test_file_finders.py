@@ -255,6 +255,5 @@ def test_hg_command_from_env(
     from vcs_versioning.overrides import GlobalOverrides
 
     monkeypatch.setenv("PATH", str(hg_wd.cwd / "not-existing"))
-    # Use from_active() to create modified overrides with custom hg command
     with GlobalOverrides.from_active(hg_command=hg_exe):
         assert set(find_files()) == {"file"}
