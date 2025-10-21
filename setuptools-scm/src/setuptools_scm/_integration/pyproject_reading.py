@@ -139,10 +139,10 @@ def read_pyproject(
     )
 
     # Check for conflicting tool.setuptools.dynamic configuration
-    if _given_definition is not None:
-        _check_setuptools_dynamic_version_conflict(
-            path, pyproject_data.build_requires, _given_definition
-        )
+    # Use the definition from pyproject_data (read by vcs_versioning)
+    _check_setuptools_dynamic_version_conflict(
+        path, pyproject_data.build_requires, pyproject_data.definition
+    )
 
     return pyproject_data
 

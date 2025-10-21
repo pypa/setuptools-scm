@@ -110,6 +110,7 @@ class TestManualPyProjectComposition:
             section_present=True,
             project_present=True,
             build_requires=["vcs-versioning"],
+            definition={},
         )
 
         assert pyproject.tool_name == "vcs-versioning"
@@ -127,6 +128,7 @@ class TestManualPyProjectComposition:
             section_present=True,
             project_present=True,
             build_requires=[],
+            definition={},
         )
 
         config = build_configuration_from_pyproject(

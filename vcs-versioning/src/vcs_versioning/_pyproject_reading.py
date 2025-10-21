@@ -39,6 +39,7 @@ class PyProjectData:
     section_present: bool
     project_present: bool
     build_requires: list[str]
+    definition: TOML_RESULT
 
     @classmethod
     def for_testing(
@@ -81,6 +82,7 @@ class PyProjectData:
             section_present=section_present,
             project_present=project_present,
             build_requires=build_requires,
+            definition={},
         )
 
     @classmethod
@@ -94,6 +96,7 @@ class PyProjectData:
             section_present=False,
             project_present=False,
             build_requires=[],
+            definition={},
         )
 
     @classmethod
@@ -241,6 +244,7 @@ def read_pyproject(
         section_present,
         project_present,
         requires,
+        defn,
     )
 
     return pyproject_data
