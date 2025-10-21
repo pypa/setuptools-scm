@@ -8,7 +8,7 @@ from typing import Any
 
 import setuptools
 
-from vcs_versioning import _types as _t
+from vcs_versioning._pyproject_reading import GivenPyProjectResult
 from vcs_versioning._toml import InvalidTomlError
 from vcs_versioning.overrides import GlobalOverrides
 from vcs_versioning.overrides import ensure_context
@@ -17,6 +17,7 @@ from .pyproject_reading import PyProjectData
 from .pyproject_reading import read_pyproject
 from .setup_cfg import SetuptoolsBasicData
 from .setup_cfg import extract_from_legacy
+from .version_inference import GetVersionInferenceConfig
 from .version_inference import get_version_inference_config
 
 log = logging.getLogger(__name__)
@@ -74,9 +75,9 @@ def version_keyword(
     keyword: str,
     value: bool | dict[str, Any] | Callable[[], dict[str, Any]],
     *,
-    _given_pyproject_data: _t.GivenPyProjectResult = None,
+    _given_pyproject_data: GivenPyProjectResult = None,
     _given_legacy_data: SetuptoolsBasicData | None = None,
-    _get_version_inference_config: _t.GetVersionInferenceConfig = get_version_inference_config,
+    _get_version_inference_config: GetVersionInferenceConfig = get_version_inference_config,
 ) -> None:
     """apply version infernce when setup(use_scm_version=...) is used
     this takes priority over the finalize_options based version
@@ -131,9 +132,9 @@ def version_keyword(
 def infer_version(
     dist: setuptools.Distribution,
     *,
-    _given_pyproject_data: _t.GivenPyProjectResult = None,
+    _given_pyproject_data: GivenPyProjectResult = None,
     _given_legacy_data: SetuptoolsBasicData | None = None,
-    _get_version_inference_config: _t.GetVersionInferenceConfig = get_version_inference_config,
+    _get_version_inference_config: GetVersionInferenceConfig = get_version_inference_config,
 ) -> None:
     """apply version inference from the finalize_options hook
     this is the default for pyproject.toml based projects that don't use the use_scm_version keyword
@@ -162,8 +163,8 @@ def _infer_version_impl(
     *,
     dist_name: str | None,
     legacy_data: SetuptoolsBasicData,
-    _given_pyproject_data: _t.GivenPyProjectResult = None,
-    _get_version_inference_config: _t.GetVersionInferenceConfig = get_version_inference_config,
+    _given_pyproject_data: GivenPyProjectResult = None,
+    _get_version_inference_config: GetVersionInferenceConfig = get_version_inference_config,
 ) -> None:
     """Internal implementation of infer_version."""
     try:

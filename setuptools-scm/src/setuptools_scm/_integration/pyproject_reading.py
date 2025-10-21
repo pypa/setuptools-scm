@@ -5,12 +5,10 @@ import logging
 from collections.abc import Sequence
 from pathlib import Path
 
-from vcs_versioning import _types as _t
 from vcs_versioning._pyproject_reading import DEFAULT_PYPROJECT_PATH
+from vcs_versioning._pyproject_reading import GivenPyProjectResult
 from vcs_versioning._pyproject_reading import PyProjectData
-from vcs_versioning._pyproject_reading import (
-    get_args_for_pyproject as _vcs_get_args_for_pyproject,
-)
+from vcs_versioning._pyproject_reading import get_args_for_pyproject
 from vcs_versioning._pyproject_reading import read_pyproject as _vcs_read_pyproject
 from vcs_versioning._requirement_cls import Requirement
 from vcs_versioning._requirement_cls import extract_package_name
@@ -121,7 +119,7 @@ def read_pyproject(
     path: Path = DEFAULT_PYPROJECT_PATH,
     tool_name: str = "setuptools_scm",
     canonical_build_package_name: str = "setuptools-scm",
-    _given_result: _t.GivenPyProjectResult = None,
+    _given_result: GivenPyProjectResult = None,
     _given_definition: TOML_RESULT | None = None,
 ) -> PyProjectData:
     """Read and parse pyproject configuration with setuptools-specific extensions.
@@ -147,12 +145,3 @@ def read_pyproject(
     _check_setuptools_dynamic_version_conflict(path, pyproject_data)
 
     return pyproject_data
-
-
-def get_args_for_pyproject(
-    pyproject: PyProjectData,
-    dist_name: str | None,
-    kwargs: TOML_RESULT,
-) -> TOML_RESULT:
-    """Delegate to vcs_versioning's implementation"""
-    return _vcs_get_args_for_pyproject(pyproject, dist_name, kwargs)

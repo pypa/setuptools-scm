@@ -9,15 +9,18 @@ import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING, TypeAlias, Union
 
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
 
-from . import _types as _t
 from ._requirement_cls import extract_package_name
 from ._toml import TOML_RESULT, InvalidTomlError, read_toml_content
+
+if TYPE_CHECKING:
+    pass  # PyProjectData is defined below
 
 log = logging.getLogger(__name__)
 
@@ -25,6 +28,11 @@ _ROOT = "root"
 
 
 DEFAULT_PYPROJECT_PATH = Path("pyproject.toml")
+
+# Testing injection type for configuration reading
+GivenPyProjectResult: TypeAlias = Union[
+    "PyProjectData", InvalidTomlError, FileNotFoundError, None
+]
 
 
 @dataclass
@@ -170,7 +178,7 @@ def has_build_package(
 def read_pyproject(
     path: Path = DEFAULT_PYPROJECT_PATH,
     canonical_build_package_name: str = "setuptools-scm",
-    _given_result: _t.GivenPyProjectResult = None,
+    _given_result: GivenPyProjectResult = None,
     _given_definition: TOML_RESULT | None = None,
     tool_names: list[str] | None = None,
 ) -> PyProjectData:

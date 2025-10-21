@@ -3,7 +3,9 @@ from __future__ import annotations
 import logging
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 from typing import Any
+from typing import Protocol
 from typing import TypeAlias
 
 from setuptools import Distribution
@@ -11,7 +13,30 @@ from vcs_versioning._pyproject_reading import PyProjectData
 
 from .pyproject_reading import should_infer
 
+if TYPE_CHECKING:
+    pass  # Concrete implementations defined below
+
 log = logging.getLogger(__name__)
+
+
+class VersionInferenceApplicable(Protocol):
+    """A result object from version inference decision that can be applied to a dist."""
+
+    def apply(self, dist: Distribution) -> None:  # pragma: no cover - structural type
+        ...
+
+
+class GetVersionInferenceConfig(Protocol):
+    """Callable protocol for the decision function used by integration points."""
+
+    def __call__(
+        self,
+        dist_name: str | None,
+        current_version: str | None,
+        pyproject_data: PyProjectData,
+        overrides: dict[str, object] | None = None,
+    ) -> VersionInferenceApplicable:  # pragma: no cover - structural type
+        ...
 
 
 @dataclass

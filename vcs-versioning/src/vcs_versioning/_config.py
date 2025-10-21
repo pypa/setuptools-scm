@@ -16,9 +16,7 @@ if TYPE_CHECKING:
 
 from . import _types as _t
 from ._overrides import read_toml_overrides
-from ._pyproject_reading import PyProjectData
-from ._pyproject_reading import get_args_for_pyproject as _get_args_for_pyproject
-from ._pyproject_reading import read_pyproject as _read_pyproject
+from ._pyproject_reading import PyProjectData, get_args_for_pyproject, read_pyproject
 from ._version_cls import Version as _Version
 from ._version_cls import _validate_version_cls
 from ._version_cls import _Version as _VersionAlias
@@ -282,8 +280,8 @@ class Configuration:
         """
 
         if pyproject_data is None:
-            pyproject_data = _read_pyproject(Path(name))
-        args = _get_args_for_pyproject(pyproject_data, dist_name, kwargs)
+            pyproject_data = read_pyproject(Path(name))
+        args = get_args_for_pyproject(pyproject_data, dist_name, kwargs)
 
         args.update(read_toml_overrides(args["dist_name"]))
         relative_to = args.pop("relative_to", name)
