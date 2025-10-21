@@ -6,10 +6,10 @@ from typing import Any
 import pytest
 
 from setuptools_scm._integration.pyproject_reading import PyProjectData
+from setuptools_scm._integration.version_inference import VersionAlreadySetWarning
 from setuptools_scm._integration.version_inference import VersionInferenceConfig
 from setuptools_scm._integration.version_inference import VersionInferenceNoOp
 from setuptools_scm._integration.version_inference import VersionInferenceResult
-from setuptools_scm._integration.version_inference import VersionInferenceWarning
 from setuptools_scm._integration.version_inference import get_version_inference_config
 
 # Common test data
@@ -48,12 +48,8 @@ OVERRIDES = SimpleNamespace(
 )
 
 
-WARNING_PACKAGE = VersionInferenceWarning(
-    message="version of test_package already set",
-)
-WARNING_NO_PACKAGE = VersionInferenceWarning(
-    message="version of None already set",
-)
+WARNING_PACKAGE = VersionAlreadySetWarning(dist_name="test_package")
+WARNING_NO_PACKAGE = VersionAlreadySetWarning(dist_name=None)
 
 NOOP = VersionInferenceNoOp()
 
@@ -65,7 +61,7 @@ def expect_config(
     pyproject_data: PyProjectData = PYPROJECT.DEFAULT,
     overrides: dict[str, Any] | None = None,
     expected: type[VersionInferenceConfig]
-    | VersionInferenceWarning
+    | VersionAlreadySetWarning
     | VersionInferenceNoOp,
 ) -> None:
     """Helper to test get_version_inference_config and assert expected result type."""
@@ -85,7 +81,7 @@ def expect_config(
             overrides=overrides,
         )
     else:
-        assert isinstance(expected, (VersionInferenceNoOp, VersionInferenceWarning))
+        assert isinstance(expected, (VersionInferenceNoOp, VersionAlreadySetWarning))
         expectation = expected
 
     assert result == expectation

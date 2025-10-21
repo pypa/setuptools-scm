@@ -38,16 +38,16 @@ class VersionInferenceConfig:
 
 
 @dataclass
-class VersionInferenceWarning:
-    """Error message for user."""
+class VersionAlreadySetWarning:
+    """Warning that version was already set, inference would override it."""
 
-    message: str
+    dist_name: str | None
 
     def apply(self, dist: Distribution) -> None:
-        """Apply error handling to the distribution."""
+        """Warn user that version is already set."""
         import warnings
 
-        warnings.warn(self.message)
+        warnings.warn(f"version of {self.dist_name} already set")
 
 
 @dataclass(frozen=True)
@@ -60,7 +60,7 @@ class VersionInferenceNoOp:
 
 VersionInferenceResult: TypeAlias = (
     VersionInferenceConfig  # Proceed with inference
-    | VersionInferenceWarning  # Show warning
+    | VersionAlreadySetWarning  # Warn: version already set
     | VersionInferenceNoOp  # Don't infer (silent)
 )
 
@@ -130,8 +130,6 @@ def get_version_inference_config(
         if current_version is None:
             return config
         else:
-            return VersionInferenceWarning(
-                f"version of {dist_name} already set",
-            )
+            return VersionAlreadySetWarning(dist_name)
     else:
         return VersionInferenceNoOp()
