@@ -11,7 +11,7 @@ import pytest
 from vcs_versioning import Configuration
 from vcs_versioning._backends._git import parse
 from vcs_versioning._run_cmd import run
-from vcs_versioning._version_schemes import meta
+from vcs_versioning._scm_version import meta
 from vcs_versioning.test_api import WorkDir
 
 

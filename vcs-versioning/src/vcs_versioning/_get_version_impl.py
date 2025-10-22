@@ -12,8 +12,8 @@ from . import _config, _entrypoints, _run_cmd
 from . import _types as _t
 from ._config import Configuration
 from ._overrides import _read_pretended_version_for
+from ._scm_version import ScmVersion
 from ._version_cls import _validate_version_cls
-from ._version_schemes import ScmVersion
 from ._version_schemes import format_version as _format_version
 
 EMPTY_TAG_REGEX_DEPRECATION = DeprecationWarning(

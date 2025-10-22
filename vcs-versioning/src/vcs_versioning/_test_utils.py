@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     import sys
 
     from vcs_versioning._config import Configuration
-    from vcs_versioning._version_schemes import ScmVersion, VersionExpectations
+    from vcs_versioning._scm_version import ScmVersion, VersionExpectations
 
     if sys.version_info >= (3, 11):
         from typing import Unpack

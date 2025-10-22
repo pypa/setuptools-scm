@@ -6,7 +6,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 from .._config import Configuration
-from .._version_schemes import ScmVersion
+from .._scm_version import ScmVersion
 
 log = logging.getLogger(__name__)
 

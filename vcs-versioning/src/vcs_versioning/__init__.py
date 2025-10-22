@@ -10,9 +10,9 @@ from typing import Any
 # Public API exports
 from ._config import DEFAULT_LOCAL_SCHEME, DEFAULT_VERSION_SCHEME, Configuration
 from ._pyproject_reading import PyProjectData
+from ._scm_version import ScmVersion
 from ._version_cls import NonNormalizedVersion, Version
 from ._version_inference import infer_version_string
-from ._version_schemes import ScmVersion
 
 
 def build_configuration_from_pyproject(

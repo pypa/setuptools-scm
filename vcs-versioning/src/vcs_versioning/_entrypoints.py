@@ -12,21 +12,21 @@ __all__ = [
 ]
 if TYPE_CHECKING:
     from . import _types as _t
-    from . import _version_schemes
     from ._config import Configuration, ParseFunction
+    from ._scm_version import ScmVersion
 
 log = logging.getLogger(__name__)
 
 
 def version_from_entrypoint(
     config: Configuration, *, entrypoint: str, root: _t.PathT
-) -> _version_schemes.ScmVersion | None:
+) -> ScmVersion | None:
     from ._discover import iter_matching_entrypoints
 
     log.debug("version_from_ep %s in %s", entrypoint, root)
     for ep in iter_matching_entrypoints(root, entrypoint, config):
         fn: ParseFunction = ep.load()
-        maybe_version: _version_schemes.ScmVersion | None = fn(root, config=config)
+        maybe_version: ScmVersion | None = fn(root, config=config)
         log.debug("%s found %r", ep, maybe_version)
         if maybe_version is not None:
             return maybe_version
@@ -55,7 +55,7 @@ def _iter_version_schemes(
     entrypoint: str,
     scheme_value: _t.VERSION_SCHEMES,
     _memo: set[object] | None = None,
-) -> Iterator[Callable[[_version_schemes.ScmVersion], str]]:
+) -> Iterator[Callable[[ScmVersion], str]]:
     if _memo is None:
         _memo = set()
     if isinstance(scheme_value, str):
@@ -75,7 +75,7 @@ def _iter_version_schemes(
 
 
 def _call_version_scheme(
-    version: _version_schemes.ScmVersion,
+    version: ScmVersion,
     entrypoint: str,
     given_value: _t.VERSION_SCHEMES,
     default: str | None = None,

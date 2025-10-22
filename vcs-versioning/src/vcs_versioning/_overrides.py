@@ -19,7 +19,7 @@ from packaging.utils import canonicalize_name
 
 from . import _config
 from . import _types as _t
-from . import _version_schemes as version
+from ._scm_version import ScmVersion, meta  # noqa: F401 - for type checking
 from ._version_cls import Version as _Version
 
 log = logging.getLogger(__name__)
@@ -173,9 +173,9 @@ def _read_pretended_metadata_for(
 
 
 def _apply_metadata_overrides(
-    scm_version: version.ScmVersion | None,
+    scm_version: ScmVersion | None,
     config: _config.Configuration,
-) -> version.ScmVersion | None:
+) -> ScmVersion | None:
     """Apply metadata overrides to a ScmVersion object.
 
     This function reads pretend metadata from environment variables and applies
@@ -247,7 +247,7 @@ def _apply_metadata_overrides(
 
 def _read_pretended_version_for(
     config: _config.Configuration,
-) -> version.ScmVersion | None:
+) -> ScmVersion | None:
     """read a a overridden version from the environment
 
     tries ``SETUPTOOLS_SCM_PRETEND_VERSION``
@@ -265,7 +265,7 @@ def _read_pretended_version_for(
     pretended = reader.read("PRETEND_VERSION")
 
     if pretended:
-        return version.meta(tag=pretended, preformatted=True, config=config)
+        return meta(tag=pretended, preformatted=True, config=config)
     else:
         return None
 

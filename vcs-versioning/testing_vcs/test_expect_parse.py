@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 from vcs_versioning import Configuration
-from vcs_versioning._version_schemes import ScmVersion, meta, mismatches
+from vcs_versioning._scm_version import ScmVersion, meta, mismatches
 from vcs_versioning.test_api import TEST_SOURCE_DATE, WorkDir
 
 

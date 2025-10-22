@@ -14,11 +14,9 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from ._version_schemes import (
-    ScmVersion,
-    guess_next_dev_version,
-    guess_next_simple_semver,
-)
+from .._scm_version import ScmVersion
+from ._common import SEMVER_MINOR, SEMVER_PATCH
+from ._standard import guess_next_dev_version, guess_next_simple_semver
 
 log = logging.getLogger(__name__)
 
@@ -140,7 +138,7 @@ def version_from_fragments(version: ScmVersion) -> str:
     # Determine the next version based on bump type
     if bump_type == "major":
         # Major bump: increment major version, reset minor and patch to 0
-        from . import _modify_version
+        from .. import _modify_version
 
         def guess_next_major(v: ScmVersion) -> str:
             tag_version = _modify_version.strip_local(str(v.tag))
@@ -156,16 +154,12 @@ def version_from_fragments(version: ScmVersion) -> str:
 
     elif bump_type == "minor":
         # Minor bump: use simplified semver with MINOR retention
-        from ._version_schemes import SEMVER_MINOR
-
         return version.format_next_version(
             guess_next_simple_semver, retain=SEMVER_MINOR
         )
 
     else:  # patch
         # Patch bump: use simplified semver with PATCH retention
-        from ._version_schemes import SEMVER_PATCH
-
         return version.format_next_version(
             guess_next_simple_semver, retain=SEMVER_PATCH
         )

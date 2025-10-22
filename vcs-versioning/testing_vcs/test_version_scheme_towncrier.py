@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 from vcs_versioning import _config
+from vcs_versioning._scm_version import ScmVersion
 from vcs_versioning._version_cls import Version
-from vcs_versioning._version_schemes import ScmVersion
-from vcs_versioning._version_schemes_towncrier import (
+from vcs_versioning._version_schemes._towncrier import (
     _determine_bump_type,
     _find_fragments,
     version_from_fragments,

@@ -7,13 +7,12 @@ from typing import Any
 
 import pytest
 from vcs_versioning import Configuration, NonNormalizedVersion
+from vcs_versioning._scm_version import ScmVersion, meta
 from vcs_versioning._version_schemes import (
-    ScmVersion,
     calver_by_date,
     format_version,
     guess_next_date_ver,
     guess_next_version,
-    meta,
     no_guess_dev_version,
     only_version,
     release_branch_semver_version,

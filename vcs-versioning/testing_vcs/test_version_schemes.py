@@ -5,12 +5,8 @@ from __future__ import annotations
 import pytest
 from vcs_versioning import Configuration
 from vcs_versioning._run_cmd import has_command
-from vcs_versioning._version_schemes import (
-    format_version,
-    guess_next_version,
-    meta,
-    tag_to_version,
-)
+from vcs_versioning._scm_version import meta, tag_to_version
+from vcs_versioning._version_schemes import format_version, guess_next_version
 
 c = Configuration()
 

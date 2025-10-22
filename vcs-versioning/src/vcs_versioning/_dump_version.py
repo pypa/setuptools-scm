@@ -11,7 +11,7 @@ from ._version_cls import _version_as_tuple
 
 if TYPE_CHECKING:
     from . import _types as _t
-    from ._version_schemes import ScmVersion
+    from ._scm_version import ScmVersion
 
 log = logging.getLogger(__name__)
 
