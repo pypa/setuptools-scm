@@ -1,13 +1,22 @@
 from __future__ import annotations
 
-import os
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, TypeAlias
 
 if TYPE_CHECKING:
     from . import _version_schemes as version
 
-PathT: TypeAlias = os.PathLike[str] | str
+# Re-export from _compat for backward compatibility
+from ._compat import PathT as PathT  # noqa: PLC0414
+
+__all__ = [
+    "PathT",
+    "CMD_TYPE",
+    "VERSION_SCHEME",
+    "VERSION_SCHEMES",
+    "SCMVERSION",
+    "GIT_PRE_PARSE",
+]
 
 CMD_TYPE: TypeAlias = Sequence[PathT] | str
 

@@ -6,8 +6,8 @@ from collections.abc import Callable
 from typing import TypeGuard
 
 from .. import _types as _t
+from .._compat import norm_real
 from .._entrypoints import entry_points
-from ._pathtools import norm_real
 
 log = logging.getLogger("vcs_versioning.file_finder")
 

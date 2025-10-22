@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+import os
+from typing import TypeAlias
+
+# Path type for accepting both strings and PathLike objects
+PathT: TypeAlias = os.PathLike[str] | str
+
 
 def normalize_path_for_assertion(path: str) -> str:
     """Normalize path separators for cross-platform assertions.
@@ -63,3 +69,23 @@ def assert_path_endswith(
 def compute_path_prefix(full_path: str, suffix_path: str) -> str:
     """Legacy alias - use strip_path_suffix instead."""
     return strip_path_suffix(full_path, suffix_path)
+
+
+def norm_real(path: PathT) -> str:
+    """Normalize and resolve a path (combining normcase and realpath).
+
+    This combines os.path.normcase() and os.path.realpath() to produce
+    a canonical path string that is normalized for the platform and has
+    all symbolic links resolved.
+
+    Args:
+        path: The path to normalize and resolve
+
+    Returns:
+        The normalized, resolved absolute path
+
+    Examples:
+        >>> norm_real("/path/to/../to/file.txt")  # doctest: +SKIP
+        '/path/to/file.txt'
+    """
+    return os.path.normcase(os.path.realpath(path))

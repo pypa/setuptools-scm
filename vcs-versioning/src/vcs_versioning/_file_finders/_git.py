@@ -7,11 +7,10 @@ import tarfile
 from typing import IO
 
 from .. import _types as _t
-from .._compat import strip_path_suffix
+from .._compat import norm_real, strip_path_suffix
 from .._integration import data_from_mime
 from .._run_cmd import run as _run
 from . import is_toplevel_acceptable, scm_find_files
-from ._pathtools import norm_real
 
 log = logging.getLogger(__name__)
 
