@@ -9,7 +9,7 @@ import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, TypeAlias, Union
+from typing import TypeAlias, Union
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -18,9 +18,6 @@ else:
 
 from ._requirement_cls import extract_package_name
 from ._toml import TOML_RESULT, InvalidTomlError, read_toml_content
-
-if TYPE_CHECKING:
-    pass  # PyProjectData is defined below
 
 log = logging.getLogger(__name__)
 

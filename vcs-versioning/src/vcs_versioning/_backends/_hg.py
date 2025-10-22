@@ -4,7 +4,7 @@ import datetime
 import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from .. import _types as _t
 from .._config import Configuration
@@ -15,9 +15,6 @@ from .._run_cmd import run as _run
 from .._version_cls import Version
 from .._version_schemes import ScmVersion, meta, tag_to_version
 from ._scm_workdir import Workdir, get_latest_file_mtime
-
-if TYPE_CHECKING:
-    pass
 
 log = logging.getLogger(__name__)
 

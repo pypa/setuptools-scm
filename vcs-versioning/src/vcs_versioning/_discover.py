@@ -5,15 +5,10 @@ import os
 from collections.abc import Iterable, Iterator
 from importlib.metadata import EntryPoint
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from . import _entrypoints
 from . import _types as _t
 from ._config import Configuration
-
-if TYPE_CHECKING:
-    pass
-
 
 log = logging.getLogger(__name__)
 

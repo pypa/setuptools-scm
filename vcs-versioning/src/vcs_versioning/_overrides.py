@@ -9,12 +9,11 @@ from __future__ import annotations
 import dataclasses
 import logging
 import os
-import sys
 from collections.abc import Mapping
 from datetime import date, datetime
 from difflib import get_close_matches
 from re import Pattern
-from typing import TYPE_CHECKING, Any, TypedDict, get_type_hints
+from typing import Any, TypedDict, get_type_hints
 
 from packaging.utils import canonicalize_name
 
@@ -22,14 +21,6 @@ from . import _config
 from . import _types as _t
 from . import _version_schemes as version
 from ._version_cls import Version as _Version
-
-if TYPE_CHECKING:
-    pass
-
-if sys.version_info >= (3, 11):
-    pass
-else:
-    pass
 
 log = logging.getLogger(__name__)
 
