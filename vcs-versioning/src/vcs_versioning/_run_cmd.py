@@ -7,18 +7,9 @@ import subprocess
 import textwrap
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import TYPE_CHECKING, TypeVar, overload
+from typing import TypeVar, overload
 
 from . import _types as _t
-
-if TYPE_CHECKING:
-    BaseCompletedProcess = subprocess.CompletedProcess[str]
-else:
-    BaseCompletedProcess = subprocess.CompletedProcess
-
-# pick 40 seconds
-# unfortunately github CI for windows sometimes needs
-# up to 30 seconds to start a command
 
 
 def _get_timeout(env: Mapping[str, str]) -> int:
@@ -38,10 +29,10 @@ PARSE_RESULT = TypeVar("PARSE_RESULT")
 T = TypeVar("T")
 
 
-class CompletedProcess(BaseCompletedProcess):
+class CompletedProcess(subprocess.CompletedProcess[str]):
     @classmethod
     def from_raw(
-        cls, input: BaseCompletedProcess, strip: bool = True
+        cls, input: subprocess.CompletedProcess[str], strip: bool = True
     ) -> CompletedProcess:
         return cls(
             args=input.args,

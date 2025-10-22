@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, TypeAlias, Union
+from typing import TYPE_CHECKING, TypeAlias
 
 if TYPE_CHECKING:
     from . import _version_schemes as version
 
-PathT: TypeAlias = Union["os.PathLike[str]", str]
+PathT: TypeAlias = "os.PathLike[str]" | str
 
 CMD_TYPE: TypeAlias = Sequence[PathT] | str
 

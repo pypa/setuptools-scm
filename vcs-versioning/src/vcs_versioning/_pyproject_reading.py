@@ -9,7 +9,7 @@ import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TypeAlias, Union
+from typing import TypeAlias
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -27,9 +27,9 @@ _ROOT = "root"
 DEFAULT_PYPROJECT_PATH = Path("pyproject.toml")
 
 # Testing injection type for configuration reading
-GivenPyProjectResult: TypeAlias = Union[
-    "PyProjectData", InvalidTomlError, FileNotFoundError, None
-]
+GivenPyProjectResult: TypeAlias = (
+    "PyProjectData" | InvalidTomlError | FileNotFoundError | None
+)
 
 
 @dataclass
