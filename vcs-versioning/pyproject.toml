@@ -97,6 +97,13 @@ no-cov = "cov --no-cov {args}"
 [[tool.hatch.envs.test.matrix]]
 python = [ "38", "39", "310", "311", "312", "313" ]
 
+[tool.vcs-versioning]
+root = ".."
+version_scheme = "towncrier-fragments"
+tag_regex = "^vcs-versioning-(?P<version>v?\\d+(?:\\.\\d+){0,2}[^\\+]*)(?:\\+.*)?$"
+fallback_version = "0.1.0"
+scm.git.describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--match", "vcs-versioning-*"]
+
 [tool.coverage.run]
 branch = true
 parallel = true

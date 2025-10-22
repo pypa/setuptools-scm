@@ -109,9 +109,21 @@ def version_from_fragments(version: ScmVersion) -> str:
     if version.exact:
         return version.format_with("{tag}")
 
-    # Try to find the root directory (where changelog.d/ should be)
-    # The config object should have the root
-    root = Path(version.config.absolute_root)
+    # Find where to look for changelog.d/ directory
+    # Prefer relative_to (location of config file) over fallback_root
+    # This allows monorepo support where changelog.d/ is in the project dir
+    if version.config.relative_to:
+        # relative_to is typically the pyproject.toml file path
+        # changelog.d/ should be in the same directory
+        import os
+
+        if os.path.isfile(version.config.relative_to):
+            root = Path(os.path.dirname(version.config.relative_to))
+        else:
+            root = Path(version.config.relative_to)
+    else:
+        # Fall back to using fallback_root if set, otherwise absolute_root
+        root = Path(version.config.fallback_root or version.config.absolute_root)
 
     log.debug("Analyzing fragments in %s", root)
 

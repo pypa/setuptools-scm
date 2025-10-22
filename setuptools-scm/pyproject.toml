@@ -122,6 +122,10 @@ version = { attr = "_own_version_helper.version"}
 
 [tool.setuptools_scm]
 root = ".."
+version_scheme = "towncrier-fragments"
+tag_regex = "^setuptools-scm-(?P<version>v?\\d+(?:\\.\\d+){0,2}[^\\+]*)(?:\\+.*)?$"
+fallback_version = "9.2.2" # we trnasion to towncrier informed here
+scm.git.describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--match", "setuptools-scm-*"]
 
 [tool.ruff]
 lint.extend-select = ["YTT", "B", "C4", "DTZ", "ISC", "LOG", "G", "PIE", "PYI", "PT", "FLY", "I", "C90", "PERF", "W", "PGH", "PLE", "UP", "FURB", "RUF"]

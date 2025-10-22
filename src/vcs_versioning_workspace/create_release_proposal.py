@@ -44,13 +44,10 @@ def get_next_version(project_dir: Path, repo_root: Path) -> str | None:
     """Get the next version for a project using vcs-versioning API."""
     try:
         # Load configuration from project's pyproject.toml
+        # All project-specific settings (tag_regex, fallback_version, etc.) are in the config files
+        # Override local_scheme to get clean version strings
         pyproject = project_dir / "pyproject.toml"
-        config = Configuration.from_file(
-            pyproject,
-            root=str(repo_root),
-            version_scheme="towncrier-fragments",
-            local_scheme="no-local-version",
-        )
+        config = Configuration.from_file(pyproject, local_scheme="no-local-version")
 
         # Get the ScmVersion object
         scm_version = parse_version(config)
@@ -69,11 +66,17 @@ def get_next_version(project_dir: Path, repo_root: Path) -> str | None:
         return None
 
 
-def run_towncrier(project_dir: Path, version: str) -> bool:
+def run_towncrier(project_dir: Path, version: str, *, draft: bool = False) -> bool:
     """Run towncrier build for a project."""
     try:
+        cmd = ["uv", "run", "towncrier", "build", "--version", version]
+        if draft:
+            cmd.append("--draft")
+        else:
+            cmd.append("--yes")
+
         result = subprocess.run(
-            ["uv", "run", "towncrier", "build", "--version", version, "--yes"],
+            cmd,
             cwd=project_dir,
             capture_output=True,
             text=True,
@@ -122,41 +125,63 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Create release proposal")
     parser.add_argument(
         "--event",
-        required=True,
         help="GitHub event type (push or pull_request)",
     )
     parser.add_argument(
         "--branch",
-        required=True,
-        help="Source branch name",
+        help="Source branch name (defaults to current branch)",
     )
     args = parser.parse_args()
 
     # Get environment variables
     token = os.environ.get("GITHUB_TOKEN")
     repo_name = os.environ.get("GITHUB_REPOSITORY")
-    source_branch = args.branch
-    is_pr = args.event == "pull_request"
 
-    if not token:
-        print("ERROR: GITHUB_TOKEN environment variable not set", file=sys.stderr)
-        sys.exit(1)
-
-    if not repo_name:
-        print("ERROR: GITHUB_REPOSITORY environment variable not set", file=sys.stderr)
-        sys.exit(1)
-
-    # Initialize GitHub API
-    gh = Github(token)
-    repo = gh.get_repo(repo_name)
-
-    # Check for existing PR (skip for pull_request events)
-    if not is_pr:
-        release_branch, existing_pr_number = check_existing_pr(repo, source_branch)
+    # Determine source branch
+    if args.branch:
+        source_branch = args.branch
     else:
+        # Get current branch from git
+        try:
+            result = subprocess.run(
+                ["git", "branch", "--show-current"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            source_branch = result.stdout.strip()
+            print(f"Using current branch: {source_branch}")
+        except subprocess.CalledProcessError:
+            print("ERROR: Could not determine current branch", file=sys.stderr)
+            sys.exit(1)
+
+    is_pr = args.event == "pull_request" if args.event else False
+
+    # GitHub integration is optional
+    github_mode = bool(token and repo_name)
+
+    if github_mode:
+        # Type narrowing: when github_mode is True, both token and repo_name are not None
+        assert token is not None
+        assert repo_name is not None
+        print(f"GitHub mode: enabled (repo: {repo_name})")
+        # Initialize GitHub API
+        gh = Github(token)
+        repo = gh.get_repo(repo_name)
+
+        # Check for existing PR (skip for pull_request events)
+        if not is_pr:
+            release_branch, existing_pr_number = check_existing_pr(repo, source_branch)
+        else:
+            release_branch = f"release/{source_branch}"
+            existing_pr_number = None
+            print(
+                f"[PR VALIDATION MODE] Validating release for branch: {source_branch}"
+            )
+    else:
+        print("GitHub mode: disabled (missing GITHUB_TOKEN or GITHUB_REPOSITORY)")
         release_branch = f"release/{source_branch}"
         existing_pr_number = None
-        print(f"[PR VALIDATION MODE] Validating release for branch: {source_branch}")
 
     repo_root = Path.cwd()
     projects = {
@@ -179,12 +204,13 @@ def main() -> None:
     if not any(to_release.values()):
         print("No changelog fragments found in any project, skipping release")
 
-        # Write GitHub Step Summary
-        github_summary = os.environ.get("GITHUB_STEP_SUMMARY")
-        if github_summary:
-            with open(github_summary, "a") as f:
-                f.write("## Release Proposal\n\n")
-                f.write("ℹ️ No changelog fragments to process\n")
+        # Write GitHub Step Summary (if in GitHub mode)
+        if github_mode:
+            github_summary = os.environ.get("GITHUB_STEP_SUMMARY")
+            if github_summary:
+                with open(github_summary, "a") as f:
+                    f.write("## Release Proposal\n\n")
+                    f.write("ℹ️ No changelog fragments to process\n")
 
         sys.exit(0)
 
@@ -210,8 +236,8 @@ def main() -> None:
 
         print(f"{project_name} next version: {version}")
 
-        # Run towncrier
-        if not run_towncrier(project_dir, version):
+        # Run towncrier (draft mode for local runs)
+        if not run_towncrier(project_dir, version, draft=not github_mode):
             print(f"ERROR: Towncrier build failed for {project_name}", file=sys.stderr)
             sys.exit(1)
 
@@ -225,17 +251,18 @@ def main() -> None:
     releases_str = ", ".join(releases)
     print(f"\nSuccessfully prepared releases: {releases_str}")
 
-    # Write GitHub Actions outputs
-    github_output = os.environ.get("GITHUB_OUTPUT")
-    if github_output:
-        with open(github_output, "a") as f:
-            f.write(f"release_branch={release_branch}\n")
-            f.write(f"releases={releases_str}\n")
-            f.write(f"labels={','.join(labels)}\n")
+    # Write GitHub Actions outputs (if in GitHub mode)
+    if github_mode:
+        github_output = os.environ.get("GITHUB_OUTPUT")
+        if github_output:
+            with open(github_output, "a") as f:
+                f.write(f"release_branch={release_branch}\n")
+                f.write(f"releases={releases_str}\n")
+                f.write(f"labels={','.join(labels)}\n")
 
-    # Prepare PR content for workflow to use
-    pr_title = f"Release: {releases_str}"
-    pr_body = f"""## Release Proposal
+        # Prepare PR content for workflow to use
+        pr_title = f"Release: {releases_str}"
+        pr_body = f"""## Release Proposal
 
 This PR prepares the following releases:
 {releases_str}
@@ -253,39 +280,43 @@ This PR prepares the following releases:
 
 **Merging this PR will automatically create tags and trigger PyPI uploads.**"""
 
-    # Write outputs for workflow
-    if github_output:
-        with open(github_output, "a") as f:
-            # Write PR metadata (multiline strings need special encoding)
-            f.write(f"pr_title={pr_title}\n")
-            # For multiline, use GitHub Actions multiline syntax
-            f.write(f"pr_body<<EOF\n{pr_body}\nEOF\n")
-            # Check if PR exists
-            if not is_pr:
-                f.write(f"pr_exists={'true' if existing_pr_number else 'false'}\n")
-                f.write(f"pr_number={existing_pr_number or ''}\n")
+        # Write outputs for workflow
+        if github_output:
+            with open(github_output, "a") as f:
+                # Write PR metadata (multiline strings need special encoding)
+                f.write(f"pr_title={pr_title}\n")
+                # For multiline, use GitHub Actions multiline syntax
+                f.write(f"pr_body<<EOF\n{pr_body}\nEOF\n")
+                # Check if PR exists
+                if not is_pr:
+                    f.write(f"pr_exists={'true' if existing_pr_number else 'false'}\n")
+                    f.write(f"pr_number={existing_pr_number or ''}\n")
 
-    # Write GitHub Step Summary
-    github_summary = os.environ.get("GITHUB_STEP_SUMMARY")
-    if github_summary:
-        with open(github_summary, "a") as f:
-            if is_pr:
-                f.write("## Release Proposal Validation\n\n")
-                f.write("✅ **Status:** Validated successfully\n\n")
-                f.write(f"**Planned Releases:** {releases_str}\n")
-            else:
-                f.write("## Release Proposal\n\n")
-                f.write(f"**Releases:** {releases_str}\n")
+        # Write GitHub Step Summary
+        github_summary = os.environ.get("GITHUB_STEP_SUMMARY")
+        if github_summary:
+            with open(github_summary, "a") as f:
+                if is_pr:
+                    f.write("## Release Proposal Validation\n\n")
+                    f.write("✅ **Status:** Validated successfully\n\n")
+                    f.write(f"**Planned Releases:** {releases_str}\n")
+                else:
+                    f.write("## Release Proposal\n\n")
+                    f.write(f"**Releases:** {releases_str}\n")
 
-    # For PR validation, we're done
-    if is_pr:
-        print(f"\n[PR VALIDATION] Release validation successful: {releases_str}")
-        return
+        # For PR validation, we're done
+        if is_pr:
+            print(f"\n[PR VALIDATION] Release validation successful: {releases_str}")
+            return
 
-    # For push events, output success but don't create PR yet
-    # (workflow will create PR after pushing the branch)
-    print(f"\n[PUSH] Release preparation complete: {releases_str}")
-    print("[PUSH] Workflow will commit, push branch, and create/update PR")
+        # For push events, output success but don't create PR yet
+        # (workflow will create PR after pushing the branch)
+        print(f"\n[PUSH] Release preparation complete: {releases_str}")
+        print("[PUSH] Workflow will commit, push branch, and create/update PR")
+    else:
+        # Local mode - just report what would be released
+        print(f"\n[LOCAL MODE] Release proposal ready: {releases_str}")
+        print("[LOCAL MODE] Review changes in CHANGELOG.md and commit manually")
 
 
 if __name__ == "__main__":
