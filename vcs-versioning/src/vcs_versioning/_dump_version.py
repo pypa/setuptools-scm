@@ -31,20 +31,12 @@ __all__ = [
     "commit_id",
 ]
 
-TYPE_CHECKING = False
-if TYPE_CHECKING:
-    VERSION_TUPLE = tuple[int | str, ...]
-    COMMIT_ID = str | None
-else:
-    VERSION_TUPLE = object
-    COMMIT_ID = object
-
 version: str
 __version__: str
-__version_tuple__: VERSION_TUPLE
-version_tuple: VERSION_TUPLE
-commit_id: COMMIT_ID
-__commit_id__: COMMIT_ID
+__version_tuple__: tuple[int | str, ...]
+version_tuple: tuple[int | str, ...]
+commit_id: str | None
+__commit_id__: str | None
 
 __version__ = version = {version!r}
 __version_tuple__ = version_tuple = {version_tuple!r}

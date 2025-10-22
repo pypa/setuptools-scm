@@ -92,12 +92,13 @@ def test_dump_version_on_old_python(tmp_path: Path) -> None:
 
 
 def test_dump_version_mypy(tmp_path: Path) -> None:
-    mypy = shutil.which("mypy")
-    if mypy is None:
-        pytest.skip("mypy not found")
+    uvx = shutil.which("uvx")
+    if uvx is None:
+        pytest.skip("uvx not found")
     dump_a_version(tmp_path)
+    # Use mypy 1.11.2 - last version supporting Python 3.8
     subprocess.run(
-        [mypy, "--python-version=3.8", "--strict", "VERSION.py"],
+        [uvx, "mypy==1.11.2", "--python-version=3.8", "--strict", "VERSION.py"],
         cwd=tmp_path,
         check=True,
     )
