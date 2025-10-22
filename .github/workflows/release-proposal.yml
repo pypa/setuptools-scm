@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+  pull_request:
 
 permissions:
   contents: write
@@ -31,6 +32,7 @@ jobs:
           uv sync --all-packages --group release
 
       - name: Configure git
+        if: github.event_name == 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -38,13 +40,14 @@ jobs:
       - name: Run release proposal
         id: release
         run: |
-          # Run the unified release proposal script
-          uv run python -m vcs_versioning_workspace.create_release_proposal >> $GITHUB_OUTPUT
+          uv run python -m vcs_versioning_workspace.create_release_proposal \
+            --event "${{ github.event_name }}" \
+            --branch "${{ github.ref_name }}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Create or update release branch
-        if: success()
+        if: github.event_name == 'push'
         run: |
           # Get release branch from script output
           RELEASE_BRANCH="${{ steps.release.outputs.release_branch }}"
@@ -59,3 +62,56 @@ jobs:
 
           # Force push
           git push origin "$RELEASE_BRANCH" --force
+
+      - name: Create or update PR
+        if: github.event_name == 'push'
+        uses: actions/github-script@v8
+        env:
+          RELEASE_BRANCH: ${{ steps.release.outputs.release_branch }}
+          PR_EXISTS: ${{ steps.release.outputs.pr_exists }}
+          PR_NUMBER: ${{ steps.release.outputs.pr_number }}
+          PR_TITLE: ${{ steps.release.outputs.pr_title }}
+          PR_BODY: ${{ steps.release.outputs.pr_body }}
+          LABELS: ${{ steps.release.outputs.labels }}
+        with:
+          script: |
+            const releaseBranch = process.env.RELEASE_BRANCH;
+            const prExists = process.env.PR_EXISTS === 'true';
+            const prNumber = process.env.PR_NUMBER;
+            const prTitle = process.env.PR_TITLE;
+            const prBody = process.env.PR_BODY;
+            const labels = process.env.LABELS.split(',').filter(l => l);
+
+            if (prExists && prNumber) {
+              // Update existing PR
+              console.log(`Updating existing PR #${prNumber}`);
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: parseInt(prNumber),
+                title: prTitle,
+                body: prBody
+              });
+            } else {
+              // Create new PR
+              console.log('Creating new PR');
+              const { data: pr } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: prTitle,
+                body: prBody,
+                head: releaseBranch,
+                base: 'main'
+              });
+              console.log(`Created PR #${pr.number}`);
+
+              // Add labels
+              if (labels.length > 0) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  labels: labels
+                });
+              }
+            }
