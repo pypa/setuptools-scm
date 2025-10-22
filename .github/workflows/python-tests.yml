@@ -20,17 +20,13 @@ env:
 jobs:
 
   package:
-    name: Build & inspect ${{ matrix.name }}
+    name: Build & inspect ${{ matrix.package }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
-          - name: vcs-versioning
-            path: vcs-versioning
-            suffix: -vcs-versioning
-          - name: setuptools-scm
-            path: setuptools-scm
-            suffix: -setuptools-scm
+        package:
+          - vcs-versioning
+          - setuptools-scm
     env:
       # Use no-local-version for package builds to ensure clean versions for PyPI uploads
       SETUPTOOLS_SCM_NO_LOCAL: "1"
@@ -40,11 +36,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build ${{ matrix.name }}
+      - name: Build ${{ matrix.package }}
         uses: hynek/build-and-inspect-python-package@v2
         with:
-          path: ${{ matrix.path }}
-          upload-name-suffix: ${{ matrix.suffix }}
+          path: ${{ matrix.package }}
+          upload-name-suffix: -${{ matrix.package }}
 
   test:
     needs: [package]
