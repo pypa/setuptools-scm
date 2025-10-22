@@ -3,16 +3,24 @@ from __future__ import annotations
 import json
 import os
 import sys
-from collections.abc import MutableMapping
+from collections.abc import Iterable
 from importlib.resources import files
 from pathlib import Path
-from typing import Any
+from typing import TypedDict
+
+from vcs_versioning._overrides import ConfigOverridesDict
 
 from .. import _discover as discover
 from .._config import Configuration
 from .._get_version_impl import _get_version
 from .._pyproject_reading import PyProjectData
 from ._args import CliNamespace, get_cli_parser
+
+
+class OutputData(TypedDict, ConfigOverridesDict, total=False):
+    version: str
+    files: list[str]
+    queries: list[str]
 
 
 def _get_version_for_cli(config: Configuration, opts: CliNamespace) -> str:
@@ -68,7 +76,7 @@ def main(
 
 # flake8: noqa: C901
 def command(opts: CliNamespace, version: str, config: Configuration) -> int:
-    data: dict[str, Any] = {}
+    data: OutputData = {}
 
     if opts.command == "ls":
         opts.query = ["files"]
@@ -100,7 +108,7 @@ def command(opts: CliNamespace, version: str, config: Configuration) -> int:
         try:
             if q.startswith("_"):
                 raise AttributeError()
-            data[q] = getattr(config, q)
+            data[q] = getattr(config, q)  # type: ignore[literal-required]
         except AttributeError:
             sys.stderr.write(f"Error: unknown query: '{q}'\n")
             return 1
@@ -110,11 +118,11 @@ def command(opts: CliNamespace, version: str, config: Configuration) -> int:
     return 0
 
 
-def print_json(data: MutableMapping[str, Any]) -> None:
+def print_json(data: OutputData) -> None:
     print(json.dumps(data, indent=2))
 
 
-def print_plain(data: MutableMapping[str, Any]) -> None:
+def print_plain(data: OutputData) -> None:
     version = data.pop("version", None)
     if version:
         print(version)
@@ -125,15 +133,16 @@ def print_plain(data: MutableMapping[str, Any]) -> None:
     for query in queries:
         print(query)
     if data:
-        print("\n".join(data.values()))
+        print("\n".join(map(str, data.values())))
 
 
-def print_key_value(data: MutableMapping[str, Any]) -> None:
+def print_key_value(data: OutputData) -> None:
     for key, value in data.items():
         if isinstance(value, str):
             print(f"{key} = {value}")
         else:
-            str_value = "\n  ".join(value)
+            assert isinstance(value, Iterable)
+            str_value = "\n  ".join(map(str, value))
             print(f"{key} = {str_value}")
 
 
