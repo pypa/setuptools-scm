@@ -11,6 +11,9 @@ dependencies = [
 
 ]
 
+[project.scripts]
+create-release-proposal = "vcs_versioning_workspace.create_release_proposal:main"
+
 [dependency-groups]
 docs = [
   "mkdocs",
@@ -69,6 +72,9 @@ module = [
 ]
 # Version helper files use imports before they're installed
 ignore_errors = true
+
+[tool.uv]
+package = true
 
 [tool.uv.workspace]
 members = ["vcs-versioning", "setuptools-scm"]

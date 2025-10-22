@@ -1711,7 +1711,7 @@ test = [
 [[package]]
 name = "vcs-versioning-workspace"
 version = "0.1+private"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "setuptools-scm" },
     { name = "vcs-versioning" },

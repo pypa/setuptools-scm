@@ -40,7 +40,7 @@ jobs:
       - name: Run release proposal
         id: release
         run: |
-          uv run python -m vcs_versioning_workspace.create_release_proposal \
+          uv run create-release-proposal \
             --event "${{ github.event_name }}" \
             --branch "${{ github.ref_name }}"
         env:
