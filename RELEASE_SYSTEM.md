@@ -16,7 +16,7 @@ Fragment types determine version bumps:
 - `feature`, `deprecation` → minor bump
 - `bugfix`, `doc`, `misc` → patch bump
 
-Entry point: `vcs_versioning._version_schemes_towncrier:version_from_fragments`
+Entry point: `vcs_versioning._version_schemes._towncrier:version_from_fragments`
 
 Tests: `vcs-versioning/testing_vcs/test_version_scheme_towncrier.py`
 

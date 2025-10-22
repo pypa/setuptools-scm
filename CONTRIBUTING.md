@@ -137,7 +137,7 @@ The release system is designed to be reusable by other projects:
 
 ### Key Components
 
-1. **Version Scheme** (`vcs_versioning._version_schemes_towncrier`)
+1. **Version Scheme** (`vcs_versioning._version_schemes._towncrier`)
    - Analyzes fragments to determine version bump
    - Used by both development builds and release workflow
    - No version calculation logic in scripts - single source of truth

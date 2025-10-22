@@ -75,7 +75,7 @@ node-and-timestamp = "vcs_versioning._version_schemes:get_local_node_and_timesta
 "post-release" = "vcs_versioning._version_schemes:postrelease_version"
 "python-simplified-semver" = "vcs_versioning._version_schemes:simplified_semver_version"
 "release-branch-semver" = "vcs_versioning._version_schemes:release_branch_semver_version"
-"towncrier-fragments" = "vcs_versioning._version_schemes_towncrier:version_from_fragments"
+"towncrier-fragments" = "vcs_versioning._version_schemes._towncrier:version_from_fragments"
 
 [tool.hatch.version]
 source = "code"
