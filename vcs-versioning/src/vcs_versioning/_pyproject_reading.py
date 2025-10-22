@@ -26,11 +26,6 @@ _ROOT = "root"
 
 DEFAULT_PYPROJECT_PATH = Path("pyproject.toml")
 
-# Testing injection type for configuration reading
-GivenPyProjectResult: TypeAlias = (
-    "PyProjectData" | InvalidTomlError | FileNotFoundError | None
-)
-
 
 @dataclass
 class PyProjectData:
@@ -159,6 +154,12 @@ class PyProjectData:
         is intentionally omitted from [project] and this returns None.
         """
         return self.project.get("version")
+
+
+# Testing injection type for configuration reading
+GivenPyProjectResult: TypeAlias = (
+    PyProjectData | InvalidTomlError | FileNotFoundError | None
+)
 
 
 def has_build_package(

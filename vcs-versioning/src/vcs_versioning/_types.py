@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, TypeAlias
 if TYPE_CHECKING:
     from . import _version_schemes as version
 
-PathT: TypeAlias = "os.PathLike[str]" | str
+PathT: TypeAlias = os.PathLike[str] | str
 
 CMD_TYPE: TypeAlias = Sequence[PathT] | str
 
