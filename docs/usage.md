@@ -622,6 +622,9 @@ would be required when not using `setuptools-scm`.
 - ✅ **Check**: Is setuptools-scm installed in your build environment?
 - ✅ **Check**: Are you in a valid SCM repository?
 
+**Problem: Error about dubious ownership**
+- CVE-2022-24765 identified security issues with git trusting repositories owned by another user.  If the file-finder detects that git is unable to list files because it is operating in a git directory owned by another user, it will raise an error.  Since this was not the default behaviour of `setuptools_scm` previously, you can override this by setting `SETUPTOOLS_SCM_IGNORE_DUBIOUS_OWNER`, but be warned git will not be listing files correctly with this flag set.
+
 ### Timestamps for Local Development Versions
 
 !!! info "Improved Timestamp Behavior"
