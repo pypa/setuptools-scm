@@ -72,7 +72,7 @@ def test_config_from_file_protects_relative_to(tmp_path: Path) -> None:
         UserWarning,
         match=".*pyproject.toml: at \\[tool.setuptools_scm\\]\n"
         "ignoring value relative_to='dont_use_me'"
-        " as its always relative to the config file",
+        " as it's always relative to the config file",
     ):
         assert Configuration.from_file(str(fn))
 

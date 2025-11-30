@@ -101,7 +101,7 @@ For further configuration see the [documentation].
 Some enterprise distributions like RHEL7
 ship rather old setuptools versions.
 
-In those cases its typically possible to build by using an sdist against `setuptools-scm<2.0`.
+In those cases it's typically possible to build by using an sdist against `setuptools-scm<2.0`.
 As those old setuptools versions lack sensible types for versions,
 modern [setuptools-scm] is unable to support them sensibly.
 
