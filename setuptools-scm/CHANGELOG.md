@@ -2,6 +2,30 @@
 
 <!-- towncrier release notes start -->
 
+## 10.0.0 (2025-11-30)
+
+### Removed
+
+- Drop Python 3.8 and 3.9 support. Minimum Python version is now 3.10. ([#py310](https://github.com/pypa/setuptools-scm/issues/py310))
+
+
+### Added
+
+- setuptools-scm now depends on vcs-versioning for core version inference logic. This enables other build backends to use the same version inference without setuptools dependency. ([#vcs-versioning-dep](https://github.com/pypa/setuptools-scm/issues/vcs-versioning-dep))
+
+
+### Fixed
+
+- Fix issue #1231: Don't warn about tool.setuptools.dynamic.version conflict when only using file finder without version inference. ([#1231](https://github.com/pypa/setuptools-scm/issues/1231))
+
+
+### Miscellaneous
+
+- Internal refactoring: modernized type annotations, improved CLI type safety, and enhanced release automation infrastructure. ([#internal-refactor](https://github.com/pypa/setuptools-scm/issues/internal-refactor))
+- Refactored should_infer from method to standalone function for better code organization. ([#should-infer-function](https://github.com/pypa/setuptools-scm/issues/should-infer-function))
+- Updated mypy version template test to use uvx with mypy 1.11.2 for Python 3.8 compatibility checking. ([#test-mypy](https://github.com/pypa/setuptools-scm/issues/test-mypy))
+- Refactored TestBuildPackageWithExtra into parametrized function with custom INI-based decorator for cleaner test data specification. ([#test-parametrize](https://github.com/pypa/setuptools-scm/issues/test-parametrize))
+
 ## v9.2.2
 
 ### Fixed
