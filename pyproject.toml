@@ -17,7 +17,6 @@ create-release-proposal = "vcs_versioning_workspace.create_release_proposal:main
 [dependency-groups]
 docs = [
   "mkdocs",
-  "mkdocs-entangled-plugin",
   "mkdocs-include-markdown-plugin",
   "mkdocs-material",
   "mkdocstrings[python]",

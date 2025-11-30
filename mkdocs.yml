@@ -26,7 +26,6 @@ markdown_extensions:
   - pymdownx.superfences
 
 plugins:
-- entangled
 - search
 - include-markdown
 - mkdocstrings:
