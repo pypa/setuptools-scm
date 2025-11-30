@@ -1,3 +1,3 @@
 {%
-   include-markdown "../CHANGELOG.md"
+   include-markdown "../setuptools-scm/CHANGELOG.md"
 %}

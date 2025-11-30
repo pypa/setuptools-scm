@@ -1,0 +1,117 @@
+name: Create Release Proposal
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-release-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: |
+          uv sync --all-packages --all-groups
+
+      - name: Configure git
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run release proposal
+        id: release
+        run: |
+          uv run create-release-proposal \
+            --event "${{ github.event_name }}" \
+            --branch "${{ github.ref_name }}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Create or update release branch
+        if: github.event_name == 'push'
+        run: |
+          # Get release branch from script output
+          RELEASE_BRANCH="${{ steps.release.outputs.release_branch }}"
+          RELEASES="${{ steps.release.outputs.releases }}"
+
+          # Checkout release branch (force)
+          git checkout -B "$RELEASE_BRANCH"
+
+          # Commit towncrier changes
+          git add -A
+          git commit -m "Prepare release: $RELEASES" || echo "No changes to commit"
+
+          # Force push
+          git push origin "$RELEASE_BRANCH" --force
+
+      - name: Create or update PR
+        if: github.event_name == 'push'
+        uses: actions/github-script@v8
+        env:
+          RELEASE_BRANCH: ${{ steps.release.outputs.release_branch }}
+          PR_EXISTS: ${{ steps.release.outputs.pr_exists }}
+          PR_NUMBER: ${{ steps.release.outputs.pr_number }}
+          PR_TITLE: ${{ steps.release.outputs.pr_title }}
+          PR_BODY: ${{ steps.release.outputs.pr_body }}
+          LABELS: ${{ steps.release.outputs.labels }}
+        with:
+          script: |
+            const releaseBranch = process.env.RELEASE_BRANCH;
+            const prExists = process.env.PR_EXISTS === 'true';
+            const prNumber = process.env.PR_NUMBER;
+            const prTitle = process.env.PR_TITLE;
+            const prBody = process.env.PR_BODY;
+            const labels = process.env.LABELS.split(',').filter(l => l);
+
+            if (prExists && prNumber) {
+              // Update existing PR
+              console.log(`Updating existing PR #${prNumber}`);
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: parseInt(prNumber),
+                title: prTitle,
+                body: prBody
+              });
+            } else {
+              // Create new PR
+              console.log('Creating new PR');
+              const { data: pr } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: prTitle,
+                body: prBody,
+                head: releaseBranch,
+                base: 'main'
+              });
+              console.log(`Created PR #${pr.number}`);
+
+              // Add labels
+              if (labels.length > 0) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  labels: labels
+                });
+              }
+            }

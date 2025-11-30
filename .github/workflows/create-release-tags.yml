@@ -1,0 +1,145 @@
+name: Create Release Tags
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  create-tags:
+    # Only run if PR was merged and has release labels
+    if: |
+      github.event.pull_request.merged == true &&
+      (contains(github.event.pull_request.labels.*.name, 'release:setuptools-scm') ||
+       contains(github.event.pull_request.labels.*.name, 'release:vcs-versioning'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create tags
+        id: create-tags
+        run: |
+          set -e
+
+          TAGS_CREATED=""
+          PR_TITLE="${{ github.event.pull_request.title }}"
+
+          # Check if we should release setuptools-scm
+          if echo "${{ toJson(github.event.pull_request.labels.*.name) }}" | grep -q "release:setuptools-scm"; then
+            # Extract version from PR title: "Release: setuptools-scm v9.3.0, ..."
+            VERSION=$(echo "$PR_TITLE" | grep -oP 'setuptools-scm v\K[0-9]+\.[0-9]+\.[0-9]+')
+
+            if [ -z "$VERSION" ]; then
+              echo "ERROR: Failed to extract setuptools-scm version from PR title"
+              echo "PR title: $PR_TITLE"
+              echo "Expected format: 'Release: setuptools-scm vX.Y.Z'"
+              exit 1
+            fi
+
+            TAG="setuptools-scm-v$VERSION"
+            echo "Creating tag: $TAG"
+
+            git tag -a "$TAG" -m "Release setuptools-scm v$VERSION"
+            git push origin "$TAG"
+
+            TAGS_CREATED="$TAGS_CREATED $TAG"
+            echo "setuptools_scm_tag=$TAG" >> $GITHUB_OUTPUT
+            echo "setuptools_scm_version=$VERSION" >> $GITHUB_OUTPUT
+          fi
+
+          # Check if we should release vcs-versioning
+          if echo "${{ toJson(github.event.pull_request.labels.*.name) }}" | grep -q "release:vcs-versioning"; then
+            # Extract version from PR title: "Release: ..., vcs-versioning v0.2.0"
+            VERSION=$(echo "$PR_TITLE" | grep -oP 'vcs-versioning v\K[0-9]+\.[0-9]+\.[0-9]+')
+
+            if [ -z "$VERSION" ]; then
+              echo "ERROR: Failed to extract vcs-versioning version from PR title"
+              echo "PR title: $PR_TITLE"
+              echo "Expected format: 'Release: vcs-versioning vX.Y.Z'"
+              exit 1
+            fi
+
+            TAG="vcs-versioning-v$VERSION"
+            echo "Creating tag: $TAG"
+
+            git tag -a "$TAG" -m "Release vcs-versioning v$VERSION"
+            git push origin "$TAG"
+
+            TAGS_CREATED="$TAGS_CREATED $TAG"
+            echo "vcs_versioning_tag=$TAG" >> $GITHUB_OUTPUT
+            echo "vcs_versioning_version=$VERSION" >> $GITHUB_OUTPUT
+          fi
+
+          echo "tags_created=$TAGS_CREATED" >> $GITHUB_OUTPUT
+
+      - name: Extract changelog for setuptools-scm
+        if: steps.create-tags.outputs.setuptools_scm_version
+        id: changelog-setuptools-scm
+        run: |
+          VERSION="${{ steps.create-tags.outputs.setuptools_scm_version }}"
+          cd setuptools-scm
+
+          # Extract the changelog section for this version
+          # Read from version heading until next version heading or EOF
+          CHANGELOG=$(awk "/^## $VERSION/,/^## [0-9]/" CHANGELOG.md | sed '1d;$d')
+
+          # Save to file for GitHub release
+          echo "$CHANGELOG" > /tmp/changelog-setuptools-scm.md
+
+      - name: Extract changelog for vcs-versioning
+        if: steps.create-tags.outputs.vcs_versioning_version
+        id: changelog-vcs-versioning
+        run: |
+          VERSION="${{ steps.create-tags.outputs.vcs_versioning_version }}"
+          cd vcs-versioning
+
+          # Extract the changelog section for this version
+          CHANGELOG=$(awk "/^## $VERSION/,/^## [0-9]/" CHANGELOG.md | sed '1d;$d')
+
+          # Save to file for GitHub release
+          echo "$CHANGELOG" > /tmp/changelog-vcs-versioning.md
+
+      - name: Create GitHub Release for setuptools-scm
+        if: steps.create-tags.outputs.setuptools_scm_tag
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.create-tags.outputs.setuptools_scm_tag }}
+          name: setuptools-scm v${{ steps.create-tags.outputs.setuptools_scm_version }}
+          body_path: /tmp/changelog-setuptools-scm.md
+          draft: false
+          prerelease: false
+
+      - name: Create GitHub Release for vcs-versioning
+        if: steps.create-tags.outputs.vcs_versioning_tag
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.create-tags.outputs.vcs_versioning_tag }}
+          name: vcs-versioning v${{ steps.create-tags.outputs.vcs_versioning_version }}
+          body_path: /tmp/changelog-vcs-versioning.md
+          draft: false
+          prerelease: false
+
+      - name: Summary
+        run: |
+          echo "## Tags Created" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.create-tags.outputs.tags_created }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "PyPI upload will be triggered automatically by tag push." >> $GITHUB_STEP_SUMMARY
+

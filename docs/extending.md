@@ -14,8 +14,8 @@
     entrypoint's name. E.g. for the built-in entrypoint for Git the
     entrypoint is named `.git` and references `setuptools_scm.git:parse`
 
-    The return value MUST be a [`setuptools_scm.version.ScmVersion`][] instance
-    created by the function [`setuptools_scm.version.meta`][].
+    The return value MUST be a [`vcs_versioning.ScmVersion`][] instance
+    created by the function [`vcs_versioning._version_schemes.meta`][].
 
 `setuptools_scm.files_command`
 :  Either a string containing a shell command that prints all SCM managed
@@ -27,25 +27,21 @@
 
 ### api reference for scm version objects
 
-::: setuptools_scm.version.ScmVersion
+::: vcs_versioning.ScmVersion
     options:
       show_root_heading: yes
       heading_level: 4
 
-::: setuptools_scm.version.meta
+::: vcs_versioning._version_schemes.meta
     options:
       show_root_heading: yes
       heading_level: 4
 
 ## Version number construction
 
-
-
-
-
 ### `setuptools_scm.version_scheme`
 Configures how the version number is constructed given a
-[ScmVersion][setuptools_scm.version.ScmVersion] instance and should return a string
+[ScmVersion][vcs_versioning.ScmVersion] instance and should return a string
 representing the version.
 
 ### Available implementations
@@ -130,7 +126,7 @@ representing the version.
 
 ### `setuptools_scm.local_scheme`
 Configures how the local part of a version is rendered given a
-[ScmVersion][setuptools_scm.version.ScmVersion] instance and should return a string
+[ScmVersion][vcs_versioning.ScmVersion] instance and should return a string
 representing the local version.
 Dates and times are in Coordinated Universal Time (UTC), because as part
 of the version, they should be location independent.

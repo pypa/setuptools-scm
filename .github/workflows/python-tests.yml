@@ -20,8 +20,13 @@ env:
 jobs:
 
   package:
-    name: Build & inspect our package.
+    name: Build & inspect ${{ matrix.package }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package:
+          - vcs-versioning
+          - setuptools-scm
     env:
       # Use no-local-version for package builds to ensure clean versions for PyPI uploads
       SETUPTOOLS_SCM_NO_LOCAL: "1"
@@ -31,7 +36,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: hynek/build-and-inspect-python-package@v2
+      - name: Build ${{ matrix.package }}
+        uses: hynek/build-and-inspect-python-package@v2
+        with:
+          path: ${{ matrix.package }}
+          upload-name-suffix: -${{ matrix.package }}
 
   test:
     needs: [package]
@@ -39,7 +48,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: [ '3.8', '3.9', '3.10', '3.11', '3.12', '3.13', 'pypy-3.10' ]
+        python_version: [ '3.10', '3.11', '3.12', '3.13', 'pypy-3.10' ]
         os: [windows-latest, ubuntu-latest] #, macos-latest]
         include:
         - os: windows-latest
@@ -95,46 +104,93 @@ jobs:
           echo "C:\Program Files\Mercurial\" >> $env:GITHUB_PATH
           git config --system gpg.program "C:\Program Files (x86)\gnupg\bin\gpg.exe"
         if: runner.os == 'Windows'
-      - run: uv sync --group test --group docs --extra rich
-      - uses: actions/download-artifact@v5
+      - run: uv sync --all-packages --all-groups
+      - name: Download vcs-versioning packages
+        uses: actions/download-artifact@v4
         with:
-          name: Packages
+          name: Packages-vcs-versioning
           path: dist
-      - shell: bash
-        run: uv pip install "$(echo -n dist/*whl)"
+      - name: Download setuptools-scm packages
+        uses: actions/download-artifact@v4
+        with:
+          name: Packages-setuptools-scm
+          path: dist
+      - name: Install built wheels
+        shell: bash
+        run: |
+          # Install vcs-versioning first (dependency of setuptools-scm)
+          uv pip install dist/vcs_versioning-*.whl
+          # Then install setuptools-scm
+          uv pip install dist/setuptools_scm-*.whl
       - run: |
           $(hg debuginstall --template "{pythonexe}") -m pip install hg-git --user
         if: matrix.os == 'ubuntu-latest'
       # this hopefully helps with os caches, hg init sometimes gets 20s timeouts
       - run: hg version
-      - run: uv run pytest
+        shell: bash
+      - name: Run tests for both packages
+        run: uv run --no-sync pytest setuptools-scm/testing_scm/ vcs-versioning/testing_vcs/
         timeout-minutes: 25
 
-  dist_upload:
-
+  dist_upload_setuptools_scm:
     runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')) || (github.event_name == 'release' && github.event.action == 'published')
+    if: (github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/setuptools-scm-v')) || (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'setuptools-scm-v'))
     permissions:
       id-token: write
     needs: [test]
     steps:
-    - uses: actions/download-artifact@v5
+    - name: Download setuptools-scm packages
+      uses: actions/download-artifact@v4
       with:
-        name: Packages
+        name: Packages-setuptools-scm
         path: dist
-    - name: Publish package to PyPI
+    - name: Publish setuptools-scm to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
 
-  upload-release-assets:
+  dist_upload_vcs_versioning:
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: (github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/vcs-versioning-v')) || (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'vcs-versioning-v'))
+    permissions:
+      id-token: write
+    needs: [test]
+    steps:
+    - name: Download vcs-versioning packages
+      uses: actions/download-artifact@v4
+      with:
+        name: Packages-vcs-versioning
+        path: dist
+    - name: Publish vcs-versioning to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+
+  upload-release-assets-setuptools-scm:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'setuptools-scm-v')
     needs: [test]
     permissions:
       contents: write
     steps:
-    - uses: actions/download-artifact@v5
+    - name: Download setuptools-scm packages
+      uses: actions/download-artifact@v4
       with:
-        name: Packages
+        name: Packages-setuptools-scm
+        path: dist
+    - name: Upload release assets
+      uses: softprops/action-gh-release@v2
+      with:
+        files: dist/*
+        fail_on_unmatched_files: true
+
+  upload-release-assets-vcs-versioning:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'vcs-versioning-v')
+    needs: [test]
+    permissions:
+      contents: write
+    steps:
+    - name: Download vcs-versioning packages
+      uses: actions/download-artifact@v4
+      with:
+        name: Packages-vcs-versioning
         path: dist
     - name: Upload release assets
       uses: softprops/action-gh-release@v2
@@ -149,9 +205,15 @@ jobs:
     permissions:
       id-token: write
     steps:
-    - uses: actions/download-artifact@v5
+    - name: Download vcs-versioning packages
+      uses: actions/download-artifact@v4
       with:
-        name: Packages
+        name: Packages-vcs-versioning
+        path: dist
+    - name: Download setuptools-scm packages
+      uses: actions/download-artifact@v4
+      with:
+        name: Packages-setuptools-scm
         path: dist
     - name: Publish package to PyPI
       continue-on-error: true

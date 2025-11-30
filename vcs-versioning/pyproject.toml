@@ -1,0 +1,170 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = [
+  "hatchling",
+  "packaging>=20",
+  'typing-extensions; python_version < "3.11"',
+]
+
+[project]
+name = "vcs-versioning"
+description = "the blessed package to manage your versions by vcs metadata"
+readme = "README.md"
+keywords = [
+]
+license = "MIT"
+authors = [
+  { name = "Ronny Pfannschmidt", email = "opensource@ronnypfannschmidt.de" },
+]
+requires-python = ">=3.10"
+classifiers = [
+  "Development Status :: 1 - Planning",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+dynamic = [
+  "version",
+]
+dependencies = [
+  "packaging>=20",
+  'tomli>=1; python_version < "3.11"',
+  'typing-extensions; python_version < "3.11"',
+]
+
+[dependency-groups]
+test = [
+  "pytest",
+  "pytest-cov",
+  "pytest-xdist",
+]
+
+[project.urls]
+Documentation = "https://github.com/pypa/setuptools-scm#readme"
+Issues = "https://github.com/pypa/setuptools-scm/issues"
+Source = "https://github.com/pypa/setuptools-scm"
+
+[project.scripts]
+"vcs-versioning" = "vcs_versioning._cli:main"
+
+[project.entry-points."setuptools_scm.parse_scm"]
+".git" = "vcs_versioning._backends._git:parse"
+".hg" = "vcs_versioning._backends._hg:parse"
+
+[project.entry-points."setuptools_scm.parse_scm_fallback"]
+".git_archival.txt" = "vcs_versioning._backends._git:parse_archival"
+".hg_archival.txt" = "vcs_versioning._backends._hg:parse_archival"
+"PKG-INFO" = "vcs_versioning._fallbacks:parse_pkginfo"
+"pyproject.toml" = "vcs_versioning._fallbacks:fallback_version"
+"setup.py" = "vcs_versioning._fallbacks:fallback_version"
+
+[project.entry-points."setuptools_scm.local_scheme"]
+dirty-tag = "vcs_versioning._version_schemes:get_local_dirty_tag"
+no-local-version = "vcs_versioning._version_schemes:get_no_local_node"
+node-and-date = "vcs_versioning._version_schemes:get_local_node_and_date"
+node-and-timestamp = "vcs_versioning._version_schemes:get_local_node_and_timestamp"
+
+[project.entry-points."setuptools_scm.version_scheme"]
+"calver-by-date" = "vcs_versioning._version_schemes:calver_by_date"
+"guess-next-dev" = "vcs_versioning._version_schemes:guess_next_dev_version"
+"no-guess-dev" = "vcs_versioning._version_schemes:no_guess_dev_version"
+"only-version" = "vcs_versioning._version_schemes:only_version"
+"post-release" = "vcs_versioning._version_schemes:postrelease_version"
+"python-simplified-semver" = "vcs_versioning._version_schemes:simplified_semver_version"
+"release-branch-semver" = "vcs_versioning._version_schemes:release_branch_semver_version"
+"towncrier-fragments" = "vcs_versioning._version_schemes._towncrier:version_from_fragments"
+
+[tool.hatch.version]
+source = "code"
+path = "_own_version_of_vcs_versioning.py"
+search-paths = ["src"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vcs_versioning"]
+
+[tool.hatch.envs.default]
+dependencies = [
+  "pytest",
+  "pytest-cov",
+]
+[tool.hatch.envs.default.scripts]
+cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=vcs_versioning --cov=tests {args}"
+no-cov = "cov --no-cov {args}"
+
+[[tool.hatch.envs.test.matrix]]
+python = [ "38", "39", "310", "311", "312", "313" ]
+
+[tool.vcs-versioning]
+root = ".."
+version_scheme = "towncrier-fragments"
+tag_regex = "^vcs-versioning-(?P<version>v?\\d+(?:\\.\\d+){0,2}[^\\+]*)(?:\\+.*)?$"
+fallback_version = "0.1.0"
+scm.git.describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--match", "vcs-versioning-*"]
+
+[tool.coverage.run]
+branch = true
+parallel = true
+omit = [
+  "vcs_versioning/__about__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["testing_vcs"]
+python_files = ["test_*.py"]
+addopts = ["-ra", "--strict-markers", "-p", "vcs_versioning.test_api"]
+markers = [
+  "issue: marks tests related to specific issues",
+  "skip_commit: allows to skip committing in the helpers",
+]
+
+[tool.uv]
+default-groups = ["test"]
+
+[tool.towncrier]
+directory = "changelog.d"
+filename = "CHANGELOG.md"
+start_string = "<!-- towncrier release notes start -->\n"
+template = "changelog.d/template.md"
+title_format = "## {version} ({project_date})"
+issue_format = "[#{issue}](https://github.com/pypa/setuptools-scm/issues/{issue})"
+underlines = ["", "", ""]
+
+[[tool.towncrier.type]]
+directory = "removal"
+name = "Removed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "deprecation"
+name = "Deprecated"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "feature"
+name = "Added"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "bugfix"
+name = "Fixed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "doc"
+name = "Documentation"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "misc"
+name = "Miscellaneous"
+showcontent = true

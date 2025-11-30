@@ -1,0 +1,241 @@
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+import pytest
+import vcs_versioning._file_finders  # noqa: F401
+from vcs_versioning import Configuration
+from vcs_versioning._backends._hg import archival_to_version, parse
+from vcs_versioning._run_cmd import CommandNotFoundError
+from vcs_versioning._version_schemes import format_version
+from vcs_versioning.test_api import WorkDir
+
+# Note: Mercurial availability is now checked in WorkDir.setup_hg() method
+
+
+@pytest.fixture
+def wd(wd: WorkDir) -> WorkDir:
+    """Set up mercurial for hg-specific tests."""
+    return wd.setup_hg()
+
+
+archival_mapping = {
+    "1.0": {"tag": "1.0"},
+    "1.1.0.dev3+h0000000000": {
+        "latesttag": "1.0",
+        "latesttagdistance": "3",
+        "node": "0" * 20,
+    },
+    "1.0.1.dev3+h0000000000": {
+        "latesttag": "1.0.0",
+        "latesttagdistance": "3",
+        "branch": "1.0",
+        "node": "0" * 20,
+    },
+    "0.0": {"node": "0" * 20},
+    "1.2.2": {"tag": "release-1.2.2"},
+    "1.2.2.dev0": {"tag": "release-1.2.2.dev"},
+}
+
+
+@pytest.mark.parametrize(("expected", "data"), sorted(archival_mapping.items()))
+def test_archival_to_version(expected: str, data: dict[str, str]) -> None:
+    config = Configuration(
+        version_scheme="release-branch-semver", local_scheme="node-and-date"
+    )
+    version = archival_to_version(data, config=config)
+    assert format_version(version) == expected
+
+
+def test_hg_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
+    config = Configuration()
+    wd.write("pyproject.toml", "[tool.vcs-versioning]")
+    with pytest.raises(CommandNotFoundError, match=r"hg"):
+        parse(wd.cwd, config=config)
+
+    assert wd.get_version(fallback_version="1.0") == "1.0"
+
+
+def test_hg_command_from_env(
+    wd: WorkDir,
+    monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
+    hg_exe: str,
+) -> None:
+    from vcs_versioning.overrides import GlobalOverrides
+
+    wd.write("pyproject.toml", "[tool.vcs-versioning]")
+    # Need to commit something first for versioning to work
+    wd.commit_testfile()
+
+    monkeypatch.setenv("PATH", str(wd.cwd / "not-existing"))
+    with GlobalOverrides.from_active(hg_command=hg_exe):
+        version = wd.get_version()
+        assert version.startswith("0.1.dev1+")
+
+
+def test_hg_command_from_env_is_invalid(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
+) -> None:
+    from vcs_versioning.overrides import GlobalOverrides
+
+    config = Configuration()
+    wd.write("pyproject.toml", "[tool.vcs-versioning]")
+
+    # Use from_active() to create overrides with invalid hg command
+    with GlobalOverrides.from_active(hg_command=str(wd.cwd / "not-existing")):
+        with pytest.raises(CommandNotFoundError, match=r"test.*hg.*not-existing"):
+            parse(wd.cwd, config=config)
+
+        assert wd.get_version(fallback_version="1.0") == "1.0"
+
+
+def test_find_files_stop_at_root_hg(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    wd.commit_testfile()
+    project = wd.cwd / "project"
+    project.mkdir()
+    project.joinpath("setup.cfg").touch()
+    # setup.cfg has not been committed
+    assert vcs_versioning._file_finders.find_files(str(project)) == []
+    # issue 251
+    wd.add_and_commit()
+    monkeypatch.chdir(project)
+    assert vcs_versioning._file_finders.find_files() == ["setup.cfg"]
+
+
+# XXX: better tests for tag prefixes
+def test_version_from_hg_id(wd: WorkDir) -> None:
+    # Initial state with no commits
+    wd.expect_parse(tag="0.0", distance=0, dirty=False, exact=True)
+
+    wd.commit_testfile()
+    wd.expect_parse(tag="0.0", distance=1, dirty=False, node_prefix="h")
+
+    # tagging commit is considered the tag
+    wd('hg tag v0.1 -u test -d "0 0"')
+    wd.expect_parse(tag="0.1", distance=0, dirty=False, exact=True)
+
+    wd.commit_testfile()
+    wd.expect_parse(tag="0.1", distance=2, dirty=False)
+
+    wd("hg up v0.1")
+    wd.expect_parse(tag="0.1", distance=0, dirty=False, exact=True)
+
+    # commit originating from the tagged revision
+    # that is not an actual tag
+    wd.commit_testfile()
+    wd.expect_parse(tag="0.1", distance=1, dirty=False)
+
+    # several tags
+    wd("hg up")
+    wd('hg tag v0.2 -u test -d "0 0"')
+    wd('hg tag v0.3 -u test -d "0 0" -r v0.2')
+    wd.expect_parse(tag="0.3", distance=0, dirty=False, exact=True)
+
+
+def test_version_from_archival(wd: WorkDir) -> None:
+    # entrypoints are unordered,
+    # cleaning the wd ensure this test won't break randomly
+    wd.cwd.joinpath(".hg").rename(wd.cwd / ".nothg")
+    wd.write(
+        ".hg_archival.txt",
+        """\
+node: 000000000000
+tag: 0.1
+""",
+    )
+    assert wd.get_version() == "0.1"
+
+    wd.write(
+        ".hg_archival.txt",
+        """\
+node: 000000000000
+latesttag: 0.1
+latesttagdistance: 3
+""",
+    )
+
+    assert wd.get_version() == "0.2.dev3+h0000000000"
+
+
+@pytest.mark.issue("#72")
+def test_version_in_merge(wd: WorkDir) -> None:
+    wd.commit_testfile()
+    wd.commit_testfile()
+    wd("hg up 0")
+    wd.commit_testfile()
+    wd("hg merge --tool :merge")
+    assert wd.get_version() is not None
+
+
+@pytest.mark.issue(128)
+def test_parse_no_worktree(tmp_path: Path) -> None:
+    config = Configuration()
+    ret = parse(os.fspath(tmp_path), config)
+    assert ret is None
+
+
+@pytest.fixture
+def version_1_0(wd: WorkDir) -> WorkDir:
+    wd("hg branch default")
+    wd.commit_testfile()
+    wd('hg tag 1.0.0 -u test -d "0 0"')
+    return wd
+
+
+@pytest.fixture
+def pre_merge_commit_after_tag(version_1_0: WorkDir) -> WorkDir:
+    wd = version_1_0
+    wd("hg branch testbranch")
+    wd.write("branchfile", "branchtext")
+    wd(wd.add_command)
+    wd.commit()
+    wd("hg update default")
+    wd("hg merge testbranch")
+    return wd
+
+
+@pytest.mark.usefixtures("pre_merge_commit_after_tag")
+def test_version_bump_before_merge_commit(wd: WorkDir) -> None:
+    assert wd.get_version().startswith("1.0.1.dev1+")
+
+
+@pytest.mark.issue(219)
+@pytest.mark.usefixtures("pre_merge_commit_after_tag")
+def test_version_bump_from_merge_commit(wd: WorkDir) -> None:
+    wd.commit()
+    assert wd.get_version().startswith("1.0.1.dev3+")  # issue 219
+
+
+@pytest.mark.usefixtures("version_1_0")
+def test_version_bump_from_commit_including_hgtag_mods(wd: WorkDir) -> None:
+    """Test the case where a commit includes changes to .hgtags and other files"""
+    with wd.cwd.joinpath(".hgtags").open("ab") as tagfile:
+        tagfile.write(b"0  0\n")
+    wd.write("branchfile", "branchtext")
+    wd(wd.add_command)
+    assert wd.get_version().startswith("1.0.1.dev1+")  # bump from dirty version
+    wd.commit()  # commits both the testfile _and_ .hgtags
+    assert wd.get_version().startswith("1.0.1.dev2+")
+
+
+@pytest.mark.issue(229)
+@pytest.mark.usefixtures("version_1_0")
+def test_latest_tag_detection(wd: WorkDir) -> None:
+    """Tests that tags not containing a "." are ignored, the same as for git.
+    Note that will be superseded by the fix for pypa/setuptools-scm/issues/235
+    """
+    wd('hg tag some-random-tag -u test -d "0 0"')
+    assert wd.get_version() == "1.0.0"
+
+
+@pytest.mark.usefixtures("version_1_0")
+def test_feature_branch_increments_major(wd: WorkDir) -> None:
+    wd.commit_testfile()
+    assert wd.get_version(version_scheme="python-simplified-semver").startswith("1.0.1")
+    wd("hg branch feature/fun")
+    assert wd.get_version(version_scheme="python-simplified-semver").startswith("1.1.0")
