@@ -68,6 +68,7 @@ jobs:
         uses: actions/github-script@v8
         env:
           RELEASE_BRANCH: ${{ steps.release.outputs.release_branch }}
+          PR_BASE: ${{ steps.release.outputs.pr_base }}
           PR_EXISTS: ${{ steps.release.outputs.pr_exists }}
           PR_NUMBER: ${{ steps.release.outputs.pr_number }}
           PR_TITLE: ${{ steps.release.outputs.pr_title }}
@@ -76,6 +77,7 @@ jobs:
         with:
           script: |
             const releaseBranch = process.env.RELEASE_BRANCH;
+            const prBase = process.env.PR_BASE;
             const prExists = process.env.PR_EXISTS === 'true';
             const prNumber = process.env.PR_NUMBER;
             const prTitle = process.env.PR_TITLE;
@@ -83,25 +85,26 @@ jobs:
             const labels = process.env.LABELS.split(',').filter(l => l);
 
             if (prExists && prNumber) {
-              // Update existing PR
-              console.log(`Updating existing PR #${prNumber}`);
+              // Update existing PR (including base branch if it changed)
+              console.log(`Updating existing PR #${prNumber} to target ${prBase}`);
               await github.rest.pulls.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 pull_number: parseInt(prNumber),
                 title: prTitle,
-                body: prBody
+                body: prBody,
+                base: prBase
               });
             } else {
-              // Create new PR
-              console.log('Creating new PR');
+              // Create new PR - targets the same branch it came from
+              console.log(`Creating new PR targeting ${prBase}`);
               const { data: pr } = await github.rest.pulls.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title: prTitle,
                 body: prBody,
                 head: releaseBranch,
-                base: 'main'
+                base: prBase
               });
               console.log(`Created PR #${pr.number}`);
 

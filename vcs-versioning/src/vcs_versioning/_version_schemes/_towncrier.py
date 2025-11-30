@@ -92,6 +92,40 @@ def _determine_bump_type(fragments: dict[str, list[str]]) -> str | None:
     return None
 
 
+def _get_changelog_root(version: ScmVersion) -> Path:
+    """Get the root directory where changelog.d/ should be located.
+
+    For monorepo support, prefers relative_to (config file location).
+    Falls back to absolute_root (VCS root).
+    """
+    import os
+
+    if version.config.relative_to:
+        # relative_to is typically the pyproject.toml file path
+        # changelog.d/ should be in the same directory
+        if os.path.isfile(version.config.relative_to):
+            return Path(os.path.dirname(version.config.relative_to))
+        else:
+            return Path(version.config.relative_to)
+    else:
+        # When no relative_to is set, use absolute_root (the VCS root)
+        return Path(version.config.absolute_root)
+
+
+def _guess_next_major(version: ScmVersion) -> str:
+    """Guess next major version (X+1.0.0) from current tag."""
+    from .. import _modify_version
+
+    tag_version = _modify_version.strip_local(str(version.tag))
+    parts = tag_version.split(".")
+    if len(parts) >= 1:
+        major = int(parts[0].lstrip("v"))  # Handle 'v' prefix
+        return f"{major + 1}.0.0"
+    # Fallback to bump_dev
+    bumped = _modify_version._bump_dev(tag_version)
+    return bumped if bumped is not None else f"{tag_version}.dev0"
+
+
 def version_from_fragments(version: ScmVersion) -> str:
     """Version scheme that determines version from towncrier fragments.
 
@@ -107,22 +141,7 @@ def version_from_fragments(version: ScmVersion) -> str:
     if version.exact:
         return version.format_with("{tag}")
 
-    # Find where to look for changelog.d/ directory
-    # Prefer relative_to (location of config file) for monorepo support
-    # This allows changelog.d/ to be in the project dir rather than repo root
-    if version.config.relative_to:
-        # relative_to is typically the pyproject.toml file path
-        # changelog.d/ should be in the same directory
-        import os
-
-        if os.path.isfile(version.config.relative_to):
-            root = Path(os.path.dirname(version.config.relative_to))
-        else:
-            root = Path(version.config.relative_to)
-    else:
-        # When no relative_to is set, use absolute_root (the VCS root)
-        root = Path(version.config.absolute_root)
-
+    root = _get_changelog_root(version)
     log.debug("Analyzing fragments in %s", root)
 
     # Find and analyze fragments
@@ -137,29 +156,57 @@ def version_from_fragments(version: ScmVersion) -> str:
 
     # Determine the next version based on bump type
     if bump_type == "major":
-        # Major bump: increment major version, reset minor and patch to 0
-        from .. import _modify_version
-
-        def guess_next_major(v: ScmVersion) -> str:
-            tag_version = _modify_version.strip_local(str(v.tag))
-            parts = tag_version.split(".")
-            if len(parts) >= 1:
-                major = int(parts[0].lstrip("v"))  # Handle 'v' prefix
-                return f"{major + 1}.0.0"
-            # Fallback to bump_dev
-            bumped = _modify_version._bump_dev(tag_version)
-            return bumped if bumped is not None else f"{tag_version}.dev0"
-
-        return version.format_next_version(guess_next_major)
+        return version.format_next_version(_guess_next_major)
 
     elif bump_type == "minor":
-        # Minor bump: use simplified semver with MINOR retention
         return version.format_next_version(
             guess_next_simple_semver, retain=SEMVER_MINOR
         )
 
     else:  # patch
-        # Patch bump: use simplified semver with PATCH retention
         return version.format_next_version(
             guess_next_simple_semver, retain=SEMVER_PATCH
+        )
+
+
+def get_release_version(version: ScmVersion) -> str | None:
+    """Get clean release version from towncrier fragments (no .devN suffix).
+
+    Unlike version_from_fragments(), this returns only the clean version
+    string (e.g., "10.0.0") without .devN suffix. Used by release tooling.
+
+    Args:
+        version: ScmVersion object from VCS
+
+    Returns:
+        Clean version string, or None if no fragments found
+    """
+    # If we're exactly on a tag, return it
+    if version.exact:
+        return version.format_with("{tag}")
+
+    root = _get_changelog_root(version)
+    log.debug("Analyzing fragments for release version in %s", root)
+
+    fragments = _find_fragments(root)
+    bump_type = _determine_bump_type(fragments)
+
+    if bump_type is None:
+        log.debug("No fragments found, cannot determine release version")
+        return None
+
+    log.info("Determined release version bump type from fragments: %s", bump_type)
+
+    # KEY DIFFERENCE: Use fmt="{guessed}" for clean version (no .devN)
+    if bump_type == "major":
+        return version.format_next_version(_guess_next_major, fmt="{guessed}")
+
+    elif bump_type == "minor":
+        return version.format_next_version(
+            guess_next_simple_semver, fmt="{guessed}", retain=SEMVER_MINOR
+        )
+
+    else:  # patch
+        return version.format_next_version(
+            guess_next_simple_semver, fmt="{guessed}", retain=SEMVER_PATCH
         )

@@ -1,0 +1,361 @@
+name: Branch Synchronization
+
+# Synchronize branches after successful releases:
+# - Triggers after upload jobs complete
+# - Verifies all expected releases for the commit succeeded
+# - Creates sync PRs between branches
+
+on:
+  workflow_run:
+    workflows: ["python tests+artifacts+release"]
+    types: [completed]
+    branches: [main, develop]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # Verify all releases completed and sync branches
+  sync-after-release:
+    # Only run if the triggering workflow succeeded and was triggered by a tag push
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.head_branch, 'setuptools-scm-v') ||
+      startsWith(github.event.workflow_run.head_branch, 'vcs-versioning-v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify releases and create sync PR
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const workflowRun = context.payload.workflow_run;
+            const headSha = workflowRun.head_sha;
+            const headBranch = workflowRun.head_branch;
+
+            console.log(`Workflow completed for: ${headBranch} at ${headSha}`);
+
+            // Get all tags pointing to this commit
+            const { data: tagsResponse } = await github.rest.repos.listTags({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+
+            const commitTags = tagsResponse.filter(tag => tag.commit.sha === headSha);
+            console.log(`Tags at commit ${headSha}: ${commitTags.map(t => t.name).join(', ') || 'none'}`);
+
+            if (commitTags.length === 0) {
+              console.log('No tags found at this commit, nothing to sync');
+              return;
+            }
+
+            // Check which packages have tags at this commit
+            const setupToolsTag = commitTags.find(t => t.name.startsWith('setuptools-scm-v'));
+            const vcsVersioningTag = commitTags.find(t => t.name.startsWith('vcs-versioning-v'));
+
+            console.log(`setuptools-scm tag: ${setupToolsTag?.name || 'none'}`);
+            console.log(`vcs-versioning tag: ${vcsVersioningTag?.name || 'none'}`);
+
+            // Verify all expected releases have GitHub releases (created after successful upload)
+            const releasesToVerify = [];
+            if (setupToolsTag) releasesToVerify.push(setupToolsTag.name);
+            if (vcsVersioningTag) releasesToVerify.push(vcsVersioningTag.name);
+
+            for (const tagName of releasesToVerify) {
+              try {
+                const { data: release } = await github.rest.repos.getReleaseByTag({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  tag: tagName
+                });
+                console.log(`✓ Release exists for ${tagName}: ${release.html_url}`);
+              } catch (error) {
+                if (error.status === 404) {
+                  console.log(`✗ Release not found for ${tagName}, waiting for all releases to complete`);
+                  return;
+                }
+                throw error;
+              }
+            }
+
+            console.log('All expected releases verified successfully');
+
+            // Determine which branch this commit is on
+            // Check if this commit is on develop (for develop→main sync)
+            let isDevelopRelease = false;
+            try {
+              const { data: developBranch } = await github.rest.repos.getBranch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                branch: 'develop'
+              });
+
+              // Check if this commit is an ancestor of develop
+              const { data: comparison } = await github.rest.repos.compareCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                base: headSha,
+                head: 'develop'
+              });
+
+              // If develop is at or ahead of this commit, it's a develop release
+              isDevelopRelease = comparison.status === 'identical' || comparison.status === 'ahead';
+              console.log(`Commit is on develop: ${isDevelopRelease}`);
+            } catch (error) {
+              if (error.status === 404) {
+                console.log('develop branch does not exist');
+              } else {
+                throw error;
+              }
+            }
+
+            if (!isDevelopRelease) {
+              console.log('This is a main branch release, no sync needed (main→develop sync happens on PR merge)');
+              return;
+            }
+
+            // For develop releases, create sync PR to main
+            console.log('Creating sync PR from develop release to main');
+
+            // Use short commit SHA for branch name (simple and unique)
+            const tempBranchName = `sync/develop-to-main-${headSha.substring(0, 8)}`;
+
+            console.log(`Creating temporary branch ${tempBranchName} from commit ${headSha}`);
+
+            // Check if the commit has changes compared to main
+            const mainComparison = await github.rest.repos.compareCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: 'main',
+              head: headSha
+            });
+
+            if (mainComparison.data.ahead_by === 0) {
+              console.log('Commit has no new changes for main, skipping');
+              return;
+            }
+
+            console.log(`Commit has ${mainComparison.data.ahead_by} commits not on main`);
+
+            // Check for existing sync PR
+            const existingPRs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.repo.owner}:${tempBranchName}`,
+              base: 'main'
+            });
+
+            if (existingPRs.data.length > 0) {
+              console.log(`Sync PR already exists: #${existingPRs.data[0].number}`);
+              return;
+            }
+
+            // Create temporary branch from the exact commit SHA
+            try {
+              await github.rest.git.createRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `refs/heads/${tempBranchName}`,
+                sha: headSha
+              });
+              console.log(`Created temporary branch ${tempBranchName}`);
+            } catch (error) {
+              if (error.status === 422) {
+                console.log(`Branch ${tempBranchName} already exists`);
+              } else {
+                throw error;
+              }
+            }
+
+            // Build release info for PR body
+            const releaseInfo = releasesToVerify.map(tag => `- \`${tag}\``).join('\n');
+
+            // Build PR body
+            const body = [
+              '## Branch Synchronization',
+              '',
+              'This PR syncs the release from `develop` to `main`.',
+              '',
+              '**Released tags:**',
+              releaseInfo,
+              '',
+              `**Commit:** ${headSha}`,
+              `**Temporary branch:** \`${tempBranchName}\``,
+              '',
+              'This PR uses a temporary branch created from the exact release commit',
+              'to ensure only the release changes are included (no extra commits).',
+              '',
+              'All PyPI uploads have been verified successful before creating this PR.',
+              '',
+              'This is an automated PR created by the branch-sync workflow.',
+              'If there are no conflicts, this PR will be auto-merged.',
+              '',
+              'The temporary branch will be deleted when this PR is merged or closed.'
+            ].join('\n');
+
+            // Build title with tag names
+            const title = `Sync: develop → main (${releasesToVerify.join(', ')})`;
+
+            // Create new sync PR from the temporary branch
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              head: tempBranchName,
+              base: 'main'
+            });
+
+            console.log(`Created sync PR #${pr.number}`);
+
+            // Add labels
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: ['sync', 'auto-merge']
+            });
+
+            // Try to enable auto-merge
+            try {
+              await github.graphql(`
+                mutation($pullRequestId: ID!) {
+                  enablePullRequestAutoMerge(input: {pullRequestId: $pullRequestId, mergeMethod: MERGE}) {
+                    pullRequest {
+                      autoMergeRequest {
+                        enabledAt
+                      }
+                    }
+                  }
+                }
+              `, {
+                pullRequestId: pr.node_id
+              });
+              console.log('Auto-merge enabled');
+            } catch (error) {
+              console.log('Could not enable auto-merge (may require branch protection rules):', error.message);
+            }
+
+  # Forward-port: main → develop
+  # When a release PR is merged to main, create PR to keep develop in sync
+  sync-main-to-develop:
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      (startsWith(github.event.workflow_run.head_branch, 'setuptools-scm-v') ||
+       startsWith(github.event.workflow_run.head_branch, 'vcs-versioning-v'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create PR main → develop if needed
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const workflowRun = context.payload.workflow_run;
+            const headSha = workflowRun.head_sha;
+
+            // Check if develop branch exists
+            let developExists = true;
+            try {
+              await github.rest.repos.getBranch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                branch: 'develop'
+              });
+            } catch (error) {
+              if (error.status === 404) {
+                console.log('develop branch does not exist, skipping');
+                developExists = false;
+              } else {
+                throw error;
+              }
+            }
+
+            if (!developExists) return;
+
+            // Check if this commit is on main but not on develop
+            const { data: mainBranch } = await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: 'main'
+            });
+
+            // Check if commit is an ancestor of main
+            let isMainRelease = false;
+            try {
+              const { data: comparison } = await github.rest.repos.compareCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                base: headSha,
+                head: 'main'
+              });
+              isMainRelease = comparison.status === 'identical' || comparison.status === 'ahead';
+            } catch {
+              isMainRelease = false;
+            }
+
+            if (!isMainRelease) {
+              console.log('This is not a main branch release, skipping main→develop sync');
+              return;
+            }
+
+            // Check if main has commits that develop doesn't have
+            const comparison = await github.rest.repos.compareCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: 'develop',
+              head: 'main'
+            });
+
+            if (comparison.data.ahead_by === 0) {
+              console.log('main has no new commits for develop, skipping');
+              return;
+            }
+
+            console.log(`main has ${comparison.data.ahead_by} commits not on develop`);
+
+            // Check for existing sync PR
+            const existingPRs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: `${context.repo.owner}:main`,
+              base: 'develop'
+            });
+
+            if (existingPRs.data.length > 0) {
+              console.log(`Sync PR already exists: #${existingPRs.data[0].number}`);
+              return;
+            }
+
+            // Build PR body
+            const body = [
+              '## Branch Synchronization',
+              '',
+              'This PR syncs the release from `main` to `develop`.',
+              '',
+              `**Commit:** ${headSha}`,
+              '',
+              'This is an automated PR created by the branch-sync workflow.',
+              'Review and merge to keep `develop` up to date with `main`.'
+            ].join('\n');
+
+            // Create new sync PR
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Sync: main → develop`,
+              body: body,
+              head: 'main',
+              base: 'develop'
+            });
+
+            console.log(`Created sync PR #${pr.number}`);
+
+            // Add label
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: ['sync']
+            });

@@ -14,6 +14,7 @@ from vcs_versioning._get_version_impl import (  # type: ignore[attr-defined]
     _format_version,
     parse_version,
 )
+from vcs_versioning._version_schemes._towncrier import get_release_version
 
 
 def find_fragments(project_dir: Path) -> list[Path]:
@@ -41,7 +42,10 @@ def find_fragments(project_dir: Path) -> list[Path]:
 
 
 def get_next_version(project_dir: Path, repo_root: Path) -> str | None:
-    """Get the next version for a project using vcs-versioning API."""
+    """Get the next version for a project using vcs-versioning API.
+
+    Uses get_release_version() to produce clean versions without .devN suffix.
+    """
     try:
         # Load configuration from project's pyproject.toml
         # All project-specific settings (tag_regex, fallback_version, etc.) are in the config files
@@ -55,8 +59,11 @@ def get_next_version(project_dir: Path, repo_root: Path) -> str | None:
             print(f"ERROR: Could not parse version for {project_dir}", file=sys.stderr)
             return None
 
-        # Format the version string
-        version_string = _format_version(scm_version)
+        # Use get_release_version for clean version (no .devN suffix)
+        version_string = get_release_version(scm_version)
+        if version_string is None:
+            # No fragments found, fall back to standard formatting
+            version_string = _format_version(scm_version)
 
         # Extract just the public version (X.Y.Z)
         return version_string.split("+")[0]  # Remove local part if present
@@ -105,8 +112,9 @@ def check_existing_pr(repo: Repository, source_branch: str) -> tuple[str, int | 
     repo_owner = repo.owner.login
 
     try:
+        # PRs target the same branch they came from (main→main, develop→develop)
         pulls = repo.get_pulls(
-            state="open", base="main", head=f"{repo_owner}:{release_branch}"
+            state="open", base=source_branch, head=f"{repo_owner}:{release_branch}"
         )
 
         for pr in pulls:
@@ -259,6 +267,8 @@ def main() -> None:
                 f.write(f"release_branch={release_branch}\n")
                 f.write(f"releases={releases_str}\n")
                 f.write(f"labels={','.join(labels)}\n")
+                # PR targets the same branch it came from
+                f.write(f"pr_base={source_branch}\n")
 
         # Prepare PR content for workflow to use
         pr_title = f"Release: {releases_str}"

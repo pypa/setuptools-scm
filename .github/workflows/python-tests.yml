@@ -6,7 +6,8 @@ on:
     branches:
     - "*"
     tags:
-    - "v*"
+    - "setuptools-scm-v*"
+    - "vcs-versioning-v*"
   release:
     types: [published]
 
