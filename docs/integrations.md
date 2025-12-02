@@ -122,7 +122,7 @@ jobs:
     env:
       # Replace MYPACKAGE with your actual package name (normalized)
       # For package "my-awesome.package", use "MY_AWESOME_PACKAGE"
-      SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{"local_scheme": "no-local-version"}'
+      SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version"}'
 
     steps:
     - uses: actions/checkout@v4
@@ -154,7 +154,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     env:
       # Replace MYPACKAGE with your actual package name (normalized)
-      SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{"local_scheme": "no-local-version"}'
+      SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version"}'
 
     steps:
     - uses: actions/checkout@v4
@@ -246,7 +246,7 @@ publish-test-pypi:
     TWINE_USERNAME: __token__
     TWINE_PASSWORD: $TEST_PYPI_API_TOKEN
     # Replace MYPACKAGE with your actual package name (normalized)
-    SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{"local_scheme": "no-local-version"}'
+    SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version"}'
   script:
     - pip install build twine
     - python -m build
@@ -261,7 +261,7 @@ publish-pypi:
     TWINE_USERNAME: __token__
     TWINE_PASSWORD: $PYPI_API_TOKEN
     # Replace MYPACKAGE with your actual package name (normalized)
-    SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{"local_scheme": "no-local-version"}'
+    SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version"}'
   script:
     - pip install build twine
     - python -m build
@@ -296,7 +296,7 @@ The environment variable `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}` must be set
 
 2. **Value** must be a valid TOML inline table format:
    ```bash
-   SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE='{"local_scheme": "no-local-version"}'
+   SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE='{local_scheme = "no-local-version"}'
    ```
 
 #### Alternative Approaches

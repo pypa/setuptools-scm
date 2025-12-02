@@ -26,7 +26,6 @@ markdown_extensions:
   - pymdownx.superfences
 
 plugins:
-- entangled
 - search
 - include-markdown
 - mkdocstrings:
@@ -34,7 +33,7 @@ plugins:
     handlers:
       python:
         paths: [ setuptools-scm/src, vcs-versioning/src ]
-        import:
+        inventories:
           - https://docs.python.org/3/objects.inv
         options:
           separate_signature: true

@@ -17,10 +17,9 @@ create-release-proposal = "vcs_versioning_workspace.create_release_proposal:main
 [dependency-groups]
 docs = [
   "mkdocs",
-  "mkdocs-entangled-plugin",
   "mkdocs-include-markdown-plugin",
   "mkdocs-material",
-  "mkdocstrings[python]",
+  "mkdocstrings[python]>=0.29",  # 0.29 renamed import to inventories
   "pygments",
   "griffe-public-wildcard-imports",
 ]

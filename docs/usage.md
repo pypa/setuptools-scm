@@ -218,7 +218,7 @@ metadata is present.
 
 The recommended approach for Sphinx configurations is to use the installed package metadata:
 
-``` {.python file=docs/.entangled/sphinx_conf.py}
+```python
 from importlib.metadata import version as get_version
 release: str = get_version("package-name")
 # for example take major/minor
