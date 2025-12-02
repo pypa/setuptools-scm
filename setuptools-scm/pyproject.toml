@@ -75,7 +75,7 @@ test = [
   "pytest-xdist",
   "rich",
   "ruff",
-  "mypy",
+  "mypy; implementation_name != 'pypy'",
   'typing-extensions; python_version < "3.11"',
   "griffe",
   "griffe-public-wildcard-imports",
