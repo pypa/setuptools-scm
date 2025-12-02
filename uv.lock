@@ -1547,7 +1547,7 @@ docs = [
     { name = "mkdocs" },
     { name = "mkdocs-include-markdown-plugin" },
     { name = "mkdocs-material" },
-    { name = "mkdocstrings", extras = ["python"] },
+    { name = "mkdocstrings", extras = ["python"], specifier = ">=0.29" },
     { name = "pygments" },
 ]
 release = [
