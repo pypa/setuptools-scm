@@ -21,11 +21,12 @@ This automatically enables version inference with default settings.
 ### Explicit Configuration (Full Control)
 
 Use the `[tool.setuptools_scm]` section when you need to:
-  - Write version files (`version_file`)
-  - Customize version schemes (`version_scheme`, `local_scheme`)
-  - Set custom tag patterns (`tag_regex`)
-  - Configure fallback behavior (`fallback_version`)
-  - Or any other non-default behavior
+
+- Write version files (`version_file`)
+- Customize version schemes (`version_scheme`, `local_scheme`)
+- Set custom tag patterns (`tag_regex`)
+- Configure fallback behavior (`fallback_version`)
+- Or any other non-default behavior
 
 ## configuration parameters
 
