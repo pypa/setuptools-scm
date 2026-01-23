@@ -454,14 +454,16 @@ $ python -m setuptools_scm create-archival-file --full
 Alternatively, you can create the file manually:
 
 **Stable version (recommended):**
-```{ .text file=".git_archival.txt"}
+
+```{ .text title=".git_archival.txt"}
 node: $Format:%H$
 node-date: $Format:%cI$
 describe-name: $Format:%(describe:tags=true,match=*[0-9]*)$
 ```
 
 **Full version (with branch information - can cause instability):**
-```{ .text file=".git_archival.txt"}
+
+```{ .text title=".git_archival.txt"}
 # WARNING: Including ref-names can make archive checksums unstable
 # after commits are added post-release. Use only if describe-name is insufficient.
 node: $Format:%H$
@@ -481,7 +483,7 @@ tagging style.
     post-release. See [this issue][git-archive-issue] for more details.
 
 
-``` {.text file=".gitattributes"}
+``` {.text title=".gitattributes"}
 .git_archival.txt  export-subst
 ```
 
@@ -510,7 +512,7 @@ This typically happens when:
 **For development builds:**
 Exclude `.git_archival.txt` from your package to avoid warnings:
 
-```{ .text file="MANIFEST.in"}
+```{ .text title="MANIFEST.in"}
 # Exclude archival file from development builds
 exclude .git_archival.txt
 ```
@@ -533,14 +535,15 @@ Many CI systems and package repositories (like GitHub Actions) automatically han
 #### Integration with package managers
 
 **MANIFEST.in exclusions:**
-```{ .text file="MANIFEST.in"}
+
+```{ .text title="MANIFEST.in"}
 # Exclude development files from packages
 exclude .git_archival.txt
 exclude .gitattributes
 ```
 
 
-```{ .text file=".gitattributes"}
+```{ .text title=".gitattributes"}
 # Archive configuration
 .git_archival.txt  export-subst
 .gitignore         export-ignore
