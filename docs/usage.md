@@ -26,12 +26,14 @@ dynamic = ["version"]
 ```
 
 This streamlined approach automatically enables version inference when:
+
 - `setuptools-scm[simple]` is listed in `build-system.requires`
 - `version` is included in `project.dynamic`
 
 !!! tip "When to use simplified activation"
 
     Use simplified activation when you:
+
     - Want basic SCM version inference with default settings
     - Don't need custom version schemes or file writing
     - Prefer minimal configuration
@@ -90,6 +92,7 @@ Version files can be created with the ``version_file`` directive.
 [tool.setuptools_scm]
 version_file = "pkg/_version.py"
 ```
+
 Where ``pkg`` is the name of your package.
 
 Unless the small overhead of introspecting the version at runtime via
@@ -253,6 +256,7 @@ without copying the entire `.git` folder into the container image.
 RUN --mount=source=.git,target=.git,type=bind \
     pip install --no-cache-dir -e .
 ```
+
 However, this build step introduces a dependency to the state of your local
 `.git` folder the build cache and triggers the long-running pip install process on every build.
 To optimize build caching, one can use an environment variable to pretend a pseudo
@@ -332,6 +336,7 @@ setuptools-scm's default tag regex supports:
 - **Build metadata**: Anything after `+` is ignored
 
 **Examples of valid tags:**
+
 ```bash
 # Recommended formats (with v prefix)
 v1.0.0
@@ -390,6 +395,7 @@ The prefixes are automatically added by setuptools-scm and should be included wh
 specifying node IDs in environment variables like `SETUPTOOLS_SCM_PRETEND_METADATA`.
 
 **Examples:**
+
 ```bash
 # Git node ID
 1.0.0.dev5+g1a2b3c4d5
@@ -480,6 +486,7 @@ tagging style.
 ```
 
 Finally, commit both files:
+
 ```commandline
 $ git add .git_archival.txt .gitattributes && git commit -m "add git archive support"
 ```
@@ -542,14 +549,17 @@ exclude .gitattributes
 #### Troubleshooting
 
 **Problem: "unprocessed git archival found" warnings**
+
 - ✅ **Solution**: Add `exclude .git_archival.txt` to `MANIFEST.in` for development builds
 - ✅ **Alternative**: Build from actual git archives for releases
 
 **Problem: "git archive did not support describe output" warnings**
+
 - ℹ️ **Information**: This is expected when `.git_archival.txt` contains unexpanded templates
 - ✅ **Solution**: Same as above - exclude file or build from git archives
 
 **Problem: Version detection fails in git archives**
+
 - ✅ **Check**: Is `.gitattributes` configured with `export-subst`?
 - ✅ **Check**: Are you building from a properly created git archive?
 - ✅ **Check**: Does your git hosting provider support archive template expansion?
@@ -611,14 +621,17 @@ would be required when not using `setuptools-scm`.
 #### Troubleshooting
 
 **Problem: Unwanted files in my package**
+
 - ✅ **Solution**: Add exclusions to `MANIFEST.in`
 - ✅ **Alternative**: Use Git/Mercurial archive configuration
 
 **Problem: Missing files in package**
+
 - ✅ **Check**: Are the files tracked in your SCM?
 - ✅ **Solution**: `git add` missing files or override with `MANIFEST.in`
 
 **Problem: File finder not working**
+
 - ✅ **Check**: Is setuptools-scm installed in your build environment?
 - ✅ **Check**: Are you in a valid SCM repository?
 
