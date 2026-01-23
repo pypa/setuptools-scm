@@ -231,12 +231,14 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
 3. Works for `include_package_data = True` in package building
 
 **Entry point registration:**
+
 ```toml
 [project.entry-points."setuptools.file_finders"]
 setuptools_scm = "setuptools_scm._file_finders:find_files"
 ```
 
 **Files included by default:**
+
 - All files tracked by Git (`git ls-files`)
 - All files tracked by Mercurial (`hg files`)
 - Includes: source code, documentation, tests, config files, etc.
@@ -290,6 +292,7 @@ tar -tzf dist/package-*.tar.gz
 
 
 ### the configuration class
+
 ::: setuptools_scm.Configuration
     options:
       heading_level: 4
