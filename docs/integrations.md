@@ -292,7 +292,7 @@ publish-release:
 The environment variable `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}` must be set where:
 
 1. **`${DIST_NAME}`** is your package name normalized according to PEP 503:
-   
+
    - Convert to uppercase
    - Replace hyphens and dots with underscores
    - Examples: `my-package` → `MY_PACKAGE`, `my.package` → `MY_PACKAGE`
