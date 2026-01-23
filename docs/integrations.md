@@ -293,9 +293,9 @@ The environment variable `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}` must be set
 
 1. **`${DIST_NAME}`** is your package name normalized according to PEP 503:
 
-   - Convert to uppercase
-   - Replace hyphens and dots with underscores
-   - Examples: `my-package` → `MY_PACKAGE`, `my.package` → `MY_PACKAGE`
+    - Convert to uppercase
+    - Replace hyphens and dots with underscores
+    - Examples: `my-package` → `MY_PACKAGE`, `my.package` → `MY_PACKAGE`
 
 2. **Value** must be a valid TOML inline table format:
    ```bash
