@@ -497,7 +497,7 @@ $ git add .git_archival.txt .gitattributes && git commit -m "add git archive sup
 
 If you see warnings like these when building your package:
 
-```
+```text
 UserWarning: git archive did not support describe output
 UserWarning: unprocessed git archival found (no export subst applied)
 ```
@@ -574,7 +574,8 @@ exclude .gitattributes
 !!! note "Version Files"
 
     If you are creating a `_version.py` file, it should not be kept in version control. Add it to `.gitignore`:
-    ```
+
+    ```{.ini title=".gitignore"}
     # Generated version file
     src/mypackage/_version.py
     ```
@@ -607,17 +608,19 @@ would be required when not using `setuptools-scm`.
 **To exclude unwanted files:**
 
 1. **Use `MANIFEST.in`** to exclude specific files/patterns:
-   ```
-   exclude development.txt
-   recursive-exclude tests *.pyc
-   ```
+
+    ```{.text title="MANIFEST.in"}
+    exclude development.txt
+    recursive-exclude tests *.pyc
+    ```
 
 2. **Configure Git archive** (for Git repositories):
-   ```bash
-   # Add to .gitattributes
-   tests/ export-ignore
-   *.md export-ignore
-   ```
+
+    ```{.bash title=".gitattributes"}
+    # Add to .gitattributes
+    tests/ export-ignore
+    *.md export-ignore
+    ```
 
 3. **Use `.hgignore`** or **Mercurial archive configuration** (for Mercurial repositories)
 
