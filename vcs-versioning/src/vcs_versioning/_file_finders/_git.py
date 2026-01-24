@@ -9,6 +9,7 @@ from typing import IO
 from .. import _types as _t
 from .._compat import norm_real, strip_path_suffix
 from .._integration import data_from_mime
+from .._run_cmd import no_git_env
 from .._run_cmd import run as _run
 from . import is_toplevel_acceptable, scm_find_files
 
@@ -68,7 +69,11 @@ def _git_ls_files_and_dirs(toplevel: str) -> tuple[set[str], set[str]]:
     cmd = ["git", "archive", "--prefix", toplevel + os.path.sep, "HEAD"]
     log.info("running %s", " ".join(str(x) for x in cmd))
     proc = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, cwd=toplevel, stderr=subprocess.DEVNULL
+        cmd,
+        stdout=subprocess.PIPE,
+        cwd=toplevel,
+        stderr=subprocess.DEVNULL,
+        env=no_git_env(os.environ),
     )
     assert proc.stdout is not None
     try:

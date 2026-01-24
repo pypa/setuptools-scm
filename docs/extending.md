@@ -40,6 +40,7 @@
 ## Version number construction
 
 ### `setuptools_scm.version_scheme`
+
 Configures how the version number is constructed given a
 [ScmVersion][vcs_versioning.ScmVersion] instance and should return a string
 representing the version.
@@ -54,6 +55,7 @@ representing the version.
     and custom `.devN` versions will trigger an error.
 
     **Examples:**
+
     - Tag `v1.0.0` → version `1.0.1.dev0` (if dirty or distance > 0)
     - Tag `v1.0.0` → version `1.0.0` (if exact match)
 
@@ -65,6 +67,7 @@ representing the version.
     for release branches.
 
     **Examples:**
+
     - Tag `v23.01.15.0` on same day → version `23.01.15.1.devN`
     - Tag `v23.01.15.0` on different day (e.g., 2023-01-16) → version `23.01.16.0.devN`
     - Tag `v2023.01.15.0` → uses 4-digit year format for new versions
@@ -74,6 +77,7 @@ representing the version.
     This is the recommended replacement for the deprecated `post-release` scheme.
 
     **Examples:**
+
     - Tag `v1.0.0` → version `1.0.0.post1.devN` (if distance > 0)
     - Tag `v1.0.0` → version `1.0.0` (if exact match)
 
@@ -83,6 +87,7 @@ representing the version.
     !!! warning "This means version is no longer pseudo unique per commit"
 
     **Examples:**
+
     - Tag `v1.0.0` → version `1.0.0` (always, regardless of distance or dirty state)
 
 `post-release (deprecated)`
@@ -93,6 +98,7 @@ representing the version.
     !!! warning "the recommended replacement is `no-guess-dev`"
 
     **Examples:**
+
     - Tag `1.0.0` → version `1.0.0.postN` (where N is the distance)
 
 `python-simplified-semver`
@@ -105,6 +111,7 @@ representing the version.
     This scheme is not compatible with pre-releases.
 
     **Examples:**
+
     - Tag `1.0.0` on non-feature branch → version `1.0.1.devN`
     - Tag `1.0.0` on feature branch → version `1.1.0.devN`
 
@@ -119,12 +126,15 @@ representing the version.
     Namespaces are unix pathname separated parts of a branch/tag name.
 
     **Examples:**
+
     - Tag `1.0.0` on release branch `release-1.0` → version `1.0.1.devN`
 
     - Tag `1.0.0` on release branch `release/v1.0` → version `1.0.1.devN`
+
     - Tag `1.0.0` on development branch → version `1.1.0.devN`
 
 ### `setuptools_scm.local_scheme`
+
 Configures how the local part of a version is rendered given a
 [ScmVersion][vcs_versioning.ScmVersion] instance and should return a string
 representing the local version.

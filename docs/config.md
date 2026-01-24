@@ -21,11 +21,12 @@ This automatically enables version inference with default settings.
 ### Explicit Configuration (Full Control)
 
 Use the `[tool.setuptools_scm]` section when you need to:
-  - Write version files (`version_file`)
-  - Customize version schemes (`version_scheme`, `local_scheme`)
-  - Set custom tag patterns (`tag_regex`)
-  - Configure fallback behavior (`fallback_version`)
-  - Or any other non-default behavior
+
+- Write version files (`version_file`)
+- Customize version schemes (`version_scheme`, `local_scheme`)
+- Set custom tag patterns (`tag_regex`)
+- Configure fallback behavior (`fallback_version`)
+- Or any other non-default behavior
 
 ## Core Configuration
 
@@ -251,12 +252,14 @@ These environment variables control setuptools-scm specific behavior.
 3. Works for `include_package_data = True` in package building
 
 **Entry point registration:**
+
 ```toml
 [project.entry-points."setuptools.file_finders"]
 setuptools_scm = "setuptools_scm._file_finders:find_files"
 ```
 
 **Files included by default:**
+
 - All files tracked by Git (`git ls-files`)
 - All files tracked by Mercurial (`hg files`)
 - Includes: source code, documentation, tests, config files, etc.
@@ -309,6 +312,7 @@ tar -tzf dist/package-*.tar.gz
 
 
 ### the configuration class
+
 ::: vcs_versioning.Configuration
     options:
       heading_level: 4
