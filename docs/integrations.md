@@ -60,6 +60,7 @@ setuptools-scm provides the `no-local-version` local scheme and environment vari
 #### The Problem
 
 By default, setuptools-scm generates version numbers like:
+
 - `1.2.3.dev4+g1a2b3c4d5` (development version with git hash)
 - `1.2.3+dirty` (dirty working directory)
 
@@ -72,6 +73,7 @@ Use the `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}` environment variable to over
 ### GitHub Actions Example
 
 Here's a complete GitHub Actions workflow that:
+
 - Runs tests on all branches
 - Uploads development versions to test-PyPI from feature branches
 - Uploads development versions to PyPI from the main branch (with no-local-version)
@@ -290,9 +292,10 @@ publish-release:
 The environment variable `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}` must be set where:
 
 1. **`${DIST_NAME}`** is your package name normalized according to PEP 503:
-   - Convert to uppercase
-   - Replace hyphens and dots with underscores
-   - Examples: `my-package` → `MY_PACKAGE`, `my.package` → `MY_PACKAGE`
+
+    - Convert to uppercase
+    - Replace hyphens and dots with underscores
+    - Examples: `my-package` → `MY_PACKAGE`, `my.package` → `MY_PACKAGE`
 
 2. **Value** must be a valid TOML inline table format:
    ```bash
@@ -316,10 +319,12 @@ However, the environment variable approach is preferred for CI/CD as it allows d
 #### Version Examples
 
 **Development versions from main branch** (with `local_scheme = "no-local-version"`):
+
 - Development commit: `1.2.3.dev4+g1a2b3c4d5` → `1.2.3.dev4` ✅ (uploadable to PyPI)
 - Dirty working directory: `1.2.3+dirty` → `1.2.3` ✅ (uploadable to PyPI)
 
 **Tagged releases** (without overrides, using default local scheme):
+
 - Tagged commit: `1.2.3` → `1.2.3` ✅ (uploadable to PyPI)
 - Tagged release on dirty workdir: `1.2.3+dirty` → `1.2.3+dirty` ❌ (should not happen in CI)
 
