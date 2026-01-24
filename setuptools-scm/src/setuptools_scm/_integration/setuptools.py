@@ -13,6 +13,7 @@ from vcs_versioning._toml import InvalidTomlError
 from vcs_versioning.overrides import GlobalOverrides
 from vcs_versioning.overrides import ensure_context
 
+from .build_py import build_py as scm_build_py
 from .pyproject_reading import PyProjectData
 from .pyproject_reading import read_pyproject
 from .setup_cfg import SetuptoolsBasicData
@@ -22,6 +23,22 @@ from .version_inference import get_version_inference_config
 
 log = logging.getLogger(__name__)
 _setuptools_scm_logger = logging.getLogger("setuptools_scm")
+
+
+def _register_build_py_command(dist: setuptools.Distribution) -> None:
+    """Register our custom build_py command to write version files to build dir.
+
+    This ensures version files are written to the build directory instead of
+    the source tree, supporting read-only source installations.
+    """
+    # dist.cmdclass can be None at runtime despite type stubs
+    if not dist.cmdclass:
+        dist.cmdclass = {}
+
+    # Only register if not already overridden by the project
+    if "build_py" not in dist.cmdclass:
+        dist.cmdclass["build_py"] = scm_build_py
+        log.debug("Registered setuptools_scm build_py command")
 
 
 def _warn_on_old_setuptools(_version: str = setuptools.__version__) -> None:
@@ -127,6 +144,9 @@ def version_keyword(
         )
         result.apply(dist)
 
+    # Register custom build_py to write version files to build directory
+    _register_build_py_command(dist)
+
 
 @ensure_context("SETUPTOOLS_SCM", additional_loggers=_setuptools_scm_logger)
 def infer_version(
@@ -183,3 +203,6 @@ def _infer_version_impl(
         pyproject_data=pyproject_data,
     )
     result.apply(dist)
+
+    # Register custom build_py to write version files to build directory
+    _register_build_py_command(dist)

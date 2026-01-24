@@ -246,7 +246,8 @@ def test_git_version_unnormalized_setuptools(
     the version is not normalized in write_to files,
     but still normalized by setuptools for the final dist metadata.
     """
-    # monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
+    # Enable writing version files at inference time (not just at build time)
+    monkeypatch.setenv("SETUPTOOLS_SCM_WRITE_TO_SOURCE", "1")
     monkeypatch.chdir(wd.cwd)
     wd.write("setup.py", dedent(setup_py_txt))
 
