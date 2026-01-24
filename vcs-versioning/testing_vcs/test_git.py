@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import sys
+import textwrap
 from collections.abc import Generator
 from datetime import date, datetime, timezone
 from os.path import join as opj
@@ -16,6 +17,7 @@ import pytest
 
 # File finder imports (now in vcs_versioning)
 import vcs_versioning._file_finders  # noqa: F401
+import vcs_versioning._file_finders._git
 from vcs_versioning import Configuration
 from vcs_versioning._backends import _git
 from vcs_versioning._file_finders._git import git_find_files
@@ -854,3 +856,35 @@ def test_git_no_commits_uses_fallback_version(wd: WorkDir) -> None:
     assert str(version_no_fallback.tag) == "0.0"
     assert version_no_fallback.distance == 0
     assert version_no_fallback.dirty is True
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/784")
+def test_dubious_dir(
+    wd: WorkDir, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that we exit clearly if we are in a unsafe directory"""
+    wd.commit_testfile()
+    git_wd = git.GitWorkdir(wd.cwd)
+
+    def _run(*args, **kwargs) -> CompletedProcess:  # type: ignore[no-untyped-def]
+        """Fake "git rev-parse HEAD" to fail as if you do not own the git repo"""
+        stderr = textwrap.dedent(f"""
+        fatal: detected dubious ownership in repository at '{git_wd}'
+        To add an exception for this directory, call:
+
+            git config --global --add safe.directory /this/is/a/fake/path
+        """)
+        orig_run = run
+        if args[0] == ["git", "rev-parse", "HEAD"]:
+            return CompletedProcess(
+                args=[], stdout="%cI", stderr=stderr, returncode=128
+            )
+        return orig_run(*args, **kwargs)
+
+    monkeypatch.setattr(vcs_versioning._file_finders._git, "_run", _run)
+    with pytest.raises(SystemExit):
+        git_find_files(str(wd.cwd))
+
+    assert "fatal: detected dubious ownership in repository" in " ".join(
+        caplog.messages
+    )

@@ -21,6 +21,18 @@ def _git_toplevel(path: str) -> str | None:
         cwd = os.path.abspath(path or ".")
         res = _run(["git", "rev-parse", "HEAD"], cwd=cwd)
         if res.returncode:
+            # This catches you being in a git directory, but the
+            # permissions being incorrect.  With modern contanizered
+            # CI environments you can easily end up in a cloned repo
+            # with incorrect permissions and we don't want to silently
+            # ignore files.
+            if "--add safe.directory" in res.stderr and not os.environ.get(
+                "SETUPTOOLS_SCM_IGNORE_DUBIOUS_OWNER"
+            ):
+                log.error(res.stderr)
+                raise SystemExit(
+                    "git introspection failed: {}".format(res.stderr.split("\n")[0])
+                )
             # BAIL if there is no commit
             log.error("listing git files failed - pretending there aren't any")
             return None
