@@ -128,7 +128,7 @@ def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
         if os.path.isdir(relative_to):
             warnings.warn(
                 "relative_to is expected to be a file,"
-                f" its the directory {relative_to}\n"
+                f" it's the directory {relative_to}\n"
                 "assuming the parent directory was passed",
                 stacklevel=2,
             )

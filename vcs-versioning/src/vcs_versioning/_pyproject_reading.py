@@ -269,7 +269,7 @@ def get_args_for_pyproject(
         warnings.warn(
             f"{pyproject.path}: at [tool.{pyproject.tool_name}]\n"
             f"ignoring value relative_to={relative!r}"
-            " as its always relative to the config file",
+            " as it's always relative to the config file",
             stacklevel=2,
         )
     if "dist_name" in section:

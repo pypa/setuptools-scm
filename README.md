@@ -57,4 +57,3 @@ uv run mkdocs serve
 ## License
 
 Both projects are distributed under the terms of the MIT license.
-

@@ -257,3 +257,26 @@ def test_hg_command_from_env(
     monkeypatch.setenv("PATH", str(hg_wd.cwd / "not-existing"))
     with GlobalOverrides.from_active(hg_command=hg_exe):
         assert set(find_files()) == {"file"}
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/381")
+def test_file_finder_ignores_git_dir_env(
+    inwd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that file finder ignores GIT_DIR env var.
+
+    Git sets GIT_DIR when running hooks in worktrees/submodules, which
+    causes git archive to query the wrong repository. The file finder
+    must sanitize these variables like _run_cmd.run() does.
+    """
+    # Get expected files before setting GIT_DIR
+    expected_files = set(find_files())
+    assert expected_files  # Sanity check: we should have files
+
+    # Set GIT_DIR to an unrelated path (simulates git hook in worktree)
+    # This would cause git archive to fail or return wrong results if
+    # the environment isn't sanitized
+    monkeypatch.setenv("GIT_DIR", __file__)
+
+    # File finding should still work correctly
+    assert set(find_files()) == expected_files
