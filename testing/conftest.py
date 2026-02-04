@@ -26,6 +26,8 @@ def pytest_configure() -> None:
     # 2009-02-13T23:31:30+00:00
     os.environ["SOURCE_DATE_EPOCH"] = "1234567890"
     os.environ["SETUPTOOLS_SCM_DEBUG"] = "1"
+    if "SETUPTOOLS_SCM_PRETEND_VERSION" in os.environ:
+        del os.environ["SETUPTOOLS_SCM_PRETEND_VERSION"]
 
 
 VERSION_PKGS = ["setuptools", "setuptools_scm", "packaging", "build", "wheel"]
