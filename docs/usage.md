@@ -60,7 +60,7 @@ version_file = "src/mypackage/_version.py"
 # Example: Git-specific configuration
 [tool.setuptools_scm.scm.git]
 pre_parse = "fail_on_missing_submodules"  # Fail if submodules are not initialized
-describe_command = "git describe --dirty --tags --long --exclude *js*"  # Custom describe command
+describe_command = "git describe --dirty --tags --long --exclude *js*"  # Custom Git describe command
 ```
 
 Projects must support PEP 518 ([pip](https://pypi.org/project/pip) and
@@ -113,7 +113,7 @@ $ python -m setuptools_scm # example from running local after changes
 7.1.1.dev149+g5197d0f.d20230727
 ```
 
- and to list all tracked by the scm:
+and to list all files tracked by the SCM:
 
 ```commandline
 $ python -m setuptools_scm ls # output trimmed for brevity
@@ -126,12 +126,12 @@ $ python -m setuptools_scm ls # output trimmed for brevity
 
 !!! note "Committed files only"
 
-    currently only committed files are listed, this might change in the future
+    Currently only committed files are listed; this might change in the future.
 
 !!! warning "sdists/archives don't provide file lists"
 
-    Currently there is no builtin mechanism
-    to safely transfer the file lists to sdists or obtaining them from archives.
+    Currently there is no built-in mechanism
+    to safely transfer file lists to sdists or obtain them from archives.
     Coordination for setuptools and hatch is ongoing.
 
 To explore other options, try
@@ -266,7 +266,7 @@ version that is used to cache the results of the pip install process:
 ```dockerfile
 FROM python
 COPY pyproject.toml
-ARG PSEUDO_VERSION=1 # strongly recommended to update based on git describe
+ARG PSEUDO_VERSION=1 # strongly recommended to update based on Git describe
 RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_MY_PACKAGE=${PSEUDO_VERSION} pip install -e .[test]
 RUN --mount=source=.git,target=.git,type=bind pip install -e .
 ```
@@ -304,7 +304,7 @@ where `{next_version}` is the next version number after the latest tag
 The next version is calculated by adding `1` to the last numeric component of
 the tag.
 
-For Git projects, the version relies on  [git describe](https://git-scm.com/docs/git-describe),
+For Git projects, the version relies on [git describe](https://git-scm.com/docs/git-describe),
 so you will see an additional `g` prepended to the `{revision hash}`.
 
 
@@ -365,7 +365,7 @@ v1.0.0+20240115
 
 1. **Clarity**: Makes it immediately obvious that the tag represents a version
 2. **Convention**: Widely adopted standard across the software industry
-3. **Git compatibility**: Works well with git's tag sorting and filtering
+3. **Git compatibility**: Works well with Git's tag sorting and filtering
 4. **Tool compatibility**: Many other tools expect version tags to have a "v" prefix
 
 ### Custom Tag Patterns
@@ -437,7 +437,7 @@ Git archives are supported, but require specific setup and understanding of how 
 
 #### Overview
 
-When you create a `.git_archival.txt` file in your repository, it enables setuptools-scm to extract version information from git archives (e.g., GitHub's source downloads). However, this file contains template placeholders that must be expanded by `git archive` - they won't work when building directly from your working directory.
+When you create a `.git_archival.txt` file in your repository, it enables setuptools-scm to extract version information from Git archives (e.g., GitHub's source downloads). However, this file contains template placeholders that must be expanded by `git archive` - they won't work when building directly from your working directory.
 
 #### Setting up git archival support
 
@@ -477,9 +477,9 @@ tagging style.
 
 !!! note
 
-    If your git host provider does not properly expand `describe-name`, you may
+    If your Git host provider does not properly expand `describe-name`, you may
     need to include `ref-names: $Format:%D$`. But **beware**, this can often
-    lead to the git archive's checksum changing after a commit is added
+    lead to the Git archive's checksum changing after a commit is added
     post-release. See [this issue][git-archive-issue] for more details.
 
 
@@ -505,7 +505,7 @@ UserWarning: unprocessed git archival found (no export subst applied)
 This typically happens when:
 
 1. **Building from working directory**: You're running `python -m build` directly in your repository
-2. **Sdist extraction**: A build tool extracts your sdist to build wheels, but the extracted directory isn't a git repository
+2. **Sdist extraction**: A build tool extracts your sdist to build wheels, but the extracted directory isn't a Git repository
 
 #### Recommended build workflows
 
@@ -518,7 +518,7 @@ exclude .git_archival.txt
 ```
 
 **For release builds from archives:**
-Build from an actual git archive to ensure proper template expansion:
+Build from an actual Git archive to ensure proper template expansion:
 
 ```commandline
 # Create archive from a specific tag/commit
@@ -530,7 +530,7 @@ $ python -m build .
 ```
 
 **For automated releases:**
-Many CI systems and package repositories (like GitHub Actions) automatically handle this correctly when building from git archives.
+Many CI systems and package repositories (like GitHub Actions) automatically handle this correctly when building from Git archives.
 
 #### Integration with package managers
 
@@ -554,18 +554,18 @@ exclude .gitattributes
 **Problem: "unprocessed git archival found" warnings**
 
 - ✅ **Solution**: Add `exclude .git_archival.txt` to `MANIFEST.in` for development builds
-- ✅ **Alternative**: Build from actual git archives for releases
+- ✅ **Alternative**: Build from actual Git archives for releases
 
 **Problem: "git archive did not support describe output" warnings**
 
 - ℹ️ **Information**: This is expected when `.git_archival.txt` contains unexpanded templates
-- ✅ **Solution**: Same as above - exclude file or build from git archives
+- ✅ **Solution**: Same as above - exclude file or build from Git archives
 
 **Problem: Version detection fails in git archives**
 
 - ✅ **Check**: Is `.gitattributes` configured with `export-subst`?
-- ✅ **Check**: Are you building from a properly created git archive?
-- ✅ **Check**: Does your git hosting provider support archive template expansion?
+- ✅ **Check**: Are you building from a properly created Git archive?
+- ✅ **Check**: Does your Git hosting provider support archive template expansion?
 
 !!! warning "Branch Names and Archive Stability"
 

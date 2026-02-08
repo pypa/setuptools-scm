@@ -347,4 +347,4 @@ print(f"SETUPTOOLS_SCM_OVERRIDES_FOR_{env_var_name}")
 # Output: SETUPTOOLS_SCM_OVERRIDES_FOR_MY_AWESOME_PACKAGE
 ```
 
-**Fetch depth**: Always use `fetch-depth: 0` in GitHub Actions to ensure setuptools-scm has access to the full git history for proper version calculation.
+**Fetch depth**: Always use `fetch-depth: 0` in GitHub Actions to ensure setuptools-scm has access to the full Git history for proper version calculation.

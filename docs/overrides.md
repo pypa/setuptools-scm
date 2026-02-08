@@ -2,12 +2,12 @@
 
 ## pretend versions
 
-setuptools-scm provides a mechanism to override the version number build time.
+setuptools-scm provides a mechanism to override the version number at build time.
 
-the environment variable `SETUPTOOLS_SCM_PRETEND_VERSION` is used
+The environment variable `SETUPTOOLS_SCM_PRETEND_VERSION` is used
 as the override source for the version number unparsed string.
 
-to be specific about the package this applies for, one can use `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DIST_NAME}`
+To be specific about the package this applies for, one can use `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DIST_NAME}`
 where the dist name normalization follows adapted PEP 503 semantics.
 
 ## pretend metadata
@@ -54,8 +54,8 @@ export SETUPTOOLS_SCM_PRETEND_METADATA_FOR_MY_PACKAGE='{node="g1234567", distanc
 
     Node IDs must include the appropriate SCM prefix:
 
-    - Use `g` prefix for git repositories (e.g., `g1a2b3c4d5`)
-    - Use `h` prefix for mercurial repositories (e.g., `h1a2b3c4d5`)
+    - Use `g` prefix for Git repositories (e.g., `g1a2b3c4d5`)
+    - Use `h` prefix for Mercurial repositories (e.g., `h1a2b3c4d5`)
 
     This ensures consistency with setuptools-scm's automatic node ID formatting.
 
@@ -83,11 +83,11 @@ export SETUPTOOLS_SCM_PRETEND_METADATA='{node="g1337beef", distance=4}'
 ## config overrides
 
 setuptools-scm parses the environment variable `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}`
-as a toml inline map to override the configuration data from `pyproject.toml`.
+as a TOML inline map to override the configuration data from `pyproject.toml`.
 
 ## subprocess timeouts
 
 The environment variable `SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT` allows to override the subprocess timeout.
-The default is 40 seconds and should work for most needs. However, users with git lfs + windows reported
+The default is 40 seconds and should work for most needs. However, users with Git LFS + Windows reported
 situations where this was not enough.
 
