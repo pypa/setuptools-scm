@@ -7,7 +7,7 @@
 
 [setuptools-scm] extracts Python package versions from `git` or `hg` metadata
 instead of declaring them as the version argument
-or in a Source Code Managed (SCM) managed file.
+or in a Source Code Management (SCM) managed file.
 
 Additionally [setuptools-scm] provides `setuptools` with a list of
 files that are managed by the SCM
