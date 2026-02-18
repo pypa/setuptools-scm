@@ -1302,3 +1302,77 @@ def test_version_file_template_in_build(
         assert "build_py_template_test" in version_content
         assert "7.1.2" in version_content
         assert "VERSION_TUPLE" in version_content
+
+
+@pytest.mark.issue(1252)
+def test_custom_build_py_still_writes_version_file(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Custom build_py should not disable setuptools-scm version file writing."""
+    monkeypatch.chdir(wd.cwd)
+
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+        """),
+    )
+
+    wd.write(
+        "setup.py",
+        textwrap.dedent("""\
+            from pathlib import Path
+
+            from setuptools import setup
+            from setuptools.command.build_py import build_py as _build_py
+
+
+            class CustomBuildPy(_build_py):
+                def run(self):
+                    super().run()
+                    Path("custom_build_py_ran.txt").write_text("ran", encoding="utf-8")
+
+
+            setup(
+                name="custom-build-py-pkg",
+                packages=["custom_build_py_pkg"],
+                use_scm_version={"version_file": "custom_build_py_pkg/_version.py"},
+                cmdclass={"build_py": CustomBuildPy},
+            )
+        """),
+    )
+
+    pkg_dir = wd.cwd / "custom_build_py_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("from ._version import __version__\n")
+
+    wd.commit_testfile()
+    wd("git tag v8.0.0")
+
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+    )
+
+    assert build_result.returncode == 0, (
+        f"Build failed:\nstdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+    assert (wd.cwd / "custom_build_py_ran.txt").exists(), (
+        "Project custom build_py should still run"
+    )
+
+    import zipfile
+
+    dist_dir = wd.cwd / "dist"
+    wheels = list(dist_dir.glob("*.whl"))
+    assert len(wheels) == 1
+
+    with zipfile.ZipFile(wheels[0], "r") as whl:
+        names = whl.namelist()
+        assert "custom_build_py_pkg/_version.py" in names, (
+            f"Expected version file in wheel, got: {names}"
+        )

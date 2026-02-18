@@ -5,6 +5,7 @@ import warnings
 
 from collections.abc import Callable
 from typing import Any
+from typing import cast
 
 import setuptools
 
@@ -35,10 +36,30 @@ def _register_build_py_command(dist: setuptools.Distribution) -> None:
     if not dist.cmdclass:
         dist.cmdclass = {}
 
-    # Only register if not already overridden by the project
-    if "build_py" not in dist.cmdclass:
+    existing_build_py = dist.cmdclass.get("build_py")
+
+    # Default case: no project override, use setuptools-scm implementation.
+    if existing_build_py is None:
         dist.cmdclass["build_py"] = scm_build_py
         log.debug("Registered setuptools_scm build_py command")
+        return
+
+    project_build_py = cast(type[setuptools.Command], existing_build_py)
+
+    # If the project already uses our command (or a subclass), nothing to do.
+    if issubclass(project_build_py, scm_build_py):
+        return
+
+    # If project provides a custom build_py, wrap it so both behaviors run:
+    # - project's custom build_py behavior
+    # - setuptools-scm version file writing to build directory
+    class _SetuptoolsScmWrappedBuildPy(project_build_py, scm_build_py):  # type: ignore[misc, valid-type]
+        def run(self) -> None:
+            project_build_py.run(self)
+            self._write_version_files()
+
+    dist.cmdclass["build_py"] = _SetuptoolsScmWrappedBuildPy
+    log.debug("Wrapped project build_py with setuptools_scm version-file writer")
 
 
 def _warn_on_old_setuptools(_version: str = setuptools.__version__) -> None:
