@@ -1092,11 +1092,17 @@ def test_readonly_source_directory_build(
         # Remove write permissions
         pkg_dir.chmod(stat.S_IRUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IROTH)
 
-        # Verify we can't write to the directory
+        # Verify we can't write to the directory.
+        # On some Windows environments chmod() does not enforce directory
+        # writability for newly created files, so skip if we cannot simulate
+        # the read-only constraint reliably.
         version_file = pkg_dir / "_version.py"
         try:
             version_file.write_text("test")
-            pytest.fail("Should not be able to write to read-only directory")
+            version_file.unlink(missing_ok=True)
+            pytest.skip(
+                "cannot enforce read-only directory semantics in this environment"
+            )
         except PermissionError:
             pass  # Expected - directory is read-only
 
