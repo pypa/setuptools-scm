@@ -1041,3 +1041,264 @@ def test_editable_install_without_env_var(
     assert not version_file.exists(), (
         "Version file should NOT be written to source without SETUPTOOLS_SCM_WRITE_TO_SOURCE"
     )
+
+
+@pytest.mark.issue(1252)
+def test_readonly_source_directory_build(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Test building from a read-only source directory succeeds.
+
+    This is the core scenario from issue #1252: building a package when the
+    source directory is read-only (e.g., Bazel builds). Version files should
+    be written to the build directory, not the source tree.
+    """
+    import stat
+
+    monkeypatch.chdir(wd.cwd)
+
+    # Create a minimal pyproject.toml with version_file configured
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "readonly-test-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            version_file = "readonly_test_pkg/_version.py"
+
+            [tool.setuptools.packages.find]
+            where = ["."]
+        """),
+    )
+
+    # Create minimal package structure
+    pkg_dir = wd.cwd / "readonly_test_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("from ._version import __version__\n")
+
+    # Commit so we have a valid git state
+    wd.commit_testfile()
+    wd("git tag v5.0.0")
+
+    # Make the package directory read-only to simulate Bazel scenario
+    original_mode = pkg_dir.stat().st_mode
+    try:
+        # Remove write permissions
+        pkg_dir.chmod(stat.S_IRUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IROTH)
+
+        # Verify we can't write to the directory
+        version_file = pkg_dir / "_version.py"
+        try:
+            version_file.write_text("test")
+            pytest.fail("Should not be able to write to read-only directory")
+        except PermissionError:
+            pass  # Expected - directory is read-only
+
+        # Build should still succeed because version file goes to build_lib
+        build_result = subprocess.run(
+            [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+            cwd=wd.cwd,
+            capture_output=True,
+            text=True,
+        )
+
+        # Build should succeed despite read-only source
+        assert build_result.returncode == 0, (
+            f"Build from read-only source failed:\n"
+            f"stdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+        )
+
+        # Verify wheel was created and contains the version file
+        import zipfile
+
+        dist_dir = wd.cwd / "dist"
+        wheels = list(dist_dir.glob("*.whl"))
+        assert len(wheels) == 1
+
+        with zipfile.ZipFile(wheels[0], "r") as whl:
+            names = whl.namelist()
+            assert any("_version.py" in name for name in names), (
+                f"Version file not found in wheel. Contents: {names}"
+            )
+
+            # Read and verify version content
+            version_content = None
+            for name in names:
+                if "_version.py" in name:
+                    version_content = whl.read(name).decode("utf-8")
+                    break
+            assert version_content is not None
+            assert "5.0.0" in version_content
+
+    finally:
+        # Restore original permissions for cleanup
+        pkg_dir.chmod(original_mode)
+
+
+@pytest.mark.issue(1252)
+def test_legacy_write_to_build_directory(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that legacy write_to configuration also writes to build directory.
+
+    The write_to option is the older way to configure version file writing.
+    It should also be deferred to build_py just like version_file.
+    """
+    monkeypatch.chdir(wd.cwd)
+
+    # Create a pyproject.toml using legacy write_to
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "legacy-write-to-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            write_to = "legacy_pkg/_version.py"
+
+            [tool.setuptools.packages.find]
+            where = ["."]
+        """),
+    )
+
+    # Create minimal package structure
+    pkg_dir = wd.cwd / "legacy_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("from ._version import __version__\n")
+
+    # Commit so we have a valid git state
+    wd.commit_testfile()
+    wd("git tag v6.0.0")
+
+    # Version file should NOT exist after just invoking setup
+    subprocess.run(
+        [sys.executable, "-c", "import setuptools; setuptools.setup()"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+    )
+
+    version_file = pkg_dir / "_version.py"
+    assert not version_file.exists(), (
+        "Legacy write_to should NOT write to source during inference"
+    )
+
+    # Build wheel
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+    )
+
+    assert build_result.returncode == 0, (
+        f"Build failed:\nstdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+
+    # Verify wheel contains version file
+    import zipfile
+
+    dist_dir = wd.cwd / "dist"
+    wheels = list(dist_dir.glob("*.whl"))
+    assert len(wheels) == 1
+
+    with zipfile.ZipFile(wheels[0], "r") as whl:
+        names = whl.namelist()
+        assert any("_version.py" in name for name in names), (
+            f"Version file not found in wheel. Contents: {names}"
+        )
+
+
+@pytest.mark.issue(1252)
+def test_version_file_template_in_build(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that custom version_file_template works during build_py.
+
+    Verifies that the template is correctly applied when writing the version
+    file to the build directory.
+    """
+    monkeypatch.chdir(wd.cwd)
+
+    # Create a pyproject.toml with custom template
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "template-test-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            version_file = "template_pkg/_version.py"
+            version_file_template = '''
+            # Custom template for testing
+            __version__ = "{version}"
+            VERSION_TUPLE = {version_tuple}
+            CUSTOM_MARKER = "build_py_template_test"
+            '''
+
+            [tool.setuptools.packages.find]
+            where = ["."]
+        """),
+    )
+
+    # Create minimal package structure
+    pkg_dir = wd.cwd / "template_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("from ._version import __version__\n")
+
+    # Commit so we have a valid git state
+    wd.commit_testfile()
+    wd("git tag v7.1.2")
+
+    # Build wheel
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+    )
+
+    assert build_result.returncode == 0, (
+        f"Build failed:\nstdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+
+    # Verify wheel contains version file with custom template content
+    import zipfile
+
+    dist_dir = wd.cwd / "dist"
+    wheels = list(dist_dir.glob("*.whl"))
+    assert len(wheels) == 1
+
+    with zipfile.ZipFile(wheels[0], "r") as whl:
+        names = whl.namelist()
+
+        # Find and read version file
+        version_content = None
+        for name in names:
+            if "_version.py" in name:
+                version_content = whl.read(name).decode("utf-8")
+                break
+
+        assert version_content is not None, f"Version file not found in {names}"
+        assert "CUSTOM_MARKER" in version_content, (
+            f"Custom template marker not found. Content:\n{version_content}"
+        )
+        assert "build_py_template_test" in version_content
+        assert "7.1.2" in version_content
+        assert "VERSION_TUPLE" in version_content

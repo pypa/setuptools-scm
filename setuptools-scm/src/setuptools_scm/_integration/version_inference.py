@@ -48,25 +48,29 @@ def infer_version_with_config(
         VersionInferenceData containing version string, Configuration, and ScmVersion
     """
     from vcs_versioning._config import Configuration
-    from vcs_versioning._get_version_impl import _get_version
     from vcs_versioning._get_version_impl import _version_missing
     from vcs_versioning._get_version_impl import parse_version
+    from vcs_versioning._get_version_impl import write_version_files
+    from vcs_versioning._version_schemes import format_version
 
     config = Configuration.from_file(
         dist_name=dist_name, pyproject_data=pyproject_data, **(overrides or {})
     )
 
-    # Parse to get the ScmVersion object
+    # Parse once to get the ScmVersion object
     scm_version = parse_version(config)
-
-    # Only write to source tree if explicitly requested via env var
-    write_to_source = _should_write_to_source()
-    maybe_version = _get_version(config, force_write_version_files=write_to_source)
-    if maybe_version is None:
+    if scm_version is None:
         _version_missing(config)
 
+    # Format version string from the parsed ScmVersion
+    version_string = format_version(scm_version)
+
+    # Only write to source tree if explicitly requested via env var
+    if _should_write_to_source():
+        write_version_files(config, version=version_string, scm_version=scm_version)
+
     return VersionInferenceData(
-        version=maybe_version,
+        version=version_string,
         config=config,
         scm_version=scm_version,
     )

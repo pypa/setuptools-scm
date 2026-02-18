@@ -12,7 +12,6 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import Any
 
 from setuptools.command.build_py import build_py as _build_py
 
@@ -189,7 +188,7 @@ class build_py(_build_py):
         relative_path: str,
         template: str | None,
         version: str,
-        scm_version: Any,
+        scm_version: ScmVersion | None,
     ) -> None:
         """Write a single version file to the build directory."""
         from vcs_versioning._dump_version import DummyScmVersion
