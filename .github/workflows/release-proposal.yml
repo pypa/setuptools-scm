@@ -185,6 +185,11 @@ jobs:
                 owner, repo, pull_number: prNumber,
                 title: prTitle, body: prBody, base: branch
               });
+              if (labels.length > 0) {
+                await github.rest.issues.addLabels({
+                  owner, repo, issue_number: prNumber, labels
+                });
+              }
             } else {
               console.log(`Creating new PR targeting ${branch}`);
               const { data: pr } = await github.rest.pulls.create({
