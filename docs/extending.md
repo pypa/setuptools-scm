@@ -18,11 +18,11 @@
     created by the function [`setuptools_scm.version.meta`][].
 
 `setuptools_scm.files_command`
-:  Either a string containing a shell command that prints all SCM managed
+:  Either a string containing a shell command that prints all SCM-managed
    files in its current working directory or a callable, that given a
    pathname will return that list.
 
-   Also uses then name of your SCM control directory as name of the entrypoint.
+   Also uses the name of your SCM control directory as name of the entrypoint.
 
 
 ### api reference for scm version objects
@@ -48,7 +48,6 @@
 Configures how the version number is constructed given a
 [ScmVersion][setuptools_scm.version.ScmVersion] instance and should return a string
 representing the version.
-
 ### Available implementations
 
 `guess-next-dev (default)`
@@ -148,13 +147,13 @@ of the version, they should be location independent.
 #### Available implementations
 
 `node-and-date (default)`
-: adds the node on dev versions and the date on dirty workdir
+: Adds the node on dev versions and the date on dirty workdir
 
 `node-and-timestamp`
-: like `node-and-date` but with a timestamp of the form `%Y%m%d%H%M%S` instead
+: Like `node-and-date` but with a timestamp of the form `%Y%m%d%H%M%S` instead
 
 `dirty-tag`
-: adds `+dirty` if the current workdir has changes
+: Adds `+dirty` if the current workdir has changes
 
 `no-local-version`
-: omits local version, useful e.g. because pypi does not support it
+: Omits local version, useful e.g. because PyPI does not support it
