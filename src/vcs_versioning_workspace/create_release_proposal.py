@@ -10,10 +10,8 @@ from pathlib import Path
 from github import Github
 from github.Repository import Repository
 from vcs_versioning._config import Configuration
-from vcs_versioning._get_version_impl import (  # type: ignore[attr-defined]
-    _format_version,
-    parse_version,
-)
+from vcs_versioning._get_version_impl import parse_version
+from vcs_versioning._version_schemes import format_version
 from vcs_versioning._version_schemes._towncrier import get_release_version
 
 
@@ -63,7 +61,7 @@ def get_next_version(project_dir: Path, repo_root: Path) -> str | None:
         version_string = get_release_version(scm_version)
         if version_string is None:
             # No fragments found, fall back to standard formatting
-            version_string = _format_version(scm_version)
+            version_string = format_version(scm_version)
 
         # Extract just the public version (X.Y.Z)
         return version_string.split("+")[0]  # Remove local part if present
