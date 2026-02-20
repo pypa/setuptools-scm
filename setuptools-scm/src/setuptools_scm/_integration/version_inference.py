@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 
 from dataclasses import dataclass
 from typing import Any
@@ -10,9 +11,69 @@ from typing import TypeAlias
 from setuptools import Distribution
 from vcs_versioning._pyproject_reading import PyProjectData
 
+from .build_py import VersionInferenceData
+from .build_py import set_version_inference_data
 from .pyproject_reading import should_infer
 
 log = logging.getLogger(__name__)
+
+# Environment variable to force writing version files at inference time
+# instead of deferring to build_py. Useful for development workflows.
+WRITE_TO_SOURCE_ENV_VAR = "SETUPTOOLS_SCM_WRITE_TO_SOURCE"
+
+
+def _should_write_to_source() -> bool:
+    """Check if version files should be written to source at inference time.
+
+    Returns True if SETUPTOOLS_SCM_WRITE_TO_SOURCE env var is set to a truthy value.
+    """
+    value = os.environ.get(WRITE_TO_SOURCE_ENV_VAR, "").lower()
+    return value in ("1", "true", "yes")
+
+
+def infer_version_with_config(
+    dist_name: str | None,
+    pyproject_data: PyProjectData,
+    overrides: dict[str, Any] | None = None,
+) -> VersionInferenceData:
+    """Infer version and return VersionInferenceData.
+
+    By default, version files are NOT written to the source tree during inference.
+    Instead, they are written to the build directory during build_py.
+
+    Set SETUPTOOLS_SCM_WRITE_TO_SOURCE=1 to force writing version files to the
+    source tree at inference time (useful for development workflows).
+
+    Returns:
+        VersionInferenceData containing version string, Configuration, and ScmVersion
+    """
+    from vcs_versioning._config import Configuration
+    from vcs_versioning._get_version_impl import _version_missing
+    from vcs_versioning._get_version_impl import parse_version
+    from vcs_versioning._get_version_impl import write_version_files
+    from vcs_versioning._version_schemes import format_version
+
+    config = Configuration.from_file(
+        dist_name=dist_name, pyproject_data=pyproject_data, **(overrides or {})
+    )
+
+    # Parse once to get the ScmVersion object
+    scm_version = parse_version(config)
+    if scm_version is None:
+        _version_missing(config)
+
+    # Format version string from the parsed ScmVersion
+    version_string = format_version(scm_version)
+
+    # Only write to source tree if explicitly requested via env var
+    if _should_write_to_source():
+        write_version_files(config, version=version_string, scm_version=scm_version)
+
+    return VersionInferenceData(
+        version=version_string,
+        config=config,
+        scm_version=scm_version,
+    )
 
 
 class VersionInferenceApplicable(Protocol):
@@ -44,14 +105,25 @@ class VersionInferenceConfig:
     overrides: dict[str, Any] | None
 
     def apply(self, dist: Distribution) -> None:
-        """Apply version inference to the distribution."""
-        version_string = infer_version_string(
+        """Apply version inference to the distribution.
+
+        Version files are NOT written to the source tree. Instead, the version
+        inference data (Configuration and ScmVersion) is stored on the distribution
+        for the build_py command to write to the build directory. This supports
+        read-only source installations (e.g., Bazel builds).
+        """
+        data = infer_version_with_config(
             self.dist_name,
             self.pyproject_data,  # type: ignore[arg-type]
             self.overrides,
-            force_write_version_files=True,
         )
-        dist.metadata.version = version_string
+        dist.metadata.version = data.version
+
+        # Store version inference data for build_py to write to build directory
+        set_version_inference_data(dist, data)
+        log.debug(
+            "Stored version inference data for build_py: version=%s", data.version
+        )
 
         # Mark that this version was set by infer_version if overrides is None (infer_version context)
         if self.overrides is None:

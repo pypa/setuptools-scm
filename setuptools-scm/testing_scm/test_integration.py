@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.metadata
 import logging
+import os
 import re
 import subprocess
 import sys
@@ -712,3 +713,672 @@ def test_xmlsec_download_regression(
 
     # The success of the subprocess.run call above means the regression is fixed.
     # pip download succeeded without setuptools_scm causing version conflicts.
+
+
+@pytest.mark.issue(1252)
+def test_version_file_written_to_build_directory(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that version files are written to build directory, not source.
+
+    This test verifies the fix for issue #1252: installing packages from
+    read-only source directories should work because version files are
+    written to the build directory instead of the source tree.
+    """
+    monkeypatch.chdir(wd.cwd)
+
+    # Create a minimal pyproject.toml with version_file configured
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "test-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            version_file = "test_pkg/_version.py"
+
+            [tool.setuptools.packages.find]
+            where = ["."]
+        """),
+    )
+
+    # Create minimal package structure
+    pkg_dir = wd.cwd / "test_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("from ._version import __version__\n")
+
+    # Commit so we have a valid git state
+    wd.commit_testfile()
+    wd("git tag v1.0.0")
+
+    # By default (without SETUPTOOLS_SCM_WRITE_TO_SOURCE), version file should
+    # NOT be written to source during version inference
+    subprocess.run(
+        [sys.executable, "-c", "import setuptools; setuptools.setup()"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+    )
+
+    # The version file should NOT exist in source tree
+    version_file = pkg_dir / "_version.py"
+    assert not version_file.exists(), (
+        "Version file should NOT be written to source tree during inference. "
+        "It should only be written to build directory during build_py."
+    )
+
+    # Now run an actual build to verify version file IS written to build directory
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+    )
+
+    # Build should succeed
+    assert build_result.returncode == 0, (
+        f"Build failed:\nstdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+
+    # Verify wheel was created and contains the version file
+    dist_dir = wd.cwd / "dist"
+    wheels = list(dist_dir.glob("*.whl"))
+    assert len(wheels) == 1, f"Expected 1 wheel, found {len(wheels)}"
+
+    # Check wheel contents for version file
+    import zipfile
+
+    with zipfile.ZipFile(wheels[0], "r") as whl:
+        names = whl.namelist()
+        version_file_in_wheel = any("_version.py" in name for name in names)
+        assert version_file_in_wheel, (
+            f"Version file not found in wheel. Contents: {names}"
+        )
+
+
+@pytest.mark.issue(1252)
+def test_version_file_src_layout_path_transformation(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that version files work correctly with src/ layout.
+
+    When version_file is specified as 'src/mypackage/_version.py', the path
+    should be transformed to 'mypackage/_version.py' in the build directory.
+    """
+    monkeypatch.chdir(wd.cwd)
+
+    # Create a src/ layout project
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "test-src-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            # Path includes src/ prefix as user would configure it
+            version_file = "src/test_src_pkg/_version.py"
+
+            [tool.setuptools.packages.find]
+            where = ["src"]
+        """),
+    )
+
+    # Create src/ layout package structure
+    src_dir = wd.cwd / "src"
+    src_dir.mkdir()
+    pkg_dir = src_dir / "test_src_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("from ._version import __version__\n")
+
+    # Commit so we have a valid git state
+    wd.commit_testfile()
+    wd("git tag v2.0.0")
+
+    # Build wheel
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+    )
+
+    assert build_result.returncode == 0, (
+        f"Build failed:\nstdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+
+    # Verify wheel contains version file at correct path (without src/ prefix)
+    import zipfile
+
+    dist_dir = wd.cwd / "dist"
+    wheels = list(dist_dir.glob("*.whl"))
+    assert len(wheels) == 1
+
+    with zipfile.ZipFile(wheels[0], "r") as whl:
+        names = whl.namelist()
+        # Should be test_src_pkg/_version.py, NOT src/test_src_pkg/_version.py
+        assert any(name == "test_src_pkg/_version.py" for name in names), (
+            f"Expected 'test_src_pkg/_version.py' in wheel, got: {names}"
+        )
+        assert not any("src/" in name for name in names), (
+            f"Found 'src/' prefix in wheel paths: {names}"
+        )
+
+
+@pytest.mark.issue(1252)
+@pytest.mark.parametrize("editable_mode", ["compat", "strict"])
+def test_editable_install_version_file(
+    editable_mode: str, wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that editable installs work with version file configuration.
+
+    For editable installs, the source directory IS the package. Version files
+    need to be written to source for them to be importable. Users should set
+    SETUPTOOLS_SCM_WRITE_TO_SOURCE=1 for development workflows.
+    """
+    monkeypatch.chdir(wd.cwd)
+
+    # Create a minimal pyproject.toml with version_file configured
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=64", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "test-editable-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            version_file = "test_editable_pkg/_version.py"
+
+            [tool.setuptools.packages.find]
+            where = ["."]
+        """),
+    )
+
+    # Create minimal package structure
+    pkg_dir = wd.cwd / "test_editable_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text(
+        "try:\n"
+        "    from ._version import __version__\n"
+        "except ImportError:\n"
+        "    from importlib.metadata import version\n"
+        "    __version__ = version('test-editable-pkg')\n"
+    )
+
+    # Commit so we have a valid git state
+    wd.commit_testfile()
+    wd("git tag v3.0.0")
+
+    # Build editable wheel using pip wheel with SETUPTOOLS_SCM_WRITE_TO_SOURCE=1
+    # This ensures version file is written to source for editable installs
+    build_result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "wheel",
+            "--no-build-isolation",
+            "-e",
+            ".",
+            "-w",
+            "dist",
+            f"--config-settings=editable_mode={editable_mode}",
+        ],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+        env={
+            **os.environ,
+            "SETUPTOOLS_SCM_WRITE_TO_SOURCE": "1",
+        },
+    )
+
+    # Build should succeed
+    assert build_result.returncode == 0, (
+        f"Editable build ({editable_mode}) failed:\n"
+        f"stdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+
+    # With SETUPTOOLS_SCM_WRITE_TO_SOURCE=1, version file should exist in source
+    version_file = pkg_dir / "_version.py"
+    assert version_file.exists(), (
+        f"Version file should be written to source with SETUPTOOLS_SCM_WRITE_TO_SOURCE=1. "
+        f"Mode: {editable_mode}"
+    )
+
+    # Verify version file content
+    content = version_file.read_text()
+    assert "3.0.0" in content, f"Version file should contain '3.0.0': {content}"
+
+
+@pytest.mark.issue(1252)
+def test_editable_install_without_env_var(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test editable install behavior when SETUPTOOLS_SCM_WRITE_TO_SOURCE is not set.
+
+    Without the env var, version files are NOT written to source during inference.
+    Users relying on _version.py in editable mode should either:
+    1. Set SETUPTOOLS_SCM_WRITE_TO_SOURCE=1
+    2. Use importlib.metadata.version() instead
+    """
+    monkeypatch.chdir(wd.cwd)
+
+    # Create a minimal pyproject.toml with version_file configured
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=64", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "test-no-env-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            version_file = "test_no_env_pkg/_version.py"
+
+            [tool.setuptools.packages.find]
+            where = ["."]
+        """),
+    )
+
+    # Create minimal package structure - use importlib.metadata as fallback
+    pkg_dir = wd.cwd / "test_no_env_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text(
+        "try:\n"
+        "    from ._version import __version__\n"
+        "except ImportError:\n"
+        "    from importlib.metadata import version\n"
+        "    __version__ = version('test-no-env-pkg')\n"
+    )
+
+    # Commit so we have a valid git state
+    wd.commit_testfile()
+    wd("git tag v4.0.0")
+
+    # Build editable wheel using pip wheel WITHOUT SETUPTOOLS_SCM_WRITE_TO_SOURCE
+    build_result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "wheel",
+            "--no-build-isolation",
+            "-e",
+            ".",
+            "-w",
+            "dist",
+        ],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+    )
+
+    # Build should succeed even without version file in source
+    assert build_result.returncode == 0, (
+        f"Editable build failed:\n"
+        f"stdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+
+    # Version file should NOT exist in source (not written without env var)
+    version_file = pkg_dir / "_version.py"
+    assert not version_file.exists(), (
+        "Version file should NOT be written to source without SETUPTOOLS_SCM_WRITE_TO_SOURCE"
+    )
+
+
+@pytest.mark.issue(1252)
+def test_readonly_source_directory_build(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Test building from a read-only source directory succeeds.
+
+    This is the core scenario from issue #1252: building a package when the
+    source directory is read-only (e.g., Bazel builds). Version files should
+    be written to the build directory, not the source tree.
+    """
+    import stat
+
+    monkeypatch.chdir(wd.cwd)
+
+    # Create a minimal pyproject.toml with version_file configured
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "readonly-test-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            version_file = "readonly_test_pkg/_version.py"
+
+            [tool.setuptools.packages.find]
+            where = ["."]
+        """),
+    )
+
+    # Create minimal package structure
+    pkg_dir = wd.cwd / "readonly_test_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("from ._version import __version__\n")
+
+    # Commit so we have a valid git state
+    wd.commit_testfile()
+    wd("git tag v5.0.0")
+
+    # Make the package directory read-only to simulate Bazel scenario
+    original_mode = pkg_dir.stat().st_mode
+    try:
+        # Remove write permissions
+        pkg_dir.chmod(stat.S_IRUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IROTH)
+
+        # Verify we can't write to the directory.
+        # On some Windows environments chmod() does not enforce directory
+        # writability for newly created files, so skip if we cannot simulate
+        # the read-only constraint reliably.
+        version_file = pkg_dir / "_version.py"
+        try:
+            version_file.write_text("test")
+            version_file.unlink(missing_ok=True)
+            pytest.skip(
+                "cannot enforce read-only directory semantics in this environment"
+            )
+        except PermissionError:
+            pass  # Expected - directory is read-only
+
+        # Build should still succeed because version file goes to build_lib
+        build_result = subprocess.run(
+            [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+            cwd=wd.cwd,
+            capture_output=True,
+            text=True,
+        )
+
+        # Build should succeed despite read-only source
+        assert build_result.returncode == 0, (
+            f"Build from read-only source failed:\n"
+            f"stdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+        )
+
+        # Verify wheel was created and contains the version file
+        import zipfile
+
+        dist_dir = wd.cwd / "dist"
+        wheels = list(dist_dir.glob("*.whl"))
+        assert len(wheels) == 1
+
+        with zipfile.ZipFile(wheels[0], "r") as whl:
+            names = whl.namelist()
+            assert any("_version.py" in name for name in names), (
+                f"Version file not found in wheel. Contents: {names}"
+            )
+
+            # Read and verify version content
+            version_content = None
+            for name in names:
+                if "_version.py" in name:
+                    version_content = whl.read(name).decode("utf-8")
+                    break
+            assert version_content is not None
+            assert "5.0.0" in version_content
+
+    finally:
+        # Restore original permissions for cleanup
+        pkg_dir.chmod(original_mode)
+
+
+@pytest.mark.issue(1252)
+def test_legacy_write_to_build_directory(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that legacy write_to configuration also writes to build directory.
+
+    The write_to option is the older way to configure version file writing.
+    It should also be deferred to build_py just like version_file.
+    """
+    monkeypatch.chdir(wd.cwd)
+
+    # Create a pyproject.toml using legacy write_to
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "legacy-write-to-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            write_to = "legacy_pkg/_version.py"
+
+            [tool.setuptools.packages.find]
+            where = ["."]
+        """),
+    )
+
+    # Create minimal package structure
+    pkg_dir = wd.cwd / "legacy_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("from ._version import __version__\n")
+
+    # Commit so we have a valid git state
+    wd.commit_testfile()
+    wd("git tag v6.0.0")
+
+    # Version file should NOT exist after just invoking setup
+    subprocess.run(
+        [sys.executable, "-c", "import setuptools; setuptools.setup()"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+    )
+
+    version_file = pkg_dir / "_version.py"
+    assert not version_file.exists(), (
+        "Legacy write_to should NOT write to source during inference"
+    )
+
+    # Build wheel
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+    )
+
+    assert build_result.returncode == 0, (
+        f"Build failed:\nstdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+
+    # Verify wheel contains version file
+    import zipfile
+
+    dist_dir = wd.cwd / "dist"
+    wheels = list(dist_dir.glob("*.whl"))
+    assert len(wheels) == 1
+
+    with zipfile.ZipFile(wheels[0], "r") as whl:
+        names = whl.namelist()
+        assert any("_version.py" in name for name in names), (
+            f"Version file not found in wheel. Contents: {names}"
+        )
+
+
+@pytest.mark.issue(1252)
+def test_version_file_template_in_build(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that custom version_file_template works during build_py.
+
+    Verifies that the template is correctly applied when writing the version
+    file to the build directory.
+    """
+    monkeypatch.chdir(wd.cwd)
+
+    # Create a pyproject.toml with custom template
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "template-test-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            version_file = "template_pkg/_version.py"
+            version_file_template = '''
+            # Custom template for testing
+            __version__ = "{version}"
+            VERSION_TUPLE = {version_tuple}
+            CUSTOM_MARKER = "build_py_template_test"
+            '''
+
+            [tool.setuptools.packages.find]
+            where = ["."]
+        """),
+    )
+
+    # Create minimal package structure
+    pkg_dir = wd.cwd / "template_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("from ._version import __version__\n")
+
+    # Commit so we have a valid git state
+    wd.commit_testfile()
+    wd("git tag v7.1.2")
+
+    # Build wheel
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+    )
+
+    assert build_result.returncode == 0, (
+        f"Build failed:\nstdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+
+    # Verify wheel contains version file with custom template content
+    import zipfile
+
+    dist_dir = wd.cwd / "dist"
+    wheels = list(dist_dir.glob("*.whl"))
+    assert len(wheels) == 1
+
+    with zipfile.ZipFile(wheels[0], "r") as whl:
+        names = whl.namelist()
+
+        # Find and read version file
+        version_content = None
+        for name in names:
+            if "_version.py" in name:
+                version_content = whl.read(name).decode("utf-8")
+                break
+
+        assert version_content is not None, f"Version file not found in {names}"
+        assert "CUSTOM_MARKER" in version_content, (
+            f"Custom template marker not found. Content:\n{version_content}"
+        )
+        assert "build_py_template_test" in version_content
+        assert "7.1.2" in version_content
+        assert "VERSION_TUPLE" in version_content
+
+
+@pytest.mark.issue(1252)
+def test_custom_build_py_still_writes_version_file(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Custom build_py should not disable setuptools-scm version file writing."""
+    monkeypatch.chdir(wd.cwd)
+
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+        """),
+    )
+
+    wd.write(
+        "setup.py",
+        textwrap.dedent("""\
+            from pathlib import Path
+
+            from setuptools import setup
+            from setuptools.command.build_py import build_py as _build_py
+
+
+            class CustomBuildPy(_build_py):
+                def run(self):
+                    super().run()
+                    Path("custom_build_py_ran.txt").write_text("ran", encoding="utf-8")
+
+
+            setup(
+                name="custom-build-py-pkg",
+                packages=["custom_build_py_pkg"],
+                use_scm_version={"version_file": "custom_build_py_pkg/_version.py"},
+                cmdclass={"build_py": CustomBuildPy},
+            )
+        """),
+    )
+
+    pkg_dir = wd.cwd / "custom_build_py_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("from ._version import __version__\n")
+
+    wd.commit_testfile()
+    wd("git tag v8.0.0")
+
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+    )
+
+    assert build_result.returncode == 0, (
+        f"Build failed:\nstdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+    assert (wd.cwd / "custom_build_py_ran.txt").exists(), (
+        "Project custom build_py should still run"
+    )
+
+    import zipfile
+
+    dist_dir = wd.cwd / "dist"
+    wheels = list(dist_dir.glob("*.whl"))
+    assert len(wheels) == 1
+
+    with zipfile.ZipFile(wheels[0], "r") as whl:
+        names = whl.namelist()
+        assert "custom_build_py_pkg/_version.py" in names, (
+            f"Expected version file in wheel, got: {names}"
+        )
