@@ -124,6 +124,7 @@ python_files = ["test_*.py"]
 addopts = ["-ra", "--strict-markers", "-p", "vcs_versioning.test_api"]
 markers = [
   "issue: marks tests related to specific issues",
+  "no_init: use setup_hg(init=False) for wd fixture - hg check without worktree",
   "skip_commit: allows to skip committing in the helpers",
 ]
 

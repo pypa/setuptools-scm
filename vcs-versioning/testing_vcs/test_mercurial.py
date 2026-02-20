@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 
 import pytest
 import vcs_versioning._file_finders  # noqa: F401
@@ -15,9 +14,10 @@ from vcs_versioning.test_api import WorkDir
 
 
 @pytest.fixture
-def wd(wd: WorkDir) -> WorkDir:
+def wd(wd: WorkDir, request: pytest.FixtureRequest) -> WorkDir:
     """Set up mercurial for hg-specific tests."""
-    return wd.setup_hg()
+    init = not request.node.get_closest_marker("no_init")
+    return wd.setup_hg(init=init)
 
 
 archival_mapping = {
@@ -173,9 +173,10 @@ def test_version_in_merge(wd: WorkDir) -> None:
 
 
 @pytest.mark.issue(128)
-def test_parse_no_worktree(tmp_path: Path) -> None:
+@pytest.mark.no_init
+def test_parse_no_worktree(wd: WorkDir) -> None:
     config = Configuration()
-    ret = parse(os.fspath(tmp_path), config)
+    ret = parse(os.fspath(wd.cwd), config)
     assert ret is None
 
 
