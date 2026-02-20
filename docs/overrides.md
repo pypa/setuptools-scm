@@ -86,8 +86,8 @@ export SETUPTOOLS_SCM_PRETEND_METADATA_FOR_MY_PACKAGE='{node="g1234567", distanc
 
     Node IDs must include the appropriate SCM prefix:
 
-    - Use `g` prefix for git repositories (e.g., `g1a2b3c4d5`)
-    - Use `h` prefix for mercurial repositories (e.g., `h1a2b3c4d5`)
+    - Use `g` prefix for Git repositories (e.g., `g1a2b3c4d5`)
+    - Use `h` prefix for Mercurial repositories (e.g., `h1a2b3c4d5`)
 
     This ensures consistency with setuptools-scm's automatic node ID formatting.
 

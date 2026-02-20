@@ -8,7 +8,7 @@ setuptools-scm has to piggyback on setuptools for passing functions over.
 To facilitate that one needs to write a `setup.py` file and
 pass partial setuptools-scm configuration in via the use_scm_version keyword.
 
-It's strongly recommended to experiment with using stock version schemes or creating plugins as package.
+It's strongly recommended to experiment with using stock version schemes or creating plugins as packages.
 (This recommendation will change if there ever is something like build-time entrypoints).
 
 
@@ -52,7 +52,7 @@ dynamic = [
 
 ##  Importing in setup.py
 
-With the pep 517/518 build backend, setuptools-scm is importable from `setup.py`
+With the PEP 517/518 build backend, setuptools-scm is importable from `setup.py`
 
 ``` { .python title="setup.py" }
 from setuptools import setup

@@ -33,7 +33,7 @@ Use the `[tool.setuptools_scm]` section when you need to:
 These configuration options control version inference and formatting behavior.
 
 Configuration parameters can be configured in `pyproject.toml` or `setup.py`.
-Callables or other Python objects have to be passed in `setup.py` (via the `use_scm_version` keyword argument).
+Callables or other Python objects must be passed in `setup.py` (via the `use_scm_version` keyword argument).
 
 `root : Path | PathLike[str]`
 : Relative path to the SCM root, defaults to `.` and is relative to the file path passed in `relative_to`
@@ -62,12 +62,12 @@ Callables or other Python objects have to be passed in `setup.py` (via the `use_
         and `1.0.0`. For best practices on tag naming, see
         [Version Tag Formats](usage.md#version-tag-formats).
 
-`parentdir_prefix_version: str|None = None`
+`parentdir_prefix_version: str | None = None`
 :   If the normal methods for detecting the version (SCM version,
     sdist metadata) fail, and the parent directory name starts with
     `parentdir_prefix_version`, then this prefix is stripped and the rest of
     the parent directory name is matched with `tag_regex` to get a version
-    string.  If this parameter is unset (the default), then this fallback is
+    string. If this parameter is unset (the default), then this fallback is
     not used.
 
     This was intended to cover GitHub's "release tarballs",
@@ -221,13 +221,13 @@ These environment variables override version detection behavior.
 These environment variables control setuptools-scm specific behavior.
 
 `SETUPTOOLS_SCM_IGNORE_VCS_ROOTS`
-:   a ``os.pathsep`` separated list
+:   A ``os.pathsep`` separated list
     of directory names to ignore for root finding
 
 `SETUPTOOLS_SCM_HG_COMMAND`
-:   command used for running Mercurial (defaults to ``hg``)
+:   Command used for running Mercurial (defaults to ``hg``)
 
-    for example, set this to ``chg`` to reduce start-up overhead of Mercurial
+    For example, set this to ``chg`` to reduce start-up overhead of Mercurial
 
 `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}`
 :   A TOML inline table to override configuration from `pyproject.toml`.
