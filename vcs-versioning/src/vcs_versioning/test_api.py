@@ -55,6 +55,10 @@ def pytest_configure(config: pytest.Config) -> None:
     # 2009-02-13T23:31:30+00:00
     os.environ["SOURCE_DATE_EPOCH"] = str(TEST_SOURCE_DATE_EPOCH)
     os.environ["VCS_VERSIONING_DEBUG"] = "1"
+    # Clear pretend version env vars so tests run real version detection
+    # (Debian sets SETUPTOOLS_SCM_PRETEND_VERSION during package builds)
+    for key in ("SETUPTOOLS_SCM_PRETEND_VERSION", "VCS_VERSIONING_PRETEND_VERSION"):
+        os.environ.pop(key, None)
 
 
 @pytest.fixture(scope="session", autouse=True)

@@ -39,6 +39,9 @@ def pytest_configure(config: pytest.Config) -> None:
     """Additional configuration for setuptools_scm tests."""
     # Set both debug env vars for backward compatibility
     os.environ["SETUPTOOLS_SCM_DEBUG"] = "1"
+    # Clear pretend version so tests run real version detection
+    # (Debian sets this during package builds, which interferes with tests)
+    os.environ.pop("SETUPTOOLS_SCM_PRETEND_VERSION", None)
 
 
 VERSION_PKGS = [
