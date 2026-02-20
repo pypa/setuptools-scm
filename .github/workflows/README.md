@@ -68,9 +68,15 @@ showcontent = true
    - `changelog.d/template.md` (towncrier template)
    - `CHANGELOG.md` with the start marker
 
-4. **Add the version scheme entry point** (if using vcs-versioning):
+4. **Configure version scheme** in your `pyproject.toml`:
+
+```toml
+[tool.setuptools_scm]
+version_scheme = "towncrier-fragments"
+```
 
 The `towncrier-fragments` version scheme is provided by vcs-versioning 0.2.0+.
+The reusable workflow reads the scheme from the project's `pyproject.toml` via the CLI.
 
 ### Complete Example Workflow
 

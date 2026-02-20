@@ -47,16 +47,17 @@ jobs:
         working-directory: ${{ inputs.project_directory }}
         run: |
           if [ ! -d "changelog.d" ]; then
-            echo "ERROR: changelog.d directory not found for ${{ inputs.project_name }}"
-            exit 1
+            echo "has_fragments=false" >> $GITHUB_OUTPUT
+            echo "No changelog.d directory for ${{ inputs.project_name }}, skipping"
+            exit 0
           fi
 
           FRAGMENT_COUNT=$(find changelog.d -type f -name "*.*.md" ! -name "template.md" ! -name "README.md" 2>/dev/null | wc -l)
 
           if [ "$FRAGMENT_COUNT" -eq 0 ]; then
-            echo "ERROR: No changelog fragments found for ${{ inputs.project_name }}"
-            echo "Cannot create release without changelog fragments"
-            exit 1
+            echo "has_fragments=false" >> $GITHUB_OUTPUT
+            echo "No changelog fragments for ${{ inputs.project_name }}, skipping"
+            exit 0
           fi
 
           echo "has_fragments=true" >> $GITHUB_OUTPUT
@@ -66,11 +67,10 @@ jobs:
         if: steps.check.outputs.has_fragments == 'true'
         id: version
         run: |
-          # Use vcs-versioning CLI to get the next version from the version scheme
-          NEXT_VERSION=$(uv run --directory ${{ inputs.project_directory }} python -m vcs_versioning \
-            --root . \
-            --version-scheme towncrier-fragments \
-            --local-scheme no-local-version 2>&1 | grep -oP '^\d+\.\d+\.\d+' || echo "")
+          # Version scheme is read from the project's pyproject.toml config
+          NEXT_VERSION=$(uv run python -m vcs_versioning \
+            -c ${{ inputs.project_directory }}/pyproject.toml \
+            --strip-dev 2>&1 | grep -oP '^\d+\.\d+\.\d+' || echo "")
 
           if [ -z "$NEXT_VERSION" ]; then
             echo "ERROR: Failed to determine version for ${{ inputs.project_name }}"
