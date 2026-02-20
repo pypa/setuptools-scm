@@ -10,6 +10,9 @@ on:
     - "vcs-versioning-v*"
   release:
     types: [published]
+  # Tags created by GITHUB_TOKEN don't trigger push events for other workflows.
+  # create-release-tags.yml dispatches this workflow explicitly after tagging.
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -135,7 +138,10 @@ jobs:
 
   dist_upload_setuptools_scm:
     runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/setuptools-scm-v')) || (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'setuptools-scm-v'))
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/setuptools-scm-v')) ||
+      (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/setuptools-scm-v')) ||
+      (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'setuptools-scm-v'))
     permissions:
       id-token: write
     needs: [test]
@@ -150,7 +156,10 @@ jobs:
 
   dist_upload_vcs_versioning:
     runs-on: ubuntu-latest
-    if: (github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/vcs-versioning-v')) || (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'vcs-versioning-v'))
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/vcs-versioning-v')) ||
+      (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/vcs-versioning-v')) ||
+      (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'vcs-versioning-v'))
     permissions:
       id-token: write
     needs: [test]
@@ -165,7 +174,9 @@ jobs:
 
   upload-release-assets-setuptools-scm:
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'setuptools-scm-v')
+    if: |
+      (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'setuptools-scm-v')) ||
+      (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/setuptools-scm-v'))
     needs: [test]
     permissions:
       contents: write
@@ -183,7 +194,9 @@ jobs:
 
   upload-release-assets-vcs-versioning:
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'vcs-versioning-v')
+    if: |
+      (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'vcs-versioning-v')) ||
+      (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/vcs-versioning-v'))
     needs: [test]
     permissions:
       contents: write

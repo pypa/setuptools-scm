@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   create-tags:
@@ -151,8 +152,20 @@ jobs:
               await createTagAndRelease('vcs-versioning', 'vcs-versioning', 'vcs-versioning');
             }
 
-            // Write summary
-            const summary = `## Tags Created\n\n${tagsCreated.map(t => `- \`${t}\``).join('\n')}\n\nPyPI upload will be triggered automatically by tag push.`;
+            // Dispatch python-tests.yml for each tag to trigger PyPI upload.
+            // Tags created by GITHUB_TOKEN don't trigger push-based workflows,
+            // but workflow_dispatch events dispatched by GITHUB_TOKEN DO.
+            for (const tagName of tagsCreated) {
+              console.log(`Dispatching python-tests.yml for ${tagName}`);
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'python-tests.yml',
+                ref: tagName
+              });
+            }
+
+            const summary = `## Tags Created\n\n${tagsCreated.map(t => `- \`${t}\``).join('\n')}\n\nPyPI upload dispatched via workflow_dispatch for each tag.`;
             await core.summary.addRaw(summary).write();
 
             console.log(`\nDone! Created tags: ${tagsCreated.join(', ')}`);
