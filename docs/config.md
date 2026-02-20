@@ -135,7 +135,7 @@ Callables or other Python objects must be passed in `setup.py` (via the `use_scm
 
     This field is maintained for backward compatibility but will issue a deprecation warning when used.
 
-`relative_to: Path|Pathlike[str] = "pyproject.toml"`
+`relative_to: Path | PathLike[str] = "pyproject.toml"`
 :   A file/directory from which the root can be resolved.
     Typically called by a script or module that is not in the root of the
     repository to point to the root of the repository by
@@ -168,9 +168,9 @@ Callables or other Python objects must be passed in `setup.py` (via the `use_scm
 
 These options control setuptools integration behavior.
 
-`write_to: Pathlike[str] | Path | None = None`
-:  (deprecated) legacy option to create a version file relative to the scm root
-   it's broken for usage from a sdist and fixing it would be a fatal breaking change,
+`write_to: PathLike[str] | Path | None = None`
+:  (deprecated) legacy option to create a version file relative to the SCM root.
+   It's broken for usage from an sdist and fixing it would be a fatal breaking change,
    use `version_file` instead.
 
 ## Environment Variables
