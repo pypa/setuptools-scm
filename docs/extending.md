@@ -22,7 +22,7 @@
    files in its current working directory or a callable, that given a
    pathname will return that list.
 
-   Also uses the name of your SCM control directory as name of the entrypoint.
+   Also uses the name of your SCM control directory as the name of the entrypoint.
 
 
 ### api reference for scm version objects
