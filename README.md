@@ -60,7 +60,7 @@ dynamic = ["version"]
 
     ```toml title="pyproject.toml"
     [build-system]
-    requires = ["setuptools>=80", "setuptools-scm[simple]>=8"]
+    requires = ["setuptools>=80", "setuptools-scm[simple]>=9.2"]
     build-backend = "setuptools.build_meta"
 
     [project]

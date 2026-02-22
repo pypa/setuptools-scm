@@ -15,7 +15,7 @@ For basic usage without custom configuration, use the `simple` extra:
 
 ```toml title="pyproject.toml"
 [build-system]
-requires = ["setuptools>=80", "setuptools-scm[simple]>=8"]
+requires = ["setuptools>=80", "setuptools-scm[simple]>=9.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -74,7 +74,7 @@ This also counts as an explicit opt-in and does not require a tool section.
 
 !!! note "Legacy simplified activation (removed)"
 
-    Previous versions (before 9.2) had a "simplified" activation where listing
+    Previous versions (before 9.2.0) had a "simplified" activation where listing
     plain `setuptools-scm` in `build-system.requires` together with
     `project.dynamic = ["version"]` would auto-enable version inference.
     This was removed because it caused ambiguous activation — projects using
