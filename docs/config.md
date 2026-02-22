@@ -16,7 +16,8 @@ requires = ["setuptools>=80", "setuptools-scm[simple]>=8"]
 dynamic = ["version"]
 ```
 
-This automatically enables version inference with default settings.
+The `[simple]` extra enables version inference with default settings.
+See the [usage guide](usage.md#simplified-activation-new) for details.
 
 ### Explicit Configuration (Full Control)
 

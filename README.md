@@ -55,21 +55,20 @@ dynamic = ["version"]
 
 !!! note "Simplified Configuration"
 
-    Starting with setuptools-scm 8.1+, if `setuptools_scm` (or `setuptools-scm`) is
-    present in your `build-system.requires`, the `[tool.setuptools_scm]` section
-    becomes optional! You can now enable setuptools-scm with just:
+    For projects that don't need custom configuration, use the `simple` extra
+    to skip the `[tool.setuptools_scm]` section entirely:
 
     ```toml title="pyproject.toml"
     [build-system]
-    requires = ["setuptools>=80", "setuptools-scm>=8"]
+    requires = ["setuptools>=80", "setuptools-scm[simple]>=8"]
     build-backend = "setuptools.build_meta"
 
     [project]
     dynamic = ["version"]
     ```
 
-    The `[tool.setuptools_scm]` section is only needed if you want to customize
-    configuration options.
+    The `[simple]` extra explicitly enables version inference with default settings.
+    Add a `[tool.setuptools_scm]` section only if you need to customize options.
 
 Additionally, a version file can be written by specifying:
 
