@@ -68,7 +68,7 @@ dynamic = ["version"]
     dynamic = ["version"]
     ```
 
-    The `[tool.setuptools_scm]` section is only needed if you want to customize
+    In most cases, the `[tool.setuptools_scm]` section is only needed if you want to customize
     configuration options.
 
 Additionally, a version file can be written by specifying:
