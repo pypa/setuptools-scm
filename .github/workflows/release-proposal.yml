@@ -66,17 +66,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Remove directories that will be replaced by towncrier artifacts
+      # Remove only fragment files and CHANGELOG.md; preserve .gitkeep, template.md, README.md
       - name: Prepare for artifact overlay
         env:
           SCM_FRAGMENTS: ${{ needs.setuptools-scm.outputs.has_fragments }}
           VCS_FRAGMENTS: ${{ needs.vcs-versioning.outputs.has_fragments }}
         run: |
           if [ "$SCM_FRAGMENTS" == "true" ]; then
-            rm -rf setuptools-scm/changelog.d setuptools-scm/CHANGELOG.md
+            find setuptools-scm/changelog.d -name "*.*.md" ! -name "template.md" ! -name "README.md" -delete 2>/dev/null || true
+            rm -f setuptools-scm/CHANGELOG.md
           fi
           if [ "$VCS_FRAGMENTS" == "true" ]; then
-            rm -rf vcs-versioning/changelog.d vcs-versioning/CHANGELOG.md
+            find vcs-versioning/changelog.d -name "*.*.md" ! -name "template.md" ! -name "README.md" -delete 2>/dev/null || true
+            rm -f vcs-versioning/CHANGELOG.md
           fi
 
       - name: Download setuptools-scm changelog
