@@ -55,6 +55,24 @@ def test_find_fragments_bugfix(changelog_dir: Path) -> None:
     assert "789.bugfix.md" in fragments["bugfix"]
 
 
+def test_find_fragments_major(changelog_dir: Path) -> None:
+    """Test finding major fragments."""
+    (changelog_dir / "100.major.md").write_text("Major version bump")
+
+    fragments = _find_fragments(changelog_dir.parent)
+    assert len(fragments["major"]) == 1
+    assert "100.major.md" in fragments["major"]
+
+
+def test_find_fragments_breaking(changelog_dir: Path) -> None:
+    """Test finding breaking fragments."""
+    (changelog_dir / "200.breaking.md").write_text("Breaking change")
+
+    fragments = _find_fragments(changelog_dir.parent)
+    assert len(fragments["breaking"]) == 1
+    assert "200.breaking.md" in fragments["breaking"]
+
+
 def test_find_fragments_removal(changelog_dir: Path) -> None:
     """Test finding removal fragments."""
     (changelog_dir / "321.removal.md").write_text("Remove deprecated API")
@@ -113,9 +131,10 @@ def test_find_fragments_mixed_types(changelog_dir: Path) -> None:
     assert len(fragments["doc"]) == 1
 
 
-def test_determine_bump_type_none() -> None:
-    """Test bump type with no fragments."""
-    fragments: dict[str, list[str]] = {
+def _empty_fragments() -> dict[str, list[str]]:
+    return {
+        "major": [],
+        "breaking": [],
         "removal": [],
         "feature": [],
         "deprecation": [],
@@ -123,123 +142,102 @@ def test_determine_bump_type_none() -> None:
         "doc": [],
         "misc": [],
     }
-    assert _determine_bump_type(fragments) is None
+
+
+def test_determine_bump_type_none() -> None:
+    """Test bump type with no fragments."""
+    assert _determine_bump_type(_empty_fragments()) is None
+
+
+def test_determine_bump_type_major_fragment() -> None:
+    """Test major bump with major fragments."""
+    fragments = _empty_fragments()
+    fragments["major"] = ["1.major.md"]
+    assert _determine_bump_type(fragments) == "major"
+
+
+def test_determine_bump_type_breaking_fragment() -> None:
+    """Test major bump with breaking fragments."""
+    fragments = _empty_fragments()
+    fragments["breaking"] = ["1.breaking.md"]
+    assert _determine_bump_type(fragments) == "major"
 
 
 def test_determine_bump_type_major() -> None:
     """Test major bump with removal fragments."""
-    fragments: dict[str, list[str]] = {
-        "removal": ["1.removal.md"],
-        "feature": [],
-        "deprecation": [],
-        "bugfix": [],
-        "doc": [],
-        "misc": [],
-    }
+    fragments = _empty_fragments()
+    fragments["removal"] = ["1.removal.md"]
     assert _determine_bump_type(fragments) == "major"
 
 
 def test_determine_bump_type_major_with_others() -> None:
     """Test major bump takes precedence over other types."""
-    fragments: dict[str, list[str]] = {
-        "removal": ["1.removal.md"],
-        "feature": ["2.feature.md"],
-        "bugfix": ["3.bugfix.md"],
-        "deprecation": [],
-        "doc": [],
-        "misc": [],
-    }
+    fragments = _empty_fragments()
+    fragments["removal"] = ["1.removal.md"]
+    fragments["feature"] = ["2.feature.md"]
+    fragments["bugfix"] = ["3.bugfix.md"]
+    assert _determine_bump_type(fragments) == "major"
+
+
+def test_determine_bump_type_breaking_with_others() -> None:
+    """Test breaking bump takes precedence over minor and patch types."""
+    fragments = _empty_fragments()
+    fragments["breaking"] = ["1.breaking.md"]
+    fragments["feature"] = ["2.feature.md"]
+    fragments["bugfix"] = ["3.bugfix.md"]
     assert _determine_bump_type(fragments) == "major"
 
 
 def test_determine_bump_type_minor_feature() -> None:
     """Test minor bump with feature fragments."""
-    fragments: dict[str, list[str]] = {
-        "removal": [],
-        "feature": ["1.feature.md"],
-        "deprecation": [],
-        "bugfix": [],
-        "doc": [],
-        "misc": [],
-    }
+    fragments = _empty_fragments()
+    fragments["feature"] = ["1.feature.md"]
     assert _determine_bump_type(fragments) == "minor"
 
 
 def test_determine_bump_type_minor_deprecation() -> None:
     """Test minor bump with deprecation fragments."""
-    fragments: dict[str, list[str]] = {
-        "removal": [],
-        "feature": [],
-        "deprecation": ["1.deprecation.md"],
-        "bugfix": [],
-        "doc": [],
-        "misc": [],
-    }
+    fragments = _empty_fragments()
+    fragments["deprecation"] = ["1.deprecation.md"]
     assert _determine_bump_type(fragments) == "minor"
 
 
 def test_determine_bump_type_minor_with_patch() -> None:
     """Test minor bump takes precedence over patch types."""
-    fragments: dict[str, list[str]] = {
-        "removal": [],
-        "feature": ["1.feature.md"],
-        "deprecation": [],
-        "bugfix": ["2.bugfix.md"],
-        "doc": ["3.doc.md"],
-        "misc": [],
-    }
+    fragments = _empty_fragments()
+    fragments["feature"] = ["1.feature.md"]
+    fragments["bugfix"] = ["2.bugfix.md"]
+    fragments["doc"] = ["3.doc.md"]
     assert _determine_bump_type(fragments) == "minor"
 
 
 def test_determine_bump_type_patch_bugfix() -> None:
     """Test patch bump with bugfix fragments."""
-    fragments: dict[str, list[str]] = {
-        "removal": [],
-        "feature": [],
-        "deprecation": [],
-        "bugfix": ["1.bugfix.md"],
-        "doc": [],
-        "misc": [],
-    }
+    fragments = _empty_fragments()
+    fragments["bugfix"] = ["1.bugfix.md"]
     assert _determine_bump_type(fragments) == "patch"
 
 
 def test_determine_bump_type_patch_doc() -> None:
     """Test patch bump with doc fragments."""
-    fragments: dict[str, list[str]] = {
-        "removal": [],
-        "feature": [],
-        "deprecation": [],
-        "bugfix": [],
-        "doc": ["1.doc.md"],
-        "misc": [],
-    }
+    fragments = _empty_fragments()
+    fragments["doc"] = ["1.doc.md"]
     assert _determine_bump_type(fragments) == "patch"
 
 
 def test_determine_bump_type_patch_misc() -> None:
     """Test patch bump with misc fragments."""
-    fragments: dict[str, list[str]] = {
-        "removal": [],
-        "feature": [],
-        "deprecation": [],
-        "bugfix": [],
-        "doc": [],
-        "misc": ["1.misc.md"],
-    }
+    fragments = _empty_fragments()
+    fragments["misc"] = ["1.misc.md"]
     assert _determine_bump_type(fragments) == "patch"
 
 
 def test_determine_bump_type_patch_mixed() -> None:
     """Test patch bump with multiple patch-level fragment types."""
-    fragments: dict[str, list[str]] = {
-        "removal": [],
-        "feature": [],
-        "deprecation": [],
-        "bugfix": ["1.bugfix.md"],
-        "doc": ["2.doc.md"],
-        "misc": ["3.misc.md"],
-    }
+    fragments = _empty_fragments()
+    fragments["bugfix"] = ["1.bugfix.md"]
+    fragments["doc"] = ["2.doc.md"]
+    fragments["misc"] = ["3.misc.md"]
     assert _determine_bump_type(fragments) == "patch"
 
 
@@ -289,6 +287,40 @@ def test_version_from_fragments_major_bump(
     )
     result = version_from_fragments(version)
     assert result.startswith("2.0.0.dev5")
+
+
+def test_version_from_fragments_major_fragment_bump(
+    changelog_dir: Path, config: _config.Configuration
+) -> None:
+    """Test version scheme with major fragments (major bump)."""
+    (changelog_dir / "1.major.md").write_text("First stable release")
+
+    version = ScmVersion(
+        tag=Version("0.5.3"),
+        distance=5,
+        node="abc123",
+        dirty=False,
+        config=config,
+    )
+    result = version_from_fragments(version)
+    assert result.startswith("1.0.0.dev5")
+
+
+def test_version_from_fragments_breaking_fragment_bump(
+    changelog_dir: Path, config: _config.Configuration
+) -> None:
+    """Test version scheme with breaking fragments (major bump)."""
+    (changelog_dir / "1.breaking.md").write_text("Breaking API change")
+
+    version = ScmVersion(
+        tag=Version("2.1.0"),
+        distance=3,
+        node="def456",
+        dirty=False,
+        config=config,
+    )
+    result = version_from_fragments(version)
+    assert result.startswith("3.0.0.dev3")
 
 
 def test_version_from_fragments_minor_bump(

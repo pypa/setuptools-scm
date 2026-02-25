@@ -2,7 +2,7 @@
 
 This version scheme analyzes changelog fragments in the changelog.d/ directory
 to determine the appropriate version bump:
-- Major bump: if 'removal' fragments are present
+- Major bump: if 'major', 'breaking', or 'removal' fragments are present
 - Minor bump: if 'feature' or 'deprecation' fragments are present
 - Patch bump: if only 'bugfix', 'doc', or 'misc' fragments are present
 
@@ -21,7 +21,7 @@ from ._standard import guess_next_dev_version, guess_next_simple_semver
 log = logging.getLogger(__name__)
 
 # Fragment types that indicate different version bumps
-MAJOR_FRAGMENT_TYPES = {"removal"}
+MAJOR_FRAGMENT_TYPES = {"major", "breaking", "removal"}
 MINOR_FRAGMENT_TYPES = {"feature", "deprecation"}
 PATCH_FRAGMENT_TYPES = {"bugfix", "doc", "misc"}
 

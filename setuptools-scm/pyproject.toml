@@ -169,6 +169,16 @@ issue_format = "[#{issue}](https://github.com/pypa/setuptools-scm/issues/{issue}
 underlines = ["", "", ""]
 
 [[tool.towncrier.type]]
+directory = "major"
+name = "Major Changes"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "breaking"
+name = "Breaking Changes"
+showcontent = true
+
+[[tool.towncrier.type]]
 directory = "removal"
 name = "Removed"
 showcontent = true
