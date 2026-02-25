@@ -10,6 +10,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 env:
   FORCE_COLOR: 1
 
@@ -19,30 +22,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: '3.11'
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b # v7.3.0
 
       - name: Get latest release tag
         id: latest-tag
         run: |
           # Get the latest git tag (griffe needs a git ref)
-          LATEST_TAG=$(git describe --tags --abbrev=0 origin/main 2>/dev/null || echo "v9.2.1")
-          echo "Latest release tag: $LATEST_TAG"
-          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          LATEST_TAG=$(git describe --tags --abbrev=0 origin/main 2>/dev/null || echo "")
+          if [ -z "$LATEST_TAG" ]; then
+            echo "No tags found on origin/main, skipping API check"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "Latest release tag: $LATEST_TAG"
+            echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Install dependencies
+        if: steps.latest-tag.outputs.skip != 'true'
         run: uv sync --all-packages --all-groups
 
       - name: Check API stability against latest release
+        if: steps.latest-tag.outputs.skip != 'true'
         run: |
           echo "Comparing current code against tag: ${{ steps.latest-tag.outputs.tag }}"
           # Use local check_api.py script which includes griffe-public-wildcard-imports extension
