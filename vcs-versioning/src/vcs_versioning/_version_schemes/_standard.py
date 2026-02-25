@@ -91,6 +91,29 @@ def release_branch_semver_version(version: ScmVersion) -> str:
     return version.format_next_version(guess_next_simple_semver, retain=SEMVER_MINOR)
 
 
+def _deprecated_simplified_semver_version(version: ScmVersion) -> str:
+    warnings.warn(
+        "Version scheme 'python-simplified-semver' has been renamed to 'semver-pep440'. "
+        "Please update your configuration. "
+        "The old name will be removed in a future version.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return simplified_semver_version(version)
+
+
+def _deprecated_release_branch_semver_version(version: ScmVersion) -> str:
+    warnings.warn(
+        "Version scheme 'release-branch-semver' has been renamed to "
+        "'semver-pep440-release-branch'. "
+        "Please update your configuration. "
+        "The old name will be removed in a future version.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return release_branch_semver_version(version)
+
+
 def release_branch_semver(version: ScmVersion) -> str:
     warnings.warn(
         "release_branch_semver is deprecated and will be removed in the future. "

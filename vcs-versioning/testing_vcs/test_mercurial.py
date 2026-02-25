@@ -42,7 +42,7 @@ archival_mapping = {
 @pytest.mark.parametrize(("expected", "data"), sorted(archival_mapping.items()))
 def test_archival_to_version(expected: str, data: dict[str, str]) -> None:
     config = Configuration(
-        version_scheme="release-branch-semver", local_scheme="node-and-date"
+        version_scheme="semver-pep440-release-branch", local_scheme="node-and-date"
     )
     version = archival_to_version(data, config=config)
     assert format_version(version) == expected
@@ -237,6 +237,6 @@ def test_latest_tag_detection(wd: WorkDir) -> None:
 @pytest.mark.usefixtures("version_1_0")
 def test_feature_branch_increments_major(wd: WorkDir) -> None:
     wd.commit_testfile()
-    assert wd.get_version(version_scheme="python-simplified-semver").startswith("1.0.1")
+    assert wd.get_version(version_scheme="semver-pep440").startswith("1.0.1")
     wd("hg branch feature/fun")
-    assert wd.get_version(version_scheme="python-simplified-semver").startswith("1.1.0")
+    assert wd.get_version(version_scheme="semver-pep440").startswith("1.1.0")

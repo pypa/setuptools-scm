@@ -61,7 +61,7 @@ def build_configuration_from_pyproject(
         ... )
         >>> config = build_configuration_from_pyproject(
         ...     pyproject_data=pyproject,
-        ...     version_scheme="release-branch-semver",  # Integrator override
+        ...     version_scheme="semver-pep440-release-branch",  # Integrator override
         ... )
 
     Args:

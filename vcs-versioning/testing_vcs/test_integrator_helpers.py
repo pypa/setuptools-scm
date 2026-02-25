@@ -208,12 +208,12 @@ local_scheme = "node-and-date"
             pyproject_data=pyproject,
             # Integrator overrides
             local_scheme="no-local-version",
-            version_scheme="release-branch-semver",
+            version_scheme="semver-pep440-release-branch",
         )
 
         # Integrator overrides win over config file
         assert config.local_scheme == "no-local-version"
-        assert config.version_scheme == "release-branch-semver"
+        assert config.version_scheme == "semver-pep440-release-branch"
 
     def test_build_configuration_with_env_overrides(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -366,13 +366,13 @@ version_scheme = "guess-next-dev"
             pyproject_data=pyproject,
             # Integrator overrides both
             local_scheme="no-local-version",
-            version_scheme="release-branch-semver",
+            version_scheme="semver-pep440-release-branch",
         )
 
         # local_scheme: env wins (dirty-tag)
         # version_scheme: integrator wins (no env override)
         assert config.local_scheme == "dirty-tag"
-        assert config.version_scheme == "release-branch-semver"
+        assert config.version_scheme == "semver-pep440-release-branch"
 
 
 class TestInternalAPIMultiTool:

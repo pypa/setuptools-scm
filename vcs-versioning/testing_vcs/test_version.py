@@ -549,6 +549,84 @@ def test_no_matching_entrypoints(config_key: str) -> None:
         format_version(version)
 
 
+@pytest.mark.parametrize(
+    ("old_name", "new_name"),
+    [
+        ("python-simplified-semver", "semver-pep440"),
+        ("release-branch-semver", "semver-pep440-release-branch"),
+    ],
+)
+def test_deprecated_scheme_names_warn(old_name: str, new_name: str) -> None:
+    with pytest.warns(
+        DeprecationWarning,
+        match=rf"'{re.escape(old_name)}' has been renamed to '{re.escape(new_name)}'",
+    ):
+        format_version(
+            meta(
+                "1.0.0",
+                distance=2,
+                branch="default",
+                config=replace(
+                    c, version_scheme=old_name, local_scheme="no-local-version"
+                ),
+            )
+        )
+
+
+@pytest.mark.parametrize(
+    ("old_name", "new_name", "tag", "branch", "expected"),
+    [
+        pytest.param(
+            "python-simplified-semver",
+            "semver-pep440",
+            "1.0.0",
+            "default",
+            "1.0.1.dev2",
+            id="simplified-default-branch",
+        ),
+        pytest.param(
+            "python-simplified-semver",
+            "semver-pep440",
+            "1.0.0",
+            "feature/fun",
+            "1.1.0.dev2",
+            id="simplified-feature-branch",
+        ),
+        pytest.param(
+            "release-branch-semver",
+            "semver-pep440-release-branch",
+            "1.0.0",
+            "master",
+            "1.1.0.dev2",
+            id="release-branch-dev",
+        ),
+        pytest.param(
+            "release-branch-semver",
+            "semver-pep440-release-branch",
+            "1.0.0",
+            "release-1.0",
+            "1.0.1.dev2",
+            id="release-branch-maintenance",
+        ),
+    ],
+)
+def test_deprecated_scheme_names_still_work(
+    old_name: str, new_name: str, tag: str, branch: str, expected: str
+) -> None:
+    base = replace(c, local_scheme="no-local-version")
+    version_old = meta(
+        tag, distance=2, branch=branch, config=replace(base, version_scheme=old_name)
+    )
+    version_new = meta(
+        tag, distance=2, branch=branch, config=replace(base, version_scheme=new_name)
+    )
+    with pytest.warns(DeprecationWarning):
+        result_old = format_version(version_old)
+    result_new = format_version(version_new)
+    assert result_old == expected
+    assert result_old == result_new
+
+
 def test_all_entrypoints_return_none() -> None:
     version = meta(
         "1.0",
