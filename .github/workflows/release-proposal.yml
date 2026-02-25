@@ -84,12 +84,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: changelog-setuptools-scm
+          path: setuptools-scm
 
       - name: Download vcs-versioning changelog
         if: needs.vcs-versioning.outputs.has_fragments == 'true'
         uses: actions/download-artifact@v4
         with:
           name: changelog-vcs-versioning
+          path: vcs-versioning
 
       - name: Configure git
         run: |
