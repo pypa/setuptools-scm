@@ -73,8 +73,10 @@ node-and-timestamp = "vcs_versioning._version_schemes:get_local_node_and_timesta
 "no-guess-dev" = "vcs_versioning._version_schemes:no_guess_dev_version"
 "only-version" = "vcs_versioning._version_schemes:only_version"
 "post-release" = "vcs_versioning._version_schemes:postrelease_version"
-"python-simplified-semver" = "vcs_versioning._version_schemes:simplified_semver_version"
-"release-branch-semver" = "vcs_versioning._version_schemes:release_branch_semver_version"
+"python-simplified-semver" = "vcs_versioning._version_schemes._standard:_deprecated_simplified_semver_version"
+"release-branch-semver" = "vcs_versioning._version_schemes._standard:_deprecated_release_branch_semver_version"
+"semver-pep440" = "vcs_versioning._version_schemes:simplified_semver_version"
+"semver-pep440-release-branch" = "vcs_versioning._version_schemes:release_branch_semver_version"
 "towncrier-fragments" = "vcs_versioning._version_schemes._towncrier:version_from_fragments"
 
 [tool.hatch.version]

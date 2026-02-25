@@ -507,14 +507,14 @@ class TestEnvReader:
         from vcs_versioning.overrides import EnvReader
 
         env = {
-            "TOOL_A_OVERRIDES": '{local_scheme = "no-local-version", version_scheme = "release-branch-semver"}'
+            "TOOL_A_OVERRIDES": '{local_scheme = "no-local-version", version_scheme = "semver-pep440-release-branch"}'
         }
         reader = EnvReader(tools_names=("TOOL_A",), env=env)
 
         result = reader.read_toml("OVERRIDES", schema=ConfigOverridesDict)
         assert result == {
             "local_scheme": "no-local-version",
-            "version_scheme": "release-branch-semver",
+            "version_scheme": "semver-pep440-release-branch",
         }
 
     def test_read_toml_full_document(self) -> None:

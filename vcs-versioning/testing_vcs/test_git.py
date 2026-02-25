@@ -426,10 +426,10 @@ def test_git_feature_branch_increments_major(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd("git tag 1.0.0")
     wd.commit_testfile()
-    assert wd.get_version(version_scheme="python-simplified-semver").startswith("1.0.1")
+    assert wd.get_version(version_scheme="semver-pep440").startswith("1.0.1")
     wd("git checkout -b feature/fun")
     wd.commit_testfile()
-    assert wd.get_version(version_scheme="python-simplified-semver").startswith("1.1.0")
+    assert wd.get_version(version_scheme="semver-pep440").startswith("1.1.0")
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/303")

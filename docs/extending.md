@@ -100,8 +100,8 @@ representing the version.
 
     - Tag `1.0.0` → version `1.0.0.postN` (where N is the distance)
 
-`python-simplified-semver`
-:   Basic semantic versioning.
+`semver-pep440`
+:   Basic semantic versioning with PEP 440-compliant version numbers.
 
     Guesses the upcoming release by incrementing the minor segment
     and setting the micro segment to zero if the current branch contains the string `feature`,
@@ -109,13 +109,16 @@ representing the version.
 
     This scheme is not compatible with pre-releases.
 
+    !!! note "Renamed in setuptools-scm 10"
+        Previously called `python-simplified-semver`. The old name still works but is deprecated.
+
     **Examples:**
 
     - Tag `1.0.0` on non-feature branch → version `1.0.1.devN`
     - Tag `1.0.0` on feature branch → version `1.1.0.devN`
 
-`release-branch-semver`
-:   Semantic versioning for projects with release branches.
+`semver-pep440-release-branch`
+:   Semantic versioning with PEP 440-compliant version numbers for projects with release branches.
     The same as `guess-next-dev` (incrementing the pre-release or micro segment)
     however when on a release branch: a branch whose name (ignoring namespace) parses as a version
     that matches the most recent tag up to the minor segment. Otherwise if on a
@@ -123,6 +126,9 @@ representing the version.
     zero, then appends `.devN`
 
     Namespaces are unix pathname separated parts of a branch/tag name.
+
+    !!! note "Renamed in setuptools-scm 10"
+        Previously called `release-branch-semver`. The old name still works but is deprecated.
 
     **Examples:**
 

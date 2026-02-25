@@ -357,7 +357,7 @@ reader = EnvReader(
 
 # Read config overrides
 overrides = reader.read_toml("OVERRIDES", schema=ConfigOverridesDict)
-# Example: {'local_scheme': 'no-local-version', 'version_scheme': 'release-branch-semver'}
+# Example: {'local_scheme': 'no-local-version', 'version_scheme': 'semver-pep440-release-branch'}
 ```
 
 #### Pattern: Reusing Reader for Multiple Reads
@@ -845,7 +845,7 @@ config = build_configuration_from_pyproject(
     pyproject_data=pyproject,
     dist_name="my-package",  # Optional: override project.name
     # Integrator overrides (middle priority):
-    version_scheme="release-branch-semver",
+    version_scheme="semver-pep440-release-branch",
     local_scheme="no-local-version",
 )
 ```
