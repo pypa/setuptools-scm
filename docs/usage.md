@@ -15,7 +15,7 @@ For basic usage without custom configuration, use the `simple` extra:
 
 ```toml title="pyproject.toml"
 [build-system]
-requires = ["setuptools>=80", "setuptools-scm[simple]>=8"]
+requires = ["setuptools>=80", "setuptools-scm[simple]>=9.2"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -25,7 +25,7 @@ dynamic = ["version"]
 # No [tool.setuptools_scm] section needed for basic usage!
 ```
 
-This streamlined approach automatically enables version inference when:
+This streamlined approach automatically enables version inference when **both** conditions are met:
 
 - `setuptools-scm[simple]` is listed in `build-system.requires`
 - `version` is included in `project.dynamic`
@@ -72,16 +72,18 @@ must ensure build requirements are installed.
 Alternatively, enable `setuptools-scm` via the `use_scm_version` keyword in `setup.py`.
 This also counts as an explicit opt-in and does not require a tool section.
 
-!!! note "Legacy simplified activation"
+!!! note "Legacy simplified activation (removed)"
 
-    Previous versions had a "simplified" activation where listing `setuptools_scm`
-    in `build-system.requires` together with `project.dynamic = ["version"]` would
-    auto-enable version inference. This behavior was removed due to regressions and
-    ambiguous activation.
+    Previous versions (before 9.2.0) had a "simplified" activation where listing
+    plain `setuptools-scm` in `build-system.requires` together with
+    `project.dynamic = ["version"]` would auto-enable version inference.
+    This was removed because it caused ambiguous activation — projects using
+    setuptools-scm only for its file finder would unexpectedly trigger
+    version inference.
 
-    The new simplified activation using the `[simple]` extra provides the same
-    convenience but with explicit opt-in, making it clear when version inference
-    should be enabled.
+    The `[simple]` extra replaces this with explicit opt-in. If you previously
+    relied on the old behavior, either add the `[simple]` extra or add an
+    explicit `[tool.setuptools_scm]` section.
 
 ### Version files
 
