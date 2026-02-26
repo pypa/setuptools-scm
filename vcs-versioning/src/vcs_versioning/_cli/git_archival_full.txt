@@ -1,0 +1,7 @@
+# WARNING: Including ref-names can make archive checksums unstable
+# after commits are added post-release. Use only if describe-name is insufficient.
+node: $Format:%H$
+node-date: $Format:%cI$
+describe-name: $Format:%(describe:tags=true,match=*[0-9]*)$
+ref-names: $Format:%D$
+

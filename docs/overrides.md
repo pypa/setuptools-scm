@@ -1,26 +1,58 @@
 # Overrides
 
-## pretend versions
+!!! info "For Integrators"
 
-setuptools-scm provides a mechanism to override the version number at build time.
+    If you're building a tool that integrates vcs-versioning (like hatch-vcs), see the [Integrator Guide](integrators.md) for using the overrides API with custom prefixes and the `GlobalOverrides` context manager.
 
-The environment variable `SETUPTOOLS_SCM_PRETEND_VERSION` is used
+## About Overrides
+
+Environment variables provide runtime configuration overrides, primarily useful in CI/CD
+environments where you need different behavior without modifying `pyproject.toml` or code.
+
+All environment variables support both `SETUPTOOLS_SCM_*` and `VCS_VERSIONING_*` prefixes. The `VCS_VERSIONING_*` prefix serves as a universal fallback that works across all tools using vcs-versioning.
+
+## Version Detection Overrides
+
+### Pretend Versions
+
+Override the version number at build time.
+
+**setuptools-scm usage:**
+
+The environment variable `SETUPTOOLS_SCM_PRETEND_VERSION` (or `VCS_VERSIONING_PRETEND_VERSION`) is used
 as the override source for the version number unparsed string.
 
-To be specific about the package this applies for, one can use `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DIST_NAME}`
-where the dist name normalization follows adapted PEP 503 semantics.
+!!! warning ""
 
-## pretend metadata
+    it is strongly recommended to use distribution-specific pretend versions
+    (see below).
 
-setuptools-scm provides a mechanism to override individual version metadata fields at build time.
+`SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${DIST_NAME}` or `VCS_VERSIONING_PRETEND_VERSION_FOR_${DIST_NAME}`
+:   Used as the primary source for the version number,
+    in which case it will be an unparsed string.
+    Specifying distribution-specific pretend versions will
+    avoid possible collisions with third party distributions
+    also using vcs-versioning.
 
-The environment variable `SETUPTOOLS_SCM_PRETEND_METADATA` accepts a TOML inline table
-with field overrides for the ScmVersion object.
+    The dist name normalization follows adapted PEP 503 semantics, with one or
+    more of ".-\_" being replaced by a single "\_", and the name being upper-cased.
 
-To be specific about the package this applies for, one can use `SETUPTOOLS_SCM_PRETEND_METADATA_FOR_${DIST_NAME}`
-where the dist name normalization follows adapted PEP 503 semantics.
+    This will take precedence over the generic ``SETUPTOOLS_SCM_PRETEND_VERSION`` or ``VCS_VERSIONING_PRETEND_VERSION``.
 
-### Supported fields
+### Pretend Metadata
+
+Override individual version metadata fields at build time.
+
+**setuptools-scm usage:**
+
+`SETUPTOOLS_SCM_PRETEND_METADATA`
+:   Accepts a TOML inline table with field overrides for the ScmVersion object.
+
+`SETUPTOOLS_SCM_PRETEND_METADATA_FOR_${DIST_NAME}`
+:   Same as above but specific to a package (recommended over the generic version).
+    The dist name normalization follows adapted PEP 503 semantics.
+
+#### Supported fields
 
 The following ScmVersion fields can be overridden:
 
@@ -33,7 +65,7 @@ The following ScmVersion fields can be overridden:
 - `preformatted` (bool): Whether the version string is preformatted
 - `tag`: The version tag (can be string or version object)
 
-### Examples
+#### Examples
 
 Override commit hash and distance:
 ```bash
@@ -59,7 +91,7 @@ export SETUPTOOLS_SCM_PRETEND_METADATA_FOR_MY_PACKAGE='{node="g1234567", distanc
 
     This ensures consistency with setuptools-scm's automatic node ID formatting.
 
-### Use case: CI/CD environments
+#### Use case: CI/CD environments
 
 This is particularly useful for solving issues where version file templates need access to
 commit metadata that may not be available in certain build environments:
@@ -80,14 +112,65 @@ export SETUPTOOLS_SCM_PRETEND_VERSION="1.2.3.dev4+g1337beef"
 export SETUPTOOLS_SCM_PRETEND_METADATA='{node="g1337beef", distance=4}'
 ```
 
-## config overrides
+### Debug Logging
 
-setuptools-scm parses the environment variable `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}`
-as a TOML inline map to override the configuration data from `pyproject.toml`.
+Enable debug output from vcs-versioning.
 
-## subprocess timeouts
+**setuptools-scm usage:**
 
-The environment variable `SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT` allows to override the subprocess timeout.
-The default is 40 seconds and should work for most needs. However, users with Git LFS + Windows reported
-situations where this was not enough.
+`SETUPTOOLS_SCM_DEBUG` or `VCS_VERSIONING_DEBUG`
+:   Enable debug logging for version detection and processing.
+    Can be set to:
+    - `1` or any non-empty value to enable DEBUG level logging
+    - A level name: `DEBUG`, `INFO`, `WARNING`, `ERROR`, or `CRITICAL` (case-insensitive)
+    - A specific log level integer: `10` (DEBUG), `20` (INFO), `30` (WARNING), etc.
+    - `0` to disable debug logging
+
+### Reproducible Builds
+
+Control timestamps for reproducible builds (from [reproducible-builds.org](https://reproducible-builds.org/docs/source-date-epoch/)).
+
+`SOURCE_DATE_EPOCH`
+:   Used as the timestamp from which the ``node-and-date`` and ``node-and-timestamp``
+    local parts are derived, otherwise the current time is used.
+    This is a standard environment variable supported by many build tools.
+
+## setuptools-scm Overrides
+
+### Configuration Overrides
+
+`SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}`
+:   A TOML inline table to override configuration from `pyproject.toml`.
+    This allows overriding any configuration option at build time, which is particularly useful
+    in CI/CD environments where you might want different behavior without modifying `pyproject.toml`.
+
+    **Example:**
+    ```bash
+    # Override local_scheme for CI builds
+    export SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE='{"local_scheme": "no-local-version"}'
+    ```
+
+### SCM Root Discovery
+
+`SETUPTOOLS_SCM_IGNORE_VCS_ROOTS`
+:   A ``os.pathsep`` separated list of directory names to ignore for root finding.
+
+### Mercurial Command
+
+`SETUPTOOLS_SCM_HG_COMMAND`
+:   Command used for running Mercurial (defaults to ``hg``).
+    For example, set this to ``chg`` to reduce start-up overhead of Mercurial.
+
+### Subprocess Timeouts
+
+`SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT`
+:   Override the subprocess timeout (default: 40 seconds).
+    The default should work for most needs. However, users with git lfs + windows reported
+    situations where this was not enough.
+
+    **Example:**
+    ```bash
+    # Increase timeout to 120 seconds
+    export SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT=120
+    ```
 

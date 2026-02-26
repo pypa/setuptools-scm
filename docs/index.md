@@ -2,7 +2,7 @@
 
 `setuptools-scm` extracts Python package versions from `git` or `hg` metadata
 instead of declaring them as the version argument
-or in a Source Code Management (SCM) managed file.
+or in a file managed by a source code management (SCM) system.
 
 Additionally `setuptools-scm` provides `setuptools` with a list of
 files that are managed by the SCM
@@ -21,6 +21,26 @@ or [configuring Git archive][git-archive-docs].
     See the [File Finder Documentation](usage.md#file-finders-hook-makes-most-of-manifestin-unnecessary) for details.
 
 [git-archive-docs]: usage.md#builtin-mechanisms-for-obtaining-version-numbers
+
+## Architecture
+
+`setuptools-scm` is built on top of [`vcs-versioning`](https://pypi.org/project/vcs-versioning/),
+a standalone library that provides the core VCS version extraction and formatting functionality.
+
+**vcs-versioning** (core library):
+:   Handles version extraction from Git and Mercurial repositories, version scheme logic,
+    tag parsing, and version formatting. These are universal concepts that work across
+    different build systems and integrations.
+
+**setuptools-scm** (integration layer):
+:   Provides setuptools-specific features like build-time integration, automatic file
+    finder registration, and version file generation during package builds.
+
+!!! info "Understanding the documentation"
+
+    Most configuration options documented here are **core vcs-versioning features** that
+    work universally. Features specific to setuptools-scm integration (like automatic
+    file finders or version file writing) are clearly marked throughout the documentation.
 
 ## Basic usage
 

@@ -68,4 +68,4 @@ setup(use_scm_version={'local_scheme': clean_scheme})
 
 ## alternative version classes
 
-::: setuptools_scm.NonNormalizedVersion
+::: vcs_versioning.NonNormalizedVersion

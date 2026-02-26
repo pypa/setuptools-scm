@@ -8,12 +8,14 @@ nav:
   - integrations.md
   - extending.md
   - overrides.md
+  - integrators.md
   - changelog.md
 theme:
   name: material
 
 watch:
-- src/setuptools_scm
+- setuptools-scm/src/setuptools_scm
+- vcs-versioning/src/vcs_versioning
 - docs
 markdown_extensions:
   - def_list
@@ -30,10 +32,13 @@ plugins:
     default_handler: python
     handlers:
       python:
-        paths: [ src ]
-
+        paths: [ setuptools-scm/src, vcs-versioning/src ]
+        inventories:
+          - https://docs.python.org/3/objects.inv
         options:
           separate_signature: true
           show_signature_annotations: true
           allow_inspection: true
           show_root_heading: true
+          extensions:
+            - griffe_public_wildcard_imports

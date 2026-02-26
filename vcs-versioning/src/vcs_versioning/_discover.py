@@ -1,0 +1,68 @@
+from __future__ import annotations
+
+import logging
+import os
+from collections.abc import Iterable, Iterator
+from importlib.metadata import EntryPoint
+from pathlib import Path
+
+from . import _entrypoints
+from . import _types as _t
+from ._config import Configuration
+
+log = logging.getLogger(__name__)
+
+
+def walk_potential_roots(root: _t.PathT, search_parents: bool = True) -> Iterator[Path]:
+    """
+    Iterate though a path and each of its parents.
+    :param root: File path.
+    :param search_parents: If ``False`` the parents are not considered.
+    """
+    root = Path(root)
+    yield root
+    if search_parents:
+        yield from root.parents
+
+
+def match_entrypoint(root: _t.PathT, name: str) -> bool:
+    """
+    Consider a ``root`` as entry-point.
+    :param root: File path.
+    :param name: Subdirectory name.
+    :return: ``True`` if a subdirectory ``name`` exits in ``root``.
+    """
+
+    if os.path.exists(os.path.join(root, name)):
+        if not os.path.isabs(name):
+            return True
+        log.debug("ignoring bad ep %s", name)
+
+    return False
+
+
+# blocked entrypints from legacy plugins
+_BLOCKED_EP_TARGETS = {"setuptools_scm_git_archive:parse"}
+
+
+def iter_matching_entrypoints(
+    root: _t.PathT, entrypoint: str, config: Configuration
+) -> Iterable[EntryPoint]:
+    """
+    Consider different entry-points in ``root`` and optionally its parents.
+    :param root: File path.
+    :param entrypoint: Entry-point to consider.
+    :param config: Configuration,
+        read ``search_parent_directories``, write found parent to ``parent``.
+    """
+
+    log.debug("looking for ep %s in %s", entrypoint, root)
+
+    for wd in walk_potential_roots(root, config.search_parent_directories):
+        for ep in _entrypoints.entry_points(group=entrypoint):
+            if ep.value in _BLOCKED_EP_TARGETS:
+                continue
+            if match_entrypoint(wd, ep.name):
+                log.debug("found ep %s in %s", ep, wd)
+                config.parent = wd
+                yield ep

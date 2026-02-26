@@ -1,0 +1,148 @@
+name: Create Release Tags
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  create-tags:
+    # Only run if PR was merged and has release labels
+    if: |
+      github.event.pull_request.merged == true &&
+      (contains(github.event.pull_request.labels.*.name, 'release:setuptools-scm') ||
+       contains(github.event.pull_request.labels.*.name, 'release:vcs-versioning'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create tags and releases
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const prTitle = pr.title;
+            const mergeCommitSha = pr.merge_commit_sha;
+            const labels = pr.labels.map(l => l.name);
+
+            console.log(`Processing PR #${pr.number}: ${prTitle}`);
+            console.log(`Merge commit: ${mergeCommitSha}`);
+            console.log(`Labels: ${labels.join(', ')}`);
+
+            const tagsCreated = [];
+
+            // Helper to extract version from PR title
+            function extractVersion(title, packageName) {
+              const regex = new RegExp(`${packageName} v(\\d+\\.\\d+\\.\\d+)`);
+              const match = title.match(regex);
+              return match ? match[1] : null;
+            }
+
+            // Helper to extract changelog section for a version
+            async function extractChangelog(packageDir, version) {
+              try {
+                const { data: file } = await github.rest.repos.getContent({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  path: `${packageDir}/CHANGELOG.md`,
+                  ref: mergeCommitSha
+                });
+
+                const content = Buffer.from(file.content, 'base64').toString('utf-8');
+                const lines = content.split('\n');
+
+                let inSection = false;
+                let changelog = [];
+
+                for (const line of lines) {
+                  if (line.startsWith(`## ${version}`)) {
+                    inSection = true;
+                    continue; // Skip the header line
+                  }
+                  if (inSection && line.match(/^## \d/)) {
+                    break; // Next version section
+                  }
+                  if (inSection) {
+                    changelog.push(line);
+                  }
+                }
+
+                // Trim leading/trailing empty lines
+                while (changelog.length > 0 && changelog[0].trim() === '') {
+                  changelog.shift();
+                }
+                while (changelog.length > 0 && changelog[changelog.length - 1].trim() === '') {
+                  changelog.pop();
+                }
+
+                return changelog.join('\n');
+              } catch (error) {
+                console.log(`Could not extract changelog: ${error.message}`);
+                return `Release ${version}`;
+              }
+            }
+
+            // Helper to create tag and release via a single API call.
+            // createRelease with target_commitish automatically creates a
+            // lightweight tag if it doesn't already exist, avoiding the
+            // dangling tag object problem from separate createTag+createRef calls.
+            async function createTagAndRelease(packageName, packageDir, tagPrefix) {
+              const version = extractVersion(prTitle, packageName);
+              if (!version) {
+                throw new Error(`Failed to extract ${packageName} version from PR title: ${prTitle}`);
+              }
+
+              const tagName = `${tagPrefix}-v${version}`;
+              const changelog = await extractChangelog(packageDir, version);
+
+              console.log(`Creating release ${tagName} at ${mergeCommitSha}`);
+
+              const { data: release } = await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: tagName,
+                target_commitish: mergeCommitSha,
+                name: `${packageName} v${version}`,
+                body: changelog,
+                draft: false,
+                prerelease: false,
+                make_latest: 'legacy'
+              });
+
+              console.log(`Release created: ${release.html_url}`);
+              tagsCreated.push(tagName);
+              return { tagName, version };
+            }
+
+            // Process setuptools-scm
+            if (labels.includes('release:setuptools-scm')) {
+              console.log('\n--- Processing setuptools-scm ---');
+              await createTagAndRelease('setuptools-scm', 'setuptools-scm', 'setuptools-scm');
+            }
+
+            // Process vcs-versioning
+            if (labels.includes('release:vcs-versioning')) {
+              console.log('\n--- Processing vcs-versioning ---');
+              await createTagAndRelease('vcs-versioning', 'vcs-versioning', 'vcs-versioning');
+            }
+
+            // Dispatch python-tests.yml for each tag to trigger PyPI upload.
+            // Tags created by GITHUB_TOKEN don't trigger push-based workflows,
+            // but workflow_dispatch events dispatched by GITHUB_TOKEN DO.
+            for (const tagName of tagsCreated) {
+              console.log(`Dispatching python-tests.yml for ${tagName}`);
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'python-tests.yml',
+                ref: tagName
+              });
+            }
+
+            const summary = `## Tags Created\n\n${tagsCreated.map(t => `- \`${t}\``).join('\n')}\n\nPyPI upload dispatched via workflow_dispatch for each tag.`;
+            await core.summary.addRaw(summary).write();
+
+            console.log(`\nDone! Created tags: ${tagsCreated.join(', ')}`);
