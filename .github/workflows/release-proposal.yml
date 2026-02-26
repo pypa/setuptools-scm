@@ -109,7 +109,7 @@ jobs:
           SCM_VERSION: ${{ needs.setuptools-scm.outputs.version }}
           VCS_FRAGMENTS: ${{ needs.vcs-versioning.outputs.has_fragments }}
           VCS_VERSION: ${{ needs.vcs-versioning.outputs.version }}
-          BRANCH: ${{ github.ref_name }}
+          SOURCE_BRANCH: ${{ github.ref_name }}
         run: |
           RELEASES=""
           LABELS=""
@@ -132,7 +132,7 @@ jobs:
 
           echo "releases=$RELEASES" >> "$GITHUB_OUTPUT"
           echo "labels=$LABELS" >> "$GITHUB_OUTPUT"
-          echo "release_branch=release/${BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "release_branch=release/${SOURCE_BRANCH}" >> "$GITHUB_OUTPUT"
 
       - name: Create release branch and push
         run: |
@@ -147,13 +147,14 @@ jobs:
           RELEASE_BRANCH: ${{ steps.meta.outputs.release_branch }}
           RELEASES: ${{ steps.meta.outputs.releases }}
           LABELS: ${{ steps.meta.outputs.labels }}
-          BRANCH: ${{ github.ref_name }}
+          SOURCE_BRANCH: ${{ github.ref_name }}
         with:
           script: |
-            const branch = process.env.BRANCH;
+            const baseBranch = 'main';
             const releaseBranch = process.env.RELEASE_BRANCH;
             const releases = process.env.RELEASES;
             const labels = process.env.LABELS.split(',').filter(l => l);
+            const sourceBranch = process.env.SOURCE_BRANCH;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
@@ -164,7 +165,7 @@ jobs:
               'This PR prepares the following releases:',
               releases,
               '',
-              `**Source branch:** ${branch}`,
+              `**Source branch:** ${sourceBranch}`,
               '',
               '### Changes',
               '- Updated CHANGELOG.md with towncrier fragments',
@@ -175,12 +176,13 @@ jobs:
               '- [ ] Version numbers are correct',
               '- [ ] All tests pass',
               '',
-              '**Merging this PR will automatically create tags and trigger PyPI uploads.**'
+              '**Merging this PR will automatically create tags and trigger PyPI uploads.**',
+              '**After release, main will be synced back to develop.**'
             ].join('\n');
 
             // Check for existing release PR
             const { data: pulls } = await github.rest.pulls.list({
-              owner, repo, state: 'open', base: branch,
+              owner, repo, state: 'open', base: baseBranch,
               head: `${owner}:${releaseBranch}`
             });
 
@@ -189,7 +191,7 @@ jobs:
               console.log(`Updating existing PR #${prNumber}`);
               await github.rest.pulls.update({
                 owner, repo, pull_number: prNumber,
-                title: prTitle, body: prBody, base: branch
+                title: prTitle, body: prBody, base: baseBranch
               });
               if (labels.length > 0) {
                 await github.rest.issues.addLabels({
@@ -197,10 +199,10 @@ jobs:
                 });
               }
             } else {
-              console.log(`Creating new PR targeting ${branch}`);
+              console.log(`Creating new PR targeting ${baseBranch}`);
               const { data: pr } = await github.rest.pulls.create({
                 owner, repo, title: prTitle, body: prBody,
-                head: releaseBranch, base: branch
+                head: releaseBranch, base: baseBranch
               });
               console.log(`Created PR #${pr.number}`);
               if (labels.length > 0) {
