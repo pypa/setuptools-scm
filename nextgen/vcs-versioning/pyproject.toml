@@ -25,6 +25,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 dynamic = [
   "version",
@@ -49,7 +50,7 @@ cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=vcs_ve
 no-cov = "cov --no-cov {args}"
 
 [[tool.hatch.envs.test.matrix]]
-python = [ "38", "39", "310", "311", "312", "313" ]
+python = [ "38", "39", "310", "311", "312", "313", "314" ]
 
 [tool.coverage.run]
 branch = true

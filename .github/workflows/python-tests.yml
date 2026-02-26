@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: [ '3.8', '3.9', '3.10', '3.11', '3.12', '3.13', 'pypy-3.10' ]
+        python_version: [ '3.8', '3.9', '3.10', '3.11', '3.12', '3.13', '3.14', 'pypy-3.10' ]
         os: [windows-latest, ubuntu-latest] #, macos-latest]
         include:
         - os: windows-latest
