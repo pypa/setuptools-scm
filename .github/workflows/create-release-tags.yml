@@ -5,7 +5,6 @@ on:
     types: [closed]
     branches:
       - main
-      - develop
 
 permissions:
   contents: write
@@ -86,7 +85,10 @@ jobs:
               }
             }
 
-            // Helper to create tag and release
+            // Helper to create tag and release via a single API call.
+            // createRelease with target_commitish automatically creates a
+            // lightweight tag if it doesn't already exist, avoiding the
+            // dangling tag object problem from separate createTag+createRef calls.
             async function createTagAndRelease(packageName, packageDir, tagPrefix) {
               const version = extractVersion(prTitle, packageName);
               if (!version) {
@@ -94,49 +96,24 @@ jobs:
               }
 
               const tagName = `${tagPrefix}-v${version}`;
-              console.log(`Creating tag: ${tagName} at ${mergeCommitSha}`);
-
-              // Create annotated tag via API
-              const { data: tagObject } = await github.rest.git.createTag({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag: tagName,
-                message: `Release ${packageName} v${version}`,
-                object: mergeCommitSha,
-                type: 'commit',
-                tagger: {
-                  name: 'github-actions[bot]',
-                  email: 'github-actions[bot]@users.noreply.github.com',
-                  date: new Date().toISOString()
-                }
-              });
-
-              // Create ref for the tag
-              await github.rest.git.createRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: `refs/tags/${tagName}`,
-                sha: tagObject.sha
-              });
-
-              console.log(`Tag ${tagName} created`);
-              tagsCreated.push(tagName);
-
-              // Extract changelog
               const changelog = await extractChangelog(packageDir, version);
 
-              // Create GitHub release
+              console.log(`Creating release ${tagName} at ${mergeCommitSha}`);
+
               const { data: release } = await github.rest.repos.createRelease({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 tag_name: tagName,
+                target_commitish: mergeCommitSha,
                 name: `${packageName} v${version}`,
                 body: changelog,
                 draft: false,
-                prerelease: false
+                prerelease: false,
+                make_latest: 'legacy'
               });
 
               console.log(`Release created: ${release.html_url}`);
+              tagsCreated.push(tagName);
               return { tagName, version };
             }
 
