@@ -2,6 +2,40 @@
 
 <!-- towncrier release notes start -->
 
+## 10.0.0 (2026-02-26)
+
+### Removed
+
+- Drop Python 3.8 and 3.9 support. Minimum Python version is now 3.10. ([#1228](https://github.com/pypa/setuptools-scm/issues/1228))
+
+
+### Added
+
+- setuptools-scm now depends on vcs-versioning for core version inference logic. This enables other build backends to use the same version inference without setuptools dependency. ([#1228](https://github.com/pypa/setuptools-scm/issues/1228))
+- Version files (``write_to`` and ``version_file``) are now written to the build directory
+  during ``build_py`` instead of the source tree during version inference.
+  This enables installing packages from read-only source directories (e.g., Bazel builds).
+
+  Path transformation is automatically applied for ``src/`` layouts - a configured path like
+  ``src/mypackage/_version.py`` is correctly written to ``mypackage/_version.py`` in the
+  build directory based on the ``package_dir`` configuration.
+
+  To restore the old behavior of writing version files at inference time (useful for
+  development workflows), set the environment variable ``SETUPTOOLS_SCM_WRITE_TO_SOURCE=1``. ([#1252](https://github.com/pypa/setuptools-scm/issues/1252))
+
+
+### Fixed
+
+- Fix issue #1231: Don't warn about tool.setuptools.dynamic.version conflict when only using file finder without version inference. ([#1231](https://github.com/pypa/setuptools-scm/issues/1231))
+
+
+### Miscellaneous
+
+- Refactored should_infer from method to standalone function for better code organization. ([#1228](https://github.com/pypa/setuptools-scm/issues/1228))
+- Updated mypy version template test to use uvx, ensuring generated version files remain compatible with Python 3.8+ consumers. ([#1228](https://github.com/pypa/setuptools-scm/issues/1228))
+- Refactored TestBuildPackageWithExtra into parametrized function with custom INI-based decorator for cleaner test data specification. ([#1228](https://github.com/pypa/setuptools-scm/issues/1228))
+- Internal refactoring: modernized type annotations, improved CLI type safety, and enhanced release automation infrastructure. ([#1228](https://github.com/pypa/setuptools-scm/issues/1228))
+
 ## v9.2.2
 
 ### Fixed
