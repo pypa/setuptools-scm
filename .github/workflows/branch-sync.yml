@@ -9,7 +9,6 @@ on:
   workflow_run:
     workflows: ["python tests+artifacts+release"]
     types: [completed]
-    branches: [main, develop]
 
 permissions:
   contents: write
@@ -18,9 +17,10 @@ permissions:
 jobs:
   # Verify all releases completed and sync branches
   sync-after-release:
-    # Only run if the triggering workflow succeeded and was triggered by a tag push
+    # Only run for tag-dispatched release runs (not PR or push runs)
     if: |
       github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'workflow_dispatch' &&
       (startsWith(github.event.workflow_run.head_branch, 'setuptools-scm-v') ||
        startsWith(github.event.workflow_run.head_branch, 'vcs-versioning-v'))
     runs-on: ubuntu-latest
@@ -243,6 +243,7 @@ jobs:
   sync-main-to-develop:
     if: |
       github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'workflow_dispatch' &&
       (startsWith(github.event.workflow_run.head_branch, 'setuptools-scm-v') ||
        startsWith(github.event.workflow_run.head_branch, 'vcs-versioning-v'))
     runs-on: ubuntu-latest

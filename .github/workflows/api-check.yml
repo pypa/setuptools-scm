@@ -37,8 +37,8 @@ jobs:
       - name: Get latest release tag
         id: latest-tag
         run: |
-          # Get the latest git tag (griffe needs a git ref)
-          LATEST_TAG=$(git describe --tags --abbrev=0 origin/main 2>/dev/null || echo "")
+          # Get the latest setuptools-scm tag (griffe needs a git ref)
+          LATEST_TAG=$(git describe --tags --abbrev=0 --match 'setuptools-scm-v*' origin/main 2>/dev/null || echo "")
           if [ -z "$LATEST_TAG" ]; then
             echo "No tags found on origin/main, skipping API check"
             echo "skip=true" >> $GITHUB_OUTPUT
