@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 0.1.1 (2026-02-26)
+
+### Miscellaneous
+
+- Simplify release tag creation to use a single ``createRelease`` API call instead of separate ``createTag``/``createRef``/``createRelease`` calls, avoiding dangling tag objects on partial failures. ([#release-pipeline](https://github.com/pypa/setuptools-scm/issues/release-pipeline))
+
 ## 1.0.0 (2026-02-26)
 
 ### Major Changes
