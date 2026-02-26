@@ -14,13 +14,11 @@ license = "MIT"
 authors = [
   { name = "Ronny Pfannschmidt", email = "opensource@ronnypfannschmidt.de" },
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
   "Development Status :: 1 - Planning",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -50,7 +48,7 @@ cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=vcs_ve
 no-cov = "cov --no-cov {args}"
 
 [[tool.hatch.envs.test.matrix]]
-python = [ "38", "39", "310", "311", "312", "313", "314" ]
+python = [ "310", "311", "312", "313", "314" ]
 
 [tool.coverage.run]
 branch = true

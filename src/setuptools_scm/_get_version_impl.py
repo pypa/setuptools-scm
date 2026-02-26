@@ -6,9 +6,9 @@ import re
 import warnings
 
 from pathlib import Path
+from re import Pattern
 from typing import Any
 from typing import NoReturn
-from typing import Pattern
 
 from . import _config
 from . import _entrypoints

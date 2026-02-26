@@ -241,7 +241,7 @@ def test_dump_version_mypy(tmp_path: Path) -> None:
         pytest.skip("mypy not found")
     dump_a_version(tmp_path)
     subprocess.run(
-        [mypy, "--python-version=3.8", "--strict", "VERSION.py"],
+        [mypy, "--python-version=3.10", "--strict", "VERSION.py"],
         cwd=tmp_path,
         check=True,
     )

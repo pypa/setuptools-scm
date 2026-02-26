@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Union
 
 from setuptools import Distribution
 
@@ -59,11 +58,11 @@ class VersionInferenceNoOp:
         """Apply no-op to the distribution."""
 
 
-VersionInferenceResult = Union[
-    VersionInferenceConfig,  # Proceed with inference
-    VersionInferenceWarning,  # Show warning
-    VersionInferenceNoOp,  # Don't infer (silent)
-]
+VersionInferenceResult = (
+    VersionInferenceConfig  # Proceed with inference
+    | VersionInferenceWarning  # Show warning
+    | VersionInferenceNoOp  # Don't infer (silent)
+)
 
 
 def infer_version_string(

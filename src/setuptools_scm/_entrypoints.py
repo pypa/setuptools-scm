@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import sys
-
+from collections.abc import Callable
+from collections.abc import Iterator
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Callable
-from typing import Iterator
 from typing import cast
 
 from . import _log
@@ -25,24 +23,10 @@ from importlib import metadata as im
 log = _log.log.getChild("entrypoints")
 
 
-if sys.version_info[:2] < (3, 10):
-
-    def entry_points(*, group: str, name: str | None = None) -> list[im.EntryPoint]:
-        # Python 3.9: entry_points() returns dict, need to handle filtering manually
-
-        eps = im.entry_points()  # Returns dict
-
-        group_eps = eps.get(group, [])
-        if name is not None:
-            return [ep for ep in group_eps if ep.name == name]
-        return group_eps
-else:
-
-    def entry_points(*, group: str, name: str | None = None) -> im.EntryPoints:
-        kw = {"group": group}
-        if name is not None:
-            kw["name"] = name
-        return im.entry_points(**kw)
+def entry_points(*, group: str, name: str | None = None) -> im.EntryPoints:
+    if name is not None:
+        return im.entry_points(group=group, name=name)
+    return im.entry_points(group=group)
 
 
 def version_from_entrypoint(

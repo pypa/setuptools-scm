@@ -5,10 +5,10 @@ import os
 import shutil
 import sys
 
+from collections.abc import Iterator
 from pathlib import Path
 from types import TracebackType
 from typing import Any
-from typing import Iterator
 
 import pytest
 

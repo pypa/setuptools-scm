@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import warnings
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
 
 from .. import _log
 from .. import _types as _t

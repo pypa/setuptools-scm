@@ -7,13 +7,13 @@ import subprocess
 import sys
 import textwrap
 
+from collections.abc import Generator
 from datetime import date
 from datetime import datetime
 from datetime import timezone
 from os.path import join as opj
 from pathlib import Path
 from textwrap import dedent
-from typing import Generator
 from unittest.mock import Mock
 from unittest.mock import patch
 

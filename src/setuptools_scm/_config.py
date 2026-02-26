@@ -8,9 +8,9 @@ import re
 import warnings
 
 from pathlib import Path
+from re import Pattern
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Pattern
 from typing import Protocol
 
 if TYPE_CHECKING:

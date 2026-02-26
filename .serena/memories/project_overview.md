@@ -5,7 +5,7 @@ Purpose
 - Provide setuptools integrations (dynamic version, file finders) and fallbacks for archival/PKG-INFO.
 
 Tech Stack
-- Language: Python (3.8–3.14)
+- Language: Python (3.10–3.14)
 - Packaging/build: setuptools (>=61), packaging; console scripts via entry points
 - Tooling: uv (dependency and run), pytest, mypy (strict), ruff (lint, isort), mkdocs (docs), tox (optional/matrix), wheel/build
 

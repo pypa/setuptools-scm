@@ -8,6 +8,8 @@ import shlex
 import sys
 import warnings
 
+from collections.abc import Callable
+from collections.abc import Sequence
 from datetime import date
 from datetime import datetime
 from datetime import timezone
@@ -15,8 +17,6 @@ from enum import Enum
 from os.path import samefile
 from pathlib import Path
 from typing import TYPE_CHECKING
-from typing import Callable
-from typing import Sequence
 
 from . import Configuration
 from . import _types as _t

@@ -6,27 +6,21 @@ import os
 import re
 import warnings
 
+from collections.abc import Callable
 from datetime import date
 from datetime import datetime
 from datetime import timezone
+from re import Match
 from typing import TYPE_CHECKING
 from typing import Any
-from typing import Callable
-from typing import Match
 
 from . import _entrypoints
 from . import _modify_version
 from ._node_utils import _format_node_for_output
 
 if TYPE_CHECKING:
-    import sys
-
-    if sys.version_info >= (3, 10):
-        from typing import Concatenate
-        from typing import ParamSpec
-    else:
-        from typing_extensions import Concatenate
-        from typing_extensions import ParamSpec
+    from typing import Concatenate
+    from typing import ParamSpec
 
     _P = ParamSpec("_P")
 
