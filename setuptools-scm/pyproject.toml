@@ -5,7 +5,7 @@ build-backend = "_own_version_helper:build_meta"
 requires = [
   "setuptools>=77.0.3",
   "vcs-versioning>=0.1.1",
-  'tomli<=2.0.2; python_version < "3.11"',
+  'tomli>=1; python_version < "3.11"',
   'typing-extensions; python_version < "3.11"',
 ]
 backend-path = [
