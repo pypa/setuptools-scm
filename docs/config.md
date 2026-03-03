@@ -29,11 +29,12 @@ Use the `[tool.setuptools_scm]` section when you need to:
 - Configure fallback behavior (`fallback_version`)
 - Or any other non-default behavior
 
-## configuration parameters
+## Core Configuration
+
+These configuration options control version inference and formatting behavior.
 
 Configuration parameters can be configured in `pyproject.toml` or `setup.py`.
 Callables or other Python objects must be passed in `setup.py` (via the `use_scm_version` keyword argument).
-
 
 `root : Path | PathLike[str]`
 : Relative path to the SCM root, defaults to `.` and is relative to the file path passed in `relative_to`
@@ -47,42 +48,12 @@ Callables or other Python objects must be passed in `setup.py` (via the `use_scm
   either an entrypoint name or a callable.
   See [Version number construction](extending.md#setuptools_scmlocal_scheme) for predefined implementations.
 
-
-`version_file: Path | PathLike[str] | None = None`
-:   A path to a file that gets replaced with a file containing the current
-    version. It is ideal for creating a ``_version.py`` file within the
-    package, typically used to avoid using `importlib.metadata`
-    (which adds some overhead).
-
-    !!! warning ""
-
-        Only files with `.py` and `.txt` extensions have builtin templates,
-        for other file types it is necessary to provide `version_file_template`.
-
-`version_file_template: str | None = None`
-:   A new-style format string taking `version`, `scm_version` and `version_tuple` as parameters.
-    `version` is the generated next_version as string,
-    `version_tuple` is a tuple of split numbers/strings and
-    `scm_version` is the `ScmVersion` instance the current `version` was rendered from
-
-
-`write_to: PathLike[str] | Path | None = None`
-:  (deprecated) legacy option to create a version file relative to the SCM root.
-   It's broken for usage from an sdist and fixing it would be a fatal breaking change,
-   use `version_file` instead.
-
-`relative_to: Path | PathLike[str] = "pyproject.toml"`
-:   A file/directory from which the root can be resolved.
-    Typically called by a script or module that is not in the root of the
-    repository to point `setuptools_scm` at the root of the repository by
-    supplying `__file__`.
-
-`tag_regex: str | Pattern[str]`
+`tag_regex: str|Pattern[str]`
 :   A Python regex string to extract the version part from any SCM tag.
     The regex needs to contain either a single match group, or a group
     named `version`, that captures the actual version information.
 
-    Defaults to the value of [setuptools_scm._config.DEFAULT_TAG_REGEX][]
+    Defaults to the value of [vcs_versioning._config.DEFAULT_TAG_REGEX][]
     which supports tags with optional "v" prefix (recommended), project prefixes,
     and various version formats.
 
@@ -120,16 +91,31 @@ Callables or other Python objects must be passed in `setup.py` (via the `use_scm
     available, `fallback_root` is used instead. This allows the same configuration
     to work in both scenarios without modification.
 
-`parse: Callable[[Path, Config], ScmVersion] | None = None`
-:   A function that will be used instead of the discovered SCM
-    for parsing the version. Use with caution,
-    this is a function for advanced use and you should be
-    familiar with the `setuptools-scm` internals to use it.
+`normalize`
+:   A boolean flag indicating if the version string should be normalized.
+    Defaults to `True`. Setting this to `False` is equivalent to setting
+    `version_cls` to [vcs_versioning.NonNormalizedVersion][]
+
+`version_cls: type|str = packaging.version.Version`
+:   An optional class used to parse, verify and possibly normalize the version
+    string. Its constructor should receive a single string argument, and its
+    `str` should return the normalized version string to use.
+    This option can also receive a class qualified name as a string.
+
+    The [vcs_versioning.NonNormalizedVersion][] convenience class is
+    provided to disable the normalization step done by
+    `packaging.version.Version`. If this is used while `setuptools-scm`
+    is integrated in a setuptools packaging process, the non-normalized
+    version number will appear in all files (see `version_file` note).
+
+    !!! note "normalization still applies to artifact filenames"
+        Setuptools will still normalize it to create the final distribution,
+        so as to stay compliant with the python packaging standards.
 
 `scm.git.describe_command`
 :   This command will be used instead the default `git describe --long` command.
 
-    Defaults to the value set by [setuptools_scm.git.DEFAULT_DESCRIBE][]
+    Defaults to the value set by [vcs_versioning._backends._git.DEFAULT_DESCRIBE][]
 
 `scm.git.pre_parse`
 :   A string specifying which git pre-parse function to use before parsing version information.
@@ -150,29 +136,49 @@ Callables or other Python objects must be passed in `setup.py` (via the `use_scm
 
     This field is maintained for backward compatibility but will issue a deprecation warning when used.
 
-`normalize`
-:   A boolean flag indicating if the version string should be normalized.
-    Defaults to `True`. Setting this to `False` is equivalent to setting
-    `version_cls` to [setuptools_scm.NonNormalizedVersion][]
+`relative_to: Path | PathLike[str] = "pyproject.toml"`
+:   A file/directory from which the root can be resolved.
+    Typically called by a script or module that is not in the root of the
+    repository to point to the root of the repository by
+    supplying `__file__`.
 
-`version_cls: type | str = packaging.version.Version`
-:   An optional class used to parse, verify and possibly normalize the version
-    string. Its constructor should receive a single string argument, and its
-    `str` should return the normalized version string to use.
-    This option can also receive a class qualified name as a string.
+`parse: Callable[[Path, Config], ScmVersion] | None = None`
+:   A function that will be used instead of the discovered SCM
+    for parsing the version. Use with caution,
+    this is a function for advanced use and you should be
+    familiar with the vcs-versioning internals to use it.
 
-    The [setuptools_scm.NonNormalizedVersion][] convenience class is
-    provided to disable the normalization step done by
-    `packaging.version.Version`. If this is used while `setuptools-scm`
-    is integrated in a setuptools packaging process, the non-normalized
-    version number will appear in all files (see `version_file` note).
+`version_file: Path | PathLike[str] | None = None`
+:   A path to a file that gets replaced with a file containing the current
+    version. It is ideal for creating a ``_version.py`` file within the
+    package, typically used to avoid using `importlib.metadata`
+    (which adds some overhead).
 
-    !!! note "normalization still applies to artifact filenames"
-        Setuptools will still normalize it to create the final distribution,
-        so as to stay compliant with the Python packaging standards.
+    !!! warning ""
 
+        Only files with `.py` and `.txt` extensions have builtin templates,
+        for other file types it is necessary to provide `version_file_template`.
 
-## environment variables
+`version_file_template: str | None = None`
+:   A new-style format string taking `version`, `scm_version` and `version_tuple` as parameters.
+    `version` is the generated next_version as string,
+    `version_tuple` is a tuple of split numbers/strings and
+    `scm_version` is the `ScmVersion` instance the current `version` was rendered from
+
+## setuptools-scm Specific Configuration
+
+These options control setuptools integration behavior.
+
+`write_to: PathLike[str] | Path | None = None`
+:  (deprecated) legacy option to create a version file relative to the SCM root.
+   It's broken for usage from an sdist and fixing it would be a fatal breaking change,
+   use `version_file` instead.
+
+## Environment Variables
+
+### Version Detection Overrides
+
+These environment variables override version detection behavior.
 
 `SETUPTOOLS_SCM_PRETEND_VERSION`
 :   used as the primary source for the version number
@@ -195,14 +201,25 @@ Callables or other Python objects must be passed in `setup.py` (via the `use_scm
 
     this will take precedence over ``SETUPTOOLS_SCM_PRETEND_VERSION``
 
+`SETUPTOOLS_SCM_PRETEND_METADATA`
+:   A TOML inline table for overriding individual version metadata fields.
+    See the [overrides documentation](overrides.md#pretend-metadata-core) for details.
+
+`SETUPTOOLS_SCM_PRETEND_METADATA_FOR_${DIST_NAME}`
+:   Same as above but specific to a package (recommended over the generic version).
+
 `SETUPTOOLS_SCM_DEBUG`
-:    Enable debug logging
+:   Enable debug logging for version detection and processing.
 
 `SOURCE_DATE_EPOCH`
 :   Used as the timestamp from which the
     ``node-and-date`` and ``node-and-timestamp`` local parts are
-    derived, otherwise the current time is used
-    (https://reproducible-builds.org/docs/source-date-epoch/)
+    derived, otherwise the current time is used.
+    Standard environment variable from [reproducible-builds.org](https://reproducible-builds.org/docs/source-date-epoch/).
+
+### setuptools-scm Overrides
+
+These environment variables control setuptools-scm specific behavior.
 
 `SETUPTOOLS_SCM_IGNORE_VCS_ROOTS`
 :   A ``os.pathsep`` separated list
@@ -213,11 +230,15 @@ Callables or other Python objects must be passed in `setup.py` (via the `use_scm
 
     For example, set this to ``chg`` to reduce start-up overhead of Mercurial
 
+`SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}`
+:   A TOML inline table to override configuration from `pyproject.toml`.
+    See the [overrides documentation](overrides.md#config-overrides) for details.
 
+`SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT`
+:   Override the subprocess timeout (default: 40 seconds).
+    See the [overrides documentation](overrides.md#subprocess-timeouts) for details.
 
-
-
-## automatic file inclusion
+## Automatic File Inclusion
 
 !!! warning "Setuptools File Finder Integration"
 
@@ -278,22 +299,21 @@ tar -tzf dist/package-*.tar.gz
 
     The file finder cannot be disabled through configuration - it's automatically active when setuptools-scm is installed. If you need to disable it completely, you must remove setuptools-scm from your build environment (which also means you can't use it for versioning).
 
-
-## api reference
+## API Reference
 
 ### constants
 
-::: setuptools_scm._config.DEFAULT_TAG_REGEX
+::: vcs_versioning._config.DEFAULT_TAG_REGEX
     options:
       heading_level: 4
 
-::: setuptools_scm.git.DEFAULT_DESCRIBE
+::: vcs_versioning._backends._git.DEFAULT_DESCRIBE
     options:
       heading_level: 4
 
 
 ### the configuration class
 
-::: setuptools_scm.Configuration
+::: vcs_versioning.Configuration
     options:
       heading_level: 4

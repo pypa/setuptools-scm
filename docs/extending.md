@@ -14,39 +14,35 @@
     entrypoint's name. E.g. for the built-in entrypoint for Git the
     entrypoint is named `.git` and references `setuptools_scm.git:parse`
 
-    The return value MUST be a [`setuptools_scm.version.ScmVersion`][] instance
-    created by the function [`setuptools_scm.version.meta`][].
+    The return value MUST be a [`vcs_versioning.ScmVersion`][] instance
+    created by the function [`vcs_versioning._version_schemes.meta`][].
 
 `setuptools_scm.files_command`
 :  Either a string containing a shell command that prints all SCM-managed
    files in its current working directory or a callable, that given a
    pathname will return that list.
 
-   Also uses the name of your SCM control directory as name of the entrypoint.
+   Also uses the name of your SCM control directory as the name of the entrypoint.
 
 
 ### api reference for scm version objects
 
-::: setuptools_scm.version.ScmVersion
+::: vcs_versioning.ScmVersion
     options:
       show_root_heading: yes
       heading_level: 4
 
-::: setuptools_scm.version.meta
+::: vcs_versioning._version_schemes.meta
     options:
       show_root_heading: yes
       heading_level: 4
 
 ## Version number construction
 
-
-
-
-
 ### `setuptools_scm.version_scheme`
 
 Configures how the version number is constructed given a
-[ScmVersion][setuptools_scm.version.ScmVersion] instance and should return a string
+[ScmVersion][vcs_versioning.ScmVersion] instance and should return a string
 representing the version.
 ### Available implementations
 
@@ -104,8 +100,8 @@ representing the version.
 
     - Tag `1.0.0` → version `1.0.0.postN` (where N is the distance)
 
-`python-simplified-semver`
-:   Basic semantic versioning.
+`semver-pep440`
+:   Basic semantic versioning with PEP 440-compliant version numbers.
 
     Guesses the upcoming release by incrementing the minor segment
     and setting the micro segment to zero if the current branch contains the string `feature`,
@@ -113,13 +109,16 @@ representing the version.
 
     This scheme is not compatible with pre-releases.
 
+    !!! note "Renamed in setuptools-scm 10"
+        Previously called `python-simplified-semver`. The old name still works but is deprecated.
+
     **Examples:**
 
     - Tag `1.0.0` on non-feature branch → version `1.0.1.devN`
     - Tag `1.0.0` on feature branch → version `1.1.0.devN`
 
-`release-branch-semver`
-:   Semantic versioning for projects with release branches.
+`semver-pep440-release-branch`
+:   Semantic versioning with PEP 440-compliant version numbers for projects with release branches.
     The same as `guess-next-dev` (incrementing the pre-release or micro segment)
     however when on a release branch: a branch whose name (ignoring namespace) parses as a version
     that matches the most recent tag up to the minor segment. Otherwise if on a
@@ -127,6 +126,9 @@ representing the version.
     zero, then appends `.devN`
 
     Namespaces are unix pathname separated parts of a branch/tag name.
+
+    !!! note "Renamed in setuptools-scm 10"
+        Previously called `release-branch-semver`. The old name still works but is deprecated.
 
     **Examples:**
 
@@ -139,7 +141,7 @@ representing the version.
 ### `setuptools_scm.local_scheme`
 
 Configures how the local part of a version is rendered given a
-[ScmVersion][setuptools_scm.version.ScmVersion] instance and should return a string
+[ScmVersion][vcs_versioning.ScmVersion] instance and should return a string
 representing the local version.
 Dates and times are in Coordinated Universal Time (UTC), because as part
 of the version, they should be location independent.

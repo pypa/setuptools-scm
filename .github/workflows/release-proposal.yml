@@ -1,0 +1,223 @@
+name: Create Release Proposal
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+permissions: {}
+
+jobs:
+  # Version determination + changelog build for each project (parallel)
+  setuptools-scm:
+    uses: ./.github/workflows/reusable-towncrier-release.yml
+    with:
+      project_name: setuptools-scm
+      project_directory: setuptools-scm
+
+  vcs-versioning:
+    uses: ./.github/workflows/reusable-towncrier-release.yml
+    with:
+      project_name: vcs-versioning
+      project_directory: vcs-versioning
+
+  # On PRs: show what would be released
+  validate:
+    needs: [setuptools-scm, vcs-versioning]
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Release validation summary
+        env:
+          SCM_FRAGMENTS: ${{ needs.setuptools-scm.outputs.has_fragments }}
+          SCM_VERSION: ${{ needs.setuptools-scm.outputs.version }}
+          VCS_FRAGMENTS: ${{ needs.vcs-versioning.outputs.has_fragments }}
+          VCS_VERSION: ${{ needs.vcs-versioning.outputs.version }}
+        run: |
+          {
+            echo "## Release Proposal Validation"
+            echo ""
+            if [ "$SCM_FRAGMENTS" == "true" ]; then
+              echo "- **setuptools-scm**: v${SCM_VERSION}"
+            else
+              echo "- **setuptools-scm**: no fragments"
+            fi
+            if [ "$VCS_FRAGMENTS" == "true" ]; then
+              echo "- **vcs-versioning**: v${VCS_VERSION}"
+            else
+              echo "- **vcs-versioning**: no fragments"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # On push: download built changelogs, commit to release branch, create/update PR
+  create-release-pr:
+    needs: [setuptools-scm, vcs-versioning]
+    if: |
+      github.event_name == 'push' &&
+      (needs.setuptools-scm.outputs.has_fragments == 'true' ||
+       needs.vcs-versioning.outputs.has_fragments == 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      # Remove only fragment files and CHANGELOG.md; preserve .gitkeep, template.md, README.md
+      - name: Prepare for artifact overlay
+        env:
+          SCM_FRAGMENTS: ${{ needs.setuptools-scm.outputs.has_fragments }}
+          VCS_FRAGMENTS: ${{ needs.vcs-versioning.outputs.has_fragments }}
+        run: |
+          if [ "$SCM_FRAGMENTS" == "true" ]; then
+            find setuptools-scm/changelog.d -name "*.*.md" ! -name "template.md" ! -name "README.md" -delete 2>/dev/null || true
+            rm -f setuptools-scm/CHANGELOG.md
+          fi
+          if [ "$VCS_FRAGMENTS" == "true" ]; then
+            find vcs-versioning/changelog.d -name "*.*.md" ! -name "template.md" ! -name "README.md" -delete 2>/dev/null || true
+            rm -f vcs-versioning/CHANGELOG.md
+          fi
+
+      - name: Download setuptools-scm changelog
+        if: needs.setuptools-scm.outputs.has_fragments == 'true'
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: changelog-setuptools-scm
+          path: setuptools-scm
+
+      - name: Download vcs-versioning changelog
+        if: needs.vcs-versioning.outputs.has_fragments == 'true'
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: changelog-vcs-versioning
+          path: vcs-versioning
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Prepare release metadata
+        id: meta
+        env:
+          SCM_FRAGMENTS: ${{ needs.setuptools-scm.outputs.has_fragments }}
+          SCM_VERSION: ${{ needs.setuptools-scm.outputs.version }}
+          VCS_FRAGMENTS: ${{ needs.vcs-versioning.outputs.has_fragments }}
+          VCS_VERSION: ${{ needs.vcs-versioning.outputs.version }}
+          SOURCE_BRANCH: ${{ github.ref_name }}
+        run: |
+          RELEASES=""
+          LABELS=""
+
+          if [ "$SCM_FRAGMENTS" == "true" ]; then
+            RELEASES="setuptools-scm v${SCM_VERSION}"
+            LABELS="release:setuptools-scm"
+          fi
+
+          if [ "$VCS_FRAGMENTS" == "true" ]; then
+            VCS="vcs-versioning v${VCS_VERSION}"
+            if [ -n "$RELEASES" ]; then
+              RELEASES="${RELEASES}, ${VCS}"
+              LABELS="${LABELS},release:vcs-versioning"
+            else
+              RELEASES="$VCS"
+              LABELS="release:vcs-versioning"
+            fi
+          fi
+
+          echo "releases=$RELEASES" >> "$GITHUB_OUTPUT"
+          echo "labels=$LABELS" >> "$GITHUB_OUTPUT"
+          echo "release_branch=release/${SOURCE_BRANCH}" >> "$GITHUB_OUTPUT"
+
+      - name: Create release branch and push
+        run: |
+          git checkout -B "${{ steps.meta.outputs.release_branch }}"
+          git add -A
+          git commit -m "Prepare release: ${{ steps.meta.outputs.releases }}" || echo "No changes to commit"
+          git push origin "${{ steps.meta.outputs.release_branch }}" --force
+
+      - name: Create or update PR
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          RELEASE_BRANCH: ${{ steps.meta.outputs.release_branch }}
+          RELEASES: ${{ steps.meta.outputs.releases }}
+          LABELS: ${{ steps.meta.outputs.labels }}
+          SOURCE_BRANCH: ${{ github.ref_name }}
+        with:
+          script: |
+            const baseBranch = 'main';
+            const releaseBranch = process.env.RELEASE_BRANCH;
+            const releases = process.env.RELEASES;
+            const labels = process.env.LABELS.split(',').filter(l => l);
+            const sourceBranch = process.env.SOURCE_BRANCH;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const prTitle = `Release: ${releases}`;
+            const prBody = [
+              '## Release Proposal',
+              '',
+              'This PR prepares the following releases:',
+              releases,
+              '',
+              `**Source branch:** ${sourceBranch}`,
+              '',
+              '### Changes',
+              '- Updated CHANGELOG.md with towncrier fragments',
+              '- Removed processed fragments from changelog.d/',
+              '',
+              '### Review Checklist',
+              '- [ ] Changelog entries are accurate',
+              '- [ ] Version numbers are correct',
+              '- [ ] All tests pass',
+              '',
+              '**Merging this PR will automatically create tags and trigger PyPI uploads.**',
+              '**After release, main will be synced back to develop.**'
+            ].join('\n');
+
+            // Check for existing release PR
+            const { data: pulls } = await github.rest.pulls.list({
+              owner, repo, state: 'open', base: baseBranch,
+              head: `${owner}:${releaseBranch}`
+            });
+
+            if (pulls.length > 0) {
+              const prNumber = pulls[0].number;
+              console.log(`Updating existing PR #${prNumber}`);
+              await github.rest.pulls.update({
+                owner, repo, pull_number: prNumber,
+                title: prTitle, body: prBody, base: baseBranch
+              });
+              if (labels.length > 0) {
+                await github.rest.issues.addLabels({
+                  owner, repo, issue_number: prNumber, labels
+                });
+              }
+            } else {
+              console.log(`Creating new PR targeting ${baseBranch}`);
+              const { data: pr } = await github.rest.pulls.create({
+                owner, repo, title: prTitle, body: prBody,
+                head: releaseBranch, base: baseBranch
+              });
+              console.log(`Created PR #${pr.number}`);
+              if (labels.length > 0) {
+                await github.rest.issues.addLabels({
+                  owner, repo, issue_number: pr.number, labels
+                });
+              }
+            }
+
+      - name: Write summary
+        env:
+          RELEASES: ${{ steps.meta.outputs.releases }}
+        run: |
+          {
+            echo "## Release Proposal"
+            echo ""
+            echo "**Releases:** ${RELEASES}"
+          } >> "$GITHUB_STEP_SUMMARY"

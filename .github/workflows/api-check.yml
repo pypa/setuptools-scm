@@ -10,6 +10,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 env:
   FORCE_COLOR: 1
 
@@ -19,61 +22,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          pip install -U pip setuptools
-          pip install -e .[test]
-          pip install griffe
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@eac588ad8def6316056a12d4907a9d4d84ff7a3b # v7.3.0
 
-      - name: Run griffe API check
-        id: griffe-check
-        continue-on-error: true
+      - name: Get latest release tag
+        id: latest-tag
         run: |
-          echo "Running griffe API stability check..."
-          if griffe check setuptools_scm -ssrc -f github; then
-            echo "api_check_result=success" >> $GITHUB_OUTPUT
-            echo "exit_code=0" >> $GITHUB_OUTPUT
+          # Get the latest setuptools-scm tag (griffe needs a git ref)
+          LATEST_TAG=$(git describe --tags --abbrev=0 --match 'setuptools-scm-v*' origin/main 2>/dev/null || echo "")
+          if [ -z "$LATEST_TAG" ]; then
+            echo "No tags found on origin/main, skipping API check"
+            echo "skip=true" >> $GITHUB_OUTPUT
           else
-            exit_code=$?
-            echo "api_check_result=warning" >> $GITHUB_OUTPUT
-            echo "exit_code=$exit_code" >> $GITHUB_OUTPUT
-            exit $exit_code
+            echo "Latest release tag: $LATEST_TAG"
+            echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+            echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Report API check result
-        if: always()
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const result = '${{ steps.griffe-check.outputs.api_check_result }}'
-            const exitCode = '${{ steps.griffe-check.outputs.exit_code }}'
+      - name: Install dependencies
+        if: steps.latest-tag.outputs.skip != 'true'
+        run: uv sync --all-packages --all-groups
 
-            if (result === 'success') {
-              core.notice('API stability check passed - no breaking changes detected')
-              await core.summary
-                .addHeading('✅ API Stability Check: Passed', 2)
-                .addRaw('No breaking changes detected in the public API')
-                .write()
-            } else if (result === 'warning') {
-              core.warning(`API stability check detected breaking changes (exit code: ${exitCode}). Please review the API changes above.`)
-              await core.summary
-                .addHeading('⚠️ API Stability Warning', 2)
-                .addRaw('Breaking changes detected in the public API. Please review the changes reported above.')
-                .addRaw(`\n\nExit code: ${exitCode}`)
-                .write()
-            } else {
-              core.error('API stability check failed to run properly')
-              await core.summary
-                .addHeading('❌ API Stability Check: Failed', 2)
-                .addRaw('The griffe check failed to execute. This may indicate griffe is not installed or there was an error.')
-                .write()
-            }
+      - name: Check API stability against latest release
+        if: steps.latest-tag.outputs.skip != 'true'
+        run: |
+          echo "Comparing current code against tag: ${{ steps.latest-tag.outputs.tag }}"
+          # Use local check_api.py script which includes griffe-public-wildcard-imports extension
+          uv run --no-sync python setuptools-scm/check_api.py --against ${{ steps.latest-tag.outputs.tag }}
