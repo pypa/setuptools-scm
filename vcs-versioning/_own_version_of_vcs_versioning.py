@@ -12,6 +12,7 @@ from __future__ import annotations
 import logging
 import os
 from collections.abc import Callable
+from pathlib import Path
 
 from vcs_versioning import Configuration
 from vcs_versioning import _types as _t
@@ -60,23 +61,29 @@ def _get_version() -> str:
         else get_local_node_and_date
     )
 
-    # __file__ is nextgen/vcs-versioning/_own_version_helper.py
-    # pyproject.toml is in nextgen/vcs-versioning/pyproject.toml
-    pyproject_path = os.path.join(os.path.dirname(__file__), "pyproject.toml")
+    # Resolve repo root from this file's location so version detection works
+    # regardless of cwd (e.g. when uv build runs from workspace root).
+    _here = Path(__file__).resolve()
+    _repo_root = _here.parent.parent
+    _pyproject_path = _here.parent / "pyproject.toml"
 
-    # root is the git repo root (../..)
-    # fallback_root is the vcs-versioning package dir (.)
-    # relative_to anchors to pyproject.toml
-    # fallback_version is used when no vcs-versioning- tags exist yet
     return get_version(
-        root="../..",
-        fallback_root=".",
-        relative_to=pyproject_path,
+        root=str(_repo_root),
+        fallback_root=str(_here.parent),
+        relative_to=str(_pyproject_path),
         parse=parse,
         version_scheme=guess_next_dev_version,
         local_scheme=local_scheme,
         tag_regex=r"^vcs-versioning-(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$",
-        git_describe_command="git describe --dirty --tags --long --match 'vcs-versioning-*'",
+        git_describe_command=[
+            "git",
+            "describe",
+            "--dirty",
+            "--tags",
+            "--long",
+            "--match",
+            "vcs-versioning-*",
+        ],
         fallback_version="0.1.1+pre.tag",
     )
 

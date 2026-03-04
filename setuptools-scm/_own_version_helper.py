@@ -27,17 +27,24 @@ def scm_version() -> str:
         else "node-and-date"
     )
 
-    # Note: tag_regex is currently NOT set to allow backward compatibility
-    # with existing tags. To migrate to 'setuptools-scm-' prefix, uncomment:
-    # tag_regex=r"^setuptools-scm-(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$",
-
-    # Use relative_to parent to find git root (one level up from setuptools-scm/)
+    # Restrict to setuptools-scm-* tags so we ignore other tags on the same
+    # commit (e.g. vcs-versioning-1.0.0.dev). Must match pyproject.toml.
     import pathlib
 
     return get_version(
         root=pathlib.Path(__file__).parent.parent,
         version_scheme="guess-next-dev",
         local_scheme=local_scheme,
+        tag_regex=r"^setuptools-scm-(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$",
+        git_describe_command=[
+            "git",
+            "describe",
+            "--dirty",
+            "--tags",
+            "--long",
+            "--match",
+            "setuptools-scm-*",
+        ],
     )
 
 
