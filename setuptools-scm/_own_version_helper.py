@@ -14,7 +14,10 @@ from __future__ import annotations
 
 import os
 
+from pathlib import Path
+
 from setuptools import build_meta as build_meta
+from vcs_versioning._backends._git import make_describe_command
 
 from setuptools_scm import get_version
 
@@ -29,22 +32,12 @@ def scm_version() -> str:
 
     # Restrict to setuptools-scm-* tags so we ignore other tags on the same
     # commit (e.g. vcs-versioning-1.0.0.dev). Must match pyproject.toml.
-    import pathlib
-
     return get_version(
-        root=pathlib.Path(__file__).parent.parent,
+        root=Path(__file__).parent.parent,
         version_scheme="guess-next-dev",
         local_scheme=local_scheme,
-        tag_regex=r"^setuptools-scm-(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$",
-        git_describe_command=[
-            "git",
-            "describe",
-            "--dirty",
-            "--tags",
-            "--long",
-            "--match",
-            "setuptools-scm-*",
-        ],
+        tag_regex=r"^setuptools-scm-(?P<version>v?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$",
+        scm={"git": {"describe_command": make_describe_command("setuptools-scm-*")}},
     )
 
 

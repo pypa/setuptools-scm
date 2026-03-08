@@ -74,16 +74,10 @@ def _get_version() -> str:
         parse=parse,
         version_scheme=guess_next_dev_version,
         local_scheme=local_scheme,
-        tag_regex=r"^vcs-versioning-(?P<version>[vV]?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$",
-        git_describe_command=[
-            "git",
-            "describe",
-            "--dirty",
-            "--tags",
-            "--long",
-            "--match",
-            "vcs-versioning-*",
-        ],
+        tag_regex=r"^vcs-versioning-(?P<version>v?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$",
+        scm={
+            "git": {"describe_command": git.make_describe_command("vcs-versioning-*")}
+        },
         fallback_version="0.1.1+pre.tag",
     )
 

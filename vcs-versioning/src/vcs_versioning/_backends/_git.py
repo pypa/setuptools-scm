@@ -31,19 +31,25 @@ log = logging.getLogger(__name__)
 REF_TAG_RE = re.compile(r"(?<=\btag: )([^,]+)\b")
 DESCRIBE_UNSUPPORTED = "%(describe"
 
+
 # If testing command in shell make sure to quote the match argument like
 # '*[0-9]*' as it will expand before being sent to git if there are any matching
 # files in current directory.
-DEFAULT_DESCRIBE = [
-    "git",
-    "describe",
-    "--dirty",
-    "--tags",
-    "--long",
-    "--abbrev=40",
-    "--match",
-    "*[0-9]*",
-]
+def make_describe_command(match: str) -> list[str]:
+    """Build a ``git describe`` command list restricted to tags matching *match*."""
+    return [
+        "git",
+        "describe",
+        "--dirty",
+        "--tags",
+        "--long",
+        "--abbrev=40",
+        "--match",
+        match,
+    ]
+
+
+DEFAULT_DESCRIBE = make_describe_command("*[0-9]*")
 
 
 class GitPreParse(Enum):
