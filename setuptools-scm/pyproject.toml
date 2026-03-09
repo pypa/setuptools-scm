@@ -4,7 +4,7 @@
 build-backend = "_own_version_helper:build_meta"
 requires = [
   "setuptools>=77.0.3",
-  "vcs-versioning>=0.1.1",
+  "vcs-versioning>=1.0.0.dev0",
   # https://github.com/pypa/setuptools-scm/issues/1222: was <=2.0.2 for #1090 (old pip+toml);
   # pip 21.2+ vendors tomli, so the workaround is no longer needed.
   'tomli>=1; python_version < "3.11"',
@@ -45,7 +45,7 @@ dynamic = [
 ]
 dependencies = [
   # Core VCS functionality - workspace dependency
-  "vcs-versioning",
+  "vcs-versioning>=1.0.0.dev0",
   "packaging>=20",
   # https://github.com/pypa/setuptools-scm/issues/1112 - re-pin in a breaking release
   "setuptools", # >= 61",
