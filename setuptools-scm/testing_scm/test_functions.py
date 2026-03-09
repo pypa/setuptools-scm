@@ -126,7 +126,7 @@ def test_write_version_to_path_deprecation_warning_none(tmp_path: Path) -> None:
 
     target_file = tmp_path / "version.py"
 
-    # This should raise a deprecation warning when scm_version=None is explicitly passed
+    # This should raise a deprecation warning when scm_version=None is not explicitly passed
     with pytest.warns(
         DeprecationWarning, match="write_version_to_path called without scm_version"
     ):
@@ -134,7 +134,6 @@ def test_write_version_to_path_deprecation_warning_none(tmp_path: Path) -> None:
             target=target_file,
             template=None,  # Use default template
             version="1.2.3",
-            scm_version=None,  # Explicitly passing None should warn
         )
 
     # Verify the file was created and contains the expected content
