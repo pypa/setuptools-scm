@@ -5,9 +5,10 @@ This module allows setuptools-scm to use VCS metadata for its own version.
 It works only if the backend-path of the build-system section from
 pyproject.toml is respected.
 
-Tag prefix configuration:
-- Currently: No prefix (for backward compatibility with existing tags)
-- Future: Will migrate to 'setuptools-scm-' prefix
+Version tags must carry the ``setuptools-scm-`` prefix (e.g.
+``setuptools-scm-v10.0.0``).  The tag regex and git describe ``--match``
+pattern are both restricted to this prefix so that co-located
+``vcs-versioning-*`` tags on the same commit do not affect the result.
 """
 
 from __future__ import annotations
