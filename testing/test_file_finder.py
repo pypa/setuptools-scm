@@ -213,7 +213,7 @@ def test_symlink_not_in_scm_while_target_is(inwd: WorkDir) -> None:
 
 @pytest.mark.issue(587)
 @pytest.mark.skip_commit
-def test_not_commited(inwd: WorkDir) -> None:
+def test_not_committed(inwd: WorkDir) -> None:
     assert find_files() == []
 
 
