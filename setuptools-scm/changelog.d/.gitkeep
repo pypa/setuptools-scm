@@ -1,0 +1,8 @@
+# Changelog fragments directory
+# Add your changelog fragments here following the naming convention:
+# {issue_number}.{type}.md
+#
+# Where type is one of: feature, bugfix, deprecation, removal, doc, misc
+#
+# Example: 123.feature.md
+

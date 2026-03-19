@@ -25,6 +25,8 @@ repos:
             - importlib_metadata
             - typing-extensions>=4.5
             - rich
+            - PyGithub>=2.0.0
+            - towncrier>=23.11.0
 
 -   repo: https://github.com/scientific-python/cookie
     rev: 2025.10.01
