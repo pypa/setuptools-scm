@@ -85,14 +85,14 @@ jobs:
 
       - name: Download setuptools-scm changelog
         if: needs.setuptools-scm.outputs.has_fragments == 'true'
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: changelog-setuptools-scm
           path: setuptools-scm
 
       - name: Download vcs-versioning changelog
         if: needs.vcs-versioning.outputs.has_fragments == 'true'
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: changelog-vcs-versioning
           path: vcs-versioning
