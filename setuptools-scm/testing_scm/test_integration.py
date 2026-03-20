@@ -36,6 +36,22 @@ from setuptools_scm._integration.setuptools import _warn_on_old_setuptools
 c = Configuration()
 
 
+def _run_setuptools_setup(cwd: Path) -> subprocess.CompletedProcess[str]:
+    """Invoke ``setuptools.setup()`` with no commands to trigger inference hooks.
+
+    Exits non-zero ("no commands supplied") but the hooks still fire,
+    writing version files to the source tree as a side effect.
+    """
+    result = subprocess.run(
+        [sys.executable, "-c", "import setuptools; setuptools.setup()"],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0, "setup() with no commands should exit non-zero"
+    return result
+
+
 # Module-level fixture for git SCM setup
 @pytest.fixture
 def wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> WorkDir:
@@ -752,13 +768,7 @@ def test_version_file_written_to_build_directory(
     wd.commit_testfile()
     wd("git tag v1.0.0")
 
-    # Version file should be written to source during inference by default
-    subprocess.run(
-        [sys.executable, "-c", "import setuptools; setuptools.setup()"],
-        cwd=wd.cwd,
-        capture_output=True,
-        text=True,
-    )
+    _run_setuptools_setup(wd.cwd)
 
     version_file = pkg_dir / "_version.py"
     assert version_file.exists(), (
@@ -1174,13 +1184,7 @@ def test_legacy_write_to_build_directory(
     wd.commit_testfile()
     wd("git tag v6.0.0")
 
-    # Version file should be written to source during inference by default
-    subprocess.run(
-        [sys.executable, "-c", "import setuptools; setuptools.setup()"],
-        cwd=wd.cwd,
-        capture_output=True,
-        text=True,
-    )
+    _run_setuptools_setup(wd.cwd)
 
     version_file = pkg_dir / "_version.py"
     assert version_file.exists(), (
