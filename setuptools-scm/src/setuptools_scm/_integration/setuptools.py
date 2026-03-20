@@ -14,6 +14,7 @@ from vcs_versioning._toml import InvalidTomlError
 from vcs_versioning.overrides import GlobalOverrides
 from vcs_versioning.overrides import ensure_context
 
+from .build_py import ScmVersionFileMixin
 from .build_py import build_py as scm_build_py
 from .pyproject_reading import PyProjectData
 from .pyproject_reading import read_pyproject
@@ -46,20 +47,18 @@ def _register_build_py_command(dist: setuptools.Distribution) -> None:
 
     project_build_py = cast(type[setuptools.Command], existing_build_py)
 
-    # If the project already uses our command (or a subclass), nothing to do.
-    if issubclass(project_build_py, scm_build_py):
+    if issubclass(project_build_py, ScmVersionFileMixin):
         return
 
-    # If project provides a custom build_py, wrap it so both behaviors run:
-    # - project's custom build_py behavior
-    # - setuptools-scm version file writing to build directory
-    class _SetuptoolsScmWrappedBuildPy(project_build_py, scm_build_py):  # type: ignore[misc, valid-type]
-        def run(self) -> None:
-            project_build_py.run(self)
-            self._scm_version_file_outputs = self._write_version_files()
+    # Mixin at front of MRO: our methods run first, then delegate via super()
+    wrapped = type(
+        "_SetuptoolsScmWrappedBuildPy",
+        (ScmVersionFileMixin, project_build_py),
+        {},
+    )
 
-    dist.cmdclass["build_py"] = _SetuptoolsScmWrappedBuildPy
-    log.debug("Wrapped project build_py with setuptools_scm version-file writer")
+    dist.cmdclass["build_py"] = wrapped
+    log.debug("Wrapped project build_py with setuptools_scm version-file mixin")
 
 
 def _warn_on_old_setuptools(_version: str = setuptools.__version__) -> None:

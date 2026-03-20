@@ -122,15 +122,14 @@ def set_version_inference_data(dist: Distribution, data: VersionInferenceData) -
     dist._setuptools_scm_version_inference_data = data  # type: ignore[attr-defined]
 
 
-class build_py(_build_py):
-    """Custom build_py that writes version files to the build directory.
+class ScmVersionFileMixin(_build_py):
+    """Mixin that writes version files to build_lib and registers them as outputs.
 
-    This command extends the standard build_py to write version files
-    (like _version.py) to self.build_lib instead of the source tree.
-    This enables installing packages from read-only source directories.
+    Place at the front of the MRO so its methods run first, then delegate
+    to the next class via super(). Works with any build_py implementation.
 
-    For editable installs (strict mode), version files are registered as
-    build outputs so setuptools copies them into the persistent auxiliary
+    For editable installs (strict mode), version files are registered in
+    get_outputs() so setuptools copies them to the persistent auxiliary
     directory where the editable finder can serve them.
     """
 
@@ -141,22 +140,10 @@ class build_py(_build_py):
         self._scm_version_file_outputs = []
 
     def run(self) -> None:
-        """Run the build_py command and write version files to build_lib."""
         super().run()
         self._scm_version_file_outputs = self._write_version_files()
 
     def get_outputs(self, include_bytecode: bool = True) -> list[str]:
-        """Include generated version files in the build output list.
-
-        This is critical for editable installs: setuptools' editable_wheel
-        collects outputs via get_outputs() and only processes files that
-        appear there. Without this, version files written to build_lib
-        are silently ignored by the editable wheel builder.
-
-        For strict editable mode (_LinkTree), files in get_outputs() that
-        are NOT in get_output_mapping() are copied to the persistent
-        auxiliary directory, making them importable.
-        """
         outputs = super().get_outputs(include_bytecode)
         outputs.extend(self._scm_version_file_outputs)
         return outputs
@@ -249,3 +236,10 @@ class build_py(_build_py):
         target.write_text(content, encoding="utf-8")
         log.info("Wrote version file: %s", target)
         return str(target)
+
+
+class build_py(ScmVersionFileMixin, _build_py):
+    """Default build_py with version file writing.
+
+    Used when no project-specific build_py is registered in cmdclass.
+    """
