@@ -719,15 +719,13 @@ def test_xmlsec_download_regression(
 def test_version_file_written_to_build_directory(
     wd: WorkDir, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Test that version files are written to build directory, not source.
+    """Test that version files are written to both source and build directory.
 
-    This test verifies the fix for issue #1252: installing packages from
-    read-only source directories should work because version files are
-    written to the build directory instead of the source tree.
+    Version files are written to source during inference (for development)
+    and to the build directory during build_py (for wheel contents).
     """
     monkeypatch.chdir(wd.cwd)
 
-    # Create a minimal pyproject.toml with version_file configured
     wd.write(
         "pyproject.toml",
         textwrap.dedent("""\
@@ -747,17 +745,14 @@ def test_version_file_written_to_build_directory(
         """),
     )
 
-    # Create minimal package structure
     pkg_dir = wd.cwd / "test_pkg"
     pkg_dir.mkdir()
     (pkg_dir / "__init__.py").write_text("from ._version import __version__\n")
 
-    # Commit so we have a valid git state
     wd.commit_testfile()
     wd("git tag v1.0.0")
 
-    # By default (without SETUPTOOLS_SCM_WRITE_TO_SOURCE), version file should
-    # NOT be written to source during version inference
+    # Version file should be written to source during inference by default
     subprocess.run(
         [sys.executable, "-c", "import setuptools; setuptools.setup()"],
         cwd=wd.cwd,
@@ -765,14 +760,13 @@ def test_version_file_written_to_build_directory(
         text=True,
     )
 
-    # The version file should NOT exist in source tree
     version_file = pkg_dir / "_version.py"
-    assert not version_file.exists(), (
-        "Version file should NOT be written to source tree during inference. "
-        "It should only be written to build directory during build_py."
+    assert version_file.exists(), (
+        "Version file should be written to source tree during inference"
     )
+    assert "1.0.0" in version_file.read_text()
 
-    # Now run an actual build to verify version file IS written to build directory
+    # Build should also include version file in the wheel
     build_result = subprocess.run(
         [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
         cwd=wd.cwd,
@@ -879,15 +873,13 @@ def test_version_file_src_layout_path_transformation(
 def test_editable_install_version_file(
     editable_mode: str, wd: WorkDir, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Test that editable installs work with version file configuration.
+    """Test that editable installs write version files to source by default.
 
-    For editable installs, the source directory IS the package. Version files
-    need to be written to source for them to be importable. Users should set
-    SETUPTOOLS_SCM_WRITE_TO_SOURCE=1 for development workflows.
+    Version files are written to the source tree during inference, making
+    them importable for editable installs without any extra configuration.
     """
     monkeypatch.chdir(wd.cwd)
 
-    # Create a minimal pyproject.toml with version_file configured
     wd.write(
         "pyproject.toml",
         textwrap.dedent("""\
@@ -907,7 +899,6 @@ def test_editable_install_version_file(
         """),
     )
 
-    # Create minimal package structure
     pkg_dir = wd.cwd / "test_editable_pkg"
     pkg_dir.mkdir()
     (pkg_dir / "__init__.py").write_text(
@@ -918,12 +909,9 @@ def test_editable_install_version_file(
         "    __version__ = version('test-editable-pkg')\n"
     )
 
-    # Commit so we have a valid git state
     wd.commit_testfile()
     wd("git tag v3.0.0")
 
-    # Build editable wheel using pip wheel with SETUPTOOLS_SCM_WRITE_TO_SOURCE=1
-    # This ensures version file is written to source for editable installs
     build_result = subprocess.run(
         [
             sys.executable,
@@ -940,44 +928,33 @@ def test_editable_install_version_file(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
-        env={
-            **os.environ,
-            "SETUPTOOLS_SCM_WRITE_TO_SOURCE": "1",
-        },
     )
 
-    # Build should succeed
     assert build_result.returncode == 0, (
         f"Editable build ({editable_mode}) failed:\n"
         f"stdout: {build_result.stdout}\nstderr: {build_result.stderr}"
     )
 
-    # With SETUPTOOLS_SCM_WRITE_TO_SOURCE=1, version file should exist in source
     version_file = pkg_dir / "_version.py"
     assert version_file.exists(), (
-        f"Version file should be written to source with SETUPTOOLS_SCM_WRITE_TO_SOURCE=1. "
-        f"Mode: {editable_mode}"
+        f"Version file should be written to source by default. Mode: {editable_mode}"
     )
 
-    # Verify version file content
     content = version_file.read_text()
     assert "3.0.0" in content, f"Version file should contain '3.0.0': {content}"
 
 
-@pytest.mark.issue(1252)
-def test_editable_install_without_env_var(
+@pytest.mark.issue(1298)
+def test_editable_strict_includes_version_file(
     wd: WorkDir, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Test editable install behavior when SETUPTOOLS_SCM_WRITE_TO_SOURCE is not set.
+    """Test that strict editable installs include version files in both locations.
 
-    Without the env var, version files are NOT written to source during inference.
-    Users relying on _version.py in editable mode should either:
-    1. Set SETUPTOOLS_SCM_WRITE_TO_SOURCE=1
-    2. Use importlib.metadata.version() instead
+    Version files are written to source during inference AND to the persistent
+    auxiliary directory via build_py's get_outputs() registration.
     """
     monkeypatch.chdir(wd.cwd)
 
-    # Create a minimal pyproject.toml with version_file configured
     wd.write(
         "pyproject.toml",
         textwrap.dedent("""\
@@ -986,61 +963,69 @@ def test_editable_install_without_env_var(
             build-backend = "setuptools.build_meta"
 
             [project]
-            name = "test-no-env-pkg"
+            name = "test-editable-strict-pkg"
             dynamic = ["version"]
 
             [tool.setuptools_scm]
-            version_file = "test_no_env_pkg/_version.py"
+            version_file = "test_editable_strict_pkg/_version.py"
 
             [tool.setuptools.packages.find]
             where = ["."]
         """),
     )
 
-    # Create minimal package structure - use importlib.metadata as fallback
-    pkg_dir = wd.cwd / "test_no_env_pkg"
+    pkg_dir = wd.cwd / "test_editable_strict_pkg"
     pkg_dir.mkdir()
     (pkg_dir / "__init__.py").write_text(
         "try:\n"
         "    from ._version import __version__\n"
         "except ImportError:\n"
         "    from importlib.metadata import version\n"
-        "    __version__ = version('test-no-env-pkg')\n"
+        "    __version__ = version('test-editable-strict-pkg')\n"
     )
 
-    # Commit so we have a valid git state
     wd.commit_testfile()
     wd("git tag v4.0.0")
 
-    # Build editable wheel using pip wheel WITHOUT SETUPTOOLS_SCM_WRITE_TO_SOURCE
+    dist_dir = wd.cwd / "dist"
+    dist_dir.mkdir(exist_ok=True)
+
     build_result = subprocess.run(
         [
             sys.executable,
-            "-m",
-            "pip",
-            "wheel",
-            "--no-build-isolation",
-            "-e",
-            ".",
-            "-w",
-            "dist",
+            "-c",
+            (
+                "from setuptools.build_meta import build_editable; "
+                "build_editable('dist', config_settings={'editable_mode': 'strict'})"
+            ),
         ],
         cwd=wd.cwd,
         capture_output=True,
         text=True,
     )
 
-    # Build should succeed even without version file in source
     assert build_result.returncode == 0, (
-        f"Editable build failed:\n"
+        f"Strict editable build failed:\n"
         f"stdout: {build_result.stdout}\nstderr: {build_result.stderr}"
     )
 
-    # Version file should NOT exist in source (not written without env var)
+    # Version file should be in source (written during inference by default)
     version_file = pkg_dir / "_version.py"
-    assert not version_file.exists(), (
-        "Version file should NOT be written to source without SETUPTOOLS_SCM_WRITE_TO_SOURCE"
+    assert version_file.exists(), (
+        "Version file should be written to source tree during inference"
     )
+    assert "4.0.0" in version_file.read_text()
+
+    # Version file should ALSO be in the persistent auxiliary directory
+    build_dir = wd.cwd / "build"
+    editable_dirs = list(build_dir.glob("__editable__.*"))
+    assert editable_dirs, f"Expected editable build dir under {build_dir}"
+    aux_version_file = editable_dirs[0] / "test_editable_strict_pkg" / "_version.py"
+    assert aux_version_file.exists(), (
+        f"Version file should be in auxiliary dir for strict editable installs. "
+        f"Checked: {aux_version_file}"
+    )
+    assert "4.0.0" in aux_version_file.read_text()
 
 
 @pytest.mark.issue(1252)
@@ -1106,12 +1091,14 @@ def test_readonly_source_directory_build(
         except PermissionError:
             pass  # Expected - directory is read-only
 
-        # Build should still succeed because version file goes to build_lib
+        # Disable writing to source since the directory is read-only.
+        # build_py will still write version files to build_lib.
         build_result = subprocess.run(
             [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
             cwd=wd.cwd,
             capture_output=True,
             text=True,
+            env={**os.environ, "SETUPTOOLS_SCM_WRITE_TO_SOURCE": "0"},
         )
 
         # Build should succeed despite read-only source
@@ -1187,7 +1174,7 @@ def test_legacy_write_to_build_directory(
     wd.commit_testfile()
     wd("git tag v6.0.0")
 
-    # Version file should NOT exist after just invoking setup
+    # Version file should be written to source during inference by default
     subprocess.run(
         [sys.executable, "-c", "import setuptools; setuptools.setup()"],
         cwd=wd.cwd,
@@ -1196,11 +1183,12 @@ def test_legacy_write_to_build_directory(
     )
 
     version_file = pkg_dir / "_version.py"
-    assert not version_file.exists(), (
-        "Legacy write_to should NOT write to source during inference"
+    assert version_file.exists(), (
+        "Legacy write_to should write to source during inference"
     )
+    assert "6.0.0" in version_file.read_text()
 
-    # Build wheel
+    # Build wheel should also include it
     build_result = subprocess.run(
         [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
         cwd=wd.cwd,
@@ -1382,3 +1370,166 @@ def test_custom_build_py_still_writes_version_file(
         assert "custom_build_py_pkg/_version.py" in names, (
             f"Expected version file in wheel, got: {names}"
         )
+
+
+@pytest.mark.issue(1298)
+def test_version_file_contains_commit_node_in_wheel(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that the commit node (hash) is present in the version file inside a wheel.
+
+    The default .py template writes commit_id = {scm_version.short_node!r}.
+    This verifies the full pipeline: git commit -> ScmVersion.node -> version file
+    in the built wheel.
+    """
+    monkeypatch.chdir(wd.cwd)
+
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=64", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "node-test-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            version_file = "node_test_pkg/_version.py"
+
+            [tool.setuptools.packages.find]
+            where = ["."]
+        """),
+    )
+
+    pkg_dir = wd.cwd / "node_test_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text(
+        "from ._version import __version__, commit_id\n"
+    )
+
+    wd.commit_testfile()
+    wd("git tag v1.0.0")
+
+    # Get the commit hash so we can verify it in the version file
+    git_node = wd("git rev-parse HEAD").strip()
+    short_node = git_node[:7]
+
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+    )
+
+    assert build_result.returncode == 0, (
+        f"Build failed:\nstdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+
+    import zipfile
+
+    dist_dir = wd.cwd / "dist"
+    wheels = list(dist_dir.glob("*.whl"))
+    assert len(wheels) == 1
+
+    with zipfile.ZipFile(wheels[0], "r") as whl:
+        version_content = None
+        for name in whl.namelist():
+            if "_version.py" in name:
+                version_content = whl.read(name).decode("utf-8")
+                break
+
+        assert version_content is not None, "Version file not found in wheel"
+        assert "1.0.0" in version_content
+        assert "commit_id" in version_content
+        assert short_node in version_content, (
+            f"Expected short node '{short_node}' in version file. "
+            f"Content:\n{version_content}"
+        )
+
+
+@pytest.mark.issue(1298)
+def test_version_file_contains_commit_node_in_editable_strict(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that the commit node is present in the version file for strict editable installs.
+
+    In strict mode, version files should be copied to the persistent auxiliary
+    directory with the full commit_id included.
+    """
+    monkeypatch.chdir(wd.cwd)
+
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=64", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "node-editable-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            version_file = "node_editable_pkg/_version.py"
+
+            [tool.setuptools.packages.find]
+            where = ["."]
+        """),
+    )
+
+    pkg_dir = wd.cwd / "node_editable_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text(
+        "from ._version import __version__, commit_id\n"
+    )
+
+    wd.commit_testfile()
+    wd("git tag v2.0.0")
+
+    git_node = wd("git rev-parse HEAD").strip()
+    short_node = git_node[:7]
+
+    dist_dir = wd.cwd / "dist"
+    dist_dir.mkdir(exist_ok=True)
+
+    build_result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "from setuptools.build_meta import build_editable; "
+                "build_editable('dist', config_settings={'editable_mode': 'strict'})"
+            ),
+        ],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+    )
+
+    assert build_result.returncode == 0, (
+        f"Strict editable build failed:\n"
+        f"stdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+
+    # Version file should be in source (written during inference)
+    source_version_file = pkg_dir / "_version.py"
+    assert source_version_file.exists()
+    content = source_version_file.read_text()
+    assert "2.0.0" in content
+    assert "commit_id" in content
+    assert short_node in content, (
+        f"Expected short node '{short_node}' in source version file. Content:\n{content}"
+    )
+
+    # Version file should ALSO be in the auxiliary directory
+    build_dir = wd.cwd / "build"
+    editable_dirs = list(build_dir.glob("__editable__.*"))
+    assert editable_dirs, f"Expected editable build dir under {build_dir}"
+    aux_version_file = editable_dirs[0] / "node_editable_pkg" / "_version.py"
+    assert aux_version_file.exists(), (
+        f"Version file missing from auxiliary dir: {aux_version_file}"
+    )
+    aux_content = aux_version_file.read_text()
+    assert short_node in aux_content

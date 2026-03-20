@@ -56,7 +56,7 @@ def _register_build_py_command(dist: setuptools.Distribution) -> None:
     class _SetuptoolsScmWrappedBuildPy(project_build_py, scm_build_py):  # type: ignore[misc, valid-type]
         def run(self) -> None:
             project_build_py.run(self)
-            self._write_version_files()
+            self._scm_version_file_outputs = self._write_version_files()
 
     dist.cmdclass["build_py"] = _SetuptoolsScmWrappedBuildPy
     log.debug("Wrapped project build_py with setuptools_scm version-file writer")
