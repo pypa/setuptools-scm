@@ -178,7 +178,12 @@ class GitWorkdir(Workdir):
         return self.path.joinpath(".git/shallow").is_file()
 
     def fetch_shallow(self) -> None:
-        run_git(["fetch", "--unshallow"], self.path, check=True, timeout=240)
+        run_git(
+            ["fetch", "--unshallow", "--filter=blob:none"],
+            self.path,
+            check=True,
+            timeout=240,
+        )
 
     def node(self) -> str | None:
         return run_git(
