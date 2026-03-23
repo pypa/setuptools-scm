@@ -578,7 +578,7 @@ def create_clean_distribution(name: str) -> setuptools.Distribution:
     # Clean all setuptools_scm effects
     dist.metadata.version = None
     if hasattr(dist, "_setuptools_scm_version_set_by_infer"):
-        delattr(dist, "_setuptools_scm_version_set_by_infer")
+        del dist._setuptools_scm_version_set_by_infer
 
     return dist
 
