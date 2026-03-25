@@ -122,65 +122,83 @@ def set_version_inference_data(dist: Distribution, data: VersionInferenceData) -
     dist._setuptools_scm_version_inference_data = data  # type: ignore[attr-defined]
 
 
-class build_py(_build_py):
-    """Custom build_py that writes version files to the build directory.
+class ScmVersionFileMixin(_build_py):
+    """Mixin that writes version files to build_lib and registers them as outputs.
 
-    This command extends the standard build_py to write version files
-    (like _version.py) to self.build_lib instead of the source tree.
-    This enables installing packages from read-only source directories.
+    Place at the front of the MRO so its methods run first, then delegate
+    to the next class via super(). Works with any build_py implementation.
+
+    For editable installs (strict mode), version files are registered in
+    get_outputs() so setuptools copies them to the persistent auxiliary
+    directory where the editable finder can serve them.
     """
 
+    _scm_version_file_outputs: list[str]
+
+    def initialize_options(self) -> None:
+        super().initialize_options()
+        self._scm_version_file_outputs = []
+
     def run(self) -> None:
-        """Run the build_py command and write version files to build_lib."""
-        # First, run the standard build_py to copy files
         super().run()
+        self._scm_version_file_outputs = self._write_version_files()
 
-        # Then write version files to the build directory
-        self._write_version_files()
+    def get_outputs(self, include_bytecode: bool = True) -> list[str]:
+        outputs = super().get_outputs(include_bytecode)
+        outputs.extend(self._scm_version_file_outputs)
+        return outputs
 
-    def _write_version_files(self) -> None:
-        """Write version files to the build directory."""
+    def _write_version_files(self) -> list[str]:
+        """Write version files to the build directory.
+
+        Returns a list of absolute paths to the files written, for use
+        in get_outputs() so editable wheels include them.
+        """
         data = get_version_inference_data(self.distribution)
         if data is None:
             log.debug("No version inference data found, skipping version file writing")
-            return
+            return []
 
         config = data.config
         if config.write_to is None and config.version_file is None:
             log.debug("No version file paths configured, skipping")
-            return
+            return []
 
         build_lib = Path(self.build_lib)
         log.info("Writing version files to build directory: %s", build_lib)
 
-        # Get package_dir mapping for path transformation (handles src/ layouts)
         package_dir = getattr(self.distribution, "package_dir", None)
+        written: list[str] = []
 
-        # Handle legacy write_to
         if config.write_to:
             transformed_path = _transform_version_file_path(
                 str(config.write_to), package_dir
             )
-            self._write_single_version_file(
+            target = self._write_single_version_file(
                 build_lib=build_lib,
                 relative_path=transformed_path,
                 template=config.write_to_template,
                 version=data.version,
                 scm_version=data.scm_version,
             )
+            if target is not None:
+                written.append(target)
 
-        # Handle new version_file
         if config.version_file:
             transformed_path = _transform_version_file_path(
                 str(config.version_file), package_dir
             )
-            self._write_single_version_file(
+            target = self._write_single_version_file(
                 build_lib=build_lib,
                 relative_path=transformed_path,
                 template=config.version_file_template,
                 version=data.version,
                 scm_version=data.scm_version,
             )
+            if target is not None:
+                written.append(target)
+
+        return written
 
     def _write_single_version_file(
         self,
@@ -189,8 +207,11 @@ class build_py(_build_py):
         template: str | None,
         version: str,
         scm_version: ScmVersion | None,
-    ) -> None:
-        """Write a single version file to the build directory."""
+    ) -> str | None:
+        """Write a single version file to the build directory.
+
+        Returns the absolute path of the written file, or None on failure.
+        """
         from vcs_versioning._dump_version import DummyScmVersion
         from vcs_versioning._dump_version import _validate_template
         from vcs_versioning._version_cls import _version_as_tuple
@@ -202,7 +223,7 @@ class build_py(_build_py):
             final_template = _validate_template(target, template)
         except ValueError as e:
             log.warning("Skipping version file %s: %s", target, e)
-            return
+            return None
 
         version_tuple = _version_as_tuple(version)
         content = final_template.format(
@@ -211,7 +232,14 @@ class build_py(_build_py):
             scm_version=scm_version or DummyScmVersion(),
         )
 
-        # Ensure parent directory exists
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
         log.info("Wrote version file: %s", target)
+        return str(target)
+
+
+class build_py(ScmVersionFileMixin, _build_py):
+    """Default build_py with version file writing.
+
+    Used when no project-specific build_py is registered in cmdclass.
+    """

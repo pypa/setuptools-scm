@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 10.0.2 (2026-03-25)
+
+### Fixed
+
+- Fix version file not generated for editable installs. Version files are now written to the source tree by default during inference (restoring pre-10.x behavior), and also registered as ``build_py`` outputs so strict editable installs include them in the persistent auxiliary directory. Set ``SETUPTOOLS_SCM_WRITE_TO_SOURCE=0`` to disable source-tree writing (e.g., for read-only source directories). ([#1298](https://github.com/pypa/setuptools-scm/issues/1298))
+
 ## 10.0.1 (2026-03-09)
 
 ### Miscellaneous
