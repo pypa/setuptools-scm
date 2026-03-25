@@ -2,8 +2,9 @@
 Version helper for setuptools-scm package.
 
 This module allows setuptools-scm to use VCS metadata for its own version.
-It works only if the backend-path of the build-system section from
-pyproject.toml is respected.
+``backend-path`` lists this directory and ``./src``; ``vcs_versioning`` is
+imported from the ``vcs-versioning`` build dependency (PEP 517 paths must stay
+inside the sdist).
 
 Version tags must carry the ``setuptools-scm-`` prefix (e.g.
 ``setuptools-scm-v10.0.0``).  The tag regex and git describe ``--match``
