@@ -13,7 +13,6 @@ requires = [
 backend-path = [
   ".",
   "./src",
-  "../vcs-versioning/src"
 ]
 [tools.uv.sources]
 vcs-versioning= "../vcs-versioning"
