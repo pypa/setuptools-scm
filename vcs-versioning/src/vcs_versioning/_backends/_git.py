@@ -12,6 +12,7 @@ from datetime import date, datetime, timezone
 from enum import Enum
 from os.path import samefile
 from pathlib import Path
+from subprocess import CalledProcessError
 from typing import TYPE_CHECKING
 
 from .. import _discover as discover
@@ -178,12 +179,15 @@ class GitWorkdir(Workdir):
         return self.path.joinpath(".git/shallow").is_file()
 
     def fetch_shallow(self) -> None:
-        run_git(
-            ["fetch", "--unshallow", "--filter=blob:none"],
-            self.path,
-            check=True,
-            timeout=240,
-        )
+        try:
+            run_git(
+                ["fetch", "--unshallow", "--filter=blob:none"],
+                self.path,
+                check=True,
+                timeout=240,
+            )
+        except CalledProcessError:
+            run_git(["fetch", "--unshallow"], self.path, check=True, timeout=240)
 
     def node(self) -> str | None:
         return run_git(
