@@ -474,6 +474,28 @@ wheels = [
 ]
 
 [[package]]
+name = "griffecli"
+version = "2.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama" },
+    { name = "griffelib" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c3/e4/41882f30d4c5d842d32cc91c9a60d2c566309b6f1c773864fb1758d6a2f2/griffecli-2.0.1.tar.gz", hash = "sha256:a44f1482dfbeea72bd6686a4e7c99e0d30b0d2abd675b81e9ac1d97734ca7cf6", size = 56199, upload-time = "2026-03-23T21:05:24.591Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/47/e5/d3161a36107fd23c86385354a16f0e2d204f7b2c8db80d10fbd28447e5f5/griffecli-2.0.1-py3-none-any.whl", hash = "sha256:5c89012c292365c20538740cf491443625b3083449516964f4d3de3ca8c36090", size = 9342, upload-time = "2026-03-23T21:04:03.385Z" },
+]
+
+[[package]]
+name = "griffelib"
+version = "2.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/71/d7/2b805e89cdc609e5b304361d80586b272ef00f6287ee63de1e571b1f71ec/griffelib-2.0.1.tar.gz", hash = "sha256:59f39eabb4c777483a3823e39e8f9e03e69df271a7e49aee64e91a8cfa91bdf5", size = 166383, upload-time = "2026-03-23T21:05:25.882Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4b/4c/cc8c68196db727cfc1432f2ad5de50aa6707e630d44b2e6361dc06d8f134/griffelib-2.0.1-py3-none-any.whl", hash = "sha256:b769eed581c0e857d362fc8fcd8e57ecd2330c124b6104ac8b4c1c86d76970aa", size = 142377, upload-time = "2026-03-23T21:04:01.116Z" },
+]
+
+[[package]]
 name = "idna"
 version = "3.11"
 source = { registry = "https://pypi.org/simple" }
@@ -1331,6 +1353,7 @@ test = [
     { name = "flake8" },
     { name = "griffe" },
     { name = "griffe-public-wildcard-imports" },
+    { name = "griffecli" },
     { name = "mypy", marker = "implementation_name != 'pypy'" },
     { name = "pip" },
     { name = "pytest" },
@@ -1367,6 +1390,7 @@ test = [
     { name = "flake8" },
     { name = "griffe" },
     { name = "griffe-public-wildcard-imports" },
+    { name = "griffecli" },
     { name = "mypy", marker = "implementation_name != 'pypy'" },
     { name = "pip" },
     { name = "pytest" },
