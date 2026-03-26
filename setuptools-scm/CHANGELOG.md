@@ -2,6 +2,17 @@
 
 <!-- towncrier release notes start -->
 
+## 10.0.3 (2026-03-26)
+
+### Fixed
+
+- Remove monorepo-only ``../vcs-versioning/src`` from ``build-system.backend-path`` so sdists install under PEP 517 (paths must stay inside the source tree). ([#1306](https://github.com/pypa/setuptools-scm/issues/1306))
+
+
+### Miscellaneous
+
+- Add `griffecli` to test dependencies so the API stability check keeps working after the Griffe CLI was split into a separate package. ([#1310](https://github.com/pypa/setuptools-scm/issues/1310))
+
 ## 10.0.2 (2026-03-25)
 
 ### Fixed
