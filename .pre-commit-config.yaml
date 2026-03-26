@@ -13,9 +13,35 @@ repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.15.7
   hooks:
+    # Explicit --config so hooks match `uv run ruff` (astral-sh/ruff#11924).
+    # Workspace = everything except setuptools-scm/ (src/, vcs-versioning/, docs/, …).
+    # Args order: --config first, then check-only flags (--fix …).
     - id: ruff-check
-      args: [--fix, --exit-non-zero-on-fix, --show-fixes]
+      name: ruff check (workspace)
+      exclude: ^setuptools-scm/
+      args:
+        - --config=pyproject.toml
+        - --fix
+        - --exit-non-zero-on-fix
+        - --show-fixes
+    - id: ruff-check
+      name: ruff check (setuptools-scm)
+      files: ^setuptools-scm/
+      args:
+        - --config=setuptools-scm/pyproject.toml
+        - --fix
+        - --exit-non-zero-on-fix
+        - --show-fixes
     - id: ruff-format
+      name: ruff format (workspace)
+      exclude: ^setuptools-scm/
+      args:
+        - --config=pyproject.toml
+    - id: ruff-format
+      name: ruff format (setuptools-scm)
+      files: ^setuptools-scm/
+      args:
+        - --config=setuptools-scm/pyproject.toml
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.19.1

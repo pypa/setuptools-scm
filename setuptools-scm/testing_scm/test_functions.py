@@ -14,12 +14,12 @@ from pathlib import Path
 
 import pytest
 
+from setuptools_scm.version import meta
 from vcs_versioning._overrides import PRETEND_KEY
 
 from setuptools_scm import Configuration
 from setuptools_scm import dump_version
 from setuptools_scm import get_version
-from setuptools_scm.version import meta
 
 c = Configuration()
 

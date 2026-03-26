@@ -15,23 +15,23 @@ from typing import Any
 import pytest
 
 from packaging.version import Version
-from vcs_versioning._requirement_cls import extract_package_name
-
-from setuptools_scm._integration import setuptools as setuptools_integration
 from setuptools_scm._integration.pyproject_reading import PyProjectData
 from setuptools_scm._integration.setup_cfg import SetuptoolsBasicData
 from setuptools_scm._integration.setup_cfg import read_setup_cfg
+from vcs_versioning._requirement_cls import extract_package_name
+
+from setuptools_scm._integration import setuptools as setuptools_integration
 
 if TYPE_CHECKING:
     import setuptools
 
+from setuptools_scm._integration.setuptools import _warn_on_old_setuptools
 from vcs_versioning._overrides import PRETEND_KEY
 from vcs_versioning._overrides import PRETEND_KEY_NAMED
 from vcs_versioning._run_cmd import run
 from vcs_versioning.test_api import WorkDir
 
 from setuptools_scm import Configuration
-from setuptools_scm._integration.setuptools import _warn_on_old_setuptools
 
 c = Configuration()
 
@@ -505,9 +505,10 @@ def test_setup_cfg_version_prevents_inference_version_keyword(
     dist = create_clean_distribution("legacy-proj")
 
     # Using keyword should detect an existing version via legacy data and avoid inferring
-    from setuptools_scm._integration import setuptools as setuptools_integration
     from setuptools_scm._integration.pyproject_reading import PyProjectData
     from setuptools_scm._integration.setup_cfg import SetuptoolsBasicData
+
+    from setuptools_scm._integration import setuptools as setuptools_integration
 
     # Construct PyProjectData directly without requiring build backend inference
     pyproject_data = PyProjectData.for_testing(
