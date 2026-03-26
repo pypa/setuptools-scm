@@ -15,6 +15,8 @@ dependencies = [
 create-release-proposal = "vcs_versioning_workspace.create_release_proposal:main"
 
 [dependency-groups]
+# PP006 / uv: aggregate groups for local development (members define their own test deps)
+dev = [{ include-group = "docs" }, { include-group = "typing" }, { include-group = "release" }]
 docs = [
   "mkdocs",
   "mkdocs-include-markdown-plugin",
@@ -95,4 +97,12 @@ ignore = [
     "PY005", # no tests folder for the workspace
     "PY003", # each subproject has one
 
-    "GH103", "GH212", "MY100", "PC111", "PC160", "PC170", "PC180", "PC901"]
+    "GH103",
+    "GH212",
+    "MY100",
+    "PC111",
+    "PC160",
+    "PC170",
+    "PC180",
+    "PC901",
+]

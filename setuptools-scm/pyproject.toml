@@ -59,6 +59,7 @@ simple = []
 toml = []
 
 [dependency-groups]
+dev = [{ include-group = "test" }]
 docs = [
   "mkdocs",
   "mkdocs-entangled-plugin",
@@ -133,6 +134,23 @@ scm.git.describe_command = ["git", "describe", "--dirty", "--tags", "--long", "-
 lint.extend-select = ["YTT", "B", "C4", "DTZ", "ISC", "LOG", "G", "PIE", "PYI", "PT", "FLY", "I", "C90", "PERF", "W", "PGH", "PLE", "UP", "FURB", "RUF"]
 lint.ignore = ["B028", "LOG015", "PERF203"]
 lint.preview = true
+
+# setuptools_scm alias modules: explicit `from m import x as x` re-exports for API stability
+# (PLC0414 only skips __init__.py; see check_api.py / griffe-public-wildcard-imports).
+[tool.ruff.lint.per-file-ignores]
+"src/setuptools_scm/version.py" = ["PLC0414"]
+"src/setuptools_scm/git.py" = ["PLC0414"]
+"src/setuptools_scm/scm_workdir.py" = ["PLC0414"]
+"src/setuptools_scm/discover.py" = ["PLC0414"]
+"src/setuptools_scm/integration.py" = ["PLC0414"]
+"src/setuptools_scm/hg.py" = ["PLC0414"]
+"src/setuptools_scm/hg_git.py" = ["PLC0414"]
+"src/setuptools_scm/fallbacks.py" = ["PLC0414"]
+"_own_version_helper.py" = ["PLC0414"]
+"src/setuptools_scm/_integration/pyproject_reading.py" = ["BLE001", "S112"]
+"testing_scm/conftest.py" = ["BLE001", "S110"]
+"testing_scm/test_main.py" = ["S102"]
+"testing_scm/test_regressions.py" = ["BLE001"]
 
 [tool.ruff.lint.isort]
 force-single-line = true

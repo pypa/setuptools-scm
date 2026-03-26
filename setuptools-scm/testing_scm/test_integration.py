@@ -47,6 +47,7 @@ def _run_setuptools_setup(cwd: Path) -> subprocess.CompletedProcess[str]:
         cwd=cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode != 0, "setup() with no commands should exit non-zero"
     return result
@@ -594,7 +595,7 @@ def create_clean_distribution(name: str) -> setuptools.Distribution:
     # Clean all setuptools_scm effects
     dist.metadata.version = None
     if hasattr(dist, "_setuptools_scm_version_set_by_infer"):
-        delattr(dist, "_setuptools_scm_version_set_by_infer")
+        del dist._setuptools_scm_version_set_by_infer
 
     return dist
 
@@ -782,6 +783,7 @@ def test_version_file_written_to_build_directory(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     # Build should succeed
@@ -854,6 +856,7 @@ def test_version_file_src_layout_path_transformation(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert build_result.returncode == 0, (
@@ -938,6 +941,7 @@ def test_editable_install_version_file(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert build_result.returncode == 0, (
@@ -1012,6 +1016,7 @@ def test_editable_strict_includes_version_file(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert build_result.returncode == 0, (
@@ -1108,6 +1113,7 @@ def test_readonly_source_directory_build(
             cwd=wd.cwd,
             capture_output=True,
             text=True,
+            check=False,
             env={**os.environ, "SETUPTOOLS_SCM_WRITE_TO_SOURCE": "0"},
         )
 
@@ -1198,6 +1204,7 @@ def test_legacy_write_to_build_directory(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert build_result.returncode == 0, (
@@ -1270,6 +1277,7 @@ def test_version_file_template_in_build(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert build_result.returncode == 0, (
@@ -1354,6 +1362,7 @@ def test_custom_build_py_still_writes_version_file(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert build_result.returncode == 0, (
@@ -1425,6 +1434,7 @@ def test_version_file_contains_commit_node_in_wheel(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert build_result.returncode == 0, (
@@ -1510,6 +1520,7 @@ def test_version_file_contains_commit_node_in_editable_strict(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert build_result.returncode == 0, (
