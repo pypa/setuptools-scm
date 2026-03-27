@@ -11,7 +11,7 @@ permissions: {}
 
 jobs:
   # Version determination + changelog build for each project (parallel)
-  # Forks: run on pull_request only (validation). Skip on fork push — no release branches/PRs there.
+  # Forks: run on pull_request only (validation). Intentionally skip fork pushes; do not act on fork release branches/PRs.
   setuptools-scm:
     if: github.repository == 'pypa/setuptools-scm' || github.event_name == 'pull_request'
     uses: ./.github/workflows/reusable-towncrier-release.yml
