@@ -58,6 +58,39 @@ def wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> WorkDir:
     return wd.setup_git(monkeypatch)
 
 
+@pytest.mark.issue("1314")
+def test_get_version_no_implicit_global_overrides_warning_subprocess(
+    wd: WorkDir,
+) -> None:
+    """setuptools_scm.get_version must not rely on implicit GlobalOverrides auto-create.
+
+    Pytest's vcs_versioning plugin installs a global ``GlobalOverrides`` context, so
+    this check runs in a subprocess without that fixture (see GitHub issue #1314).
+    """
+    root = os.fspath(wd.cwd)
+    script = textwrap.dedent(
+        f"""
+        import warnings
+
+        warnings.filterwarnings(
+            "error",
+            message="No GlobalOverrides context is active",
+            category=UserWarning,
+        )
+        import setuptools_scm
+
+        setuptools_scm.get_version(root={root!r})
+        """
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, (proc.stdout, proc.stderr)
+
+
 def test_pyproject_support(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG")
     pkg = tmp_path / "package"
