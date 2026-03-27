@@ -114,6 +114,9 @@ setuptools_scm = "setuptools_scm._integration.setuptools:infer_version"
 where = ["src"]
 namespaces = false
 
+[tool.setuptools.package-data]
+setuptools_scm = [".git_archival.txt"]
+
 [tool.setuptools_scm]
 root = ".."
 version_scheme = "towncrier-fragments"

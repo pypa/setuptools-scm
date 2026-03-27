@@ -89,6 +89,9 @@ node-and-timestamp = "vcs_versioning._version_schemes:get_local_node_and_timesta
 where = ["src"]
 namespaces = false
 
+[tool.setuptools.package-data]
+"vcs_versioning._cli" = ["git_archival_stable.txt", "git_archival_full.txt"]
+
 [tool.vcs-versioning]
 root = ".."
 version_scheme = "towncrier-fragments"
