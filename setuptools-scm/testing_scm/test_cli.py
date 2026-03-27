@@ -6,10 +6,9 @@ from contextlib import redirect_stdout
 
 import pytest
 
+from setuptools_scm._integration.pyproject_reading import PyProjectData
 from vcs_versioning._cli import main
 from vcs_versioning.test_api import WorkDir
-
-from setuptools_scm._integration.pyproject_reading import PyProjectData
 
 from .conftest import DebugMode
 

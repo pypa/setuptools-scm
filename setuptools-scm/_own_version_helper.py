@@ -19,9 +19,8 @@ import os
 from pathlib import Path
 
 from setuptools import build_meta as build_meta
-from vcs_versioning._backends._git import make_describe_command
-
 from setuptools_scm import get_version
+from vcs_versioning._backends._git import make_describe_command
 
 
 def scm_version() -> str:

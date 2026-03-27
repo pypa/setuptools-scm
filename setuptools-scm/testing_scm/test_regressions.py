@@ -15,10 +15,9 @@ from pathlib import Path
 
 import pytest
 
+from setuptools_scm.integration import data_from_mime
 from vcs_versioning._run_cmd import run
 from vcs_versioning.test_api import WorkDir
-
-from setuptools_scm.integration import data_from_mime
 
 
 def test_data_from_mime_ignores_body() -> None:

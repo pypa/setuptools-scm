@@ -49,11 +49,10 @@ def should_infer(pyproject_data: PyProjectData) -> bool:
     # New behavior: simple extra + dynamic version
     if pyproject_data.project_present:
         dynamic_fields = pyproject_data.project.get("dynamic", [])
-        if "version" in dynamic_fields:
-            if has_build_package_with_extra(
-                pyproject_data.build_requires, "setuptools-scm", "simple"
-            ):
-                return True
+        if "version" in dynamic_fields and has_build_package_with_extra(
+            pyproject_data.build_requires, "setuptools-scm", "simple"
+        ):
+            return True
 
     return False
 
@@ -75,9 +74,11 @@ def has_build_package_with_extra(
         try:
             requirement = Requirement(requirement_string)
             package_name = extract_package_name(requirement_string)
-            if package_name == canonical_build_package_name:
-                if extra_name in requirement.extras:
-                    return True
+            if (
+                package_name == canonical_build_package_name
+                and extra_name in requirement.extras
+            ):
+                return True
         except Exception:
             # If parsing fails, continue to next requirement
             continue

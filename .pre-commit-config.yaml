@@ -1,3 +1,7 @@
+ci:
+  autofix_commit_msg: "style: pre-commit fixes"
+  autoupdate_schedule: monthly
+
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -7,14 +11,40 @@ repos:
     -   id: debug-statements
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.13.3
+  rev: v0.15.7
   hooks:
+    # Explicit --config so hooks match `uv run ruff` (astral-sh/ruff#11924).
+    # Workspace = everything except setuptools-scm/ (src/, vcs-versioning/, docs/, …).
+    # Args order: --config first, then check-only flags (--fix …).
     - id: ruff-check
-      args: [--fix, --exit-non-zero-on-fix, --show-fixes]
+      name: ruff check (workspace)
+      exclude: ^setuptools-scm/
+      args:
+        - --config=pyproject.toml
+        - --fix
+        - --exit-non-zero-on-fix
+        - --show-fixes
+    - id: ruff-check
+      name: ruff check (setuptools-scm)
+      files: ^setuptools-scm/
+      args:
+        - --config=setuptools-scm/pyproject.toml
+        - --fix
+        - --exit-non-zero-on-fix
+        - --show-fixes
     - id: ruff-format
+      name: ruff format (workspace)
+      exclude: ^setuptools-scm/
+      args:
+        - --config=pyproject.toml
+    - id: ruff-format
+      name: ruff format (setuptools-scm)
+      files: ^setuptools-scm/
+      args:
+        - --config=setuptools-scm/pyproject.toml
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.18.2
+    rev: v1.19.1
     hooks:
     -   id: mypy
         args: [--strict]
@@ -29,12 +59,12 @@ repos:
             - towncrier>=23.11.0
 
 -   repo: https://github.com/scientific-python/cookie
-    rev: 2025.10.01
+    rev: 2026.03.02
     hooks:
       - id: sp-repo-review
 
 -   repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
+    rev: v2.4.2
     hooks:
     -   id: codespell
         args: [-w, --ignore-words-list=hist,nd,te]
