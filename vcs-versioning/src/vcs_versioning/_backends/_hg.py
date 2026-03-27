@@ -137,10 +137,13 @@ class HgWorkdir(Workdir):
     ) -> Version | None:
         """Try to get a version from the current tags.
 
-        Iterates all tags and returns the first that parses as a version,
-        so non-version tags (e.g. from MQ or user conventions) are skipped.
+        Pre-filters with tag_regex so non-version tags are silently skipped
+        without emitting warnings from tag_to_version().
         """
         for tag_str in tags:
+            if not config.tag_regex.match(tag_str):
+                log.debug("skipping non-version tag %r", tag_str)
+                continue
             version = tag_to_version(tag_str, config)
             if version is not None:
                 return version
