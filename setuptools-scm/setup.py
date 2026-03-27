@@ -17,13 +17,22 @@ from vcs_versioning._backends._git import make_describe_command
 
 
 def _package_version() -> str:
+    """Resolve version using this package's tree, not the process cwd.
+
+    ``get_version`` defaults ``fallback_root`` to ``.``; PEP 517 builds often run
+    with cwd at the repo or workspace root, so fallbacks (e.g. ``PKG-INFO`` /
+    ``pyproject.toml`` entry-point matching) could pick the wrong directory.
+    """
     local_scheme = (
         "no-local-version"
         if os.environ.get("SETUPTOOLS_SCM_NO_LOCAL")
         else "node-and-date"
     )
+    pyproject_toml = _root / "pyproject.toml"
     return get_version(
-        root=_root.parent,
+        root=str(_root.parent),
+        relative_to=str(pyproject_toml),
+        fallback_root=str(_root),
         version_scheme="guess-next-dev",
         local_scheme=local_scheme,
         tag_regex=r"^setuptools-scm-(?P<version>v?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$",

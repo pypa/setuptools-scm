@@ -51,7 +51,11 @@ def _parse(root: str, config: Configuration) -> ScmVersion | None:
 
 
 def _package_version() -> str:
-    """Version from VCS with ``vcs-versioning-`` tag prefix."""
+    """Version from VCS with ``vcs-versioning-`` tag prefix.
+
+    ``relative_to`` / ``fallback_root`` are anchored to this directory so builds
+    do not depend on the process cwd (e.g. workspace root in CI).
+    """
     local_scheme = (
         get_no_local_node
         if os.environ.get("VCS_VERSIONING_NO_LOCAL")
