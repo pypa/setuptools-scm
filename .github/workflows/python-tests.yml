@@ -2,20 +2,19 @@ name: python tests+artifacts+release
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, closed]
   push:
     branches:
     - "*"
-    tags:
-    - "setuptools-scm-v*"
-    - "vcs-versioning-v*"
-  release:
-    types: [published]
-  # Tags created by GITHUB_TOKEN don't trigger push events for other workflows.
-  # create-release-tags.yml dispatches this workflow explicitly after tagging.
-  workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: >-
+    ${{ github.workflow }}-${{
+      github.event.action == 'closed'
+      && format('release-pr-{0}', github.event.pull_request.number)
+      || github.event.pull_request.number
+      || github.ref
+    }}
   cancel-in-progress: true
 
 permissions: {}
@@ -25,7 +24,153 @@ env:
 
 jobs:
 
+  create-draft-releases:
+    # Only run when a release PR is merged to main with release labels.
+    # Creates draft GitHub releases + tags; downstream jobs build, test,
+    # then publish the drafts after all checks pass.
+    if: |
+      github.repository == 'pypa/setuptools-scm' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true &&
+      (contains(github.event.pull_request.labels.*.name, 'release:setuptools-scm') ||
+       contains(github.event.pull_request.labels.*.name, 'release:vcs-versioning'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release_scm: ${{ steps.create-releases.outputs.release_scm }}
+      release_vcs: ${{ steps.create-releases.outputs.release_vcs }}
+      scm_release_id: ${{ steps.create-releases.outputs.scm_release_id }}
+      vcs_release_id: ${{ steps.create-releases.outputs.vcs_release_id }}
+      scm_tag: ${{ steps.create-releases.outputs.scm_tag }}
+      vcs_tag: ${{ steps.create-releases.outputs.vcs_tag }}
+    steps:
+      - name: Create draft releases and tags
+        id: create-releases
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const prTitle = pr.title;
+            const mergeCommitSha = pr.merge_commit_sha;
+            const labels = pr.labels.map(l => l.name);
+
+            console.log(`Processing PR #${pr.number}: ${prTitle}`);
+            console.log(`Merge commit: ${mergeCommitSha}`);
+            console.log(`Labels: ${labels.join(', ')}`);
+
+            function extractVersion(title, packageName) {
+              const regex = new RegExp(`${packageName} v(\\d+\\.\\d+\\.\\d+)`);
+              const match = title.match(regex);
+              return match ? match[1] : null;
+            }
+
+            async function extractChangelog(packageDir, version) {
+              try {
+                const { data: file } = await github.rest.repos.getContent({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  path: `${packageDir}/CHANGELOG.md`,
+                  ref: mergeCommitSha
+                });
+
+                const content = Buffer.from(file.content, 'base64').toString('utf-8');
+                const lines = content.split('\n');
+
+                let inSection = false;
+                let changelog = [];
+
+                for (const line of lines) {
+                  if (line.startsWith(`## ${version}`)) {
+                    inSection = true;
+                    continue;
+                  }
+                  if (inSection && line.match(/^## \d/)) {
+                    break;
+                  }
+                  if (inSection) {
+                    changelog.push(line);
+                  }
+                }
+
+                while (changelog.length > 0 && changelog[0].trim() === '') {
+                  changelog.shift();
+                }
+                while (changelog.length > 0 && changelog[changelog.length - 1].trim() === '') {
+                  changelog.pop();
+                }
+
+                return changelog.join('\n');
+              } catch (error) {
+                console.log(`Could not extract changelog: ${error.message}`);
+                return `Release ${version}`;
+              }
+            }
+
+            // createRelease with target_commitish automatically creates a
+            // lightweight tag if it doesn't already exist
+            async function createDraftRelease(packageName, packageDir, tagPrefix) {
+              const version = extractVersion(prTitle, packageName);
+              if (!version) {
+                throw new Error(`Failed to extract ${packageName} version from PR title: ${prTitle}`);
+              }
+
+              const tagName = `${tagPrefix}-v${version}`;
+              const changelog = await extractChangelog(packageDir, version);
+
+              console.log(`Creating draft release ${tagName} at ${mergeCommitSha}`);
+
+              const { data: release } = await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: tagName,
+                target_commitish: mergeCommitSha,
+                name: `${packageName} v${version}`,
+                body: changelog,
+                draft: true,
+                prerelease: false,
+                make_latest: 'legacy'
+              });
+
+              console.log(`Draft release created: ${release.html_url} (id: ${release.id})`);
+              return { tagName, version, releaseId: release.id };
+            }
+
+            if (labels.includes('release:setuptools-scm')) {
+              console.log('\n--- Processing setuptools-scm ---');
+              const result = await createDraftRelease('setuptools-scm', 'setuptools-scm', 'setuptools-scm');
+              core.setOutput('release_scm', 'true');
+              core.setOutput('scm_release_id', String(result.releaseId));
+              core.setOutput('scm_tag', result.tagName);
+            } else {
+              core.setOutput('release_scm', 'false');
+            }
+
+            if (labels.includes('release:vcs-versioning')) {
+              console.log('\n--- Processing vcs-versioning ---');
+              const result = await createDraftRelease('vcs-versioning', 'vcs-versioning', 'vcs-versioning');
+              core.setOutput('release_vcs', 'true');
+              core.setOutput('vcs_release_id', String(result.releaseId));
+              core.setOutput('vcs_tag', result.tagName);
+            } else {
+              core.setOutput('release_vcs', 'false');
+            }
+
+            const released = [];
+            if (labels.includes('release:setuptools-scm')) released.push('setuptools-scm');
+            if (labels.includes('release:vcs-versioning')) released.push('vcs-versioning');
+            await core.summary
+              .addHeading('Draft Releases Created')
+              .addList(released.map(p => `${p} (draft)`))
+              .write();
+
   package:
+    needs: [create-draft-releases]
+    # Run on CI events (PR open/sync/push) even when create-draft-releases is
+    # skipped. On PR close, only run if draft releases were created (release flow).
+    if: |
+      !cancelled() &&
+      (github.event.action != 'closed' || needs.create-draft-releases.result == 'success')
     name: Build & inspect ${{ matrix.package }}
     runs-on: ubuntu-latest
     permissions:
@@ -142,35 +287,13 @@ jobs:
         run: uv run --no-sync pytest setuptools-scm/testing_scm/ vcs-versioning/testing_vcs/
         timeout-minutes: 25
 
-  dist_upload_setuptools_scm:
+  publish-vcs-versioning:
     runs-on: ubuntu-latest
-    if: |
-      github.repository == 'pypa/setuptools-scm' &&
-      ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/setuptools-scm-v')) ||
-      (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/setuptools-scm-v')) ||
-      (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'setuptools-scm-v')))
+    needs: [test, create-draft-releases]
+    if: needs.create-draft-releases.outputs.release_vcs == 'true'
     permissions:
       id-token: write
-    needs: [test]
-    steps:
-    - name: Download setuptools-scm packages
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-      with:
-        name: Packages-setuptools-scm
-        path: dist
-    - name: Publish setuptools-scm to PyPI
-      uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
-
-  dist_upload_vcs_versioning:
-    runs-on: ubuntu-latest
-    if: |
-      github.repository == 'pypa/setuptools-scm' &&
-      ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/vcs-versioning-v')) ||
-      (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/vcs-versioning-v')) ||
-      (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'vcs-versioning-v')))
-    permissions:
-      id-token: write
-    needs: [test]
+      contents: write
     steps:
     - name: Download vcs-versioning packages
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -179,15 +302,47 @@ jobs:
         path: dist
     - name: Publish vcs-versioning to PyPI
       uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+    - name: Upload release assets and publish
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+      env:
+        RELEASE_ID: ${{ needs.create-draft-releases.outputs.vcs_release_id }}
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          const releaseId = parseInt(process.env.RELEASE_ID);
 
-  upload-release-assets-setuptools-scm:
+          for (const file of fs.readdirSync('dist')) {
+            const filePath = path.join('dist', file);
+            const data = fs.readFileSync(filePath);
+            console.log(`Uploading ${file} (${data.length} bytes)`);
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: releaseId,
+              name: file,
+              data: data
+            });
+          }
+
+          await github.rest.repos.updateRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: releaseId,
+            draft: false,
+            make_latest: 'legacy'
+          });
+          console.log('vcs-versioning release published');
+
+  publish-setuptools-scm:
     runs-on: ubuntu-latest
+    # Depends on publish-vcs-versioning so the dependency is on PyPI first
+    needs: [publish-vcs-versioning, create-draft-releases]
     if: |
-      github.repository == 'pypa/setuptools-scm' &&
-      ((github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'setuptools-scm-v')) ||
-      (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/setuptools-scm-v')))
-    needs: [test]
+      !cancelled() && !failure() &&
+      needs.create-draft-releases.outputs.release_scm == 'true'
     permissions:
+      id-token: write
       contents: write
     steps:
     - name: Download setuptools-scm packages
@@ -195,32 +350,39 @@ jobs:
       with:
         name: Packages-setuptools-scm
         path: dist
-    - name: Upload release assets
-      uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+    - name: Publish setuptools-scm to PyPI
+      uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+    - name: Upload release assets and publish
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+      env:
+        RELEASE_ID: ${{ needs.create-draft-releases.outputs.scm_release_id }}
       with:
-        files: dist/*
-        fail_on_unmatched_files: true
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          const releaseId = parseInt(process.env.RELEASE_ID);
 
-  upload-release-assets-vcs-versioning:
-    runs-on: ubuntu-latest
-    if: |
-      github.repository == 'pypa/setuptools-scm' &&
-      ((github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'vcs-versioning-v')) ||
-      (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/vcs-versioning-v')))
-    needs: [test]
-    permissions:
-      contents: write
-    steps:
-    - name: Download vcs-versioning packages
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-      with:
-        name: Packages-vcs-versioning
-        path: dist
-    - name: Upload release assets
-      uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
-      with:
-        files: dist/*
-        fail_on_unmatched_files: true
+          for (const file of fs.readdirSync('dist')) {
+            const filePath = path.join('dist', file);
+            const data = fs.readFileSync(filePath);
+            console.log(`Uploading ${file} (${data.length} bytes)`);
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: releaseId,
+              name: file,
+              data: data
+            });
+          }
+
+          await github.rest.repos.updateRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: releaseId,
+            draft: false,
+            make_latest: 'legacy'
+          });
+          console.log('setuptools-scm release published');
 
   test-pypi-upload:
     runs-on: ubuntu-latest

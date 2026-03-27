@@ -148,8 +148,8 @@ Before merging workflow changes:
    ```
 
 2. Check workflow conditions match your expectations:
-   - Tag filters in `python-tests.yml`
-   - Label checks in `create-release-tags.yml`
+   - Release label checks in `python-tests.yml` (`create-draft-releases` job)
+   - Skip-tolerant `if` conditions on `package` and publish jobs
 
 3. Test in a fork with reduced scope (test project, Test PyPI)
 
