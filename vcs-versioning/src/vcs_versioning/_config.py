@@ -194,8 +194,8 @@ class Configuration:
 
     relative_to: _t.PathT | None = None
     root: _t.PathT = "."
-    version_scheme: _t.VERSION_SCHEME = DEFAULT_VERSION_SCHEME
-    local_scheme: _t.VERSION_SCHEME = DEFAULT_LOCAL_SCHEME
+    version_scheme: _t.VERSION_SCHEMES = DEFAULT_VERSION_SCHEME
+    local_scheme: _t.VERSION_SCHEMES = DEFAULT_LOCAL_SCHEME
     tag_regex: Pattern[str] = DEFAULT_TAG_REGEX
     parentdir_prefix_version: str | None = None
     fallback_version: str | None = None

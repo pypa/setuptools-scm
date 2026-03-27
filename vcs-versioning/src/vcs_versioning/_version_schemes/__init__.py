@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 
 from .. import _entrypoints
+from .._exceptions import DirtyWorkingTreeError
 from .._scm_version import ScmVersion, callable_or_entrypoint, meta, tag_to_version
 from ._common import (
     SEMVER_LEN,
@@ -20,6 +21,7 @@ from ._standard import (
     calver_by_date,
     date_ver_match,
     get_local_dirty_tag,
+    get_local_fail_on_uncommitted_changes,
     get_local_node_and_date,
     get_local_node_and_timestamp,
     get_no_local_node,
@@ -44,6 +46,7 @@ __all__ = [
     "SEMVER_MINOR",
     "SEMVER_PATCH",
     # Core types and utilities
+    "DirtyWorkingTreeError",
     "ScmVersion",
     "meta",
     "tag_to_version",
@@ -63,9 +66,10 @@ __all__ = [
     "guess_next_date_ver",
     "postrelease_version",
     # Local schemes
+    "get_local_dirty_tag",
+    "get_local_fail_on_uncommitted_changes",
     "get_local_node_and_date",
     "get_local_node_and_timestamp",
-    "get_local_dirty_tag",
     "get_no_local_node",
     # Towncrier
     "version_from_fragments",

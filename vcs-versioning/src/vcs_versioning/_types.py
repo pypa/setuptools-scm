@@ -20,8 +20,9 @@ __all__ = [
 
 CMD_TYPE: TypeAlias = Sequence[PathT] | str
 
-VERSION_SCHEME: TypeAlias = str | Callable[["ScmVersion"], str]
-VERSION_SCHEMES: TypeAlias = list[str] | tuple[str, ...] | VERSION_SCHEME
+VERSION_SCHEME_CALLABLE: TypeAlias = Callable[["ScmVersion"], str | None]
+VERSION_SCHEME: TypeAlias = str | VERSION_SCHEME_CALLABLE
+VERSION_SCHEMES: TypeAlias = Sequence[VERSION_SCHEME] | VERSION_SCHEME
 SCMVERSION: TypeAlias = "ScmVersion"
 
 # Git pre-parse function types
