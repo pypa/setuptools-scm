@@ -2,6 +2,13 @@
 
 <!-- towncrier release notes start -->
 
+## 10.0.5 (2026-03-27)
+
+### Fixed
+
+- Allow `dump_version()` deprecation warning to be silenced by passing `scm_version=None`. ([#1286](https://github.com/pypa/setuptools-scm/issues/1286))
+- Remove `[tool.uv.sources]` from `setuptools-scm/pyproject.toml` to fix sdist builds outside the workspace — the workspace root already declares the source mapping for development. ([#1330](https://github.com/pypa/setuptools-scm/issues/1330))
+
 ## 10.0.4 (2026-03-27)
 
 ### Fixed
