@@ -12,8 +12,9 @@ permissions:
 
 jobs:
   create-tags:
-    # Only run if PR was merged and has release labels
+    # Only run if PR was merged and has release labels (primary repo — tags/PyPI dispatch)
     if: |
+      github.repository == 'pypa/setuptools-scm' &&
       github.event.pull_request.merged == true &&
       (contains(github.event.pull_request.labels.*.name, 'release:setuptools-scm') ||
        contains(github.event.pull_request.labels.*.name, 'release:vcs-versioning'))

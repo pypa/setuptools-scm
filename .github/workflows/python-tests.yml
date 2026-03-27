@@ -145,9 +145,10 @@ jobs:
   dist_upload_setuptools_scm:
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/setuptools-scm-v')) ||
+      github.repository == 'pypa/setuptools-scm' &&
+      ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/setuptools-scm-v')) ||
       (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/setuptools-scm-v')) ||
-      (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'setuptools-scm-v'))
+      (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'setuptools-scm-v')))
     permissions:
       id-token: write
     needs: [test]
@@ -163,9 +164,10 @@ jobs:
   dist_upload_vcs_versioning:
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/vcs-versioning-v')) ||
+      github.repository == 'pypa/setuptools-scm' &&
+      ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/vcs-versioning-v')) ||
       (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/vcs-versioning-v')) ||
-      (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'vcs-versioning-v'))
+      (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'vcs-versioning-v')))
     permissions:
       id-token: write
     needs: [test]
@@ -181,8 +183,9 @@ jobs:
   upload-release-assets-setuptools-scm:
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'setuptools-scm-v')) ||
-      (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/setuptools-scm-v'))
+      github.repository == 'pypa/setuptools-scm' &&
+      ((github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'setuptools-scm-v')) ||
+      (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/setuptools-scm-v')))
     needs: [test]
     permissions:
       contents: write
@@ -201,8 +204,9 @@ jobs:
   upload-release-assets-vcs-versioning:
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'vcs-versioning-v')) ||
-      (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/vcs-versioning-v'))
+      github.repository == 'pypa/setuptools-scm' &&
+      ((github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'vcs-versioning-v')) ||
+      (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/vcs-versioning-v')))
     needs: [test]
     permissions:
       contents: write
@@ -220,7 +224,10 @@ jobs:
 
   test-pypi-upload:
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    if: |
+      github.repository == 'pypa/setuptools-scm' &&
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     needs: [test]
     permissions:
       id-token: write
