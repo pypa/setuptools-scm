@@ -19,6 +19,10 @@ from vcs_versioning._backends._git import make_describe_command
 def _package_version() -> str:
     """Resolve version using this package's tree, not the process cwd.
 
+    ``root`` is the monorepo (``..`` relative to ``pyproject.toml``) for SCM
+    discovery. ``fallback_root`` is ``.`` (the package tree) so ``PKG-INFO``
+    fallbacks resolve under that directory when building from an sdist.
+
     ``get_version`` defaults ``fallback_root`` to ``.``; PEP 517 builds often run
     with cwd at the repo or workspace root, so fallbacks (e.g. ``PKG-INFO`` /
     ``pyproject.toml`` entry-point matching) could pick the wrong directory.
@@ -30,9 +34,9 @@ def _package_version() -> str:
     )
     pyproject_toml = _root / "pyproject.toml"
     return get_version(
-        root=str(_root.parent),
+        root="..",
         relative_to=str(pyproject_toml),
-        fallback_root=str(_root),
+        fallback_root=".",
         version_scheme="guess-next-dev",
         local_scheme=local_scheme,
         tag_regex=r"^setuptools-scm-(?P<version>v?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$",
