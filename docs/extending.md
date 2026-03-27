@@ -37,6 +37,11 @@
       show_root_heading: yes
       heading_level: 4
 
+::: vcs_versioning._version_schemes.DirtyWorkingTreeError
+    options:
+      show_root_heading: yes
+      heading_level: 4
+
 ## Version number construction
 
 ### `setuptools_scm.version_scheme`
@@ -143,7 +148,8 @@ representing the version.
 Configures how the local part of a version is rendered given a
 [ScmVersion][vcs_versioning.ScmVersion] instance. A callable should return a string
 for the local segment, or you may pass a list of scheme names—each is tried in order
-until one returns a string (see `fail-on-uncommitted-changes` below).
+until one returns a non-`None` value (an empty string still stops the chain; return
+`None` to defer to the next scheme—see `fail-on-uncommitted-changes` below).
 Dates and times are in Coordinated Universal Time (UTC), because as part
 of the version, they should be location independent.
 
@@ -163,8 +169,8 @@ of the version, they should be location independent.
 
 `fail-on-uncommitted-changes`
 :   When the working tree is dirty (`ScmVersion.dirty` is true), raises
-    `DirtyWorkingTreeError`. When clean, returns no local segment so the **next** scheme in
-    a `local_scheme` list
+    [`DirtyWorkingTreeError`][vcs_versioning._version_schemes.DirtyWorkingTreeError].
+    When clean, returns `None` so the **next** scheme in a `local_scheme` list
     runs—pair it with your usual local scheme (for example `node-and-date` or
     `no-local-version`). This works with any `version_scheme`, so release CI can enforce a
     clean tree without a separate implementation per version scheme.

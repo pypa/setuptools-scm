@@ -147,7 +147,7 @@ Control timestamps for reproducible builds (from [reproducible-builds.org](https
     **Example:**
     ```bash
     # Override local_scheme for CI builds
-    export SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE='{"local_scheme": "no-local-version"}'
+    export SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE='{local_scheme = "no-local-version"}'
     ```
 
 #### Fail on uncommitted changes in release CI
