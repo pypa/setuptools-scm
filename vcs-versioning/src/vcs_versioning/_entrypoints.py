@@ -55,7 +55,7 @@ def _iter_version_schemes(
     entrypoint: str,
     scheme_value: _t.VERSION_SCHEMES,
     _memo: set[object] | None = None,
-) -> Iterator[Callable[[ScmVersion], str]]:
+) -> Iterator[Callable[[ScmVersion], str | None]]:
     if _memo is None:
         _memo = set()
     if isinstance(scheme_value, str):

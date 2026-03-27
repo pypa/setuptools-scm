@@ -141,8 +141,9 @@ representing the version.
 ### `setuptools_scm.local_scheme`
 
 Configures how the local part of a version is rendered given a
-[ScmVersion][vcs_versioning.ScmVersion] instance and should return a string
-representing the local version.
+[ScmVersion][vcs_versioning.ScmVersion] instance. A callable should return a string
+for the local segment, or you may pass a list of scheme names—each is tried in order
+until one returns a string (see `fail-on-uncommitted-changes` below).
 Dates and times are in Coordinated Universal Time (UTC), because as part
 of the version, they should be location independent.
 
@@ -159,3 +160,16 @@ of the version, they should be location independent.
 
 `no-local-version`
 : Omits local version, useful e.g. because PyPI does not support it
+
+`fail-on-uncommitted-changes`
+:   When the working tree is dirty (`ScmVersion.dirty` is true), raises
+    `DirtyWorkingTreeError`. When clean, returns no local segment so the **next** scheme in
+    a `local_scheme` list
+    runs—pair it with your usual local scheme (for example `node-and-date` or
+    `no-local-version`). This works with any `version_scheme`, so release CI can enforce a
+    clean tree without a separate implementation per version scheme.
+
+    **Example:** `local_scheme = ["fail-on-uncommitted-changes", "node-and-date"]`
+
+    See [Configuration Overrides](overrides.md#fail-on-uncommitted-changes-in-release-ci) for
+    enabling this via environment variables in CI without editing `pyproject.toml`.

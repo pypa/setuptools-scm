@@ -4,9 +4,14 @@ from __future__ import annotations
 
 import pytest
 from vcs_versioning import Configuration
+from vcs_versioning._exceptions import DirtyWorkingTreeError
 from vcs_versioning._run_cmd import has_command
 from vcs_versioning._scm_version import meta, tag_to_version
-from vcs_versioning._version_schemes import format_version, guess_next_version
+from vcs_versioning._version_schemes import (
+    format_version,
+    get_local_fail_on_uncommitted_changes,
+    guess_next_version,
+)
 
 c = Configuration()
 
@@ -181,6 +186,47 @@ def test_format_version_with_build_metadata(
 def test_tag_to_version(tag: str, expected_version: str) -> None:
     version = str(tag_to_version(tag, c))
     assert version == expected_version
+
+
+@pytest.mark.issue(1205)
+def test_get_local_fail_on_uncommitted_changes_direct() -> None:
+    with pytest.raises(DirtyWorkingTreeError):
+        get_local_fail_on_uncommitted_changes(VERSIONS["dirty"])
+    assert get_local_fail_on_uncommitted_changes(VERSIONS["exact"]) is None
+
+
+@pytest.mark.issue(1205)
+def test_fail_on_uncommitted_changes_raises_when_dirty() -> None:
+    from dataclasses import replace
+
+    scm_version = VERSIONS["dirty"]
+    configured_version = replace(
+        scm_version,
+        config=replace(
+            scm_version.config,
+            local_scheme=("fail-on-uncommitted-changes", "node-and-date"),
+        ),
+    )
+    with pytest.raises(DirtyWorkingTreeError) as excinfo:
+        format_version(configured_version)
+    assert str(excinfo.value) == (
+        "Working tree has uncommitted changes (SCM reports dirty)."
+    )
+
+
+@pytest.mark.issue(1205)
+def test_fail_on_uncommitted_changes_clean_delegates_to_next_local_scheme() -> None:
+    from dataclasses import replace
+
+    scm_version = VERSIONS["exact"]
+    configured_version = replace(
+        scm_version,
+        config=replace(
+            scm_version.config,
+            local_scheme=("fail-on-uncommitted-changes", "node-and-date"),
+        ),
+    )
+    assert format_version(configured_version) == "1.1"
 
 
 def test_has_command() -> None:
