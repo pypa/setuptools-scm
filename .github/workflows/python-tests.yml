@@ -32,6 +32,7 @@ jobs:
       github.repository == 'pypa/setuptools-scm' &&
       github.event.action == 'closed' &&
       github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main' &&
       (contains(github.event.pull_request.labels.*.name, 'release:setuptools-scm') ||
        contains(github.event.pull_request.labels.*.name, 'release:vcs-versioning'))
     runs-on: ubuntu-latest
@@ -116,6 +117,23 @@ jobs:
               }
 
               const tagName = `${tagPrefix}-v${version}`;
+
+              // Guard against duplicate releases (e.g. workflow re-run)
+              try {
+                const { data: existing } = await github.rest.repos.getReleaseByTag({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  tag: tagName
+                });
+                if (existing) {
+                  console.log(`Release ${tagName} already exists (id: ${existing.id}, draft: ${existing.draft})`);
+                  return { tagName, version, releaseId: existing.id };
+                }
+              } catch (e) {
+                if (e.status !== 404) throw e;
+                // 404 = no existing release, proceed to create
+              }
+
               const changelog = await extractChangelog(packageDir, version);
 
               console.log(`Creating draft release ${tagName} at ${mergeCommitSha}`);
@@ -311,8 +329,16 @@ jobs:
           const fs = require('fs');
           const path = require('path');
           const releaseId = parseInt(process.env.RELEASE_ID);
+          if (!releaseId) throw new Error('RELEASE_ID is not set');
+
+          const contentTypes = {
+            '.whl': 'application/zip',
+            '.gz': 'application/gzip',
+            '.zip': 'application/zip',
+          };
 
           for (const file of fs.readdirSync('dist')) {
+            const ext = file.endsWith('.tar.gz') ? '.gz' : path.extname(file);
             const filePath = path.join('dist', file);
             const data = fs.readFileSync(filePath);
             console.log(`Uploading ${file} (${data.length} bytes)`);
@@ -321,7 +347,8 @@ jobs:
               repo: context.repo.repo,
               release_id: releaseId,
               name: file,
-              data: data
+              data: data,
+              headers: { 'content-type': contentTypes[ext] || 'application/octet-stream' }
             });
           }
 
@@ -361,8 +388,16 @@ jobs:
           const fs = require('fs');
           const path = require('path');
           const releaseId = parseInt(process.env.RELEASE_ID);
+          if (!releaseId) throw new Error('RELEASE_ID is not set');
+
+          const contentTypes = {
+            '.whl': 'application/zip',
+            '.gz': 'application/gzip',
+            '.zip': 'application/zip',
+          };
 
           for (const file of fs.readdirSync('dist')) {
+            const ext = file.endsWith('.tar.gz') ? '.gz' : path.extname(file);
             const filePath = path.join('dist', file);
             const data = fs.readFileSync(filePath);
             console.log(`Uploading ${file} (${data.length} bytes)`);
@@ -371,7 +406,8 @@ jobs:
               repo: context.repo.repo,
               release_id: releaseId,
               name: file,
-              data: data
+              data: data,
+              headers: { 'content-type': contentTypes[ext] || 'application/octet-stream' }
             });
           }
 
@@ -383,6 +419,76 @@ jobs:
             make_latest: 'legacy'
           });
           console.log('setuptools-scm release published');
+
+  cleanup-draft-releases:
+    # Delete draft releases and their tags if the pipeline failed, so a re-run
+    # of the release PR merge (or a fix commit) starts from a clean state.
+    needs: [create-draft-releases, publish-vcs-versioning, publish-setuptools-scm]
+    if: |
+      always() &&
+      needs.create-draft-releases.result == 'success' &&
+      (needs.publish-vcs-versioning.result == 'failure' ||
+       needs.publish-setuptools-scm.result == 'failure')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Delete failed draft releases
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          VCS_RELEASE_ID: ${{ needs.create-draft-releases.outputs.vcs_release_id }}
+          SCM_RELEASE_ID: ${{ needs.create-draft-releases.outputs.scm_release_id }}
+          VCS_TAG: ${{ needs.create-draft-releases.outputs.vcs_tag }}
+          SCM_TAG: ${{ needs.create-draft-releases.outputs.scm_tag }}
+        with:
+          script: |
+            async function deleteDraftRelease(releaseId, tagName) {
+              if (!releaseId) return;
+              const id = parseInt(releaseId);
+
+              try {
+                const { data: release } = await github.rest.repos.getRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: id
+                });
+
+                if (!release.draft) {
+                  console.log(`Release ${tagName} is already published, skipping cleanup`);
+                  return;
+                }
+
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: id
+                });
+                console.log(`Deleted draft release ${tagName} (id: ${id})`);
+
+                if (tagName) {
+                  try {
+                    await github.rest.git.deleteRef({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      ref: `tags/${tagName}`
+                    });
+                    console.log(`Deleted tag ${tagName}`);
+                  } catch (e) {
+                    console.log(`Could not delete tag ${tagName}: ${e.message}`);
+                  }
+                }
+              } catch (error) {
+                console.log(`Could not clean up release ${tagName}: ${error.message}`);
+              }
+            }
+
+            await deleteDraftRelease(process.env.VCS_RELEASE_ID, process.env.VCS_TAG);
+            await deleteDraftRelease(process.env.SCM_RELEASE_ID, process.env.SCM_TAG);
+
+            await core.summary
+              .addHeading('Draft Release Cleanup')
+              .addRaw('Draft releases were cleaned up due to pipeline failure. Fix the issue and re-merge or re-run.')
+              .write();
 
   test-pypi-upload:
     runs-on: ubuntu-latest
