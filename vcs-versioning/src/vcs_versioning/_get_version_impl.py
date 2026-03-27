@@ -23,6 +23,14 @@ EMPTY_TAG_REGEX_DEPRECATION = DeprecationWarning(
 log = logging.getLogger(__name__)
 
 
+def resolved_fallback_root(config: Configuration) -> str:
+    """Absolute path for *fallback_root* when it is relative to *relative_to*'s directory."""
+    rel = config.relative_to
+    if rel and not Path(config.fallback_root).is_absolute():
+        return str((Path(rel).resolve().parent / config.fallback_root).resolve())
+    return str(Path(config.fallback_root).resolve())
+
+
 def parse_scm_version(config: Configuration) -> ScmVersion | None:
     try:
         if config.parse is not None:
@@ -48,7 +56,7 @@ def parse_fallback_version(config: Configuration) -> ScmVersion | None:
     return _entrypoints.version_from_entrypoint(
         config,
         entrypoint="setuptools_scm.parse_scm_fallback",
-        root=config.fallback_root,
+        root=resolved_fallback_root(config),
     )
 
 

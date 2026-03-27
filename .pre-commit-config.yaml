@@ -47,6 +47,8 @@ repos:
     rev: v1.19.1
     hooks:
     -   id: mypy
+        # Both are named setup.py → duplicate module "setup"; runtime path hacks are not modeled
+        exclude: ^(vcs-versioning|setuptools-scm)/setup\.py$
         args: [--strict]
         additional_dependencies:
             - types-setuptools

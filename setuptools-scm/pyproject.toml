@@ -1,7 +1,5 @@
-
-
 [build-system]
-build-backend = "_own_version_helper:build_meta"
+build-backend = "setuptools.build_meta"
 requires = [
   "setuptools>=77.0.3",
   "vcs-versioning>=1.0.0.dev0",
@@ -10,12 +8,8 @@ requires = [
   'tomli>=1; python_version < "3.11"',
   'typing-extensions; python_version < "3.11"',
 ]
-backend-path = [
-  ".",
-  "./src",
-]
-[tools.uv.sources]
-vcs-versioning= "../vcs-versioning"
+[tool.uv.sources]
+vcs-versioning = { workspace = true }
 [project]
 name = "setuptools-scm"
 description = "the blessed package to manage your versions by scm tags"
@@ -120,8 +114,8 @@ setuptools_scm = "setuptools_scm._integration.setuptools:infer_version"
 where = ["src"]
 namespaces = false
 
-[tool.setuptools.dynamic]
-version = { attr = "_own_version_helper.version"}
+[tool.setuptools.package-data]
+setuptools_scm = [".git_archival.txt"]
 
 [tool.setuptools_scm]
 root = ".."
@@ -148,7 +142,6 @@ lint.preview = true
 "**/src/setuptools_scm/hg.py" = ["PLC0414"]
 "**/src/setuptools_scm/hg_git.py" = ["PLC0414"]
 "**/src/setuptools_scm/fallbacks.py" = ["PLC0414"]
-"**/_own_version_helper.py" = ["PLC0414"]
 "**/src/setuptools_scm/_integration/pyproject_reading.py" = ["BLE001", "S112"]
 "**/testing_scm/conftest.py" = ["BLE001", "S110"]
 "**/testing_scm/test_main.py" = ["S102"]

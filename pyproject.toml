@@ -65,14 +65,11 @@ no_implicit_reexport = true
 # Workspace-specific paths
 mypy_path = "vcs-versioning/src:setuptools-scm/src"
 explicit_package_bases = true
-
-[[tool.mypy.overrides]]
-module = [
-  "vcs-versioning._own_version_of_vcs_versioning",
-  "setuptools-scm._own_version_helper",
+# setup.py scripts add src/ at runtime; duplicate module name "setup" across packages
+exclude = [
+  "^vcs-versioning/setup\\.py$",
+  "^setuptools-scm/setup\\.py$",
 ]
-# Version helper files use imports before they're installed
-ignore_errors = true
 
 [tool.uv]
 package = true
@@ -86,6 +83,10 @@ setuptools-scm = { workspace = true }
 
 [tool.ruff]
 lint.extend-select = ["UP", "I", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"vcs-versioning/setup.py" = ["E402"]
+"setuptools-scm/setup.py" = ["E402"]
 
 [tool.repo-review]
 ignore = [
