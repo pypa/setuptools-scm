@@ -121,9 +121,9 @@ Callables or other Python objects must be passed in `setup.py` (via the `use_scm
 :   A string specifying which git pre-parse function to use before parsing version information.
     Available options:
 
-    - `"warn_on_shallow"` (default): Warns when the repository is shallow
-    - `"fail_on_shallow"`: Fails with an error when the repository is shallow
-    - `"fetch_on_shallow"`: Automatically fetches to rectify shallow repositories
+    - `"warn_on_shallow"` (default): Warns when the repository is shallow (skipped when `HEAD` is exactly on a tag, where a shallow clone is sufficient)
+    - `"fail_on_shallow"`: Fails with an error when the repository is shallow (not when `HEAD` is exactly on a tag)
+    - `"fetch_on_shallow"`: Automatically fetches to rectify shallow repositories (skipped when `HEAD` is exactly on a tag)
     - `"fail_on_missing_submodules"`: Fails when submodules are defined but not initialized
 
         The `"fail_on_missing_submodules"` option is useful to prevent packaging incomplete

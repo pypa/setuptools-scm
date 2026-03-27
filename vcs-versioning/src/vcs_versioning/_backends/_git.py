@@ -178,6 +178,14 @@ class GitWorkdir(Workdir):
     def is_shallow(self) -> bool:
         return self.path.joinpath(".git/shallow").is_file()
 
+    def head_is_exact_tag(self) -> bool:
+        """True when HEAD points exactly at a tag (including lightweight tags)."""
+        res = run_git(
+            ["describe", "--exact-match", "--tags", "HEAD"],
+            self.path,
+        )
+        return res.returncode == 0
+
     def fetch_shallow(self) -> None:
         try:
             run_git(
@@ -206,13 +214,13 @@ class GitWorkdir(Workdir):
 
 def warn_on_shallow(wd: GitWorkdir) -> None:
     """experimental, may change at any time"""
-    if wd.is_shallow():
+    if wd.is_shallow() and not wd.head_is_exact_tag():
         warnings.warn(f'"{wd.path}" is shallow and may cause errors', stacklevel=2)
 
 
 def fetch_on_shallow(wd: GitWorkdir) -> None:
     """experimental, may change at any time"""
-    if wd.is_shallow():
+    if wd.is_shallow() and not wd.head_is_exact_tag():
         warnings.warn(
             f'"{wd.path}" was shallow, git fetch was used to rectify', stacklevel=2
         )
@@ -221,7 +229,7 @@ def fetch_on_shallow(wd: GitWorkdir) -> None:
 
 def fail_on_shallow(wd: GitWorkdir) -> None:
     """experimental, may change at any time"""
-    if wd.is_shallow():
+    if wd.is_shallow() and not wd.head_is_exact_tag():
         raise ValueError(
             f'{wd.path} is shallow, please correct with "git fetch --unshallow"'
         )
