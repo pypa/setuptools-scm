@@ -8,8 +8,6 @@ requires = [
   'tomli>=1; python_version < "3.11"',
   'typing-extensions; python_version < "3.11"',
 ]
-[tool.uv.sources]
-vcs-versioning = { workspace = true }
 [project]
 name = "setuptools-scm"
 description = "the blessed package to manage your versions by scm tags"
