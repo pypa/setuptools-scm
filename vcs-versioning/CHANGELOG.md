@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 1.1.1 (2026-03-27)
+
+### Fixed
+
+- Add MANIFEST.in to ensure sdist includes testing_vcs/ when the VCS file finder is unavailable. ([#1336](https://github.com/pypa/setuptools-scm/issues/1336))
+
 ## 1.1.0 (2026-03-27)
 
 ### Added
