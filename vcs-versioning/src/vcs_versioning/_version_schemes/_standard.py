@@ -14,6 +14,7 @@ from re import Match
 from typing import TYPE_CHECKING
 
 from .. import _modify_version
+from .._exceptions import DirtyWorkingTreeError
 from .._scm_version import ScmVersion, _parse_version_tag
 from .._version_cls import Version as PkgVersion
 from ._common import SEMVER_LEN, SEMVER_MINOR, SEMVER_PATCH
@@ -242,6 +243,20 @@ def postrelease_version(version: ScmVersion) -> str:
 
 # Local Schemes
 # -------------
+
+
+def get_local_fail_on_uncommitted_changes(version: ScmVersion) -> str | None:
+    """Fail if dirty; otherwise return None so the next ``local_scheme`` runs.
+
+    Entry-point name: ``fail-on-uncommitted-changes``. Use as the first entry in a
+    ``local_scheme`` list before your usual scheme (for example
+    ``["fail-on-uncommitted-changes", "node-and-date"]``).
+    """
+    if version.dirty:
+        raise DirtyWorkingTreeError(
+            "Working tree has uncommitted changes (SCM reports dirty)."
+        )
+    return None
 
 
 def get_local_node_and_date(version: ScmVersion) -> str:

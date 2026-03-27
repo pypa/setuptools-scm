@@ -11,13 +11,16 @@ permissions: {}
 
 jobs:
   # Version determination + changelog build for each project (parallel)
+  # Forks: run on pull_request only (validation). Intentionally skip fork pushes; do not act on fork release branches/PRs.
   setuptools-scm:
+    if: github.repository == 'pypa/setuptools-scm' || github.event_name == 'pull_request'
     uses: ./.github/workflows/reusable-towncrier-release.yml
     with:
       project_name: setuptools-scm
       project_directory: setuptools-scm
 
   vcs-versioning:
+    if: github.repository == 'pypa/setuptools-scm' || github.event_name == 'pull_request'
     uses: ./.github/workflows/reusable-towncrier-release.yml
     with:
       project_name: vcs-versioning
@@ -56,6 +59,7 @@ jobs:
   create-release-pr:
     needs: [setuptools-scm, vcs-versioning]
     if: |
+      github.repository == 'pypa/setuptools-scm' &&
       github.event_name == 'push' &&
       (needs.setuptools-scm.outputs.has_fragments == 'true' ||
        needs.vcs-versioning.outputs.has_fragments == 'true')

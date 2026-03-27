@@ -2,6 +2,21 @@
 
 <!-- towncrier release notes start -->
 
+## 1.1.0 (2026-03-27)
+
+### Added
+
+- Add ``fail-on-uncommitted-changes`` as a composable local scheme: raise when the working tree is dirty, otherwise defer to the next local scheme in the list so any ``version_scheme`` can be used. ([#1205](https://github.com/pypa/setuptools-scm/issues/1205))
+- When ``HEAD`` is exactly on a tag (``git describe --exact-match``), shallow Git worktrees no longer trigger ``warn_on_shallow``, ``fail_on_shallow``, or ``fetch_on_shallow``—shallow clones are enough for tagged release builds and avoid unnecessary unshallow fetches. ([#1241](https://github.com/pypa/setuptools-scm/issues/1241))
+- The "fetch_on_shallow" option for Git worktrees no longer fetches the contents of Git commits--
+  only their tags and refs.
+  It takes hardly any bandwidth as a result, and is quite fast. ([#1303](https://github.com/pypa/setuptools-scm/issues/1303))
+
+
+### Miscellaneous
+
+- Build ``vcs-versioning`` with setuptools instead of hatchling to avoid a bootstrap cycle (hatchling → pluggy → setuptools-scm → vcs-versioning) for downstream packagers. ([#1302](https://github.com/pypa/setuptools-scm/issues/1302))
+
 ## 1.0.1 (2026-03-09)
 
 ### Miscellaneous

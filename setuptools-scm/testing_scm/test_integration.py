@@ -15,23 +15,21 @@ from typing import Any
 import pytest
 
 from packaging.version import Version
-from vcs_versioning._requirement_cls import extract_package_name
-
 from setuptools_scm._integration import setuptools as setuptools_integration
 from setuptools_scm._integration.pyproject_reading import PyProjectData
 from setuptools_scm._integration.setup_cfg import SetuptoolsBasicData
 from setuptools_scm._integration.setup_cfg import read_setup_cfg
+from vcs_versioning._requirement_cls import extract_package_name
 
 if TYPE_CHECKING:
     import setuptools
 
+from setuptools_scm import Configuration
+from setuptools_scm._integration.setuptools import _warn_on_old_setuptools
 from vcs_versioning._overrides import PRETEND_KEY
 from vcs_versioning._overrides import PRETEND_KEY_NAMED
 from vcs_versioning._run_cmd import run
 from vcs_versioning.test_api import WorkDir
-
-from setuptools_scm import Configuration
-from setuptools_scm._integration.setuptools import _warn_on_old_setuptools
 
 c = Configuration()
 
@@ -47,6 +45,7 @@ def _run_setuptools_setup(cwd: Path) -> subprocess.CompletedProcess[str]:
         cwd=cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode != 0, "setup() with no commands should exit non-zero"
     return result
@@ -57,6 +56,39 @@ def _run_setuptools_setup(cwd: Path) -> subprocess.CompletedProcess[str]:
 def wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> WorkDir:
     """Set up git for integration tests."""
     return wd.setup_git(monkeypatch)
+
+
+@pytest.mark.issue("1314")
+def test_get_version_no_implicit_global_overrides_warning_subprocess(
+    wd: WorkDir,
+) -> None:
+    """setuptools_scm.get_version must not rely on implicit GlobalOverrides auto-create.
+
+    Pytest's vcs_versioning plugin installs a global ``GlobalOverrides`` context, so
+    this check runs in a subprocess without that fixture (see GitHub issue #1314).
+    """
+    root = os.fspath(wd.cwd)
+    script = textwrap.dedent(
+        f"""
+        import warnings
+
+        warnings.filterwarnings(
+            "error",
+            message="No GlobalOverrides context is active",
+            category=UserWarning,
+        )
+        import setuptools_scm
+
+        setuptools_scm.get_version(root={root!r})
+        """
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, (proc.stdout, proc.stderr)
 
 
 def test_pyproject_support(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -594,7 +626,7 @@ def create_clean_distribution(name: str) -> setuptools.Distribution:
     # Clean all setuptools_scm effects
     dist.metadata.version = None
     if hasattr(dist, "_setuptools_scm_version_set_by_infer"):
-        delattr(dist, "_setuptools_scm_version_set_by_infer")
+        del dist._setuptools_scm_version_set_by_infer
 
     return dist
 
@@ -782,6 +814,7 @@ def test_version_file_written_to_build_directory(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     # Build should succeed
@@ -854,6 +887,7 @@ def test_version_file_src_layout_path_transformation(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert build_result.returncode == 0, (
@@ -938,6 +972,7 @@ def test_editable_install_version_file(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert build_result.returncode == 0, (
@@ -1012,6 +1047,7 @@ def test_editable_strict_includes_version_file(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert build_result.returncode == 0, (
@@ -1108,6 +1144,7 @@ def test_readonly_source_directory_build(
             cwd=wd.cwd,
             capture_output=True,
             text=True,
+            check=False,
             env={**os.environ, "SETUPTOOLS_SCM_WRITE_TO_SOURCE": "0"},
         )
 
@@ -1198,6 +1235,7 @@ def test_legacy_write_to_build_directory(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert build_result.returncode == 0, (
@@ -1270,6 +1308,7 @@ def test_version_file_template_in_build(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert build_result.returncode == 0, (
@@ -1354,6 +1393,7 @@ def test_custom_build_py_still_writes_version_file(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert build_result.returncode == 0, (
@@ -1425,6 +1465,7 @@ def test_version_file_contains_commit_node_in_wheel(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert build_result.returncode == 0, (
@@ -1510,6 +1551,7 @@ def test_version_file_contains_commit_node_in_editable_strict(
         cwd=wd.cwd,
         capture_output=True,
         text=True,
+        check=False,
     )
 
     assert build_result.returncode == 0, (

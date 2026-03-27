@@ -15,8 +15,9 @@ permissions:
 
 jobs:
   sync-main-to-develop:
-    # Only run when a release PR is merged to main
+    # Only run when a release PR is merged to main (primary repo only — no sync PRs on forks)
     if: |
+      github.repository == 'pypa/setuptools-scm' &&
       github.event.pull_request.merged == true &&
       startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest

@@ -1,7 +1,12 @@
+# Build backend: setuptools (not hatchling) until the bootstrap cycle described in
+# https://github.com/pypa/setuptools-scm/issues/1302 is gone: hatchling → pluggy →
+# setuptools-scm → vcs-versioning → hatchling. Revisit switching back to hatchling
+# once hatch/hatchling no longer depend on pluggy (or pluggy no longer pulls
+# setuptools-scm into the vcs-versioning build graph).
 [build-system]
-build-backend = "hatchling.build"
+build-backend = "setuptools.build_meta"
 requires = [
-  "hatchling",
+  "setuptools>=77.0.3",
   "packaging>=20",
   'typing-extensions; python_version < "3.11"',
 ]
@@ -18,13 +23,14 @@ authors = [
 ]
 requires-python = ">=3.10"
 classifiers = [
-  "Development Status :: 1 - Planning",
+  "Development Status :: 4 - Beta",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 dynamic = [
   "version",
@@ -63,6 +69,7 @@ Source = "https://github.com/pypa/setuptools-scm"
 
 [project.entry-points."setuptools_scm.local_scheme"]
 dirty-tag = "vcs_versioning._version_schemes:get_local_dirty_tag"
+"fail-on-uncommitted-changes" = "vcs_versioning._version_schemes:get_local_fail_on_uncommitted_changes"
 no-local-version = "vcs_versioning._version_schemes:get_no_local_node"
 node-and-date = "vcs_versioning._version_schemes:get_local_node_and_date"
 node-and-timestamp = "vcs_versioning._version_schemes:get_local_node_and_timestamp"
@@ -79,25 +86,12 @@ node-and-timestamp = "vcs_versioning._version_schemes:get_local_node_and_timesta
 "semver-pep440-release-branch" = "vcs_versioning._version_schemes:release_branch_semver_version"
 "towncrier-fragments" = "vcs_versioning._version_schemes._towncrier:version_from_fragments"
 
-[tool.hatch.version]
-source = "code"
-path = "_own_version_of_vcs_versioning.py"
-search-paths = ["src"]
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/vcs_versioning"]
-
-[tool.hatch.envs.default]
-dependencies = [
-  "pytest",
-  "pytest-cov",
-]
-[tool.hatch.envs.default.scripts]
-cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=vcs_versioning --cov=tests {args}"
-no-cov = "cov --no-cov {args}"
-
-[[tool.hatch.envs.test.matrix]]
-python = [ "38", "39", "310", "311", "312", "313" ]
+[tool.setuptools.package-data]
+"vcs_versioning._cli" = ["git_archival_stable.txt", "git_archival_full.txt"]
 
 [tool.vcs-versioning]
 root = ".."

@@ -12,6 +12,7 @@ from datetime import date, datetime, timezone
 from enum import Enum
 from os.path import samefile
 from pathlib import Path
+from subprocess import CalledProcessError
 from typing import TYPE_CHECKING
 
 from .. import _discover as discover
@@ -177,8 +178,24 @@ class GitWorkdir(Workdir):
     def is_shallow(self) -> bool:
         return self.path.joinpath(".git/shallow").is_file()
 
+    def head_is_exact_tag(self) -> bool:
+        """True when HEAD points exactly at a tag (including lightweight tags)."""
+        res = run_git(
+            ["describe", "--exact-match", "--tags", "HEAD"],
+            self.path,
+        )
+        return res.returncode == 0
+
     def fetch_shallow(self) -> None:
-        run_git(["fetch", "--unshallow"], self.path, check=True, timeout=240)
+        try:
+            run_git(
+                ["fetch", "--unshallow", "--filter=blob:none"],
+                self.path,
+                check=True,
+                timeout=240,
+            )
+        except CalledProcessError:
+            run_git(["fetch", "--unshallow"], self.path, check=True, timeout=240)
 
     def node(self) -> str | None:
         return run_git(
@@ -197,13 +214,13 @@ class GitWorkdir(Workdir):
 
 def warn_on_shallow(wd: GitWorkdir) -> None:
     """experimental, may change at any time"""
-    if wd.is_shallow():
+    if wd.is_shallow() and not wd.head_is_exact_tag():
         warnings.warn(f'"{wd.path}" is shallow and may cause errors', stacklevel=2)
 
 
 def fetch_on_shallow(wd: GitWorkdir) -> None:
     """experimental, may change at any time"""
-    if wd.is_shallow():
+    if wd.is_shallow() and not wd.head_is_exact_tag():
         warnings.warn(
             f'"{wd.path}" was shallow, git fetch was used to rectify', stacklevel=2
         )
@@ -212,7 +229,7 @@ def fetch_on_shallow(wd: GitWorkdir) -> None:
 
 def fail_on_shallow(wd: GitWorkdir) -> None:
     """experimental, may change at any time"""
-    if wd.is_shallow():
+    if wd.is_shallow() and not wd.head_is_exact_tag():
         raise ValueError(
             f'{wd.path} is shallow, please correct with "git fetch --unshallow"'
         )

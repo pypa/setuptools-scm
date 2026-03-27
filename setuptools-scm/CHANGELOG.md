@@ -2,6 +2,36 @@
 
 <!-- towncrier release notes start -->
 
+## 10.0.5 (2026-03-27)
+
+### Fixed
+
+- Allow `dump_version()` deprecation warning to be silenced by passing `scm_version=None`. ([#1286](https://github.com/pypa/setuptools-scm/issues/1286))
+- Remove `[tool.uv.sources]` from `setuptools-scm/pyproject.toml` to fix sdist builds outside the workspace — the workspace root already declares the source mapping for development. ([#1330](https://github.com/pypa/setuptools-scm/issues/1330))
+
+## 10.0.4 (2026-03-27)
+
+### Fixed
+
+- Anchor ``get_version`` in ``setup.py`` with ``relative_to`` and ``fallback_root`` so SCM fallbacks (e.g. ``PKG-INFO``) do not resolve against the wrong directory when the build cwd is the workspace or repo root. ([#1302](https://github.com/pypa/setuptools-scm/issues/1302))
+- Enter ``GlobalOverrides`` for ``SETUPTOOLS_SCM`` when using ``setuptools_scm.get_version`` / ``_get_version``, avoiding implicit context warnings for direct API callers. ([#1314](https://github.com/pypa/setuptools-scm/issues/1314))
+
+
+### Miscellaneous
+
+- Upgrade pre-commit hooks (Ruff, mypy, codespell), align locked Ruff with hooks, and add Ruff per-file configuration for setuptools_scm re-export modules. ([#1311](https://github.com/pypa/setuptools-scm/issues/1311))
+
+## 10.0.3 (2026-03-26)
+
+### Fixed
+
+- Remove monorepo-only ``../vcs-versioning/src`` from ``build-system.backend-path`` so sdists install under PEP 517 (paths must stay inside the source tree). ([#1306](https://github.com/pypa/setuptools-scm/issues/1306))
+
+
+### Miscellaneous
+
+- Add `griffecli` to test dependencies so the API stability check keeps working after the Griffe CLI was split into a separate package. ([#1310](https://github.com/pypa/setuptools-scm/issues/1310))
+
 ## 10.0.2 (2026-03-25)
 
 ### Fixed

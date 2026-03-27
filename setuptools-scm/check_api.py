@@ -40,7 +40,7 @@ def main() -> int:
         *("--against", against),
     ]
 
-    result = subprocess.run(cmd, cwd=repo_root)
+    result = subprocess.run(cmd, cwd=repo_root, check=False)
 
     return result.returncode
 

@@ -30,9 +30,7 @@ def _should_write_to_source() -> bool:
     is explicitly set to a falsy value ("0", "false", "no").
     """
     value = os.environ.get(WRITE_TO_SOURCE_ENV_VAR, "").lower()
-    if value in ("0", "false", "no"):
-        return False
-    return True
+    return value not in ("0", "false", "no")
 
 
 def infer_version_with_config(

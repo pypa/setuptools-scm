@@ -15,6 +15,8 @@ dependencies = [
 create-release-proposal = "vcs_versioning_workspace.create_release_proposal:main"
 
 [dependency-groups]
+# PP006 / uv: aggregate groups for local development (members define their own test deps)
+dev = [{ include-group = "docs" }, { include-group = "typing" }, { include-group = "release" }]
 docs = [
   "mkdocs",
   "mkdocs-include-markdown-plugin",
@@ -63,14 +65,11 @@ no_implicit_reexport = true
 # Workspace-specific paths
 mypy_path = "vcs-versioning/src:setuptools-scm/src"
 explicit_package_bases = true
-
-[[tool.mypy.overrides]]
-module = [
-  "vcs-versioning._own_version_of_vcs_versioning",
-  "setuptools-scm._own_version_helper",
+# setup.py scripts add src/ at runtime; duplicate module name "setup" across packages
+exclude = [
+  "^vcs-versioning/setup\\.py$",
+  "^setuptools-scm/setup\\.py$",
 ]
-# Version helper files use imports before they're installed
-ignore_errors = true
 
 [tool.uv]
 package = true
@@ -85,6 +84,10 @@ setuptools-scm = { workspace = true }
 [tool.ruff]
 lint.extend-select = ["UP", "I", "B"]
 
+[tool.ruff.lint.per-file-ignores]
+"vcs-versioning/setup.py" = ["E402"]
+"setuptools-scm/setup.py" = ["E402"]
+
 [tool.repo-review]
 ignore = [
     "PP002", # this is a uv workspace
@@ -95,4 +98,12 @@ ignore = [
     "PY005", # no tests folder for the workspace
     "PY003", # each subproject has one
 
-    "GH103", "GH212", "MY100", "PC111", "PC160", "PC170", "PC180", "PC901"]
+    "GH103",
+    "GH212",
+    "MY100",
+    "PC111",
+    "PC160",
+    "PC170",
+    "PC180",
+    "PC901",
+]

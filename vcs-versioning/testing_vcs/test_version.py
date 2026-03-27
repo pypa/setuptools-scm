@@ -248,7 +248,7 @@ def test_format_version_schemes() -> None:
         config=replace(
             c,
             local_scheme="no-local-version",
-            version_scheme=[  # type: ignore[arg-type]
+            version_scheme=[
                 lambda v: None,
                 "guess-next-dev",
             ],
@@ -632,7 +632,7 @@ def test_all_entrypoints_return_none() -> None:
         "1.0",
         config=replace(
             c,
-            version_scheme=lambda v: None,  # type: ignore[arg-type,return-value]
+            version_scheme=lambda v: None,
         ),
     )
     with pytest.raises(

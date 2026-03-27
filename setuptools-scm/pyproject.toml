@@ -1,7 +1,5 @@
-
-
 [build-system]
-build-backend = "_own_version_helper:build_meta"
+build-backend = "setuptools.build_meta"
 requires = [
   "setuptools>=77.0.3",
   "vcs-versioning>=1.0.0.dev0",
@@ -10,13 +8,6 @@ requires = [
   'tomli>=1; python_version < "3.11"',
   'typing-extensions; python_version < "3.11"',
 ]
-backend-path = [
-  ".",
-  "./src",
-  "../vcs-versioning/src"
-]
-[tools.uv.sources]
-vcs-versioning= "../vcs-versioning"
 [project]
 name = "setuptools-scm"
 description = "the blessed package to manage your versions by scm tags"
@@ -35,6 +26,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Software Development :: Libraries",
   "Topic :: Software Development :: Version Control",
   "Topic :: System :: Software Distribution",
@@ -60,6 +52,7 @@ simple = []
 toml = []
 
 [dependency-groups]
+dev = [{ include-group = "test" }]
 docs = [
   "mkdocs",
   "mkdocs-entangled-plugin",
@@ -82,6 +75,7 @@ test = [
   "griffe",
   "griffe-public-wildcard-imports",
   "flake8",
+  "griffecli",
 ]
 
 [project.urls]
@@ -119,8 +113,8 @@ setuptools_scm = "setuptools_scm._integration.setuptools:infer_version"
 where = ["src"]
 namespaces = false
 
-[tool.setuptools.dynamic]
-version = { attr = "_own_version_helper.version"}
+[tool.setuptools.package-data]
+setuptools_scm = [".git_archival.txt"]
 
 [tool.setuptools_scm]
 root = ".."
@@ -133,6 +127,24 @@ scm.git.describe_command = ["git", "describe", "--dirty", "--tags", "--long", "-
 lint.extend-select = ["YTT", "B", "C4", "DTZ", "ISC", "LOG", "G", "PIE", "PYI", "PT", "FLY", "I", "C90", "PERF", "W", "PGH", "PLE", "UP", "FURB", "RUF"]
 lint.ignore = ["B028", "LOG015", "PERF203"]
 lint.preview = true
+
+# setuptools_scm alias modules: explicit `from m import x as x` re-exports for API stability
+# (PLC0414 only skips __init__.py; see check_api.py / griffe-public-wildcard-imports).
+# Globs: match paths both from package dir (`src/...`) and from monorepo root (`setuptools-scm/src/...`)
+# when using `--config=setuptools-scm/pyproject.toml` (pre-commit).
+[tool.ruff.lint.per-file-ignores]
+"**/src/setuptools_scm/version.py" = ["PLC0414"]
+"**/src/setuptools_scm/git.py" = ["PLC0414"]
+"**/src/setuptools_scm/scm_workdir.py" = ["PLC0414"]
+"**/src/setuptools_scm/discover.py" = ["PLC0414"]
+"**/src/setuptools_scm/integration.py" = ["PLC0414"]
+"**/src/setuptools_scm/hg.py" = ["PLC0414"]
+"**/src/setuptools_scm/hg_git.py" = ["PLC0414"]
+"**/src/setuptools_scm/fallbacks.py" = ["PLC0414"]
+"**/src/setuptools_scm/_integration/pyproject_reading.py" = ["BLE001", "S112"]
+"**/testing_scm/conftest.py" = ["BLE001", "S110"]
+"**/testing_scm/test_main.py" = ["S102"]
+"**/testing_scm/test_regressions.py" = ["BLE001"]
 
 [tool.ruff.lint.isort]
 force-single-line = true
