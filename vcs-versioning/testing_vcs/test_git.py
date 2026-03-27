@@ -338,6 +338,47 @@ def test_git_parse_shallow_warns(
     assert "is shallow and may cause errors" in str(msg.message)
 
 
+@pytest.fixture
+def shallow_tagged_wd(wd: WorkDir, tmp_path: Path) -> Path:
+    wd.commit_testfile()
+    wd("git tag v0.1.0")
+    target = tmp_path / "wd_shallow_tag"
+    run(
+        [
+            "git",
+            "clone",
+            f"file://{wd.cwd}",
+            str(target),
+            "--depth=1",
+            "--branch",
+            "v0.1.0",
+        ],
+        tmp_path,
+        check=True,
+    )
+    return target
+
+
+@pytest.mark.issue(1241)
+def test_git_parse_shallow_exact_tag_no_warn(
+    shallow_tagged_wd: Path, recwarn: pytest.WarningsRecorder
+) -> None:
+    git.parse(shallow_tagged_wd, Configuration())
+    for w in recwarn:
+        assert "is shallow and may cause errors" not in str(w.message)
+
+
+@pytest.mark.issue(1241)
+def test_git_parse_shallow_exact_tag_fail_on_shallow_ok(
+    shallow_tagged_wd: Path,
+) -> None:
+    git.parse(
+        shallow_tagged_wd,
+        Configuration(),
+        pre_parse=git.fail_on_shallow,
+    )
+
+
 def test_git_parse_shallow_fail(shallow_wd: Path) -> None:
     with pytest.raises(ValueError, match="git fetch"):
         git.parse(str(shallow_wd), Configuration(), pre_parse=git.fail_on_shallow)
