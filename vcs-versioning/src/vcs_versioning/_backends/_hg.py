@@ -18,6 +18,8 @@ from ._scm_workdir import Workdir, get_latest_file_mtime
 
 log = logging.getLogger(__name__)
 
+_HG_PSEUDO_TAGS = frozenset({"tip", "qbase", "qtip", "qparent"})
+
 
 def _get_hg_command() -> str:
     """Get the hg command from override context or environment."""
@@ -75,7 +77,7 @@ class HgWorkdir(Workdir):
         """Get node, tags, and date information from mercurial log."""
         try:
             node, tags_str, node_date_str = self.hg_log(
-                ".", "{node}\n{tag}\n{date|shortdate}"
+                ".", "{node}\n{tags}\n{date|shortdate}"
             ).split("\n")
             return node, tags_str, node_date_str
         except ValueError:
@@ -123,20 +125,25 @@ class HgWorkdir(Workdir):
         )
 
     def _parse_tags(self, tags_str: str) -> list[str]:
-        """Parse and filter tags from mercurial output."""
-        tags = tags_str.split()
-        if "tip" in tags:
-            # tip is not a real tag
-            tags.remove("tip")
-        return tags
+        """Parse and filter tags from mercurial output.
+
+        Filters out pseudo-tags that are never version tags:
+        tip (hg internal), qbase/qtip/qparent (MQ extension).
+        """
+        return [t for t in tags_str.split() if t not in _HG_PSEUDO_TAGS]
 
     def _get_version_from_tags(
         self, tags: list[str], config: Configuration
     ) -> Version | None:
-        """Try to get a version from the current tags."""
-        if tags:
-            tag = tag_to_version(tags[0], config)
-            return tag
+        """Try to get a version from the current tags.
+
+        Iterates all tags and returns the first that parses as a version,
+        so non-version tags (e.g. from MQ or user conventions) are skipped.
+        """
+        for tag_str in tags:
+            version = tag_to_version(tag_str, config)
+            if version is not None:
+                return version
         return None
 
     def _get_distance_based_version(

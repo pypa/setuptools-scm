@@ -240,3 +240,12 @@ def test_feature_branch_increments_major(wd: WorkDir) -> None:
     assert wd.get_version(version_scheme="semver-pep440").startswith("1.0.1")
     wd("hg branch feature/fun")
     assert wd.get_version(version_scheme="semver-pep440").startswith("1.1.0")
+
+
+@pytest.mark.issue(310)
+@pytest.mark.usefixtures("version_1_0")
+def test_non_version_tag_does_not_shadow_version(wd: WorkDir) -> None:
+    """Non-version tags (like MQ pseudo-tags) should not prevent version detection."""
+    wd('hg tag qbase -u test -d "0 0" -r 1.0.0')
+    wd("hg up 1.0.0")
+    assert wd.get_version() == "1.0.0"
