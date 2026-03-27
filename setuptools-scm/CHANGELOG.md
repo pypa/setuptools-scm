@@ -2,6 +2,18 @@
 
 <!-- towncrier release notes start -->
 
+## 10.0.4 (2026-03-27)
+
+### Fixed
+
+- Anchor ``get_version`` in ``setup.py`` with ``relative_to`` and ``fallback_root`` so SCM fallbacks (e.g. ``PKG-INFO``) do not resolve against the wrong directory when the build cwd is the workspace or repo root. ([#1302](https://github.com/pypa/setuptools-scm/issues/1302))
+- Enter ``GlobalOverrides`` for ``SETUPTOOLS_SCM`` when using ``setuptools_scm.get_version`` / ``_get_version``, avoiding implicit context warnings for direct API callers. ([#1314](https://github.com/pypa/setuptools-scm/issues/1314))
+
+
+### Miscellaneous
+
+- Upgrade pre-commit hooks (Ruff, mypy, codespell), align locked Ruff with hooks, and add Ruff per-file configuration for setuptools_scm re-export modules. ([#1311](https://github.com/pypa/setuptools-scm/issues/1311))
+
 ## 10.0.3 (2026-03-26)
 
 ### Fixed
