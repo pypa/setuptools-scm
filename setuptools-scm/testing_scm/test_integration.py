@@ -25,7 +25,6 @@ if TYPE_CHECKING:
     import setuptools
 
 from setuptools_scm import Configuration
-from setuptools_scm._integration.setuptools import _warn_on_old_setuptools
 from vcs_versioning._overrides import PRETEND_KEY
 from vcs_versioning._overrides import PRETEND_KEY_NAMED
 from vcs_versioning._run_cmd import run
@@ -451,12 +450,6 @@ def test_git_tag_with_local_build_data_preserved_with_distance(wd: WorkDir) -> N
 
     # Note: This test verifies that local build data from tags is preserved and combined
     # with SCM data when there's distance, which is the desired behavior for issue 1019.
-
-
-def testwarn_on_broken_setuptools() -> None:
-    _warn_on_old_setuptools("61")
-    with pytest.warns(RuntimeWarning, match="ERROR: setuptools==60"):
-        _warn_on_old_setuptools("60")
 
 
 @pytest.mark.issue(611)

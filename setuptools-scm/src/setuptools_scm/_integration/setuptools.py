@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import warnings
 
 from collections.abc import Callable
 from typing import Any
@@ -59,28 +58,6 @@ def _register_build_py_command(dist: setuptools.Distribution) -> None:
 
     dist.cmdclass["build_py"] = wrapped
     log.debug("Wrapped project build_py with setuptools_scm version-file mixin")
-
-
-def _warn_on_old_setuptools(_version: str = setuptools.__version__) -> None:
-    if int(_version.split(".")[0]) < 61:
-        warnings.warn(
-            RuntimeWarning(
-                f"""
-ERROR: setuptools=={_version} is used in combination with setuptools-scm>=8.x
-
-Your build configuration is incomplete and previously worked by accident!
-setuptools-scm requires setuptools>=61 (recommended: >=80)
-
-Suggested workaround if applicable:
- - migrating from the deprecated setup_requires mechanism to pep517/518
-   and using a pyproject.toml to declare build dependencies
-   which are reliably pre-installed before running the build tools
-"""
-            )
-        )
-
-
-_warn_on_old_setuptools()
 
 
 def _log_hookstart(hook: str, dist: setuptools.Distribution) -> None:
