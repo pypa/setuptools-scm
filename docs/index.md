@@ -81,6 +81,27 @@ dynamic = ["version"]
 # Custom configuration options go here
 ```
 
+**With `setup.py`** (only for passing Python callables):
+
+A `setup.py` is only needed when passing code that cannot be expressed in TOML,
+such as custom version schemes or local schemes.
+All non-code configuration belongs in `pyproject.toml`.
+
+```python title="setup.py"
+from setuptools import setup
+from setuptools_scm import ScmVersion
+
+
+def my_version_scheme(version: ScmVersion) -> str:
+    from setuptools_scm.version import guess_next_version
+    return version.format_next_version(guess_next_version, "{guessed}b{distance}")
+
+
+setup(use_scm_version={"version_scheme": my_version_scheme})
+```
+
+See the [usage guide](usage.md#using-setuppy-to-pass-code) for the complete pattern
+including the accompanying `pyproject.toml`.
 
 !!! tip "Recommended Tag Format"
 
