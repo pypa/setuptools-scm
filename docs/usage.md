@@ -67,23 +67,88 @@ Projects must support PEP 518 ([pip](https://pypi.org/project/pip) and
 [pep517](https://pypi.org/project/pep517/)). Tools that still invoke `setup.py`
 must ensure build requirements are installed.
 
-### Using the setup keyword
+### Using `setup.py` to pass code
 
-Alternatively, enable `setuptools-scm` via the `use_scm_version` keyword in `setup.py`.
-This also counts as an explicit opt-in and does not require a tool section.
+`setup.py` should only be used when you need to pass **Python callables**
+(custom version schemes, local schemes, etc.) that cannot be expressed in TOML.
+All non-code configuration belongs in `pyproject.toml` — use the
+[simplified](#simplified-activation-new) or [explicit](#explicit-configuration-full-control)
+approaches above for that.
 
-!!! note "Legacy simplified activation (removed)"
+!!! warning "setup.py is not for configuration"
 
-    Previous versions (before 9.2.0) had a "simplified" activation where listing
+    Do **not** use `setup.py` to pass string-based options like
+    `use_scm_version={"local_scheme": "no-local-version"}`.
+    Those belong in `[tool.setuptools_scm]` in `pyproject.toml`.
+
+    The only reason to use `setup.py` is to pass **Python code** that
+    cannot be represented in TOML.
+
+To pass a custom version scheme or local scheme as a callable,
+combine a `pyproject.toml` (for build requirements and non-code config)
+with a `setup.py` (for the callable):
+
+```toml title="pyproject.toml"
+[build-system]
+requires = ["setuptools>=80", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my-package"
+dynamic = ["version"]
+
+[tool.setuptools_scm]
+# Non-code configuration stays here
+version_file = "src/my_package/_version.py"
+```
+
+```python title="setup.py"
+from setuptools import setup
+from setuptools_scm import ScmVersion
+
+
+def my_version_scheme(version: ScmVersion) -> str:
+    from setuptools_scm.version import guess_next_version
+    return version.format_next_version(guess_next_version, "{guessed}b{distance}")
+
+
+setup(use_scm_version={"version_scheme": my_version_scheme})
+```
+
+The `use_scm_version` dict in `setup.py` overrides matching keys from
+`[tool.setuptools_scm]` — use it only for the callable entries, and keep
+everything else in `pyproject.toml`.
+
+See [Customizing](customizing.md) for more examples of custom version schemes.
+
+!!! important "How `use_scm_version` works"
+
+    The `use_scm_version` keyword is a setuptools entry point registered
+    by setuptools-scm. For it to work, **setuptools-scm must be installed**
+    in the build environment before `setup()` runs.
+
+    With modern tooling (`python -m build`, pip installing from source),
+    the build frontend reads `build-system.requires` from `pyproject.toml`
+    and installs `setuptools-scm` automatically. This is the only
+    supported approach — always declare your build dependencies in
+    `pyproject.toml`.
+
+!!! note "Legacy simplified activation (removed in 9.2.0)"
+
+    Previous versions had a "simplified" activation where listing
     plain `setuptools-scm` in `build-system.requires` together with
-    `project.dynamic = ["version"]` would auto-enable version inference.
+    `project.dynamic = ["version"]` would auto-enable version inference
+    **without** any `[tool.setuptools_scm]` section or `use_scm_version` keyword.
+
     This was removed because it caused ambiguous activation — projects using
-    setuptools-scm only for its file finder would unexpectedly trigger
+    setuptools-scm **only** for its file finder would unexpectedly trigger
     version inference.
 
     The `[simple]` extra replaces this with explicit opt-in. If you previously
-    relied on the old behavior, either add the `[simple]` extra or add an
-    explicit `[tool.setuptools_scm]` section.
+    relied on the old behavior, either:
+
+    - Add the `[simple]` extra: `setuptools-scm[simple]>=9.2` in `build-system.requires`, or
+    - Add an explicit `[tool.setuptools_scm]` section to `pyproject.toml`
 
 ### Version files
 
