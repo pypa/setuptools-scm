@@ -167,6 +167,14 @@ of the version, they should be location independent.
 `no-local-version`
 : Omits local version, useful e.g. because PyPI does not support it
 
+`no-local-version-strict`
+: Like `no-local-version` but raises
+  [`DirtyWorkingTreeError`][vcs_versioning._version_schemes.DirtyWorkingTreeError]
+  when the working tree is dirty. Equivalent to
+  `["fail-on-uncommitted-changes", "no-local-version"]` as a single scheme name.
+  Recommended for release CI where you want PyPI-compatible versions **and** an
+  explicit build failure on uncommitted changes.
+
 `fail-on-uncommitted-changes`
 :   When the working tree is dirty (`ScmVersion.dirty` is true), raises
     [`DirtyWorkingTreeError`][vcs_versioning._version_schemes.DirtyWorkingTreeError].
