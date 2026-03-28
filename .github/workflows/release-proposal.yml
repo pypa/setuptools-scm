@@ -180,7 +180,7 @@ jobs:
               '- [ ] Version numbers are correct',
               '- [ ] All tests pass',
               '',
-              '**Merging this PR will automatically create tags and trigger PyPI uploads.**',
+              '**Merging this PR will create draft releases, run tests, then publish to PyPI and GitHub.**',
               '**After release, main will be synced back to develop.**'
             ].join('\n');
 
