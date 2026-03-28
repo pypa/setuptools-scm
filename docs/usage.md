@@ -77,12 +77,15 @@ approaches above for that.
 
 !!! warning "setup.py is not for configuration"
 
-    Do **not** use `setup.py` to pass string-based options like
-    `use_scm_version={"local_scheme": "no-local-version"}`.
-    Those belong in `[tool.setuptools_scm]` in `pyproject.toml`.
+    Prefer configuring string-based options like
+    `use_scm_version={"local_scheme": "no-local-version"}` in
+    `[tool.setuptools_scm]` in `pyproject.toml`.
 
-    The only reason to use `setup.py` is to pass **Python code** that
-    cannot be represented in TOML.
+    While you *can* pass these options via `setup.py` (they are forwarded
+    as keyword overrides and string scheme names work the same way as in
+    `[tool.setuptools_scm]`), it is recommended to keep non-code settings
+    in `pyproject.toml` and reserve `setup.py` for **Python callables**
+    that cannot be represented in TOML.
 
 To pass a custom version scheme or local scheme as a callable,
 combine a `pyproject.toml` (for build requirements and non-code config)
@@ -147,8 +150,8 @@ See [Customizing](customizing.md) for more examples of custom version schemes.
     The `[simple]` extra replaces this with explicit opt-in. If you previously
     relied on the old behavior, either:
 
-    - Add the `[simple]` extra: `setuptools-scm[simple]>=9.2` in `build-system.requires`, or
-    - Add an explicit `[tool.setuptools_scm]` section to `pyproject.toml`
+    - Add the `[simple]` extra: `setuptools-scm[simple]>=9.2` in `build-system.requires`.
+    - Add an explicit `[tool.setuptools_scm]` section to `pyproject.toml`.
 
 ### Version files
 
