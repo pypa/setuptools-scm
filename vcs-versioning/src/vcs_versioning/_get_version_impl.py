@@ -74,11 +74,42 @@ def parse_version(config: Configuration) -> ScmVersion | None:
     return _apply_metadata_overrides(scm_version, config)
 
 
+def _warn_if_tracked(target: Path, root: Path) -> None:
+    """Warn when *target* is tracked in version control (#468).
+
+    Writing a version file that is tracked makes ``git describe --dirty``
+    report a dirty tree on tag checkouts, causing wrong version numbers.
+    """
+    from ._backends._git import GitWorkdir
+    from ._backends._hg import HgWorkdir
+
+    for workdir_cls in (GitWorkdir, HgWorkdir):
+        try:
+            wd = workdir_cls.from_potential_worktree(root)
+        except Exception:
+            continue
+        if wd is not None and wd.is_file_tracked(target):
+            warnings.warn(
+                f"version file {target.relative_to(root)} is tracked by"
+                " version control. This will cause dirty-state version bumps"
+                " when the file is rewritten during builds."
+                " Remove it from version control and add it to .gitignore."
+                " See https://github.com/pypa/setuptools-scm/issues/468",
+                stacklevel=3,
+            )
+            return
+
+
 def write_version_files(
     config: Configuration, version: str, scm_version: ScmVersion
 ) -> None:
+    root = Path(config.absolute_root)
     if config.write_to is not None:
         from ._dump_version import dump_version
+
+        write_to = Path(config.write_to)
+        target = root / write_to if not write_to.is_absolute() else write_to
+        _warn_if_tracked(target, root)
 
         dump_version(
             root=config.root,
@@ -95,6 +126,8 @@ def write_version_files(
         # todo: use a better name than fallback root
         assert config.relative_to is not None
         target = Path(config.relative_to).parent.joinpath(version_file)
+        _warn_if_tracked(target, root)
+
         write_version_to_path(
             target,
             template=config.version_file_template,
