@@ -273,3 +273,16 @@ def get_local_dirty_tag(version: ScmVersion) -> str:
 
 def get_no_local_node(version: ScmVersion) -> str:
     return ""
+
+
+def get_no_local_node_strict(version: ScmVersion) -> str:
+    """Strip local version, but fail when the working tree is dirty.
+
+    Equivalent to ``["fail-on-uncommitted-changes", "no-local-version"]``
+    as a single entry-point name: ``no-local-version-strict``.
+    """
+    if version.dirty:
+        raise DirtyWorkingTreeError(
+            "Working tree has uncommitted changes (SCM reports dirty)."
+        )
+    return ""

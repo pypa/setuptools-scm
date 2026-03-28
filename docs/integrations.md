@@ -55,7 +55,7 @@ This configuration uses the `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}` environm
 
 When publishing packages to PyPI or test-PyPI from CI/CD pipelines, you often need to remove local version components that are not allowed on public package indexes according to [PEP 440](https://peps.python.org/pep-0440/#local-version-identifiers).
 
-setuptools-scm provides the `no-local-version` local scheme and environment variable overrides to handle this scenario cleanly.
+setuptools-scm provides local scheme overrides to handle this scenario cleanly.
 
 #### The Problem
 
@@ -68,15 +68,19 @@ These local version components (`+g1a2b3c4d5`, `+dirty`) prevent uploading to Py
 
 #### The Solution
 
-Use the `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}` environment variable to override the `local_scheme` to `no-local-version` when building for upload to PyPI.
+Use the `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}` environment variable to override the `local_scheme` when building for upload to PyPI.
+
+For **release builds** use `no-local-version-strict` — it strips the local segment like `no-local-version` but additionally **fails the build** when the working tree is dirty, catching accidental pollution early.
+
+For **development uploads** (test-PyPI, nightly) where the tree may be dirty, use `no-local-version` instead.
 
 ### GitHub Actions Example
 
 Here's a complete GitHub Actions workflow that:
 
 - Runs tests on all branches
-- Uploads development versions to test-PyPI from feature branches
-- Uploads development versions to PyPI from the main branch (with no-local-version)
+- Uploads development versions to test-PyPI from feature branches (with `no-local-version`)
+- Uploads development versions to PyPI from the main branch (with `no-local-version-strict`)
 - Uploads tagged releases to PyPI (using exact tag versions)
 
 ```yaml title=".github/workflows/ci.yml"
@@ -156,7 +160,8 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     env:
       # Replace MYPACKAGE with your actual package name (normalized)
-      SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version"}'
+      # "strict" fails the build on dirty trees — catches accidental pollution
+      SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version-strict"}'
 
     steps:
     - uses: actions/checkout@v4
@@ -185,6 +190,9 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
+    env:
+      # Fail on dirty trees for release builds
+      SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version-strict"}'
 
     steps:
     - uses: actions/checkout@v4
@@ -263,7 +271,8 @@ publish-pypi:
     TWINE_USERNAME: __token__
     TWINE_PASSWORD: $PYPI_API_TOKEN
     # Replace MYPACKAGE with your actual package name (normalized)
-    SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version"}'
+    # "strict" fails the build on dirty trees — catches accidental pollution
+    SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version-strict"}'
   script:
     - pip install build twine
     - python -m build
@@ -277,6 +286,8 @@ publish-release:
   variables:
     TWINE_USERNAME: __token__
     TWINE_PASSWORD: $PYPI_API_TOKEN
+    # Fail on dirty trees for release builds
+    SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version-strict"}'
   script:
     - pip install build twine
     - python -m build
@@ -299,7 +310,7 @@ The environment variable `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}` must be set
 
 2. **Value** must be a valid TOML inline table format:
    ```bash
-   SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE='{local_scheme = "no-local-version"}'
+   SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE='{local_scheme = "no-local-version-strict"}'
    ```
 
 #### Alternative Approaches
@@ -310,23 +321,31 @@ Instead of environment variables, you can configure this in your `pyproject.toml
 
 ```toml title="pyproject.toml"
 [tool.setuptools_scm]
-# Use no-local-version by default for CI builds
-local_scheme = "no-local-version"
+# Fail on dirty trees and strip local version — recommended for release CI
+local_scheme = "no-local-version-strict"
 ```
 
 However, the environment variable approach is preferred for CI/CD as it allows different schemes for local development vs. CI builds.
 
+#### Choosing a local scheme for CI
+
+| Scheme | Dirty tree | Local segment | Use case |
+|--------|-----------|---------------|----------|
+| `no-local-version` | Silently allowed | Stripped | Dev/nightly uploads where dirty is acceptable |
+| `no-local-version-strict` | **Build fails** | Stripped | Release CI — catches accidental pollution |
+| `["fail-on-uncommitted-changes", "node-and-date"]` | **Build fails** | Kept (node + date) | When you want dirty protection with full local info |
+
 #### Version Examples
 
-**Development versions from main branch** (with `local_scheme = "no-local-version"`):
+**Development versions** (with `local_scheme = "no-local-version"`):
 
 - Development commit: `1.2.3.dev4+g1a2b3c4d5` → `1.2.3.dev4` ✅ (uploadable to PyPI)
 - Dirty working directory: `1.2.3+dirty` → `1.2.3` ✅ (uploadable to PyPI)
 
-**Tagged releases** (without overrides, using default local scheme):
+**Release versions** (with `local_scheme = "no-local-version-strict"`):
 
 - Tagged commit: `1.2.3` → `1.2.3` ✅ (uploadable to PyPI)
-- Tagged release on dirty workdir: `1.2.3+dirty` → `1.2.3+dirty` ❌ (should not happen in CI)
+- Tagged release on dirty workdir → **build fails** with `DirtyWorkingTreeError` ✅ (caught early)
 
 ### Security Notes
 

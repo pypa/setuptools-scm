@@ -229,6 +229,53 @@ def test_fail_on_uncommitted_changes_clean_delegates_to_next_local_scheme() -> N
     assert format_version(configured_version) == "1.1"
 
 
+@pytest.mark.issue(1238)
+class TestNoLocalVersionStrict:
+    """Tests for the no-local-version-strict local scheme."""
+
+    def test_raises_when_dirty(self) -> None:
+        from dataclasses import replace
+
+        scm_version = VERSIONS["dirty"]
+        configured = replace(
+            scm_version,
+            config=replace(scm_version.config, local_scheme="no-local-version-strict"),
+        )
+        with pytest.raises(DirtyWorkingTreeError, match="uncommitted changes"):
+            format_version(configured)
+
+    def test_returns_empty_when_clean(self) -> None:
+        from dataclasses import replace
+
+        scm_version = VERSIONS["exact"]
+        configured = replace(
+            scm_version,
+            config=replace(scm_version.config, local_scheme="no-local-version-strict"),
+        )
+        assert format_version(configured) == "1.1"
+
+    def test_distance_clean_no_local_segment(self) -> None:
+        from dataclasses import replace
+
+        scm_version = VERSIONS["distance-clean"]
+        configured = replace(
+            scm_version,
+            config=replace(scm_version.config, local_scheme="no-local-version-strict"),
+        )
+        assert format_version(configured) == "1.2.dev3"
+
+    def test_distance_dirty_raises(self) -> None:
+        from dataclasses import replace
+
+        scm_version = VERSIONS["distance-dirty"]
+        configured = replace(
+            scm_version,
+            config=replace(scm_version.config, local_scheme="no-local-version-strict"),
+        )
+        with pytest.raises(DirtyWorkingTreeError, match="uncommitted changes"):
+            format_version(configured)
+
+
 def test_has_command() -> None:
     with pytest.warns(RuntimeWarning, match="yadayada"):
         assert not has_command("yadayada_setuptools_aint_ne")
