@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 1.1.2 (2026-03-28)
+
+### Fixed
+
+- Filter Mercurial pseudo-tags (tip, qbase, qtip, qparent) and iterate all tags when resolving versions, fixing spurious "no version found" warnings from MQ extension tags. ([#310](https://github.com/pypa/setuptools-scm/issues/310))
+
 ## 1.1.1 (2026-03-27)
 
 ### Fixed
