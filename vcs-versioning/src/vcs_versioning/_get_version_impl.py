@@ -93,7 +93,7 @@ def _warn_if_tracked(target: Path, root: Path) -> None:
                 f"version file {target.relative_to(root)} is tracked by"
                 " version control. This will cause dirty-state version bumps"
                 " when the file is rewritten during builds."
-                " Remove it from version control and add it to .gitignore."
+                " Remove it from version control and add it to your VCS ignore file."
                 " See https://github.com/pypa/setuptools-scm/issues/468",
                 stacklevel=3,
             )
