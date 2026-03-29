@@ -27,7 +27,9 @@ c_non_normalize = Configuration(version_cls=NonNormalizedVersion)
     ("version", "expected_next"),
     [
         pytest.param(meta("1.0.0", config=c), "1.0.0", id="exact"),
-        pytest.param(meta("1.0", config=c), "1.0.0", id="short_tag"),
+        pytest.param(meta("1.0", config=c), "1.0", id="short_tag"),
+        pytest.param(meta("1.0.0rc1", config=c), "1.0.0rc1", id="exact_rc"),
+        pytest.param(meta("2.0.dev0", config=c), "2.0.dev0", id="exact_dev0"),
         pytest.param(
             meta("1.0.0", distance=2, branch="default", config=c),
             "1.0.1.dev2",
@@ -58,6 +60,21 @@ c_non_normalize = Configuration(version_cls=NonNormalizedVersion)
             "1.0.1.dev2",
             id="non-normalized-allowed",
         ),
+        pytest.param(
+            meta("2.0.dev0", distance=5, branch="default", config=c),
+            "2.0.0.dev5",
+            id="dev0_anchor_default_branch",
+        ),
+        pytest.param(
+            meta("2.0.dev0", distance=5, branch="feature/fun", config=c),
+            "2.0.0.dev5",
+            id="dev0_anchor_feature_branch",
+        ),
+        pytest.param(
+            meta("3.0.dev0", distance=1, branch="default", config=c),
+            "3.0.0.dev1",
+            id="dev0_anchor_single_commit",
+        ),
     ],
 )
 def test_next_semver(version: ScmVersion, expected_next: str) -> None:
@@ -69,6 +86,8 @@ def test_next_semver(version: ScmVersion, expected_next: str) -> None:
     ("version", "expected_next"),
     [
         pytest.param(meta("1.0.0", config=c), "1.0.0", id="exact"),
+        pytest.param(meta("2.0.dev0", config=c), "2.0.dev0", id="exact_dev0"),
+        pytest.param(meta("1.0.0rc1", config=c), "1.0.0rc1", id="exact_rc"),
         pytest.param(
             meta("1.0.0", distance=2, branch="master", config=c),
             "1.1.0.dev2",
@@ -98,6 +117,16 @@ def test_next_semver(version: ScmVersion, expected_next: str) -> None:
             meta("1.0.0", distance=2, branch="bugfix/3434", config=c),
             "1.1.0.dev2",
             id="false_positive_release_branch",
+        ),
+        pytest.param(
+            meta("2.0.dev0", distance=5, branch="master", config=c),
+            "2.0.0.dev5",
+            id="dev0_anchor_development_branch",
+        ),
+        pytest.param(
+            meta("2.0.dev0", distance=5, branch="release-2.0", config=c),
+            "2.0.dev5",
+            id="dev0_anchor_release_branch",
         ),
     ],
 )
