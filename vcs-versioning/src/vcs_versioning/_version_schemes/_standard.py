@@ -44,7 +44,7 @@ def guess_next_dev_version(version: ScmVersion) -> str:
 def guess_next_simple_semver(
     version: ScmVersion, retain: int, increment: bool = True
 ) -> str:
-    if increment and getattr(version.tag, "is_devrelease", False):
+    if increment and getattr(version.tag, "dev", None) == 0:
         parts = list(version.tag.release)
         while len(parts) < SEMVER_LEN:
             parts.append(0)
