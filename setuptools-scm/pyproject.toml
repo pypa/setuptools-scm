@@ -106,6 +106,10 @@ setuptools_scm = "setuptools_scm._integration.setuptools:infer_version"
 ".git_archival.txt" = "vcs_versioning._file_finders._git:git_archive_find_files"
 ".hg_archival.txt" = "vcs_versioning._file_finders._hg:hg_archive_find_files"
 
+[project.entry-points."vcs_versioning.discover_workdir"]
+pkginfo = "setuptools_scm._integration._discover:discover_pkginfo"
+egg-info = "setuptools_scm._integration._discover:discover_egg_info_metadata"
+
 # VCS-related entry points are now provided by vcs-versioning package
 # Only file-finder entry points remain in setuptools_scm
 

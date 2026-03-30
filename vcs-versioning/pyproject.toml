@@ -56,16 +56,9 @@ Source = "https://github.com/pypa/setuptools-scm"
 [project.scripts]
 "vcs-versioning" = "vcs_versioning._cli:main"
 
-[project.entry-points."setuptools_scm.parse_scm"]
-".git" = "vcs_versioning._backends._git:parse"
-".hg" = "vcs_versioning._backends._hg:parse"
-
-[project.entry-points."setuptools_scm.parse_scm_fallback"]
-".git_archival.txt" = "vcs_versioning._backends._git:parse_archival"
-".hg_archival.txt" = "vcs_versioning._backends._hg:parse_archival"
-"PKG-INFO" = "vcs_versioning._fallbacks:parse_pkginfo"
-"pyproject.toml" = "vcs_versioning._fallbacks:fallback_version"
-"setup.py" = "vcs_versioning._fallbacks:fallback_version"
+[project.entry-points."vcs_versioning.discover_workdir"]
+hg-git = "vcs_versioning._backends._discover_vcs:discover"
+archival = "vcs_versioning._fallback_workdir:discover_archival"
 
 [project.entry-points."setuptools_scm.local_scheme"]
 dirty-tag = "vcs_versioning._version_schemes:get_local_dirty_tag"

@@ -233,6 +233,23 @@ class HgWorkdir(Workdir):
 
         return bool(self.hg_log(revset, "."))
 
+    def get_scm_version(self, config: Configuration) -> ScmVersion | None:
+        """Obtain version metadata from this hg work directory."""
+        return self.get_meta(config)
+
+    def list_tracked_files(self, path: Path | str = "") -> list[str]:
+        """List files tracked by mercurial."""
+        from .._file_finders import scm_find_files
+        from .._file_finders._hg import _hg_ls_files_and_dirs
+
+        base = str(path) if path else str(self.path)
+        hg_files, hg_dirs = _hg_ls_files_and_dirs(str(self.path))
+        return scm_find_files(base, hg_files, hg_dirs)
+
+    def is_file_tracked(self, path: Path) -> bool:
+        res = run_hg(["files", str(path)], cwd=self.path)
+        return res.returncode == 0
+
     def get_dirty_tag_date(self) -> datetime.date | None:
         """Get the latest modification time of changed files in the working directory.
 

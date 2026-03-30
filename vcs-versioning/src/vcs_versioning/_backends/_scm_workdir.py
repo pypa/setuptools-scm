@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from dataclasses import field as dc_field
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -31,12 +32,10 @@ def get_latest_file_mtime(changed_files: list[str], base_path: Path) -> date | N
             file_stat = full_path.stat()
             latest_mtime = max(latest_mtime, file_stat.st_mtime)
         except OSError:
-            # File might not exist or be accessible, skip it
             log.debug("Failed to get mtime for %s", full_path)
             continue
 
     if latest_mtime > 0:
-        # Convert to UTC date
         dt = datetime.fromtimestamp(latest_mtime, timezone.utc)
         return dt.date()
 
@@ -44,12 +43,42 @@ def get_latest_file_mtime(changed_files: list[str], base_path: Path) -> date | N
 
 
 @dataclass()
-class Workdir:
+class ScmWorkdir:
+    """Base class for VCS work directories.
+
+    Two absolute paths model the duality of a project within a VCS checkout:
+    ``path`` is the VCS root (where .git/.hg lives) and ``project_root`` is
+    the project directory (where pyproject.toml lives).  For top-level projects
+    the two are identical.
+    """
+
     path: Path
+    project_root: Path | None = dc_field(default=None)
+
+    def __post_init__(self) -> None:
+        if self.project_root is None:
+            self.project_root = self.path
+
+    @property
+    def project_path(self) -> str:
+        """Discovered relative path from VCS root to project directory."""
+        assert self.project_root is not None
+        if self.path == self.project_root:
+            return ""
+        return str(self.project_root.relative_to(self.path))
 
     def run_describe(self, config: Configuration) -> ScmVersion:
         raise NotImplementedError(self.run_describe)
 
+    def get_scm_version(self, config: Configuration) -> ScmVersion | None:
+        raise NotImplementedError
+
+    def list_tracked_files(self, path: Path | str = "") -> list[str]:
+        raise NotImplementedError
+
     def is_file_tracked(self, path: Path) -> bool:
-        """Return True if *path* is tracked by version control."""
-        raise NotImplementedError(self.is_file_tracked)
+        raise NotImplementedError
+
+
+# Backward-compat alias so existing imports keep working.
+Workdir = ScmWorkdir

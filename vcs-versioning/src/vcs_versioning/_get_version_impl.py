@@ -60,18 +60,45 @@ def parse_fallback_version(config: Configuration) -> ScmVersion | None:
     )
 
 
+def _has_legacy_parse_eps() -> bool:
+    """True when third-party plugins still register old parse EP groups."""
+    from ._entrypoints import entry_points as _eps
+
+    for group in ("setuptools_scm.parse_scm", "setuptools_scm.parse_scm_fallback"):
+        for ep in _eps(group=group):
+            if not ep.value.startswith("vcs_versioning."):
+                return True
+    return False
+
+
 def parse_version(config: Configuration) -> ScmVersion | None:
-    # First try to get a version from the normal flow
-    scm_version = (
-        _read_pretended_version_for(config)
-        or parse_scm_version(config)
-        or parse_fallback_version(config)
-    )
-
-    # Apply any metadata overrides to the version we found
     from ._overrides import _apply_metadata_overrides
+    from ._worktree_discovery import discover_workdir, set_active_workdir
 
-    return _apply_metadata_overrides(scm_version, config)
+    pretended = _read_pretended_version_for(config)
+    if pretended:
+        return _apply_metadata_overrides(pretended, config)
+
+    # When a custom parse function is set, use it directly (legacy path).
+    if config.parse is not None:
+        scm_version = parse_scm_version(config) or parse_fallback_version(config)
+        return _apply_metadata_overrides(scm_version, config)
+
+    # PRIMARY: workdir-based discovery
+    workdir = discover_workdir(config)
+    if workdir is not None:
+        set_active_workdir(workdir)
+        scm_version = workdir.get_scm_version(config)
+        if scm_version is not None:
+            return _apply_metadata_overrides(scm_version, config)
+
+    # LEGACY: only run if third-party plugins registered old parse entry points
+    if _has_legacy_parse_eps():
+        scm_version = parse_scm_version(config) or parse_fallback_version(config)
+        if scm_version is not None:
+            return _apply_metadata_overrides(scm_version, config)
+
+    return None
 
 
 def _warn_if_tracked(target: Path, root: Path) -> None:
@@ -159,24 +186,17 @@ def _get_version(
 
 
 def _find_scm_in_parents(config: Configuration) -> Path | None:
-    """
-    Search parent directories for SCM repositories when relative_to is not set.
-    Uses the existing entrypoint system for SCM discovery.
-    """
+    """Search parent directories for SCM repositories when relative_to is not set."""
     if config.search_parent_directories:
         return None
 
+    from ._backends._scm_workdir import ScmWorkdir
+    from ._worktree_discovery import discover_workdir
+
     searching_config = dataclasses.replace(config, search_parent_directories=True)
-
-    from ._discover import iter_matching_entrypoints
-
-    for _ep in iter_matching_entrypoints(
-        config.absolute_root, "setuptools_scm.parse_scm", searching_config
-    ):
-        # xxx: iter_matching_entrypoints should return the parent directory, we do a hack atm
-        assert searching_config.parent is not None
-        return Path(searching_config.parent)
-
+    result = discover_workdir(searching_config)
+    if result is not None and isinstance(result, ScmWorkdir):
+        return result.path
     return None
 
 

@@ -217,6 +217,26 @@ class GitWorkdir(Workdir):
     def default_describe(self) -> _CompletedProcess:
         return run_git(DEFAULT_DESCRIBE[1:], self.path)
 
+    def get_scm_version(self, config: Configuration) -> ScmVersion | None:
+        """Obtain version metadata from this git work directory."""
+        effective_pre_parse = _GIT_PRE_PARSE_FUNCTIONS.get(
+            config.scm.git.pre_parse, warn_on_shallow
+        )
+        return _git_parse_inner(config, self, pre_parse=effective_pre_parse)
+
+    def list_tracked_files(self, path: Path | str = "") -> list[str]:
+        """List files tracked by git, honoring export-ignore."""
+        from .._file_finders import scm_find_files
+        from .._file_finders._git import _git_ls_files_and_dirs
+
+        base = str(path) if path else str(self.path)
+        git_files, git_dirs = _git_ls_files_and_dirs(str(self.path))
+        return scm_find_files(base, git_files, git_dirs)
+
+    def is_file_tracked(self, path: Path) -> bool:
+        res = run_git(["ls-files", "--error-unmatch", str(path)], self.path)
+        return res.returncode == 0
+
 
 def warn_on_shallow(wd: GitWorkdir) -> None:
     """experimental, may change at any time"""

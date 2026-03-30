@@ -212,6 +212,7 @@ class Configuration:
     dist_name: str | None = None
     version_cls: type[_VersionAlias] = _Version
     search_parent_directories: bool = False
+    project_path: str | None = None
 
     parent: _t.PathT | None = None
 
@@ -224,6 +225,8 @@ class Configuration:
 
     def __post_init__(self, git_describe_command: _t.CMD_TYPE | None) -> None:
         self.tag_regex = _check_tag_regex(self.tag_regex)
+
+        self._bridge_root_to_project_path()
 
         # Handle deprecated git_describe_command
         # Check if it's a descriptor object (happens when no value is passed)
@@ -259,6 +262,34 @@ class Configuration:
     @property
     def absolute_root(self) -> str:
         return _check_absolute_root(self.root, self.relative_to)
+
+    def _bridge_root_to_project_path(self) -> None:
+        """Derive ``project_path`` from legacy ``root`` when not explicitly set.
+
+        Silently computes the value for internal use during the migration
+        period.  A deprecation warning will be added in a future release
+        once the new discovery path is fully proven.
+        """
+        if self.project_path is not None:
+            return
+        if self.root == "." or self.relative_to is None:
+            return
+
+        abs_root = Path(self.absolute_root).resolve()
+        rel_path = Path(str(self.relative_to))
+        project_dir = (
+            rel_path.resolve() if rel_path.is_dir() else rel_path.parent.resolve()
+        )
+
+        try:
+            computed = str(project_dir.relative_to(abs_root))
+        except ValueError:
+            return
+
+        if computed == ".":
+            computed = ""
+
+        self.project_path = computed
 
     @classmethod
     def from_file(

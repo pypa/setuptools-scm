@@ -7,7 +7,9 @@ from datetime import date
 from pathlib import Path
 
 from .. import _types as _t
+from .._config import Configuration
 from .._run_cmd import CompletedProcess as _CompletedProcess
+from .._scm_version import ScmVersion
 from ._git import GitWorkdir
 from ._hg import HgWorkdir, run_hg
 from ._scm_workdir import get_latest_file_mtime
@@ -73,6 +75,25 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
             log.debug("Failed to get dirty tag date: %s", e)
 
         return None
+
+    def get_scm_version(self, config: Configuration) -> ScmVersion | None:
+        """Obtain version metadata from this hg-git hybrid."""
+        from ._git import _git_parse_inner
+
+        return _git_parse_inner(config, self)
+
+    def list_tracked_files(self, path: Path | str = "") -> list[str]:
+        """List files tracked via hg in an hg-git setup."""
+        from .._file_finders import scm_find_files
+        from .._file_finders._hg import _hg_ls_files_and_dirs
+
+        base = str(path) if path else str(self.path)
+        hg_files, hg_dirs = _hg_ls_files_and_dirs(str(self.path))
+        return scm_find_files(base, hg_files, hg_dirs)
+
+    def is_file_tracked(self, path: Path) -> bool:
+        res = run_hg(["files", str(path)], cwd=self.path)
+        return res.returncode == 0
 
     def is_shallow(self) -> bool:
         return False

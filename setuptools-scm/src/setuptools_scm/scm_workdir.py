@@ -6,6 +6,7 @@ This module provides backward compatibility for code that imported from setuptoo
 
 from __future__ import annotations
 
+from vcs_versioning._backends._scm_workdir import ScmWorkdir as ScmWorkdir
 from vcs_versioning._backends._scm_workdir import Workdir as Workdir
 from vcs_versioning._backends._scm_workdir import (
     get_latest_file_mtime as get_latest_file_mtime,
@@ -14,6 +15,7 @@ from vcs_versioning._backends._scm_workdir import log as log
 
 __all__ = [
     # Classes
+    "ScmWorkdir",
     "Workdir",
     # Functions
     "get_latest_file_mtime",
