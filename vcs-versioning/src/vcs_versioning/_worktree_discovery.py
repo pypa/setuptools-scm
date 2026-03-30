@@ -10,7 +10,6 @@ preferred over fallback results.
 from __future__ import annotations
 
 import logging
-from contextvars import ContextVar
 from importlib.metadata import entry_points
 from pathlib import Path
 from typing import Protocol
@@ -28,21 +27,6 @@ class DiscoveryFactory(Protocol):
     def __call__(
         self, path: Path, *, config: Configuration
     ) -> ScmWorkdir | FallbackWorkdir | None: ...
-
-
-_active_workdir: ContextVar[AnyWorkdir | None] = ContextVar(
-    "_active_workdir", default=None
-)
-
-
-def get_active_workdir() -> AnyWorkdir | None:
-    """Return the workdir set during the current build, if any."""
-    return _active_workdir.get()
-
-
-def set_active_workdir(workdir: AnyWorkdir | None) -> None:
-    """Store the discovered workdir for the duration of the build."""
-    _active_workdir.set(workdir)
 
 
 def _verify_project_path(workdir: ScmWorkdir, config: Configuration) -> bool:

@@ -40,32 +40,52 @@ def infer_version_with_config(
 ) -> VersionInferenceData:
     """Infer version and return VersionInferenceData.
 
-    By default, version files are written to the source tree during inference.
-    This ensures they are available for editable installs and development workflows.
+    Runs the version pipeline inline:
+    ``Configuration -> discover_workdir -> get_scm_version -> format_version``
 
-    Version files are also written to the build directory during build_py
-    (for wheel builds and strict editable installs).
+    The discovered workdir is stored in the returned data so that downstream
+    consumers (egg_info mixin, file finders) can access it without a ContextVar.
 
     Set SETUPTOOLS_SCM_WRITE_TO_SOURCE=0 to disable writing to the source tree
     (e.g., for read-only source directories like Bazel builds).
 
     Returns:
-        VersionInferenceData containing version string, Configuration, and ScmVersion
+        VersionInferenceData containing version, Configuration, ScmVersion, and workdir
     """
     from vcs_versioning._config import Configuration
     from vcs_versioning._get_version_impl import _version_missing
-    from vcs_versioning._get_version_impl import parse_version
     from vcs_versioning._get_version_impl import write_version_files
+    from vcs_versioning._legacy_parse import has_legacy_parse_eps
+    from vcs_versioning._legacy_parse import parse_fallback_version
+    from vcs_versioning._legacy_parse import parse_scm_version
+    from vcs_versioning._overrides import _apply_metadata_overrides
+    from vcs_versioning._overrides import _read_pretended_version_for
     from vcs_versioning._version_schemes import format_version
+    from vcs_versioning._worktree_discovery import discover_workdir
 
     config = Configuration.from_file(
         dist_name=dist_name, pyproject_data=pyproject_data, **(overrides or {})
     )
 
-    scm_version = parse_version(config)
+    workdir = None
+    scm_version: Any = None
+
+    pretended = _read_pretended_version_for(config)
+    if pretended is not None:
+        scm_version = pretended
+    else:
+        workdir = discover_workdir(config)
+        if workdir is not None:
+            scm_version = workdir.get_scm_version(config)
+
+        if scm_version is None and has_legacy_parse_eps():
+            scm_version = parse_scm_version(config) or parse_fallback_version(config)
+
     if scm_version is None:
         _version_missing(config)
 
+    scm_version = _apply_metadata_overrides(scm_version, config)
+    assert scm_version is not None
     version_string = format_version(scm_version)
 
     if _should_write_to_source():
@@ -78,15 +98,13 @@ def infer_version_with_config(
                 e,
             )
 
-    # Write SCM metadata (scm_version.json + scm_file_list.json) for sdist builds.
-    # These are placed into egg-info so fallback discovery can read them
-    # when building a wheel from an sdist (no VCS available).
-    _write_scm_metadata_to_egg_info(config, scm_version, dist_name)
+    _write_scm_metadata_to_egg_info(config, scm_version, dist_name, workdir)
 
     return VersionInferenceData(
         version=version_string,
         config=config,
         scm_version=scm_version,
+        workdir=workdir,
     )
 
 
@@ -94,6 +112,7 @@ def _write_scm_metadata_to_egg_info(
     config: Any,
     scm_version: Any,
     dist_name: str | None,
+    workdir: Any,
 ) -> None:
     """Write scm_version.json and scm_file_list.json into the egg-info directory.
 
@@ -109,13 +128,10 @@ def _write_scm_metadata_to_egg_info(
         from vcs_versioning._scm_metadata import scm_version_data_from_scm_version
         from vcs_versioning._scm_metadata import write_scm_file_list
         from vcs_versioning._scm_metadata import write_scm_version_data
-        from vcs_versioning._worktree_discovery import get_active_workdir
 
-        # Determine the egg-info directory name
         if dist_name is None:
             return
 
-        # Normalize dist_name for egg-info directory name
         egg_info_name = dist_name.replace("-", "_") + ".egg-info"
         project_root = Path(config.absolute_root)
         if config.relative_to is not None:
@@ -129,12 +145,9 @@ def _write_scm_metadata_to_egg_info(
             )
             return
 
-        # Write version data
         version_data = scm_version_data_from_scm_version(scm_version)
         write_scm_version_data(egg_info_dir, version_data)
 
-        # Write file list from active workdir if available
-        workdir = get_active_workdir()
         if workdir is not None:
             try:
                 files = workdir.list_tracked_files()

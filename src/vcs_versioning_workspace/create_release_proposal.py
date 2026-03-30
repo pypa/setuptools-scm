@@ -10,9 +10,9 @@ from pathlib import Path
 from github import Github
 from github.Repository import Repository
 from vcs_versioning._config import Configuration
-from vcs_versioning._get_version_impl import parse_version
 from vcs_versioning._version_schemes import format_version
 from vcs_versioning._version_schemes._towncrier import get_release_version
+from vcs_versioning._worktree_discovery import discover_workdir
 
 
 def find_fragments(project_dir: Path) -> list[Path]:
@@ -51,8 +51,8 @@ def get_next_version(project_dir: Path, repo_root: Path) -> str | None:
         pyproject = project_dir / "pyproject.toml"
         config = Configuration.from_file(pyproject, local_scheme="no-local-version")
 
-        # Get the ScmVersion object
-        scm_version = parse_version(config)
+        workdir = discover_workdir(config)
+        scm_version = workdir.get_scm_version(config) if workdir else None
         if scm_version is None:
             print(f"ERROR: Could not parse version for {project_dir}", file=sys.stderr)
             return None

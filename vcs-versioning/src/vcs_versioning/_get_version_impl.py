@@ -8,10 +8,15 @@ from pathlib import Path
 from re import Pattern
 from typing import Any, NoReturn
 
-from . import _config, _entrypoints, _run_cmd
+from . import _config
 from . import _types as _t
 from ._config import Configuration
-from ._overrides import _read_pretended_version_for
+
+# Backward-compat re-export used by vcs-versioning/setup.py
+from ._legacy_parse import (
+    resolved_fallback_root as resolved_fallback_root,  # noqa: F401
+)
+from ._overrides import _apply_metadata_overrides, _read_pretended_version_for
 from ._scm_version import ScmVersion
 from ._version_cls import _validate_version_cls
 from ._version_schemes import format_version as _format_version
@@ -23,80 +28,61 @@ EMPTY_TAG_REGEX_DEPRECATION = DeprecationWarning(
 log = logging.getLogger(__name__)
 
 
-def resolved_fallback_root(config: Configuration) -> str:
-    """Absolute path for *fallback_root* when it is relative to *relative_to*'s directory."""
-    rel = config.relative_to
-    if rel and not Path(config.fallback_root).is_absolute():
-        return str((Path(rel).resolve().parent / config.fallback_root).resolve())
-    return str(Path(config.fallback_root).resolve())
+def _finalize(
+    scm_version: ScmVersion,
+    config: Configuration,
+    *,
+    force_write: bool,
+) -> str:
+    """Apply metadata overrides, format, and optionally write version files."""
+    applied = _apply_metadata_overrides(scm_version, config)
+    assert applied is not None
+    version_string = _format_version(applied)
+    if force_write:
+        write_version_files(config, version=version_string, scm_version=applied)
+    return version_string
 
 
-def parse_scm_version(config: Configuration) -> ScmVersion | None:
-    try:
-        if config.parse is not None:
-            parse_result = config.parse(config.absolute_root, config=config)
-            if parse_result is not None and not isinstance(parse_result, ScmVersion):
-                raise TypeError(
-                    f"version parse result was {str!r}\n"
-                    "please return a parsed version (ScmVersion)"
-                )
-            return parse_result
-        else:
-            return _entrypoints.version_from_entrypoint(
-                config,
-                entrypoint="setuptools_scm.parse_scm",
-                root=config.absolute_root,
-            )
-    except _run_cmd.CommandNotFoundError as e:
-        log.exception("command %s not found while parsing the scm, using fallbacks", e)
-        return None
+def _resolve_version(config: Configuration) -> ScmVersion | None:
+    """Run the version pipeline: pretend -> custom parse -> discovery -> legacy EPs.
 
-
-def parse_fallback_version(config: Configuration) -> ScmVersion | None:
-    return _entrypoints.version_from_entrypoint(
-        config,
-        entrypoint="setuptools_scm.parse_scm_fallback",
-        root=resolved_fallback_root(config),
-    )
-
-
-def _has_legacy_parse_eps() -> bool:
-    """True when third-party plugins still register old parse EP groups."""
-    from ._entrypoints import entry_points as _eps
-
-    for group in ("setuptools_scm.parse_scm", "setuptools_scm.parse_scm_fallback"):
-        for ep in _eps(group=group):
-            if not ep.value.startswith("vcs_versioning."):
-                return True
-    return False
-
-
-def parse_version(config: Configuration) -> ScmVersion | None:
-    from ._overrides import _apply_metadata_overrides
-    from ._worktree_discovery import discover_workdir, set_active_workdir
+    Returns the raw ``ScmVersion`` (before metadata overrides are applied) or
+    ``None`` when no version could be determined.
+    """
+    from ._worktree_discovery import discover_workdir
 
     pretended = _read_pretended_version_for(config)
-    if pretended:
-        return _apply_metadata_overrides(pretended, config)
+    if pretended is not None:
+        return pretended
 
-    # When a custom parse function is set, use it directly (legacy path).
+    # Custom parse function (setup.py legacy path)
     if config.parse is not None:
-        scm_version = parse_scm_version(config) or parse_fallback_version(config)
-        return _apply_metadata_overrides(scm_version, config)
+        parse_result = config.parse(config.absolute_root, config=config)
+        if parse_result is not None and not isinstance(parse_result, ScmVersion):
+            raise TypeError(
+                f"version parse result was {parse_result!r}\n"
+                "please return a parsed version (ScmVersion)"
+            )
+        return parse_result
 
-    # PRIMARY: workdir-based discovery
+    # Primary path: workdir-based discovery
     workdir = discover_workdir(config)
     if workdir is not None:
-        set_active_workdir(workdir)
         scm_version = workdir.get_scm_version(config)
         if scm_version is not None:
-            return _apply_metadata_overrides(scm_version, config)
+            return scm_version
 
-    # LEGACY: only run if third-party plugins registered old parse entry points
-    if _has_legacy_parse_eps():
+    # Legacy fallback: only if third-party plugins registered old parse EPs
+    from ._legacy_parse import (
+        has_legacy_parse_eps,
+        parse_fallback_version,
+        parse_scm_version,
+    )
+
+    if has_legacy_parse_eps():
         scm_version = parse_scm_version(config) or parse_fallback_version(config)
         if scm_version is not None:
-            return _apply_metadata_overrides(scm_version, config)
+            return scm_version
 
     return None
 
@@ -166,10 +152,10 @@ def write_version_files(
 def _get_version(
     config: Configuration, force_write_version_files: bool | None = None
 ) -> str | None:
-    parsed_version = parse_version(config)
-    if parsed_version is None:
+    scm_version = _resolve_version(config)
+    if scm_version is None:
         return None
-    version_string = _format_version(parsed_version)
+
     if force_write_version_files is None:
         force_write_version_files = True
         warnings.warn(
@@ -179,10 +165,7 @@ def _get_version(
             stacklevel=2,
         )
 
-    if force_write_version_files:
-        write_version_files(config, version=version_string, scm_version=parsed_version)
-
-    return version_string
+    return _finalize(scm_version, config, force_write=force_write_version_files)
 
 
 def _find_scm_in_parents(config: Configuration) -> Path | None:
@@ -211,14 +194,11 @@ def _version_missing(config: Configuration) -> NoReturn:
         scm_parent = _find_scm_in_parents(config)
 
     if scm_parent is not None:
-        # Found an SCM repository in a parent directory
-        # Get tool-specific names for error messages
         from .overrides import get_active_overrides
 
         overrides = get_active_overrides()
         tool = overrides.tool
 
-        # Generate appropriate examples based on tool
         if tool == "SETUPTOOLS_SCM":
             api_example = "setuptools_scm.get_version(relative_to=__file__)"
             tool_section = "[tool.setuptools_scm]"
@@ -242,7 +222,6 @@ def _version_missing(config: Configuration) -> NoReturn:
             "For more information, see: https://setuptools-scm.readthedocs.io/en/latest/config/"
         )
     else:
-        # No SCM repository found in parent directories either
         error_msg = (
             base_error
             + "Make sure you're either building from a fully intact git repository "
@@ -292,13 +271,11 @@ def get_version(
     del normalize
     tag_regex = parse_tag_regex(tag_regex)
 
-    # Handle scm parameter by converting it to ScmConfiguration
     if scm is not None:
         scm_config = _config.ScmConfiguration.from_data(scm)
     else:
         scm_config = _config.ScmConfiguration()
 
-    # Remove scm from locals() since we handle it separately
     config_params = locals().copy()
     config_params.pop("scm", None)
     config_params.pop("scm_config", None)

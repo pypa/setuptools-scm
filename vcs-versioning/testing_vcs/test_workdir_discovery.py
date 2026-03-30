@@ -19,11 +19,7 @@ from vcs_versioning._scm_metadata import (
     write_scm_file_list,
     write_scm_version_data,
 )
-from vcs_versioning._worktree_discovery import (
-    discover_workdir,
-    get_active_workdir,
-    set_active_workdir,
-)
+from vcs_versioning._worktree_discovery import discover_workdir
 
 
 def _git_init(path: Path) -> None:
@@ -179,19 +175,6 @@ class TestProjectPathVerificationInDiscovery:
         )
         with pytest.raises(ValueError, match="project_path mismatch"):
             discover_workdir(config)
-
-
-class TestActiveWorkdir:
-    def test_default_is_none(self) -> None:
-        # Reset to ensure clean state
-        set_active_workdir(None)
-        assert get_active_workdir() is None
-
-    def test_set_and_get(self, tmp_path: Path) -> None:
-        wd = StaticWorkdir(path=tmp_path)
-        set_active_workdir(wd)
-        assert get_active_workdir() is wd
-        set_active_workdir(None)
 
 
 class TestFallbackWorkdirDiscoveryFactories:

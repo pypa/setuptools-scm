@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import os
 from collections.abc import Callable
-from pathlib import Path
 from typing import TypeGuard
 
 from .. import _types as _t
@@ -100,12 +99,7 @@ def is_toplevel_acceptable(toplevel: str | None) -> TypeGuard[str]:
 
 
 def find_files(path: _t.PathT = "") -> list[str]:
-    """Discover files using registered file finder entry points.
-
-    TODO: Once workdir-based file finding is fully validated, prefer
-    the active workdir here.  For now the legacy entry-point mechanism
-    is still the primary path for setuptools file finders.
-    """
+    """Discover files using registered file finder entry points."""
     eps = [
         *entry_points(group="setuptools_scm.files_command"),
         *entry_points(group="setuptools_scm.files_command_fallback"),
@@ -115,15 +109,6 @@ def find_files(path: _t.PathT = "") -> list[str]:
         res: list[str] = command(path)
         if res:
             return res
-
-    # Fallback: try active workdir if no EP produced results
-    from .._worktree_discovery import get_active_workdir
-
-    workdir = get_active_workdir()
-    if workdir is not None:
-        files = workdir.list_tracked_files(Path(path) if path else "")
-        if files:
-            return files
 
     return []
 
