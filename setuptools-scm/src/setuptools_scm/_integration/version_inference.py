@@ -98,66 +98,12 @@ def infer_version_with_config(
                 e,
             )
 
-    _write_scm_metadata_to_egg_info(config, scm_version, dist_name, workdir)
-
     return VersionInferenceData(
         version=version_string,
         config=config,
         scm_version=scm_version,
         workdir=workdir,
     )
-
-
-def _write_scm_metadata_to_egg_info(
-    config: Any,
-    scm_version: Any,
-    dist_name: str | None,
-    workdir: Any,
-) -> None:
-    """Write scm_version.json and scm_file_list.json into the egg-info directory.
-
-    These files allow a wheel built from an sdist to discover version metadata
-    and tracked files without a live VCS checkout.
-    """
-    if scm_version is None or scm_version.preformatted:
-        return
-
-    try:
-        from pathlib import Path
-
-        from vcs_versioning._scm_metadata import scm_version_data_from_scm_version
-        from vcs_versioning._scm_metadata import write_scm_file_list
-        from vcs_versioning._scm_metadata import write_scm_version_data
-
-        if dist_name is None:
-            return
-
-        egg_info_name = dist_name.replace("-", "_") + ".egg-info"
-        project_root = Path(config.absolute_root)
-        if config.relative_to is not None:
-            rel = Path(str(config.relative_to))
-            project_root = rel.parent if rel.is_file() else rel
-
-        egg_info_dir = project_root / egg_info_name
-        if not egg_info_dir.is_dir():
-            log.debug(
-                "egg-info directory %s not found, skipping metadata write", egg_info_dir
-            )
-            return
-
-        version_data = scm_version_data_from_scm_version(scm_version)
-        write_scm_version_data(egg_info_dir, version_data)
-
-        if workdir is not None:
-            try:
-                files = workdir.list_tracked_files()
-                if files:
-                    write_scm_file_list(egg_info_dir, files)
-            except NotImplementedError:
-                log.debug("workdir does not support list_tracked_files")
-
-    except Exception:
-        log.debug("failed to write SCM metadata to egg-info", exc_info=True)
 
 
 class VersionInferenceApplicable(Protocol):
