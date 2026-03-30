@@ -122,7 +122,7 @@ def test_expect_parse_with_none_result(tmp_path: Path) -> None:
         wd.expect_parse(tag="1.0.0")
 
 
-def test_missmatches_string_formatting() -> None:
+def test_mismatches_string_formatting() -> None:
     """Test mismatches string representation for good error messages."""
     mismatch_obj = mismatches(
         expected={"tag": "1.0.0", "distance": 0, "dirty": False},
@@ -139,7 +139,7 @@ def test_missmatches_string_formatting() -> None:
     assert "dirty: expected False, got True" in str_repr
 
 
-def test_missmatches_node_prefix_formatting() -> None:
+def test_mismatches_node_prefix_formatting() -> None:
     """Test mismatches formatting for node prefix mismatches."""
     mismatch_obj = mismatches(
         expected={"node_prefix": "abc"},
