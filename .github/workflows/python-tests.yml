@@ -79,7 +79,7 @@ jobs:
           python-version: ${{ matrix.python_version }}
           architecture: x64
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57 # v8.0.0
       - name: Setup MSYS2
         uses: msys2/setup-msys2@cafece8e6baf9247cf9b1bf95097b0b983cc558d # v2.31.0
         if: matrix.python_version == 'msys2'
