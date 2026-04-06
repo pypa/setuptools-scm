@@ -11,7 +11,7 @@ repos:
     -   id: debug-statements
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.15.7
+  rev: v0.15.9
   hooks:
     # Explicit --config so hooks match `uv run ruff` (astral-sh/ruff#11924).
     # Workspace = everything except setuptools-scm/ (src/, vcs-versioning/, docs/, …).
@@ -44,7 +44,7 @@ repos:
         - --config=setuptools-scm/pyproject.toml
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.19.1
+    rev: v1.20.0
     hooks:
     -   id: mypy
         # Both are named setup.py → duplicate module "setup"; runtime path hacks are not modeled
@@ -61,7 +61,7 @@ repos:
             - towncrier>=23.11.0
 
 -   repo: https://github.com/scientific-python/cookie
-    rev: 2026.03.02
+    rev: 2026.04.04
     hooks:
       - id: sp-repo-review
 
