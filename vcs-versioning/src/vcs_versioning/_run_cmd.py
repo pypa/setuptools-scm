@@ -155,6 +155,7 @@ def run(
             LC_ALL="C.UTF-8",
             LANGUAGE="",
             HGPLAIN="1",
+            HGRCPATH="",
         ),
         text=True,
         encoding="utf-8",
