@@ -148,14 +148,13 @@ The release system is designed to be reusable by other projects:
    - Runs `towncrier build` with the determined version
    - Creates labeled PR
 
-3. **Tag Creation Workflow** (`.github/workflows/create-release-tags.yml`)
-   - Triggered by PR merge with release labels
-   - Creates project-prefixed tags
-   - Creates GitHub releases
-
-4. **Upload Workflow** (`.github/workflows/python-tests.yml`)
-   - Triggered by tag push (filtered by tag prefix)
-   - Uploads only matching package to PyPI
+3. **Release Pipeline** (integrated in `.github/workflows/python-tests.yml`)
+   - Triggered by PR merge to main with release labels
+   - Creates draft GitHub releases + tags
+   - Builds packages (BAIPP), runs full test matrix
+   - Publishes to PyPI and uploads GitHub release assets
+   - Turns draft releases into published releases
+   - vcs-versioning is always published before setuptools-scm
 
 ### Benefits
 

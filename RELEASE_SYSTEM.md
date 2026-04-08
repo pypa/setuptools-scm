@@ -23,26 +23,26 @@ Tests: `vcs-versioning/testing_vcs/test_version_scheme_towncrier.py`
 ## Workflows
 
 **Release Proposal** (`.github/workflows/release-proposal.yml`):
-Manual trigger, runs towncrier, creates labeled PR
+Runs on push to main/develop, runs towncrier, creates labeled PR
 
-**Tag Creation** (`.github/workflows/create-release-tags.yml`):
-On PR merge, creates tags from PR title, triggers PyPI upload
-
-**Modified Upload** (`.github/workflows/python-tests.yml`):
-Split per-project upload jobs filtered by tag prefix
+**Test + Release** (`.github/workflows/python-tests.yml`):
+On PR merge with release labels, creates draft GitHub releases + tags,
+builds and tests packages, then publishes to PyPI and GitHub (turning
+drafts into published releases). Also handles CI builds and TestPyPI.
 
 ## Usage
 
 **Contributors:** Add changelog fragment to `{project}/changelog.d/{number}.{type}.md`
 
-**Maintainers:** Trigger release proposal workflow, review PR, merge to create tags and upload to PyPI
+**Maintainers:** Review release proposal PR, merge to create draft releases, build, test, and publish to PyPI
 
 ## Design Notes
 
 - Version scheme is single source of truth, no custom scripts
 - Manual approval via PR review
 - Workflows fail explicitly if required data is missing
-- Tag prefix filtering controls package uploads
+- Draft releases provide safety net (nothing visible until tests pass)
+- vcs-versioning is always published before setuptools-scm (dependency ordering)
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) and [TESTING.md](./TESTING.md) for details.
 
