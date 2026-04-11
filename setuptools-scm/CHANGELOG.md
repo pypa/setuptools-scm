@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 10.0.6 (2026-04-11)
+
+### Fixed
+
+- Remove the `_warn_on_old_setuptools()` check that incorrectly warned when a custom build-backend caused `setuptools.__version__` to return the project version instead of setuptools' version. The minimum setuptools version is now enforced via build-system requirements. ([#1192](https://github.com/pypa/setuptools-scm/issues/1192))
+
 ## 10.0.5 (2026-03-27)
 
 ### Fixed
