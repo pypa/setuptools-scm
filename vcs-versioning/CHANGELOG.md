@@ -2,6 +2,17 @@
 
 <!-- towncrier release notes start -->
 
+## 1.1.2 (2026-04-11)
+
+### Fixed
+
+- Filter Mercurial pseudo-tags (tip, qbase, qtip, qparent) and iterate all tags when resolving versions, fixing spurious "no version found" warnings from MQ extension tags. ([#310](https://github.com/pypa/setuptools-scm/issues/310))
+- The ``semver-pep440`` and ``semver-pep440-release-branch`` version schemes now
+  correctly handle ``.dev0`` tags and pre-release tags. Exact checkout on a tag
+  returns the tag as-is (``2.0.dev0`` stays ``2.0.dev0``, ``1.0.0rc1`` stays
+  ``1.0.0rc1``). Non-exact ``.dev0`` tags are treated as explicit version anchors,
+  producing ``X.Y.0.devN`` instead of incorrectly bumping past the anchored version. ([#523](https://github.com/pypa/setuptools-scm/issues/523))
+
 ## 1.1.1 (2026-03-27)
 
 ### Fixed
