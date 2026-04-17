@@ -21,7 +21,7 @@ docs = [
   "mkdocs",
   "mkdocs-include-markdown-plugin",
   "mkdocs-material",
-  "mkdocstrings[python]>=0.29",  # 0.29 renamed import to inventories
+  "mkdocstrings[python]>=1.0.4",  # 0.29 renamed import to inventories
   "pygments",
   "griffe-public-wildcard-imports",
 ]
