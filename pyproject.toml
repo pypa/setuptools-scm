@@ -18,10 +18,10 @@ create-release-proposal = "vcs_versioning_workspace.create_release_proposal:main
 # PP006 / uv: aggregate groups for local development (members define their own test deps)
 dev = [{ include-group = "docs" }, { include-group = "typing" }, { include-group = "release" }]
 docs = [
-  "mkdocs",
-  "mkdocs-include-markdown-plugin",
-  "mkdocs-material",
-  "mkdocstrings[python]>=1.0.4",  # 0.29 renamed import to inventories
+  "mkdocs<2",
+  "mkdocs-include-markdown-plugin<8",
+  "mkdocs-material<10",
+  "mkdocstrings[python]>=1.0.4,<2",  # 0.29 renamed import to inventories
   "pygments",
   "griffe-public-wildcard-imports",
 ]

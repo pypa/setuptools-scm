@@ -1670,10 +1670,10 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "griffe-public-wildcard-imports" },
-    { name = "mkdocs" },
-    { name = "mkdocs-include-markdown-plugin" },
-    { name = "mkdocs-material" },
-    { name = "mkdocstrings", extras = ["python"], specifier = ">=1.0.4" },
+    { name = "mkdocs", specifier = "<2" },
+    { name = "mkdocs-include-markdown-plugin", specifier = "<8" },
+    { name = "mkdocs-material", specifier = "<10" },
+    { name = "mkdocstrings", extras = ["python"], specifier = ">=1.0.4,<2" },
     { name = "pygithub", marker = "sys_platform != 'win32'", specifier = ">=2.0.0" },
     { name = "pygments" },
     { name = "towncrier", specifier = ">=23.11.0" },
@@ -1681,10 +1681,10 @@ dev = [
 ]
 docs = [
     { name = "griffe-public-wildcard-imports" },
-    { name = "mkdocs" },
-    { name = "mkdocs-include-markdown-plugin" },
-    { name = "mkdocs-material" },
-    { name = "mkdocstrings", extras = ["python"], specifier = ">=1.0.4" },
+    { name = "mkdocs", specifier = "<2" },
+    { name = "mkdocs-include-markdown-plugin", specifier = "<8" },
+    { name = "mkdocs-material", specifier = "<10" },
+    { name = "mkdocstrings", extras = ["python"], specifier = ">=1.0.4,<2" },
     { name = "pygments" },
 ]
 release = [
