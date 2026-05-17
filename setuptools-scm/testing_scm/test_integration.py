@@ -15,20 +15,22 @@ from typing import Any
 import pytest
 
 from packaging.version import Version
+from vcs_versioning._requirement_cls import extract_package_name
+
 from setuptools_scm._integration import setuptools as setuptools_integration
 from setuptools_scm._integration.pyproject_reading import PyProjectData
 from setuptools_scm._integration.setup_cfg import SetuptoolsBasicData
 from setuptools_scm._integration.setup_cfg import read_setup_cfg
-from vcs_versioning._requirement_cls import extract_package_name
 
 if TYPE_CHECKING:
     import setuptools
 
-from setuptools_scm import Configuration
 from vcs_versioning._overrides import PRETEND_KEY
 from vcs_versioning._overrides import PRETEND_KEY_NAMED
 from vcs_versioning._run_cmd import run
 from vcs_versioning.test_api import WorkDir
+
+from setuptools_scm import Configuration
 
 c = Configuration()
 
@@ -741,6 +743,7 @@ def test_xmlsec_download_regression(
             [
                 *(sys.executable, "-m", "pip", "download"),
                 *("--no-binary", "xmlsec"),
+                "--no-deps",
                 "--no-build-isolation",
                 "-v",
                 "xmlsec==1.3.16",
