@@ -183,7 +183,9 @@ def _find_scm_in_parents(config: Configuration) -> Path | None:
     return None
 
 
-def _version_missing(config: Configuration) -> NoReturn:
+def _version_missing(
+    config: Configuration, *, tool: str = "SETUPTOOLS_SCM"
+) -> NoReturn:
     base_error = (
         f"setuptools-scm was unable to detect version for {config.absolute_root}.\n\n"
     )
@@ -194,11 +196,6 @@ def _version_missing(config: Configuration) -> NoReturn:
         scm_parent = _find_scm_in_parents(config)
 
     if scm_parent is not None:
-        from .overrides import get_active_overrides
-
-        overrides = get_active_overrides()
-        tool = overrides.tool
-
         if tool == "SETUPTOOLS_SCM":
             api_example = "setuptools_scm.get_version(relative_to=__file__)"
             tool_section = "[tool.setuptools_scm]"

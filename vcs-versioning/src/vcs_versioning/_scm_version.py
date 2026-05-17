@@ -179,12 +179,18 @@ def tag_to_version(
 def _source_epoch_or_utc_now() -> datetime:
     """Get datetime from SOURCE_DATE_EPOCH or current UTC time.
 
-    Uses the active GlobalOverrides context if available, otherwise returns
-    current UTC time.
+    Reads the ``SOURCE_DATE_EPOCH`` environment variable directly.
     """
-    from .overrides import source_epoch_or_utc_now
+    import os
+    from datetime import timezone
 
-    return source_epoch_or_utc_now()
+    val = os.environ.get("SOURCE_DATE_EPOCH")
+    if val is not None:
+        try:
+            return datetime.fromtimestamp(int(val), timezone.utc)
+        except (ValueError, OSError):
+            pass
+    return datetime.now(timezone.utc)
 
 
 def _time_from_source_date_epoch(source_date_epoch: int | None) -> datetime:

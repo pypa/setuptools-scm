@@ -82,7 +82,7 @@ def infer_version_with_config(
             scm_version = parse_scm_version(config) or parse_fallback_version(config)
 
     if scm_version is None:
-        _version_missing(config)
+        _version_missing(config, tool=env.tool_names[0])
 
     scm_version = _apply_metadata_overrides(scm_version, config)
     assert scm_version is not None

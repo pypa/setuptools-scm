@@ -290,18 +290,16 @@ def test_git_worktree(wd: WorkDir) -> None:
 def test_git_dirty_notag(
     today: bool, wd: WorkDir, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from vcs_versioning.overrides import GlobalOverrides
-
     wd.commit_testfile()
     wd.write("test.txt", "test2")
     wd("git add test.txt")
 
     if today:
-        # Use from_active() to create overrides without SOURCE_DATE_EPOCH
-        with GlobalOverrides.from_active(source_date_epoch=None):
-            version = wd.get_version()
-            # the date on the tag is in UTC
-            tag = datetime.now(timezone.utc).date().strftime(".d%Y%m%d")
+        # Clear SOURCE_DATE_EPOCH so ScmVersion.time uses current time
+        monkeypatch.delenv("SOURCE_DATE_EPOCH", raising=False)
+        version = wd.get_version()
+        # the date on the tag is in UTC
+        tag = datetime.now(timezone.utc).date().strftime(".d%Y%m%d")
     else:
         # Use the existing context with SOURCE_DATE_EPOCH set
         version = wd.get_version()

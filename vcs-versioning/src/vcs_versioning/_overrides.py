@@ -142,6 +142,8 @@ def _find_close_env_var_matches(
 
 def _read_pretended_metadata_for(
     config: _config.Configuration,
+    *,
+    env: Mapping[str, str] | None = None,
 ) -> PretendMetadataDict | None:
     """read overridden metadata from the environment
 
@@ -153,11 +155,14 @@ def _read_pretended_metadata_for(
     """
     from .overrides import EnvReader
 
+    if env is None:
+        env = os.environ
+
     log.debug("dist name: %s", config.dist_name)
 
     reader = EnvReader(
         tools_names=("SETUPTOOLS_SCM", "VCS_VERSIONING"),
-        env=os.environ,
+        env=env,
         dist_name=config.dist_name,
     )
 
@@ -247,6 +252,8 @@ def _apply_metadata_overrides(
 
 def _read_pretended_version_for(
     config: _config.Configuration,
+    *,
+    env: Mapping[str, str] | None = None,
 ) -> ScmVersion | None:
     """read a a overridden version from the environment
 
@@ -255,11 +262,14 @@ def _read_pretended_version_for(
     """
     from .overrides import EnvReader
 
+    if env is None:
+        env = os.environ
+
     log.debug("dist name: %s", config.dist_name)
 
     reader = EnvReader(
         tools_names=("SETUPTOOLS_SCM", "VCS_VERSIONING"),
-        env=os.environ,
+        env=env,
         dist_name=config.dist_name,
     )
     pretended = reader.read("PRETEND_VERSION")
@@ -270,16 +280,23 @@ def _read_pretended_version_for(
         return None
 
 
-def read_toml_overrides(dist_name: str | None) -> ConfigOverridesDict:
+def read_toml_overrides(
+    dist_name: str | None,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> ConfigOverridesDict:
     """Read TOML overrides from environment.
 
     Validates that only known Configuration fields are provided.
     """
     from .overrides import EnvReader
 
+    if env is None:
+        env = os.environ
+
     reader = EnvReader(
         tools_names=("SETUPTOOLS_SCM", "VCS_VERSIONING"),
-        env=os.environ,
+        env=env,
         dist_name=dist_name,
     )
     return reader.read_toml("OVERRIDES", schema=ConfigOverridesDict)

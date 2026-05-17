@@ -21,11 +21,22 @@ log = logging.getLogger(__name__)
 _HG_PSEUDO_TAGS = frozenset({"tip", "qbase", "qtip", "qparent"})
 
 
-def _get_hg_command() -> str:
-    """Get the hg command from override context or environment."""
-    from ..overrides import get_hg_command
+_DEFAULT_HG_COMMAND = "hg"
 
-    return get_hg_command()
+
+def _get_hg_command() -> str:
+    """Read the hg command from environment variables.
+
+    Tries ``SETUPTOOLS_SCM_HG_COMMAND`` then ``VCS_VERSIONING_HG_COMMAND``,
+    falling back to ``"hg"``.
+    """
+    import os
+
+    for prefix in ("SETUPTOOLS_SCM", "VCS_VERSIONING"):
+        val = os.environ.get(f"{prefix}_HG_COMMAND")
+        if val is not None:
+            return val
+    return _DEFAULT_HG_COMMAND
 
 
 def run_hg(

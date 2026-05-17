@@ -76,19 +76,15 @@ export HATCH_VCS_DEBUG=30  # WARNING
 
 ### Accessing Override Values
 
-Within the context, you can access override values:
+Within the context, you can access override values directly from the returned instance:
 
 ```python
-from vcs_versioning.overrides import GlobalOverrides, get_active_overrides
+from vcs_versioning.overrides import GlobalOverrides
 
 with GlobalOverrides.from_env("HATCH_VCS") as overrides:
-    # Direct access
     print(f"Debug level: {overrides.debug}")
     print(f"Timeout: {overrides.subprocess_timeout}")
-
-    # Or via accessor function
-    current = get_active_overrides()
-    log_level = current.log_level()  # Returns int from logging module
+    log_level = overrides.log_level()  # Returns int from logging module
 ```
 
 ### Creating Modified Overrides
@@ -566,39 +562,18 @@ def test_with_vcs_versioning_fallback():
 
 ### Inspecting Active Overrides
 
+The `GlobalOverrides.from_env()` context manager returns the active overrides instance:
+
 ```python
-from vcs_versioning import get_active_overrides
+from vcs_versioning.overrides import GlobalOverrides
 
-# Outside any context
-overrides = get_active_overrides()
-assert overrides is None
-
-# Inside a context
-with GlobalOverrides.from_env("HATCH_VCS"):
-    overrides = get_active_overrides()
-    assert overrides is not None
+with GlobalOverrides.from_env("HATCH_VCS") as overrides:
     assert overrides.tool == "HATCH_VCS"
+    print(f"Debug: {overrides.debug}")
+    print(f"Timeout: {overrides.subprocess_timeout}")
+    print(f"Hg command: {overrides.hg_command}")
+    print(f"Source epoch: {overrides.source_date_epoch}")
 ```
-
-### Using Accessor Functions Directly
-
-```python
-from vcs_versioning import (
-    get_debug_level,
-    get_subprocess_timeout,
-    get_hg_command,
-    get_source_date_epoch,
-)
-
-with GlobalOverrides.from_env("HATCH_VCS"):
-    # These functions return values from the active context
-    debug = get_debug_level()
-    timeout = get_subprocess_timeout()
-    hg_cmd = get_hg_command()
-    epoch = get_source_date_epoch()
-```
-
-Outside a context, these functions fall back to reading `os.environ` directly for backward compatibility.
 
 ### Custom Distribution-Specific Overrides
 

@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import logging
 import os
-import warnings
 from collections.abc import Mapping, MutableMapping
 from contextlib import ContextDecorator
 from contextvars import ContextVar
@@ -549,95 +548,6 @@ _active_overrides: ContextVar[GlobalOverrides | None] = ContextVar(
     "vcs_versioning_overrides", default=None
 )
 
-# Flag to track if we've already warned about auto-creating context
-_auto_create_warning_issued = False
-
-
-# Accessor functions for getting current override values
-
-
-def get_active_overrides() -> GlobalOverrides:
-    """Get the currently active GlobalOverrides instance.
-
-    If no context is active, creates one from the current environment
-    using SETUPTOOLS_SCM prefix for legacy compatibility.
-
-    Note: The auto-created instance reads from os.environ at call time,
-    so it will pick up environment changes (e.g., from pytest monkeypatch).
-
-    Returns:
-        GlobalOverrides instance
-    """
-    global _auto_create_warning_issued
-
-    overrides = _active_overrides.get()
-    if overrides is None:
-        # Auto-create context from environment for backwards compatibility
-        # Note: We create a fresh instance each time to pick up env changes
-        if not _auto_create_warning_issued:
-            warnings.warn(
-                "No GlobalOverrides context is active. "
-                "Auto-creating one with SETUPTOOLS_SCM prefix for backwards compatibility. "
-                "Consider using 'with GlobalOverrides.from_env(\"YOUR_TOOL\"):' explicitly.",
-                UserWarning,
-                stacklevel=2,
-            )
-            _auto_create_warning_issued = True
-        overrides = GlobalOverrides.from_env(
-            "SETUPTOOLS_SCM",
-            env=os.environ,
-            additional_loggers=logging.getLogger("setuptools_scm"),
-        )
-    return overrides
-
-
-def get_debug_level() -> int | Literal[False]:
-    """Get current debug level from active override context.
-
-    Returns:
-        logging level constant (DEBUG, INFO, WARNING, etc.) or False
-    """
-    return get_active_overrides().debug
-
-
-def get_subprocess_timeout() -> int:
-    """Get current subprocess timeout from active override context.
-
-    Returns:
-        Subprocess timeout in seconds
-    """
-    return get_active_overrides().subprocess_timeout
-
-
-def get_hg_command() -> str:
-    """Get current Mercurial command from active override context.
-
-    Returns:
-        Mercurial command string
-    """
-    return get_active_overrides().hg_command
-
-
-def get_source_date_epoch() -> int | None:
-    """Get SOURCE_DATE_EPOCH from active override context.
-
-    Returns:
-        Unix timestamp or None
-    """
-    return get_active_overrides().source_date_epoch
-
-
-def source_epoch_or_utc_now() -> datetime:
-    """Get datetime from SOURCE_DATE_EPOCH or current UTC time.
-
-    Uses the active GlobalOverrides context. If no SOURCE_DATE_EPOCH is set,
-    returns the current UTC time.
-
-    Returns:
-        datetime object in UTC timezone
-    """
-    return get_active_overrides().source_epoch_or_utc_now()
-
 
 class ensure_context(ContextDecorator):
     """Context manager/decorator that ensures a GlobalOverrides context is active.
@@ -710,10 +620,4 @@ __all__ = [
     "EnvReader",
     "GlobalOverrides",
     "ensure_context",
-    "get_active_overrides",
-    "get_debug_level",
-    "get_hg_command",
-    "get_source_date_epoch",
-    "get_subprocess_timeout",
-    "source_epoch_or_utc_now",
 ]

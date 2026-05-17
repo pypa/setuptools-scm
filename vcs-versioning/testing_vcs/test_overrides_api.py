@@ -16,9 +16,10 @@ def test_from_active_modifies_field() -> None:
 
         # Create modified version with INFO level
         with GlobalOverrides.from_active(debug=logging.INFO):
-            from vcs_versioning.overrides import get_active_overrides
+            from vcs_versioning.overrides import _active_overrides
 
-            active = get_active_overrides()
+            active = _active_overrides.get()
+            assert active is not None
             assert active.debug == logging.INFO
 
 
@@ -34,9 +35,10 @@ def test_from_active_preserves_other_fields() -> None:
     with GlobalOverrides.from_env("TEST", env=env):
         # Modify only debug level
         with GlobalOverrides.from_active(debug=logging.WARNING):
-            from vcs_versioning.overrides import get_active_overrides
+            from vcs_versioning.overrides import _active_overrides
 
-            active = get_active_overrides()
+            active = _active_overrides.get()
+            assert active is not None
             assert active.debug == logging.WARNING
             # Other fields preserved
             assert active.subprocess_timeout == 100
@@ -133,25 +135,26 @@ def test_from_active_and_export_together(monkeypatch: pytest.MonkeyPatch) -> Non
 
 def test_nested_from_active_contexts() -> None:
     """Test nested contexts using from_active()."""
-    with GlobalOverrides.from_env("TEST", env={"TEST_DEBUG": "DEBUG"}):
-        from vcs_versioning.overrides import get_active_overrides
+    from vcs_versioning.overrides import _active_overrides
 
+    with GlobalOverrides.from_env("TEST", env={"TEST_DEBUG": "DEBUG"}):
         # Original: DEBUG level
-        assert get_active_overrides().debug == logging.DEBUG
+        assert _active_overrides.get() is not None
+        assert _active_overrides.get().debug == logging.DEBUG  # type: ignore[union-attr]
 
         with GlobalOverrides.from_active(debug=logging.INFO):
             # Modified: INFO level
-            assert get_active_overrides().debug == logging.INFO
+            assert _active_overrides.get().debug == logging.INFO  # type: ignore[union-attr]
 
             with GlobalOverrides.from_active(debug=logging.WARNING):
                 # Further modified: WARNING level
-                assert get_active_overrides().debug == logging.WARNING
+                assert _active_overrides.get().debug == logging.WARNING  # type: ignore[union-attr]
 
             # Back to INFO
-            assert get_active_overrides().debug == logging.INFO
+            assert _active_overrides.get().debug == logging.INFO  # type: ignore[union-attr]
 
         # Back to DEBUG
-        assert get_active_overrides().debug == logging.DEBUG
+        assert _active_overrides.get().debug == logging.DEBUG  # type: ignore[union-attr]
 
 
 def test_export_without_source_date_epoch() -> None:
@@ -185,9 +188,10 @@ def test_from_active_multiple_fields() -> None:
             hg_command="/custom/hg",
             source_date_epoch=2000000000,
         ):
-            from vcs_versioning.overrides import get_active_overrides
+            from vcs_versioning.overrides import _active_overrides
 
-            active = get_active_overrides()
+            active = _active_overrides.get()
+            assert active is not None
             assert active.debug == logging.ERROR
             assert active.subprocess_timeout == 999
             assert active.hg_command == "/custom/hg"
@@ -227,9 +231,10 @@ def test_from_active_preserves_tool() -> None:
     """Test that from_active() preserves the tool prefix."""
     with GlobalOverrides.from_env("CUSTOM_TOOL", env={"CUSTOM_TOOL_DEBUG": "1"}):
         with GlobalOverrides.from_active(subprocess_timeout=999):
-            from vcs_versioning.overrides import get_active_overrides
+            from vcs_versioning.overrides import _active_overrides
 
-            active = get_active_overrides()
+            active = _active_overrides.get()
+            assert active is not None
             assert active.tool == "CUSTOM_TOOL"
 
 
@@ -259,15 +264,16 @@ def test_export_with_different_debug_levels() -> None:
 
 def test_from_active_with_source_date_epoch_none() -> None:
     """Test that from_active() can clear source_date_epoch."""
-    with GlobalOverrides.from_env("TEST", env={"SOURCE_DATE_EPOCH": "1234567890"}):
-        from vcs_versioning.overrides import get_active_overrides
+    from vcs_versioning.overrides import _active_overrides
 
+    with GlobalOverrides.from_env("TEST", env={"SOURCE_DATE_EPOCH": "1234567890"}):
         # Original has epoch set
-        assert get_active_overrides().source_date_epoch == 1234567890
+        assert _active_overrides.get() is not None
+        assert _active_overrides.get().source_date_epoch == 1234567890  # type: ignore[union-attr]
 
         # Clear it with from_active
         with GlobalOverrides.from_active(source_date_epoch=None):
-            assert get_active_overrides().source_date_epoch is None
+            assert _active_overrides.get().source_date_epoch is None  # type: ignore[union-attr]
 
 
 def test_export_integration_with_subprocess_pattern() -> None:

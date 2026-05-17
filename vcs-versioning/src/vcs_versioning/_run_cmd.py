@@ -11,19 +11,31 @@ from typing import TypeVar, overload
 
 from . import _types as _t
 
+log = logging.getLogger(__name__)
+
+_DEFAULT_SUBPROCESS_TIMEOUT = 40
+
 
 def _get_timeout(env: Mapping[str, str]) -> int:
-    """Get subprocess timeout from override context or environment.
+    """Read subprocess timeout from environment variables.
 
-    This function is kept for backward compatibility but now uses the
-    global override system.
+    Tries ``SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT`` then
+    ``VCS_VERSIONING_SUBPROCESS_TIMEOUT``, falling back to the default.
     """
-    from .overrides import get_subprocess_timeout
+    for prefix in ("SETUPTOOLS_SCM", "VCS_VERSIONING"):
+        val = env.get(f"{prefix}_SUBPROCESS_TIMEOUT")
+        if val is not None:
+            try:
+                return int(val)
+            except ValueError:
+                log.warning(
+                    "Invalid %s_SUBPROCESS_TIMEOUT value '%s', using default %d",
+                    prefix,
+                    val,
+                    _DEFAULT_SUBPROCESS_TIMEOUT,
+                )
+    return _DEFAULT_SUBPROCESS_TIMEOUT
 
-    return get_subprocess_timeout()
-
-
-log = logging.getLogger(__name__)
 
 PARSE_RESULT = TypeVar("PARSE_RESULT")
 T = TypeVar("T")
