@@ -177,8 +177,10 @@ class ScmConfiguration:
     git: GitConfiguration = dataclasses.field(default_factory=GitConfiguration)
 
     @classmethod
-    def from_data(cls, data: dict[str, Any]) -> ScmConfiguration:
+    def from_data(cls, data: dict[str, Any] | None) -> ScmConfiguration:
         """Create ScmConfiguration from configuration data"""
+        if data is None:
+            return cls()
         scm_data = data.copy()
 
         # Handle git-specific configuration
@@ -220,6 +222,12 @@ class Configuration:
     scm: ScmConfiguration = dataclasses.field(
         default_factory=lambda: ScmConfiguration()
     )
+
+    _env: Any = dataclasses.field(default=None, repr=False, compare=False)
+    """Optional :class:`~vcs_versioning._environment.VcsEnvironment` reference.
+    Set by ``VcsEnvironment.build_config()`` so downstream code can read
+    runtime settings (timeout, hg command, source_date_epoch) without a
+    ContextVar.  Typed as ``Any`` to avoid a circular import."""
 
     # Deprecated fields (handled in __post_init__)
 
@@ -290,6 +298,16 @@ class Configuration:
             computed = ""
 
         self.project_path = computed
+
+    def discover_workdir(self) -> Any:
+        """Discover the workdir for this configuration.
+
+        Returns a ``ScmWorkdir``, ``FallbackWorkdir``, or ``None``.
+        Return type is ``Any`` to avoid heavy imports at module level.
+        """
+        from ._worktree_discovery import discover_workdir
+
+        return discover_workdir(self)
 
     @classmethod
     def from_file(

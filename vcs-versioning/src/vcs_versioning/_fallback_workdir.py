@@ -13,11 +13,14 @@ from dataclasses import dataclass
 from dataclasses import field as dc_field
 from datetime import date
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from ._config import Configuration
 from ._integration import data_from_mime
 from ._scm_metadata import read_scm_file_list, read_scm_version_data
 from ._scm_version import ScmVersion, meta, tag_to_version
+
+if TYPE_CHECKING:
+    from ._config import Configuration
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +31,20 @@ class FallbackWorkdir:
 
     path: Path
 
-    def get_scm_version(self, config: Configuration) -> ScmVersion | None:
+    _config: Configuration | None = dc_field(default=None, repr=False, compare=False)
+    """Back-reference to the ``Configuration`` that discovered this workdir."""
+
+    @property
+    def config(self) -> Configuration:
+        if self._config is None:
+            raise RuntimeError(
+                f"{type(self).__name__} has no associated Configuration. "
+                "Use Configuration.discover_workdir() to obtain a properly "
+                "configured workdir, or set workdir._config = config explicitly."
+            )
+        return self._config
+
+    def get_scm_version(self) -> ScmVersion | None:
         raise NotImplementedError
 
     def list_tracked_files(self, path: Path | str = "") -> list[str]:
@@ -45,7 +61,7 @@ class MetadataWorkdir(FallbackWorkdir):
         if self.metadata_dir is None:
             self.metadata_dir = self.path
 
-    def get_scm_version(self, config: Configuration) -> ScmVersion | None:
+    def get_scm_version(self) -> ScmVersion | None:
         assert self.metadata_dir is not None
         data = read_scm_version_data(self.metadata_dir)
         if data is None:
@@ -59,7 +75,7 @@ class MetadataWorkdir(FallbackWorkdir):
             node=data.node,
             dirty=data.dirty,
             branch=data.branch,
-            config=config,
+            config=self.config,
             node_date=node_date,
         )
 
@@ -79,7 +95,7 @@ class ArchivedWorkdir(FallbackWorkdir):
         if self.archival_path is None:
             self.archival_path = self.path
 
-    def get_scm_version(self, config: Configuration) -> ScmVersion | None:
+    def get_scm_version(self) -> ScmVersion | None:
         assert self.archival_path is not None
         for name, parser in [
             (".git_archival.txt", _parse_git_archival),
@@ -88,7 +104,7 @@ class ArchivedWorkdir(FallbackWorkdir):
             archival = self.archival_path / name
             if archival.is_file():
                 data = data_from_mime(archival)
-                return parser(data, config)
+                return parser(data, self.config)
         return None
 
     def list_tracked_files(self, path: Path | str = "") -> list[str]:
@@ -106,7 +122,7 @@ class ArchivedWorkdir(FallbackWorkdir):
 class PkgInfoWorkdir(FallbackWorkdir):
     """Reads ``PKG-INFO`` for version; file list from ``scm_file_list.json`` if present."""
 
-    def get_scm_version(self, config: Configuration) -> ScmVersion | None:
+    def get_scm_version(self) -> ScmVersion | None:
         pkginfo = self.path / "PKG-INFO"
         if not pkginfo.is_file():
             return None
@@ -114,7 +130,7 @@ class PkgInfoWorkdir(FallbackWorkdir):
         version_str = data.get("Version", "UNKNOWN")
         if version_str == "UNKNOWN":
             return None
-        return meta(version_str, preformatted=True, config=config)
+        return meta(version_str, preformatted=True, config=self.config)
 
     def list_tracked_files(self, path: Path | str = "") -> list[str]:
         files = read_scm_file_list(self.path)
@@ -125,7 +141,8 @@ class PkgInfoWorkdir(FallbackWorkdir):
 class StaticWorkdir(FallbackWorkdir):
     """Uses ``config.fallback_version`` / ``parentdir_prefix_version``; no file list."""
 
-    def get_scm_version(self, config: Configuration) -> ScmVersion | None:
+    def get_scm_version(self) -> ScmVersion | None:
+        config = self.config
         if config.parentdir_prefix_version is not None:
             _, parent_name = os.path.split(os.path.abspath(self.path))
             if parent_name.startswith(config.parentdir_prefix_version):

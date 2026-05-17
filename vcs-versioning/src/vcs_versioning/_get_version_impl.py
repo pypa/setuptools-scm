@@ -68,7 +68,7 @@ def _resolve_version(config: Configuration) -> ScmVersion | None:
     # Primary path: workdir-based discovery
     workdir = discover_workdir(config)
     if workdir is not None:
-        scm_version = workdir.get_scm_version(config)
+        scm_version = workdir.get_scm_version()
         if scm_version is not None:
             return scm_version
 
@@ -271,10 +271,7 @@ def get_version(
     del normalize
     tag_regex = parse_tag_regex(tag_regex)
 
-    if scm is not None:
-        scm_config = _config.ScmConfiguration.from_data(scm)
-    else:
-        scm_config = _config.ScmConfiguration()
+    scm_config = _config.ScmConfiguration.from_data(data=scm)
 
     config_params = locals().copy()
     config_params.pop("scm", None)

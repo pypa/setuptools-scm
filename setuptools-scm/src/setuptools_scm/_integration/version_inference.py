@@ -52,7 +52,7 @@ def infer_version_with_config(
     Returns:
         VersionInferenceData containing version, Configuration, ScmVersion, and workdir
     """
-    from vcs_versioning._config import Configuration
+    from vcs_versioning._environment import VcsEnvironment
     from vcs_versioning._get_version_impl import _version_missing
     from vcs_versioning._get_version_impl import write_version_files
     from vcs_versioning._legacy_parse import has_legacy_parse_eps
@@ -61,9 +61,9 @@ def infer_version_with_config(
     from vcs_versioning._overrides import _apply_metadata_overrides
     from vcs_versioning._overrides import _read_pretended_version_for
     from vcs_versioning._version_schemes import format_version
-    from vcs_versioning._worktree_discovery import discover_workdir
 
-    config = Configuration.from_file(
+    env = VcsEnvironment.from_env("SETUPTOOLS_SCM")
+    config = env.build_config(
         dist_name=dist_name, pyproject_data=pyproject_data, **(overrides or {})
     )
 
@@ -74,9 +74,9 @@ def infer_version_with_config(
     if pretended is not None:
         scm_version = pretended
     else:
-        workdir = discover_workdir(config)
+        workdir = config.discover_workdir()
         if workdir is not None:
-            scm_version = workdir.get_scm_version(config)
+            scm_version = workdir.get_scm_version()
 
         if scm_version is None and has_legacy_parse_eps():
             scm_version = parse_scm_version(config) or parse_fallback_version(config)

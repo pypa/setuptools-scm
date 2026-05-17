@@ -52,7 +52,7 @@ def get_next_version(project_dir: Path, repo_root: Path) -> str | None:
         config = Configuration.from_file(pyproject, local_scheme="no-local-version")
 
         workdir = discover_workdir(config)
-        scm_version = workdir.get_scm_version(config) if workdir else None
+        scm_version = workdir.get_scm_version() if workdir else None
         if scm_version is None:
             print(f"ERROR: Could not parse version for {project_dir}", file=sys.stderr)
             return None

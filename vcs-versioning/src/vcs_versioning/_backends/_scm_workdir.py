@@ -5,9 +5,12 @@ from dataclasses import dataclass
 from dataclasses import field as dc_field
 from datetime import date, datetime, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from .._config import Configuration
 from .._scm_version import ScmVersion
+
+if TYPE_CHECKING:
+    from .._config import Configuration
 
 log = logging.getLogger(__name__)
 
@@ -50,14 +53,37 @@ class ScmWorkdir:
     ``path`` is the VCS root (where .git/.hg lives) and ``project_root`` is
     the project directory (where pyproject.toml lives).  For top-level projects
     the two are identical.
+
+    The optional ``_config`` reference is set by ``discover_workdir`` so that
+    methods like ``is_dirty`` and ``node`` can read runtime settings
+    (subprocess timeout, hg command) from ``config._env`` without a ContextVar.
     """
 
     path: Path
     project_root: Path | None = dc_field(default=None)
 
+    _config: Configuration | None = dc_field(default=None, repr=False, compare=False)
+    """Back-reference to the ``Configuration`` that discovered this workdir."""
+
     def __post_init__(self) -> None:
         if self.project_root is None:
             self.project_root = self.path
+
+    @property
+    def _subprocess_timeout(self) -> int | None:
+        """Subprocess timeout from ``config._env``, or ``None`` for legacy fallback."""
+        if self._config is None:
+            return None
+        env = self._config._env
+        return env.subprocess_timeout if env is not None else None
+
+    @property
+    def _hg_command(self) -> str | None:
+        """Hg executable from ``config._env``, or ``None`` for legacy fallback."""
+        if self._config is None:
+            return None
+        env = self._config._env
+        return env.hg_command if env is not None else None
 
     @property
     def project_path(self) -> str:
@@ -67,10 +93,21 @@ class ScmWorkdir:
             return ""
         return str(self.project_root.relative_to(self.path))
 
-    def run_describe(self, config: Configuration) -> ScmVersion:
+    @property
+    def config(self) -> Configuration:
+        """The ``Configuration`` that discovered this workdir."""
+        if self._config is None:
+            raise RuntimeError(
+                f"{type(self).__name__} has no associated Configuration. "
+                "Use Configuration.discover_workdir() to obtain a properly "
+                "configured workdir, or set workdir._config = config explicitly."
+            )
+        return self._config
+
+    def run_describe(self) -> ScmVersion:
         raise NotImplementedError(self.run_describe)
 
-    def get_scm_version(self, config: Configuration) -> ScmVersion | None:
+    def get_scm_version(self) -> ScmVersion | None:
         raise NotImplementedError
 
     def list_tracked_files(self, path: Path | str = "") -> list[str]:

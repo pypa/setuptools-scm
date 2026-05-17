@@ -217,8 +217,8 @@ class TestMetadataWorkdir:
         write_scm_file_list(tmp_path, ["src/pkg/__init__.py"])
 
         config = Configuration()
-        wd = MetadataWorkdir(path=tmp_path, metadata_dir=tmp_path)
-        version = wd.get_scm_version(config)
+        wd = MetadataWorkdir(path=tmp_path, metadata_dir=tmp_path, _config=config)
+        version = wd.get_scm_version()
         assert version is not None
         assert str(version.tag) == "2.0.0"
         assert version.distance == 3
@@ -229,6 +229,6 @@ class TestMetadataWorkdir:
 
     def test_missing_metadata_returns_none(self, tmp_path: Path) -> None:
         config = Configuration()
-        wd = MetadataWorkdir(path=tmp_path, metadata_dir=tmp_path)
-        assert wd.get_scm_version(config) is None
+        wd = MetadataWorkdir(path=tmp_path, metadata_dir=tmp_path, _config=config)
+        assert wd.get_scm_version() is None
         assert wd.list_tracked_files() == []

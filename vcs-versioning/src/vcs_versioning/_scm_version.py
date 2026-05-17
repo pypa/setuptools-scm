@@ -187,6 +187,15 @@ def _source_epoch_or_utc_now() -> datetime:
     return source_epoch_or_utc_now()
 
 
+def _time_from_source_date_epoch(source_date_epoch: int | None) -> datetime:
+    """Convert an explicit SOURCE_DATE_EPOCH to datetime, or return utcnow."""
+    from datetime import timezone
+
+    if source_date_epoch is not None:
+        return datetime.fromtimestamp(source_date_epoch, timezone.utc)
+    return datetime.now(timezone.utc)
+
+
 @dataclasses.dataclass
 class ScmVersion:
     """represents a parsed version from scm"""
@@ -258,6 +267,17 @@ class ScmVersion:
     ) -> str:
         guessed = guess_next(self, *k, **kw)
         return self.format_with(fmt, guessed=guessed)
+
+    def format(self) -> str:
+        """Format this version using the configured version and local schemes.
+
+        This is the final step in the chain::
+
+            env -> config -> workdir -> scm_version -> scm_version.format()
+        """
+        from ._version_schemes import format_version
+
+        return format_version(self)
 
     def matches(self, **expectations: Unpack[VersionExpectations]) -> bool | mismatches:
         """Check if this ScmVersion matches the given expectations.
@@ -369,7 +389,6 @@ def meta(
     log.info("version %s -> %s", tag, parsed_version)
     assert parsed_version is not None, f"Can't parse version {tag}"
 
-    # Pass time explicitly to avoid triggering default_factory if provided
     kwargs: _ScmVersionKwargs = {
         "distance": distance,
         "node": node,
@@ -380,6 +399,8 @@ def meta(
     }
     if time is not None:
         kwargs["time"] = time
+    elif (env := getattr(config, "_env", None)) is not None:
+        kwargs["time"] = _time_from_source_date_epoch(env.source_date_epoch)
 
     scm_version = ScmVersion(parsed_version, config=config, **kwargs)
     return scm_version

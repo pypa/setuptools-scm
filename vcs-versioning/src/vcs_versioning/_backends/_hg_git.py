@@ -6,8 +6,8 @@ from contextlib import suppress
 from datetime import date
 from pathlib import Path
 
+from .. import _config as _config_mod
 from .. import _types as _t
-from .._config import Configuration
 from .._run_cmd import CompletedProcess as _CompletedProcess
 from .._scm_version import ScmVersion
 from ._git import GitWorkdir
@@ -25,11 +25,15 @@ _FAKE_GIT_DESCRIBE_ERROR = _CompletedProcess(
 
 class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
     @classmethod
-    def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdirHgClient | None:
+    def from_potential_worktree(
+        cls, wd: _t.PathT, config: _config_mod.Configuration | None = None
+    ) -> GitWorkdirHgClient | None:
         res = run_hg(["root"], cwd=wd).parse_success(parse=Path)
         if res is None:
             return None
-        return cls(res)
+        result = cls(res)
+        result._config = config
+        return result
 
     def is_dirty(self) -> bool:
         res = run_hg(["id", "-T", "{dirty}"], cwd=self.path, check=True)
@@ -76,11 +80,11 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
 
         return None
 
-    def get_scm_version(self, config: Configuration) -> ScmVersion | None:
+    def get_scm_version(self) -> ScmVersion | None:
         """Obtain version metadata from this hg-git hybrid."""
         from ._git import _git_parse_inner
 
-        return _git_parse_inner(config, self)
+        return _git_parse_inner(self.config, self)
 
     def list_tracked_files(self, path: Path | str = "") -> list[str]:
         """List files tracked via hg in an hg-git setup."""

@@ -87,6 +87,7 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
 
     def _accept_scm(result: ScmWorkdir, ep_name: str) -> ScmWorkdir:
         result.project_root = project_dir
+        result._config = config
         if not _verify_project_path(result, config):
             raise ValueError(
                 f"project_path mismatch: config declares "
@@ -113,6 +114,7 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
             if accept_scm and isinstance(result, ScmWorkdir):
                 return _accept_scm(result, ep_name)
             if isinstance(result, FallbackWorkdir) and fallback_candidate is None:
+                result._config = config
                 log.debug(
                     "stashed fallback workdir %s from factory %s at %s",
                     type(result).__name__,
@@ -139,8 +141,8 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
         log.info("using fallback workdir %s", type(fallback_candidate).__name__)
         return fallback_candidate
 
-    static = StaticWorkdir(path=project_dir)
-    if static.get_scm_version(config) is not None:
+    static = StaticWorkdir(path=project_dir, _config=config)
+    if static.get_scm_version() is not None:
         log.info("using static fallback workdir")
         return static
 

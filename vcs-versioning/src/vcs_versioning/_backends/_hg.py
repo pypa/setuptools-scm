@@ -28,19 +28,39 @@ def _get_hg_command() -> str:
     return get_hg_command()
 
 
-def run_hg(args: list[str], cwd: _t.PathT, **kwargs: Any) -> CompletedProcess:
+def run_hg(
+    args: list[str],
+    cwd: _t.PathT,
+    *,
+    hg_command: str | None = None,
+    timeout: int | None = None,
+    **kwargs: Any,
+) -> CompletedProcess:
     """Run mercurial command with the configured hg executable."""
-    cmd = [_get_hg_command(), *args]
-    return _run(cmd, cwd=cwd, **kwargs)
+    cmd = [hg_command or _get_hg_command(), *args]
+    return _run(cmd, cwd=cwd, timeout=timeout, **kwargs)
 
 
 class HgWorkdir(Workdir):
+    def run_hg(
+        self, args: list[str], *, check: bool = False, timeout: int | None = None
+    ) -> CompletedProcess:
+        return run_hg(
+            args,
+            self.path,
+            check=check,
+            timeout=timeout or self._subprocess_timeout,
+            hg_command=self._hg_command,
+        )
+
     @classmethod
-    def from_potential_worktree(cls, wd: _t.PathT) -> HgWorkdir | None:
+    def from_potential_worktree(
+        cls, wd: _t.PathT, config: Configuration | None = None
+    ) -> HgWorkdir | None:
         res = run_hg(["root"], wd)
         if res.returncode:
             return None
-        return cls(Path(res.stdout))
+        return cls(Path(res.stdout), _config=config)
 
     def is_file_tracked(self, path: Path) -> bool:
         return run_hg(["files", str(path)], cwd=self.path).returncode == 0
@@ -89,9 +109,8 @@ class HgWorkdir(Workdir):
 
     def _get_branch_info(self) -> tuple[str, bool, str]:
         """Get branch name, dirty status, and dirty date."""
-        branch, dirty_str, dirty_date = run_hg(
+        branch, dirty_str, dirty_date = self.run_hg(
             ["id", "-T", "{branch}\n{if(dirty, 1, 0)}\n{date|shortdate}"],
-            cwd=self.path,
             check=True,
         ).stdout.split("\n")
         dirty = bool(int(dirty_str))
@@ -200,7 +219,11 @@ class HgWorkdir(Workdir):
 
     def hg_log(self, revset: str, template: str) -> str:
         return run_hg(
-            ["log", "-r", revset, "-T", template], cwd=self.path, check=True
+            ["log", "-r", revset, "-T", template],
+            cwd=self.path,
+            hg_command=self._hg_command,
+            timeout=self._subprocess_timeout,
+            check=True,
         ).stdout
 
     def get_latest_normalizable_tag(self) -> str | None:
@@ -233,9 +256,9 @@ class HgWorkdir(Workdir):
 
         return bool(self.hg_log(revset, "."))
 
-    def get_scm_version(self, config: Configuration) -> ScmVersion | None:
+    def get_scm_version(self) -> ScmVersion | None:
         """Obtain version metadata from this hg work directory."""
-        return self.get_meta(config)
+        return self.get_meta(self.config)
 
     def list_tracked_files(self, path: Path | str = "") -> list[str]:
         """List files tracked by mercurial."""
@@ -247,7 +270,12 @@ class HgWorkdir(Workdir):
         return scm_find_files(base, hg_files, hg_dirs)
 
     def is_file_tracked(self, path: Path) -> bool:
-        res = run_hg(["files", str(path)], cwd=self.path)
+        res = run_hg(
+            ["files", str(path)],
+            cwd=self.path,
+            hg_command=self._hg_command,
+            timeout=self._subprocess_timeout,
+        )
         return res.returncode == 0
 
     def get_dirty_tag_date(self) -> datetime.date | None:
@@ -258,12 +286,21 @@ class HgWorkdir(Workdir):
         """
         try:
             # Check if working directory is dirty first
-            res = run_hg(["id", "-T", "{dirty}"], cwd=self.path)
+            res = run_hg(
+                ["id", "-T", "{dirty}"],
+                cwd=self.path,
+                hg_command=self._hg_command,
+                timeout=self._subprocess_timeout,
+            )
             if res.returncode != 0 or not bool(res.stdout):
                 return None
 
-            # Get list of changed files using hg status
-            status_res = run_hg(["status", "-m", "-a", "-r"], cwd=self.path)
+            status_res = run_hg(
+                ["status", "-m", "-a", "-r"],
+                cwd=self.path,
+                hg_command=self._hg_command,
+                timeout=self._subprocess_timeout,
+            )
             if status_res.returncode != 0:
                 return None
 
@@ -295,11 +332,13 @@ def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
                         from ._git import _git_parse_inner
                         from ._hg_git import GitWorkdirHgClient
 
-                        wd_hggit = GitWorkdirHgClient.from_potential_worktree(root)
+                        wd_hggit = GitWorkdirHgClient.from_potential_worktree(
+                            root, config
+                        )
                         if wd_hggit:
                             return _git_parse_inner(config, wd_hggit)
 
-    wd = HgWorkdir.from_potential_worktree(config.absolute_root)
+    wd = HgWorkdir.from_potential_worktree(config.absolute_root, config)
 
     if wd is None:
         return None

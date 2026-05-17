@@ -74,9 +74,9 @@ class TestEggInfoDiscovery:
         write_scm_file_list(egg_info, ["mypkg/__init__.py", "mypkg/core.py"])
 
         config = Configuration()
-        wd = MetadataWorkdir(path=tmp_path, metadata_dir=egg_info)
+        wd = MetadataWorkdir(path=tmp_path, metadata_dir=egg_info, _config=config)
 
-        version = wd.get_scm_version(config)
+        version = wd.get_scm_version()
         assert version is not None
         assert str(version.tag) == "2.5.1"
         assert version.distance == 7

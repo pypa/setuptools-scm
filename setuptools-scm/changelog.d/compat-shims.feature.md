@@ -1,0 +1,1 @@
+Add backward-compatible shims in ``setuptools_scm.git``, ``setuptools_scm.hg``, ``setuptools_scm.hg_git``, and ``setuptools_scm.scm_workdir`` so that external code calling ``get_scm_version(config)`` or ``run_describe(config)`` with an explicit ``Configuration`` continues to work. The shim automatically wires ``_config`` and ``VcsEnvironment`` onto the workdir.

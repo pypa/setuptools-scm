@@ -1,0 +1,184 @@
+"""Tests for the workdir-based chain API.
+
+The chain is: VcsEnvironment -> Configuration -> Workdir -> ScmVersion -> format()
+No context managers are needed.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+import pytest
+from vcs_versioning import VcsEnvironment
+from vcs_versioning._backends._scm_workdir import ScmWorkdir
+from vcs_versioning._environment import (
+    _DEFAULT_HG_COMMAND,
+    _DEFAULT_SUBPROCESS_TIMEOUT,
+)
+from vcs_versioning._fallback_workdir import FallbackWorkdir
+
+if TYPE_CHECKING:
+    from vcs_versioning.test_api import WorkDir
+
+
+@pytest.fixture
+def wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> WorkDir:
+    return wd.setup_git(monkeypatch)
+
+
+class TestVcsEnvironment:
+    def test_defaults(self) -> None:
+        env = VcsEnvironment()
+        assert env.subprocess_timeout == _DEFAULT_SUBPROCESS_TIMEOUT
+        assert env.hg_command == _DEFAULT_HG_COMMAND
+        assert env.source_date_epoch is None
+        assert env.ignore_vcs_roots == ()
+        assert env.tool_names == ("VCS_VERSIONING",)
+
+    def test_from_env_no_args_uses_vcs_versioning(self) -> None:
+        env = VcsEnvironment.from_env(env={"VCS_VERSIONING_SUBPROCESS_TIMEOUT": "77"})
+        assert env.subprocess_timeout == 77
+        assert env.tool_names == ("VCS_VERSIONING",)
+
+    def test_from_env_tool_prepended_to_fallback(self) -> None:
+        env = VcsEnvironment.from_env("MY_TOOL", env={})
+        assert env.tool_names == ("MY_TOOL", "VCS_VERSIONING")
+
+    def test_from_env_reads_timeout(self) -> None:
+        env = VcsEnvironment.from_env(
+            "MY_TOOL", env={"MY_TOOL_SUBPROCESS_TIMEOUT": "120"}
+        )
+        assert env.subprocess_timeout == 120
+
+    def test_from_env_reads_source_date_epoch(self) -> None:
+        env = VcsEnvironment.from_env(env={"SOURCE_DATE_EPOCH": "1234567890"})
+        assert env.source_date_epoch == 1234567890
+
+    def test_from_env_reads_hg_command(self) -> None:
+        env = VcsEnvironment.from_env(
+            "MY_TOOL", env={"MY_TOOL_HG_COMMAND": "/usr/bin/hg"}
+        )
+        assert env.hg_command == "/usr/bin/hg"
+
+    def test_from_env_invalid_timeout_uses_default(self) -> None:
+        env = VcsEnvironment.from_env(env={"VCS_VERSIONING_SUBPROCESS_TIMEOUT": "bad"})
+        assert env.subprocess_timeout == _DEFAULT_SUBPROCESS_TIMEOUT
+
+    def test_frozen(self) -> None:
+        env = VcsEnvironment()
+        with pytest.raises(AttributeError):
+            env.subprocess_timeout = 999  # type: ignore[misc]
+
+
+class TestBuildConfig:
+    def test_build_config_sets_env(self, wd: WorkDir) -> None:
+        env = VcsEnvironment.from_env(env={"SOURCE_DATE_EPOCH": "1234567890"})
+        config = env.build_config(
+            relative_to=str(wd.cwd / "pyproject.toml"),
+        )
+        assert config._env is env
+        assert config._env.source_date_epoch == 1234567890
+
+    def test_build_config_forwards_kwargs(self, wd: WorkDir) -> None:
+        env = VcsEnvironment.from_env()
+        config = env.build_config(
+            relative_to=str(wd.cwd / "pyproject.toml"),
+            dist_name="explicit",
+        )
+        assert config.dist_name == "explicit"
+
+    def test_config_without_env_has_none(self, wd: WorkDir) -> None:
+        from vcs_versioning._config import Configuration
+
+        config = Configuration(relative_to=str(wd.cwd / "pyproject.toml"))
+        assert config._env is None
+
+
+class TestChainDiscoverWorkdir:
+    def test_discover_finds_git(self, wd: WorkDir) -> None:
+        wd.commit_testfile()
+        env = VcsEnvironment.from_env()
+        config = env.build_config(relative_to=str(wd.cwd / "pyproject.toml"))
+        workdir = config.discover_workdir()
+        assert workdir is not None
+        assert isinstance(workdir, ScmWorkdir)
+        assert workdir.path == wd.cwd
+
+    def test_discover_returns_none_for_non_vcs(self, tmp_path: Path) -> None:
+        env = VcsEnvironment.from_env()
+        config = env.build_config(
+            relative_to=str(tmp_path / "pyproject.toml"),
+        )
+        workdir = config.discover_workdir()
+        assert workdir is None or isinstance(workdir, FallbackWorkdir)
+
+
+class TestFullChain:
+    def test_tagged_version(self, wd: WorkDir) -> None:
+        """Full chain: env -> config -> workdir -> scm_version -> format()."""
+        wd.commit_testfile()
+        wd("git tag v1.0.0")
+
+        env = VcsEnvironment.from_env()
+        config = env.build_config(relative_to=str(wd.cwd / "pyproject.toml"))
+        workdir = config.discover_workdir()
+        assert workdir is not None
+
+        scm_version = workdir.get_scm_version()
+        assert scm_version is not None
+
+        version_string = scm_version.format()
+        assert version_string == "1.0.0"
+
+    def test_dev_version(self, wd: WorkDir) -> None:
+        wd.commit_testfile()
+        wd("git tag v1.0.0")
+        wd.commit_testfile()
+
+        env = VcsEnvironment.from_env()
+        config = env.build_config(relative_to=str(wd.cwd / "pyproject.toml"))
+        workdir = config.discover_workdir()
+        assert workdir is not None
+
+        scm_version = workdir.get_scm_version()
+        assert scm_version is not None
+        assert scm_version.distance == 1
+
+        version_string = scm_version.format()
+        assert "1.0.1.dev1" in version_string
+
+    def test_workdir_receives_config(self, wd: WorkDir) -> None:
+        wd.commit_testfile()
+        env = VcsEnvironment.from_env()
+        config = env.build_config(relative_to=str(wd.cwd / "pyproject.toml"))
+        workdir = config.discover_workdir()
+        assert workdir is not None
+        assert workdir._config is config
+
+    def test_timeout_threaded_to_workdir(self, wd: WorkDir) -> None:
+        wd.commit_testfile()
+        wd("git tag v1.0.0")
+
+        env = VcsEnvironment.from_env(env={"VCS_VERSIONING_SUBPROCESS_TIMEOUT": "999"})
+        config = env.build_config(relative_to=str(wd.cwd / "pyproject.toml"))
+        workdir = config.discover_workdir()
+        assert workdir is not None
+        assert workdir._subprocess_timeout == 999
+
+        scm_version = workdir.get_scm_version()
+        assert scm_version is not None
+
+    def test_source_date_epoch_threaded(self, wd: WorkDir) -> None:
+        wd.commit_testfile()
+        wd("git tag v1.0.0")
+        wd.commit_testfile()
+
+        env = VcsEnvironment.from_env(env={"SOURCE_DATE_EPOCH": "1234567890"})
+        config = env.build_config(relative_to=str(wd.cwd / "pyproject.toml"))
+        workdir = config.discover_workdir()
+        assert workdir is not None
+
+        scm_version = workdir.get_scm_version()
+        assert scm_version is not None
+        assert scm_version.time.year == 2009

@@ -32,18 +32,18 @@ def discover(path: Path, *, config: Configuration) -> object | None:
         log.debug("hg-git hybrid detected at %s", path)
         from ._hg_git import GitWorkdirHgClient
 
-        return GitWorkdirHgClient.from_potential_worktree(path)
+        return GitWorkdirHgClient.from_potential_worktree(path, config)
 
     if has_hg:
         log.debug("mercurial detected at %s", path)
         from ._hg import HgWorkdir
 
-        return HgWorkdir.from_potential_worktree(path)
+        return HgWorkdir.from_potential_worktree(path, config)
 
     if has_git:
         log.debug("git detected at %s", path)
         from ._git import GitWorkdir
 
-        return GitWorkdir.from_potential_worktree(path)
+        return GitWorkdir.from_potential_worktree(path, config)
 
     return None

@@ -33,18 +33,18 @@ class TestScmWorkdir:
         assert wd.project_path == "python/modules/mymod"
 
     def test_run_describe_not_implemented(self, tmp_path: Path) -> None:
-        wd = ScmWorkdir(path=tmp_path)
-        with pytest.raises(NotImplementedError):
-            from vcs_versioning._config import Configuration
+        from vcs_versioning._config import Configuration
 
-            wd.run_describe(Configuration())
+        wd = ScmWorkdir(path=tmp_path, _config=Configuration())
+        with pytest.raises(NotImplementedError):
+            wd.run_describe()
 
     def test_get_scm_version_not_implemented(self, tmp_path: Path) -> None:
-        wd = ScmWorkdir(path=tmp_path)
-        with pytest.raises(NotImplementedError):
-            from vcs_versioning._config import Configuration
+        from vcs_versioning._config import Configuration
 
-            wd.get_scm_version(Configuration())
+        wd = ScmWorkdir(path=tmp_path, _config=Configuration())
+        with pytest.raises(NotImplementedError):
+            wd.get_scm_version()
 
     def test_list_tracked_files_not_implemented(self, tmp_path: Path) -> None:
         wd = ScmWorkdir(path=tmp_path)
@@ -59,11 +59,11 @@ class TestScmWorkdir:
 
 class TestFallbackWorkdir:
     def test_get_scm_version_not_implemented(self, tmp_path: Path) -> None:
-        wd = FallbackWorkdir(path=tmp_path)
-        with pytest.raises(NotImplementedError):
-            from vcs_versioning._config import Configuration
+        from vcs_versioning._config import Configuration
 
-            wd.get_scm_version(Configuration())
+        wd = FallbackWorkdir(path=tmp_path, _config=Configuration())
+        with pytest.raises(NotImplementedError):
+            wd.get_scm_version()
 
     def test_list_tracked_files_not_implemented(self, tmp_path: Path) -> None:
         wd = FallbackWorkdir(path=tmp_path)
@@ -76,8 +76,8 @@ class TestStaticWorkdir:
         from vcs_versioning._config import Configuration
 
         config = Configuration(fallback_version="1.2.3")
-        wd = StaticWorkdir(path=tmp_path)
-        version = wd.get_scm_version(config)
+        wd = StaticWorkdir(path=tmp_path, _config=config)
+        version = wd.get_scm_version()
         assert version is not None
         assert str(version.tag) == "1.2.3"
         assert version.preformatted is True
@@ -86,8 +86,8 @@ class TestStaticWorkdir:
         from vcs_versioning._config import Configuration
 
         config = Configuration()
-        wd = StaticWorkdir(path=tmp_path)
-        assert wd.get_scm_version(config) is None
+        wd = StaticWorkdir(path=tmp_path, _config=config)
+        assert wd.get_scm_version() is None
 
     def test_empty_file_list(self, tmp_path: Path) -> None:
         wd = StaticWorkdir(path=tmp_path)
@@ -99,8 +99,8 @@ class TestStaticWorkdir:
         project_dir = tmp_path / "mypackage-1.0.0"
         project_dir.mkdir()
         config = Configuration(parentdir_prefix_version="mypackage-")
-        wd = StaticWorkdir(path=project_dir)
-        version = wd.get_scm_version(config)
+        wd = StaticWorkdir(path=project_dir, _config=config)
+        version = wd.get_scm_version()
         assert version is not None
         assert str(version.tag) == "1.0.0"
 
@@ -109,14 +109,14 @@ class TestPkgInfoWorkdir:
     def test_reads_version_from_pkginfo(self, tmp_path: Path) -> None:
         from vcs_versioning._config import Configuration
 
+        config = Configuration()
         pkginfo = tmp_path / "PKG-INFO"
         pkginfo.write_text(
             "Metadata-Version: 2.1\nName: mypackage\nVersion: 2.3.4\n",
             encoding="utf-8",
         )
-        config = Configuration()
-        wd = PkgInfoWorkdir(path=tmp_path)
-        version = wd.get_scm_version(config)
+        wd = PkgInfoWorkdir(path=tmp_path, _config=config)
+        version = wd.get_scm_version()
         assert version is not None
         assert str(version.tag) == "2.3.4"
         assert version.preformatted is True
@@ -124,18 +124,18 @@ class TestPkgInfoWorkdir:
     def test_returns_none_for_unknown_version(self, tmp_path: Path) -> None:
         from vcs_versioning._config import Configuration
 
+        config = Configuration()
         pkginfo = tmp_path / "PKG-INFO"
         pkginfo.write_text(
             "Metadata-Version: 2.1\nName: mypackage\nVersion: UNKNOWN\n",
             encoding="utf-8",
         )
-        config = Configuration()
-        wd = PkgInfoWorkdir(path=tmp_path)
-        assert wd.get_scm_version(config) is None
+        wd = PkgInfoWorkdir(path=tmp_path, _config=config)
+        assert wd.get_scm_version() is None
 
     def test_returns_none_when_missing(self, tmp_path: Path) -> None:
         from vcs_versioning._config import Configuration
 
         config = Configuration()
-        wd = PkgInfoWorkdir(path=tmp_path)
-        assert wd.get_scm_version(config) is None
+        wd = PkgInfoWorkdir(path=tmp_path, _config=config)
+        assert wd.get_scm_version() is None
