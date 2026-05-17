@@ -23,6 +23,8 @@ markdown_extensions:
   - pymdownx.tasklist:
       custom_checkbox: true
 
+  - pymdownx.highlight:
+      auto_title: true
   - pymdownx.superfences
 
 plugins:

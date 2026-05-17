@@ -174,7 +174,7 @@ class ScmVersionFileMixin(_build_py):
             transformed_path = _transform_version_file_path(
                 str(config.write_to), package_dir
             )
-            target = self._write_single_version_file(
+            target = self._write_package_version_file(
                 build_lib=build_lib,
                 relative_path=transformed_path,
                 template=config.write_to_template,
@@ -188,7 +188,7 @@ class ScmVersionFileMixin(_build_py):
             transformed_path = _transform_version_file_path(
                 str(config.version_file), package_dir
             )
-            target = self._write_single_version_file(
+            target = self._write_package_version_file(
                 build_lib=build_lib,
                 relative_path=transformed_path,
                 template=config.version_file_template,
@@ -199,6 +199,47 @@ class ScmVersionFileMixin(_build_py):
                 written.append(target)
 
         return written
+
+    def _is_package_output(self, relative_path: str) -> bool:
+        """Check if a build_lib-relative path belongs to a package/module."""
+        path = Path(relative_path)
+
+        if path.is_absolute() or ".." in path.parts:
+            return False
+
+        for package in self.packages or ():
+            package_path = Path(package.replace(".", "/"))
+
+            if path.is_relative_to(package_path):
+                return True
+
+        for module in self.py_modules or ():
+            module_path = Path(module.replace(".", "/")).with_suffix(".py")
+
+            if path == module_path:
+                return True
+
+        return False
+
+    def _write_package_version_file(
+        self,
+        build_lib: Path,
+        relative_path: str,
+        template: str | None,
+        version: str,
+        scm_version: ScmVersion | None,
+    ) -> str | None:
+        if not self._is_package_output(relative_path):
+            log.info("Skipping non-package version file: %s", relative_path)
+            return None
+
+        return self._write_single_version_file(
+            build_lib=build_lib,
+            relative_path=relative_path,
+            template=template,
+            version=version,
+            scm_version=scm_version,
+        )
 
     def _write_single_version_file(
         self,

@@ -831,6 +831,68 @@ def test_version_file_written_to_build_directory(
         )
 
 
+@pytest.mark.issue(1364)
+def test_top_level_version_file_not_written_to_wheel(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Top-level version files are source artifacts, not importable package files."""
+    monkeypatch.chdir(wd.cwd)
+
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "top-level-version-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            version_file = "VERSION"
+            version_file_template = "{version}"
+
+            [tool.setuptools.packages.find]
+            where = ["."]
+        """),
+    )
+
+    pkg_dir = wd.cwd / "top_level_version_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("__version__ = 'from-metadata'\n")
+
+    wd.commit_testfile()
+    wd("git tag v1.0.0")
+
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "SETUPTOOLS_SCM_WRITE_TO_SOURCE": "1"},
+    )
+
+    assert build_result.returncode == 0, (
+        f"Build failed:\nstdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+
+    version_file = wd.cwd / "VERSION"
+    assert version_file.exists()
+    assert version_file.read_text() == "1.0.0"
+
+    import zipfile
+
+    dist_dir = wd.cwd / "dist"
+    wheels = list(dist_dir.glob("*.whl"))
+    assert len(wheels) == 1
+
+    with zipfile.ZipFile(wheels[0], "r") as whl:
+        names = whl.namelist()
+        assert "VERSION" not in names
+
+
 @pytest.mark.issue(1252)
 def test_version_file_src_layout_path_transformation(
     wd: WorkDir, monkeypatch: pytest.MonkeyPatch

@@ -1577,6 +1577,7 @@ dev = [
     { name = "mkdocstrings", extra = ["python"] },
     { name = "pygithub", marker = "sys_platform != 'win32'" },
     { name = "pygments" },
+    { name = "ruff" },
     { name = "towncrier" },
     { name = "types-setuptools" },
 ]
@@ -1587,6 +1588,7 @@ docs = [
     { name = "mkdocs-material" },
     { name = "mkdocstrings", extra = ["python"] },
     { name = "pygments" },
+    { name = "ruff" },
 ]
 release = [
     { name = "pygithub", marker = "sys_platform != 'win32'" },
@@ -1611,6 +1613,7 @@ dev = [
     { name = "mkdocstrings", extras = ["python"], specifier = ">=1.0.4" },
     { name = "pygithub", marker = "sys_platform != 'win32'", specifier = ">=2.0.0" },
     { name = "pygments" },
+    { name = "ruff" },
     { name = "towncrier", specifier = ">=23.11.0" },
     { name = "types-setuptools" },
 ]
@@ -1621,6 +1624,7 @@ docs = [
     { name = "mkdocs-material" },
     { name = "mkdocstrings", extras = ["python"], specifier = ">=1.0.4" },
     { name = "pygments" },
+    { name = "ruff" },
 ]
 release = [
     { name = "pygithub", marker = "sys_platform != 'win32'", specifier = ">=2.0.0" },

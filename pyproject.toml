@@ -24,6 +24,7 @@ docs = [
   "mkdocstrings[python]>=1.0.4",  # 0.29 renamed import to inventories
   "pygments",
   "griffe-public-wildcard-imports",
+  "ruff",
 ]
 typing = [
     "types-setuptools",
