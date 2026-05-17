@@ -22,7 +22,7 @@ docs = [
   "mkdocs-include-markdown-plugin<8",
   "mkdocs-material<10",
   "mkdocstrings[python]>=1.0.4,<2",  # 0.29 renamed import to inventories
-  "pygments",
+  "pygments<2.20",
   "griffe-public-wildcard-imports",
 ]
 typing = [
