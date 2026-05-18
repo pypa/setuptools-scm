@@ -25,13 +25,16 @@ _DEFAULT_HG_COMMAND = "hg"
 
 
 def _get_hg_command() -> str:
-    """Read the hg command from environment variables.
+    """Read the hg command directly from environment variables.
 
     Tries ``SETUPTOOLS_SCM_HG_COMMAND`` then ``VCS_VERSIONING_HG_COMMAND``,
     falling back to ``"hg"``.
-    """
-    import os
 
+    Only used by standalone callers (``has_command``, bare
+    ``from_potential_worktree`` probes) that don't hold a
+    ``Configuration``.  The chained API passes hg_command explicitly
+    via ``config.env.hg_command``.
+    """
     for prefix in ("SETUPTOOLS_SCM", "VCS_VERSIONING"):
         val = os.environ.get(f"{prefix}_HG_COMMAND")
         if val is not None:
@@ -331,10 +334,12 @@ class HgWorkdir(Workdir):
 
 
 def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
-    hg_cmd = _get_hg_command()
+    hg_cmd = config.env.hg_command
     _require_command(hg_cmd)
     if os.path.exists(os.path.join(root, ".hg/git")):
-        res = run_hg(["path"], root)
+        res = run_hg(
+            ["path"], root, hg_command=hg_cmd, timeout=config.env.subprocess_timeout
+        )
         if not res.returncode:
             for line in res.stdout.split("\n"):
                 if line.startswith("default ="):

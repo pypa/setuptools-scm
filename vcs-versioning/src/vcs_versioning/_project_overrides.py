@@ -1,5 +1,13 @@
 """Per-project overrides from ``.config/python-vcs-versioning.toml``.
 
+.. note:: **Not yet wired into production code.**
+
+   This module is reserved for a future feature.  It is tested
+   (``testing_vcs/test_project_overrides.py``) but not imported by any
+   production path (``Configuration.from_file``, ``build_configuration_from_pyproject_internal``,
+   or ``discover_workdir``).  The integration point will be determined once
+   the linear ``env -> config -> workdir -> version`` pipeline is finalised.
+
 Located in the SCM root, this file allows vendored or deeply-nested projects
 to have independent configuration without modifying their own pyproject.toml.
 

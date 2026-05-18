@@ -60,6 +60,7 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
     """Discover the workdir for the given configuration.
 
     Algorithm:
+    0. If config.parse is set, return a LegacyParseWorkdir (deprecated path).
     1. Walk from project dir upward, calling each factory at each directory.
        - ScmWorkdir result: verify project_path, return immediately.
        - FallbackWorkdir result: stash as candidate, keep walking for SCM.
@@ -67,6 +68,16 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
     3. Try StaticWorkdir from config.fallback_version / parentdir_prefix_version.
     4. Return None.
     """
+    if config.parse is not None:
+        from ._legacy_parse import LegacyParseWorkdir
+
+        log.info("using LegacyParseWorkdir for config.parse (deprecated)")
+        return LegacyParseWorkdir(
+            path=Path(config.absolute_root),
+            _config=config,
+            _parse_fn=config.parse,
+        )
+
     factories = _load_discovery_factories()
     if not factories:
         log.debug("no discovery factories registered")

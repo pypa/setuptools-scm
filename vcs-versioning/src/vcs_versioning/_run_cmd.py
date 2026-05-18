@@ -17,10 +17,14 @@ _DEFAULT_SUBPROCESS_TIMEOUT = 40
 
 
 def _get_timeout(env: Mapping[str, str]) -> int:
-    """Read subprocess timeout from environment variables.
+    """Read subprocess timeout directly from environment variables.
 
     Tries ``SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT`` then
     ``VCS_VERSIONING_SUBPROCESS_TIMEOUT``, falling back to the default.
+
+    Only used by standalone callers (``has_command``) that don't hold
+    a ``Configuration``.  The chained API passes timeout explicitly
+    via ``config.env.subprocess_timeout``.
     """
     for prefix in ("SETUPTOOLS_SCM", "VCS_VERSIONING"):
         val = env.get(f"{prefix}_SUBPROCESS_TIMEOUT")

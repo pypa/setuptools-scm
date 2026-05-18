@@ -224,14 +224,23 @@ class Configuration:
     )
 
     _env: Any = dataclasses.field(default=None, repr=False, compare=False)
-    """Optional :class:`~vcs_versioning._environment.VcsEnvironment` reference.
-    Set by ``VcsEnvironment.build_config()`` so downstream code can read
-    runtime settings (timeout, hg command, source_date_epoch) without a
-    ContextVar.  Typed as ``Any`` to avoid a circular import."""
+    """The :class:`~vcs_versioning._environment.VcsEnvironment` for this config.
+
+    Populated by ``VcsEnvironment.build_config()`` or by ``__post_init__``
+    (falling back to ``VcsEnvironment.from_env()``).  Always non-None after
+    construction.
+
+    Typed as ``Any`` to avoid a circular import.
+    """
 
     # Deprecated fields (handled in __post_init__)
 
     def __post_init__(self, git_describe_command: _t.CMD_TYPE | None) -> None:
+        if self._env is None:
+            from ._environment import VcsEnvironment
+
+            self._env = VcsEnvironment.from_env()
+
         self.tag_regex = _check_tag_regex(self.tag_regex)
 
         self._bridge_root_to_project_path()
@@ -298,6 +307,15 @@ class Configuration:
             computed = ""
 
         self.project_path = computed
+
+    @property
+    def env(self) -> Any:
+        """The :class:`~vcs_versioning._environment.VcsEnvironment` for this config.
+
+        Always non-None — set by ``VcsEnvironment.build_config()`` or
+        defaulted to ``VcsEnvironment.from_env()`` in ``__post_init__``.
+        """
+        return self._env
 
     def discover_workdir(self) -> Any:
         """Discover the workdir for this configuration.

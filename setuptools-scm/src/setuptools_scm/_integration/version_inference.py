@@ -4,6 +4,7 @@ import logging
 import os
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Protocol
 from typing import TypeAlias
@@ -11,26 +12,38 @@ from typing import TypeAlias
 from setuptools import Distribution
 from vcs_versioning._pyproject_reading import PyProjectData
 
+if TYPE_CHECKING:
+    from vcs_versioning import _config
+
 from .build_py import VersionInferenceData
 from .build_py import set_version_inference_data
 from .pyproject_reading import should_infer
 
 log = logging.getLogger(__name__)
 
-# Environment variable to control writing version files to the source tree
-# at inference time. By default, version files ARE written to source.
-# Set to "0"/"false"/"no" to disable (e.g., for read-only source trees).
-WRITE_TO_SOURCE_ENV_VAR = "SETUPTOOLS_SCM_WRITE_TO_SOURCE"
+_FALSY_VALUES = frozenset(("0", "false", "no"))
 
 
-def _should_write_to_source() -> bool:
+def _should_write_to_source(config: _config.Configuration) -> bool:
     """Check if version files should be written to source at inference time.
 
-    Returns True by default. Returns False only if SETUPTOOLS_SCM_WRITE_TO_SOURCE
-    is explicitly set to a falsy value ("0", "false", "no").
+    Uses the config's environment (tool names + dist name) to read
+    ``WRITE_TO_SOURCE`` -- e.g. ``SETUPTOOLS_SCM_WRITE_TO_SOURCE``.
+
+    Returns True by default.  Returns False only when the resolved value
+    is a falsy string (``"0"``, ``"false"``, ``"no"``).
     """
-    value = os.environ.get(WRITE_TO_SOURCE_ENV_VAR, "").lower()
-    return value not in ("0", "false", "no")
+    from vcs_versioning.overrides import EnvReader
+
+    reader = EnvReader(
+        tools_names=config.env.tool_names,
+        env=os.environ,
+        dist_name=config.dist_name,
+    )
+    value = reader.read("WRITE_TO_SOURCE")
+    if value is None:
+        return True
+    return value.lower() not in _FALSY_VALUES
 
 
 def infer_version_with_config(
@@ -88,7 +101,7 @@ def infer_version_with_config(
     assert scm_version is not None
     version_string = format_version(scm_version)
 
-    if _should_write_to_source():
+    if _should_write_to_source(config):
         try:
             write_version_files(config, version=version_string, scm_version=scm_version)
         except OSError as e:

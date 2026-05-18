@@ -88,11 +88,13 @@ class TestBuildConfig:
         )
         assert config.dist_name == "explicit"
 
-    def test_config_without_env_has_none(self, wd: WorkDir) -> None:
+    def test_config_without_explicit_env_gets_default(self, wd: WorkDir) -> None:
         from vcs_versioning._config import Configuration
+        from vcs_versioning._environment import VcsEnvironment
 
         config = Configuration(relative_to=str(wd.cwd / "pyproject.toml"))
-        assert config._env is None
+        assert config._env is not None
+        assert isinstance(config._env, VcsEnvironment)
 
 
 class TestChainDiscoverWorkdir:

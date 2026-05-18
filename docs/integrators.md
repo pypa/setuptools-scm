@@ -969,6 +969,86 @@ with GlobalOverrides.from_env("MY_TOOL", dist_name="my-pkg"):
 
 The experimental API provides better separation of concerns and proper override priority handling.
 
+## Breaking Change: Chained API Replaces Magic Globals
+
+!!! danger "Breaking Change"
+
+    Runtime settings (`subprocess_timeout`, `hg_command`,
+    `source_date_epoch`, `ignore_vcs_roots`) are no longer read from
+    magic globals.  They flow through the explicit chain:
+    `VcsEnvironment -> Configuration -> workdir -> version`.
+
+    We have audited downstream users and do not expect breakage, but
+    this is a semantic change to how runtime settings are obtained.
+    Code that constructs `Configuration()` directly without a
+    `VcsEnvironment` will now get a `DeprecationWarning` on first
+    access to `config.env`.
+
+### The chained API
+
+Each step receives its dependencies from the previous one -- no
+`ContextVar`, no ambient state:
+
+1. **`VcsEnvironment.from_env("MY_TOOL")`** reads the process environment once
+2. **`env.build_config(...)`** produces a `Configuration` with the environment attached
+3. **`config.discover_workdir()`** returns a workdir that reads timeout / hg-command from `config.env`
+4. **`workdir.get_scm_version()`** produces the version
+
+### Backward compatibility
+
+If you construct a `Configuration` without going through
+`VcsEnvironment.build_config()`, the first access to `config.env`
+will:
+
+1. Emit a `DeprecationWarning`
+2. Create a `VcsEnvironment.from_env()` — reading the current process
+   environment for `SOURCE_DATE_EPOCH`, timeout, hg command, etc.
+
+This keeps existing code working (env vars are still honoured), but
+with a visible signal to migrate to the explicit chained API.
+
+setuptools-scm creates a `VcsEnvironment` by default in its integration
+layer, so end-users building with setuptools-scm are unaffected.
+
+### What stays
+
+`GlobalOverrides` is retained for:
+
+- **Logging / debug-level configuration** (auto-configures loggers on entry)
+- **`EnvReader`** convenience accessor
+- **`export()`** helper for propagating settings to subprocesses in tests
+
+### Migration path
+
+Replace:
+
+```python
+with GlobalOverrides.from_env("MY_TOOL"):
+    config = Configuration.from_file(...)
+    version = _get_version(config)
+```
+
+With:
+
+```python
+from vcs_versioning._environment import VcsEnvironment
+
+env = VcsEnvironment.from_env("MY_TOOL")
+config = env.build_config(dist_name="my-pkg", pyproject_data=pyproject)
+workdir = config.discover_workdir()
+scm_version = workdir.get_scm_version()
+version_string = format_version(scm_version)
+```
+
+If you still need logging configuration, wrap the outer scope:
+
+```python
+with GlobalOverrides.from_env("MY_TOOL"):  # logging only
+    env = VcsEnvironment.from_env("MY_TOOL")
+    config = env.build_config(...)
+    ...
+```
+
 ## See Also
 
 - [Overrides Documentation](overrides.md) - User-facing documentation for setuptools-scm

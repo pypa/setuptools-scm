@@ -14,24 +14,19 @@ from vcs_versioning._backends import _scm_workdir
 def _bind_config(
     workdir: _scm_workdir.ScmWorkdir, config: _config.Configuration | None
 ) -> Iterator[None]:
-    """Temporarily bind *config* to *workdir*, ensuring ``_env`` is set.
+    """Temporarily bind *config* to *workdir*, ensuring ``env`` is available.
 
     When *config* is ``None`` this is a no-op, so callers don't need a guard.
+    Accessing ``config.env`` within the bound context will create a fallback
+    ``VcsEnvironment`` with a deprecation warning if one was not explicitly set.
     """
     if config is None:
         yield
         return
 
-    from vcs_versioning._environment import VcsEnvironment
-
     old_config = workdir._config
-    old_env = config._env
-
     workdir._config = config
-    if config._env is None:
-        config._env = VcsEnvironment.from_env("SETUPTOOLS_SCM")
     try:
         yield
     finally:
         workdir._config = old_config
-        config._env = old_env

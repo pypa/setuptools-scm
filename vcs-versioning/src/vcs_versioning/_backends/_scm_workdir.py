@@ -5,12 +5,13 @@ from dataclasses import dataclass
 from dataclasses import field as dc_field
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from .._scm_version import ScmVersion
 
 if TYPE_CHECKING:
     from .._config import Configuration
+    from .._environment import VcsEnvironment
 
 log = logging.getLogger(__name__)
 
@@ -71,19 +72,27 @@ class ScmWorkdir:
 
     @property
     def _subprocess_timeout(self) -> int | None:
-        """Subprocess timeout from ``config._env``, or ``None`` for legacy fallback."""
+        """Subprocess timeout from ``config.env``.
+
+        Returns ``None`` only when the workdir has no config at all
+        (e.g. bare ``from_potential_worktree`` probes).
+        """
         if self._config is None:
             return None
-        env = self._config._env
-        return env.subprocess_timeout if env is not None else None
+        env = cast("VcsEnvironment", self._config.env)
+        return env.subprocess_timeout
 
     @property
     def _hg_command(self) -> str | None:
-        """Hg executable from ``config._env``, or ``None`` for legacy fallback."""
+        """Hg command from ``config.env``.
+
+        Returns ``None`` only when the workdir has no config at all
+        (e.g. bare ``from_potential_worktree`` probes).
+        """
         if self._config is None:
             return None
-        env = self._config._env
-        return env.hg_command if env is not None else None
+        env = cast("VcsEnvironment", self._config.env)
+        return env.hg_command
 
     @property
     def project_path(self) -> str:

@@ -241,6 +241,22 @@ class GlobalOverrides:
     Use as a context manager to apply overrides for the execution scope.
     Logging is automatically configured when entering the context.
 
+    .. deprecated:: future
+        Runtime settings (``subprocess_timeout``, ``hg_command``,
+        ``source_date_epoch``, ``ignore_vcs_roots``) have moved to the
+        chained API: ``VcsEnvironment -> Configuration -> workdir -> version``.
+
+        Each step in the chain receives its dependencies from the previous
+        one -- no ``ContextVar`` or magic globals needed.
+
+        ``GlobalOverrides`` is retained only for:
+
+        * Logging / debug-level configuration
+        * The ``EnvReader`` convenience accessor
+        * The ``export()`` helper for tests
+
+        See the `Integrator Guide <integrators.md>`_ for migration details.
+
     Attributes:
         debug: Debug logging level (int from logging module) or False to disable
         subprocess_timeout: Timeout for subprocess commands in seconds

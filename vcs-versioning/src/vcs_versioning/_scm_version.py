@@ -405,8 +405,8 @@ def meta(
     }
     if time is not None:
         kwargs["time"] = time
-    elif (env := getattr(config, "_env", None)) is not None:
-        kwargs["time"] = _time_from_source_date_epoch(env.source_date_epoch)
+    else:
+        kwargs["time"] = _time_from_source_date_epoch(config.env.source_date_epoch)
 
     scm_version = ScmVersion(parsed_version, config=config, **kwargs)
     return scm_version

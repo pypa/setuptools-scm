@@ -44,7 +44,9 @@ def _finalize(
 
 
 def _resolve_version(config: Configuration) -> ScmVersion | None:
-    """Run the version pipeline: pretend -> custom parse -> discovery -> legacy EPs.
+    """Run the version pipeline: pretend -> discovery -> legacy EPs.
+
+    Discovery handles ``config.parse`` via ``LegacyParseWorkdir`` (deprecated).
 
     Returns the raw ``ScmVersion`` (before metadata overrides are applied) or
     ``None`` when no version could be determined.
@@ -55,24 +57,12 @@ def _resolve_version(config: Configuration) -> ScmVersion | None:
     if pretended is not None:
         return pretended
 
-    # Custom parse function (setup.py legacy path)
-    if config.parse is not None:
-        parse_result = config.parse(config.absolute_root, config=config)
-        if parse_result is not None and not isinstance(parse_result, ScmVersion):
-            raise TypeError(
-                f"version parse result was {parse_result!r}\n"
-                "please return a parsed version (ScmVersion)"
-            )
-        return parse_result
-
-    # Primary path: workdir-based discovery
     workdir = discover_workdir(config)
     if workdir is not None:
         scm_version = workdir.get_scm_version()
         if scm_version is not None:
             return scm_version
 
-    # Legacy fallback: only if third-party plugins registered old parse EPs
     from ._legacy_parse import (
         has_legacy_parse_eps,
         parse_fallback_version,
