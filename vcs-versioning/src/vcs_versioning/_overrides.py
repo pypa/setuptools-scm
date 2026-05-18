@@ -161,13 +161,12 @@ def _read_pretended_metadata_for(
     log.debug("dist name: %s", config.dist_name)
 
     reader = EnvReader(
-        tools_names=("SETUPTOOLS_SCM", "VCS_VERSIONING"),
+        tools_names=config.env.tool_names,
         env=env,
         dist_name=config.dist_name,
     )
 
     try:
-        # Use schema validation during TOML parsing
         metadata_overrides = reader.read_toml(
             "PRETEND_METADATA", schema=PretendMetadataDict
         )
@@ -268,7 +267,7 @@ def _read_pretended_version_for(
     log.debug("dist name: %s", config.dist_name)
 
     reader = EnvReader(
-        tools_names=("SETUPTOOLS_SCM", "VCS_VERSIONING"),
+        tools_names=config.env.tool_names,
         env=env,
         dist_name=config.dist_name,
     )

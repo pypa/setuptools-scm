@@ -44,6 +44,18 @@ def pytest_configure(config: pytest.Config) -> None:
     os.environ.pop("SETUPTOOLS_SCM_PRETEND_VERSION", None)
 
 
+@pytest.fixture(autouse=True)
+def _setuptools_scm_env(wd: WorkDir) -> None:
+    """Attach a VcsEnvironment with SETUPTOOLS_SCM tool prefix to the WorkDir.
+
+    This ensures that WorkDir.get_version() in setuptools-scm tests uses
+    SETUPTOOLS_SCM as the primary env-var prefix (matching production behavior).
+    """
+    from vcs_versioning._environment import VcsEnvironment
+
+    wd._env = VcsEnvironment.from_env("SETUPTOOLS_SCM")
+
+
 VERSION_PKGS = [
     "setuptools",
     "setuptools_scm",

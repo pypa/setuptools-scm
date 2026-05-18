@@ -29,6 +29,8 @@ class WorkDir:
     add_command: str
     tag_command: str
     parse: Callable[[Path, Configuration], ScmVersion | None] | None = None
+    _env: Any = None
+    """Optional VcsEnvironment for get_version(). Set by test fixtures."""
 
     def __repr__(self) -> str:
         return f"<WD {self.cwd}>"
@@ -82,7 +84,9 @@ class WorkDir:
         __tracebackhide__ = True
         from vcs_versioning._get_version_impl import get_version
 
-        version = get_version(root=self.cwd, fallback_root=self.cwd, **kw)
+        version = get_version(
+            root=self.cwd, fallback_root=self.cwd, _env=self._env, **kw
+        )
         print(self.cwd.name, version, sep=": ")
         return version
 

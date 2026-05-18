@@ -246,6 +246,7 @@ def get_version(
     normalize: bool = True,
     search_parent_directories: bool = False,
     scm: dict[str, Any] | None = None,
+    _env: Any | None = None,
 ) -> str:
     """
     If supplied, relative_to should be a file from which root may

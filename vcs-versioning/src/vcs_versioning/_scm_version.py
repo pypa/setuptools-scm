@@ -179,7 +179,10 @@ def tag_to_version(
 def _source_epoch_or_utc_now() -> datetime:
     """Get datetime from SOURCE_DATE_EPOCH or current UTC time.
 
-    Reads the ``SOURCE_DATE_EPOCH`` environment variable directly.
+    Used as the default_factory for ``ScmVersion.time``.  In the normal
+    chained API path, ``meta()`` sets ``time`` explicitly from
+    ``config.env.source_date_epoch`` so this factory is only reached
+    when constructing ``ScmVersion`` directly (tests, external plugins).
     """
     import os
     from datetime import timezone
