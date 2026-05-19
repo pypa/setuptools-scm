@@ -1,9 +1,9 @@
 """Explicit runtime environment for the workdir-based API.
 
 ``VcsEnvironment`` captures runtime settings (subprocess timeout, hg command,
-SOURCE_DATE_EPOCH, etc.) from the process environment at creation time and
-uses them to build ``Configuration`` objects.  This is the entry point of the
-chain::
+SOURCE_DATE_EPOCH, debug level, etc.) from the process environment at creation
+time and uses them to build ``Configuration`` objects.  This is the entry point
+of the chain::
 
     env -> config -> workdir -> scm_version -> formatted version string
 
@@ -16,15 +16,32 @@ import dataclasses
 import logging
 import os
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     from ._config import Configuration
+    from .overrides import EnvReader
 
 log = logging.getLogger(__name__)
 
 _DEFAULT_SUBPROCESS_TIMEOUT = 40
 _DEFAULT_HG_COMMAND = "hg"
+
+
+def _parse_debug(value: str | None) -> int | Literal[False]:
+    """Parse a DEBUG env-var value into a log level or False."""
+    if value is None:
+        return False
+    try:
+        parsed_int = int(value)
+        if parsed_int in (0, 1):
+            return logging.DEBUG if parsed_int else False
+        return parsed_int
+    except ValueError:
+        level_value = getattr(logging, value.upper(), None)
+        if isinstance(level_value, int):
+            return level_value
+        return logging.DEBUG
 
 
 @dataclasses.dataclass(frozen=True)
@@ -41,6 +58,24 @@ class VcsEnvironment:
     source_date_epoch: int | None = None
     ignore_vcs_roots: tuple[str, ...] = ()
     tool_names: tuple[str, ...] = ("VCS_VERSIONING",)
+    debug: int | Literal[False] = False
+    _env: Mapping[str, str] = dataclasses.field(
+        default_factory=lambda: os.environ, repr=False, compare=False
+    )
+
+    def log_level(self) -> int:
+        """Logging level derived from the debug setting."""
+        if self.debug is False:
+            return logging.WARNING
+        return self.debug
+
+    def make_reader(self, dist_name: str | None = None) -> EnvReader:
+        """Create an :class:`EnvReader` configured with this env's tool names."""
+        from .overrides import EnvReader
+
+        return EnvReader(
+            tools_names=self.tool_names, env=self._env, dist_name=dist_name
+        )
 
     @classmethod
     def from_env(
@@ -92,12 +127,16 @@ class VcsEnvironment:
         )
         ignore_vcs_roots = tuple(os.path.normcase(p) for p in ignore_vcs_roots_raw)
 
+        debug = _parse_debug(reader.read("DEBUG"))
+
         return cls(
             subprocess_timeout=subprocess_timeout,
             hg_command=hg_command,
             source_date_epoch=source_date_epoch,
             ignore_vcs_roots=ignore_vcs_roots,
             tool_names=all_names,
+            debug=debug,
+            _env=env,
         )
 
     def build_config(self, **kwargs: Any) -> Configuration:
