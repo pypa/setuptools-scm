@@ -17,11 +17,11 @@ See the integrators documentation for more details.
 
 from __future__ import annotations
 
+import contextvars
 import logging
 import os
 from collections.abc import Mapping, MutableMapping
 from contextlib import ContextDecorator
-from contextvars import ContextVar
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar, overload
 
@@ -39,7 +39,7 @@ TSchema = TypeVar("TSchema", bound=TypedDict)  # type: ignore[valid-type]
 if TYPE_CHECKING:
     from pytest import MonkeyPatch
 
-    from ._environment import VcsEnvironment as _VcsEnvironment
+    from . import _environment
 
 log = logging.getLogger(__name__)
 
@@ -266,7 +266,7 @@ class GlobalOverrides:
 
     def __init__(
         self,
-        vcs_env: _VcsEnvironment,
+        vcs_env: _environment.VcsEnvironment,
         tool: str,
         dist_name: str | None = None,
         additional_loggers: tuple[logging.Logger, ...] = (),
@@ -275,7 +275,7 @@ class GlobalOverrides:
         self.tool = tool
         self.dist_name = dist_name
         self.additional_loggers = additional_loggers
-        self._token: Any = None
+        self._token: contextvars.Token[GlobalOverrides | None] | None = None
 
     # ------------------------------------------------------------------
     # Backward-compatible properties delegating to vcs_env
@@ -466,8 +466,8 @@ class GlobalOverrides:
 
 
 # Thread-local storage for active global overrides
-_active_overrides: ContextVar[GlobalOverrides | None] = ContextVar(
-    "vcs_versioning_overrides", default=None
+_active_overrides: contextvars.ContextVar[GlobalOverrides | None] = (
+    contextvars.ContextVar("vcs_versioning_overrides", default=None)
 )
 
 
@@ -515,7 +515,7 @@ class ensure_context(ContextDecorator):
     def __enter__(self) -> GlobalOverrides:
         """Enter context: create GlobalOverrides if none is active."""
         # Check if there's already an active context
-        existing = _active_overrides.get()
+        existing: GlobalOverrides | None = _active_overrides.get()
 
         if existing is not None:
             # Already have a context, just return it

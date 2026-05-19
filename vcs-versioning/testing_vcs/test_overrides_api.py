@@ -139,22 +139,23 @@ def test_nested_from_active_contexts() -> None:
 
     with GlobalOverrides.from_env("TEST", env={"TEST_DEBUG": "DEBUG"}):
         # Original: DEBUG level
-        assert _active_overrides.get() is not None
-        assert _active_overrides.get().debug == logging.DEBUG  # type: ignore[union-attr]
+        def get_active() -> GlobalOverrides:
+            res = _active_overrides.get()
+            assert res is not None
+            return res
+
+        assert get_active().debug == logging.DEBUG
 
         with GlobalOverrides.from_active(debug=logging.INFO):
             # Modified: INFO level
-            assert _active_overrides.get().debug == logging.INFO  # type: ignore[union-attr]
-
+            assert get_active().debug == logging.INFO
             with GlobalOverrides.from_active(debug=logging.WARNING):
                 # Further modified: WARNING level
-                assert _active_overrides.get().debug == logging.WARNING  # type: ignore[union-attr]
-
+                assert get_active().debug == logging.WARNING
             # Back to INFO
-            assert _active_overrides.get().debug == logging.INFO  # type: ignore[union-attr]
-
+            assert get_active().debug == logging.INFO
         # Back to DEBUG
-        assert _active_overrides.get().debug == logging.DEBUG  # type: ignore[union-attr]
+        assert get_active().debug == logging.DEBUG
 
 
 def test_export_without_source_date_epoch() -> None:

@@ -19,8 +19,7 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
-    from ._config import Configuration
-    from .overrides import EnvReader
+    from . import _config, overrides
 
 log = logging.getLogger(__name__)
 
@@ -69,7 +68,7 @@ class VcsEnvironment:
             return logging.WARNING
         return self.debug
 
-    def make_reader(self, dist_name: str | None = None) -> EnvReader:
+    def make_reader(self, dist_name: str | None = None) -> overrides.EnvReader:
         """Create an :class:`EnvReader` configured with this env's tool names."""
         from .overrides import EnvReader
 
@@ -139,7 +138,7 @@ class VcsEnvironment:
             _env=env,
         )
 
-    def build_config(self, **kwargs: Any) -> Configuration:
+    def build_config(self, **kwargs: Any) -> _config.Configuration:
         """Create a ``Configuration`` that carries this environment.
 
         All *kwargs* are forwarded to ``Configuration.from_file``.
