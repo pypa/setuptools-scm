@@ -15,10 +15,13 @@ from __future__ import annotations
 import dataclasses
 import logging
 import os
-from collections.abc import Mapping
+from collections.abc import Mapping, MutableMapping
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
+    from pytest import MonkeyPatch
+
     from . import _config, overrides
 
 log = logging.getLogger(__name__)
@@ -61,12 +64,22 @@ class VcsEnvironment:
     _env: Mapping[str, str] = dataclasses.field(
         default_factory=lambda: os.environ, repr=False, compare=False
     )
+    additional_loggers: tuple[logging.Logger, ...] = ()
 
     def log_level(self) -> int:
         """Logging level derived from the debug setting."""
         if self.debug is False:
             return logging.WARNING
         return self.debug
+
+    def configure_logging(self) -> None:
+        """Configure all loggers for this environment's debug level."""
+        from ._log import _configure_loggers
+
+        _configure_loggers(
+            log_level=self.log_level(),
+            additional_loggers=list(self.additional_loggers),
+        )
 
     def make_reader(self, dist_name: str | None = None) -> overrides.EnvReader:
         """Create an :class:`EnvReader` configured with this env's tool names."""
@@ -75,6 +88,36 @@ class VcsEnvironment:
         return EnvReader(
             tools_names=self.tool_names, env=self._env, dist_name=dist_name
         )
+
+    def source_epoch_or_utc_now(self) -> datetime:
+        """Get datetime from SOURCE_DATE_EPOCH or current UTC time."""
+        from datetime import timezone
+
+        if self.source_date_epoch is not None:
+            return datetime.fromtimestamp(self.source_date_epoch, timezone.utc)
+        return datetime.now(timezone.utc)
+
+    def export(self, target: MutableMapping[str, str] | MonkeyPatch) -> None:
+        """Export settings to environment variables using ``tool_names[0]`` as prefix."""
+
+        def set_var(key: str, value: str) -> None:
+            if isinstance(target, MutableMapping):
+                target[key] = value
+            else:
+                target.setenv(key, value)
+
+        if self.source_date_epoch is not None:
+            set_var("SOURCE_DATE_EPOCH", str(self.source_date_epoch))
+
+        prefix = self.tool_names[0]
+
+        if self.debug is False:
+            set_var(f"{prefix}_DEBUG", "0")
+        else:
+            set_var(f"{prefix}_DEBUG", str(self.debug))
+
+        set_var(f"{prefix}_SUBPROCESS_TIMEOUT", str(self.subprocess_timeout))
+        set_var(f"{prefix}_HG_COMMAND", self.hg_command)
 
     @classmethod
     def from_env(

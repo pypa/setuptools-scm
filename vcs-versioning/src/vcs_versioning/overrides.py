@@ -262,19 +262,17 @@ class GlobalOverrides:
             version = get_version(...)
     """
 
-    __slots__ = ("vcs_env", "tool", "dist_name", "additional_loggers", "_token")
+    __slots__ = ("vcs_env", "tool", "dist_name", "_token")
 
     def __init__(
         self,
         vcs_env: _environment.VcsEnvironment,
         tool: str,
         dist_name: str | None = None,
-        additional_loggers: tuple[logging.Logger, ...] = (),
     ) -> None:
         self.vcs_env = vcs_env
         self.tool = tool
         self.dist_name = dist_name
-        self.additional_loggers = additional_loggers
         self._token: contextvars.Token[GlobalOverrides | None] | None = None
 
     # ------------------------------------------------------------------
@@ -300,6 +298,10 @@ class GlobalOverrides:
     @property
     def ignore_vcs_roots(self) -> list[str]:
         return list(self.vcs_env.ignore_vcs_roots)
+
+    @property
+    def additional_loggers(self) -> tuple[logging.Logger, ...]:
+        return self.vcs_env.additional_loggers
 
     @property
     def env_reader(self) -> EnvReader:
@@ -332,6 +334,8 @@ class GlobalOverrides:
         Returns:
             GlobalOverrides instance ready to use as context manager
         """
+        import dataclasses as dc
+
         from ._environment import VcsEnvironment
 
         vcs_env = VcsEnvironment.from_env(tool, env=env)
@@ -344,11 +348,13 @@ class GlobalOverrides:
         else:
             logger_tuple = ()
 
+        if logger_tuple:
+            vcs_env = dc.replace(vcs_env, additional_loggers=logger_tuple)
+
         return cls(
             vcs_env=vcs_env,
             tool=tool,
             dist_name=dist_name,
-            additional_loggers=logger_tuple,
         )
 
     # ------------------------------------------------------------------
@@ -358,14 +364,7 @@ class GlobalOverrides:
     def __enter__(self) -> GlobalOverrides:
         """Enter context: set this as the active override and configure logging."""
         self._token = _active_overrides.set(self)
-
-        from ._log import _configure_loggers
-
-        _configure_loggers(
-            log_level=self.vcs_env.log_level(),
-            additional_loggers=list(self.additional_loggers),
-        )
-
+        self.vcs_env.configure_logging()
         return self
 
     def __exit__(self, *exc_info: Any) -> None:
@@ -384,12 +383,7 @@ class GlobalOverrides:
 
     def source_epoch_or_utc_now(self) -> datetime:
         """Get datetime from SOURCE_DATE_EPOCH or current UTC time."""
-        from datetime import datetime, timezone
-
-        if self.source_date_epoch is not None:
-            return datetime.fromtimestamp(self.source_date_epoch, timezone.utc)
-        else:
-            return datetime.now(timezone.utc)
+        return self.vcs_env.source_epoch_or_utc_now()
 
     @classmethod
     def from_active(cls, **changes: Any) -> GlobalOverrides:
@@ -418,14 +412,13 @@ class GlobalOverrides:
 
         new_tool = changes.pop("tool", active.tool)
         new_dist_name = changes.pop("dist_name", active.dist_name)
-        new_loggers = changes.pop("additional_loggers", active.additional_loggers)
 
         if new_tool != active.tool:
             vcs_env = VcsEnvironment.from_env(new_tool, env=active.vcs_env._env)
         else:
             vcs_env = active.vcs_env
 
-        # Remaining changes are VcsEnvironment field overrides
+        # Remaining changes are VcsEnvironment field overrides (includes additional_loggers)
         vcs_env_fields = {f.name for f in dc.fields(VcsEnvironment)}
         env_changes = {k: v for k, v in changes.items() if k in vcs_env_fields}
         if env_changes:
@@ -435,7 +428,6 @@ class GlobalOverrides:
             vcs_env=vcs_env,
             tool=new_tool,
             dist_name=new_dist_name,
-            additional_loggers=new_loggers,
         )
 
     def export(self, target: MutableMapping[str, str] | MonkeyPatch) -> None:
@@ -444,25 +436,7 @@ class GlobalOverrides:
         Can export to either a dict-like environment or a pytest monkeypatch fixture.
         This is useful for tests that need to propagate overrides to subprocesses.
         """
-
-        def set_var(key: str, value: str) -> None:
-            if isinstance(target, MutableMapping):
-                target[key] = value
-            else:
-                target.setenv(key, value)
-
-        if self.source_date_epoch is not None:
-            set_var("SOURCE_DATE_EPOCH", str(self.source_date_epoch))
-
-        prefix = self.tool
-
-        if self.debug is False:
-            set_var(f"{prefix}_DEBUG", "0")
-        else:
-            set_var(f"{prefix}_DEBUG", str(self.debug))
-
-        set_var(f"{prefix}_SUBPROCESS_TIMEOUT", str(self.subprocess_timeout))
-        set_var(f"{prefix}_HG_COMMAND", self.hg_command)
+        self.vcs_env.export(target)
 
 
 # Thread-local storage for active global overrides
