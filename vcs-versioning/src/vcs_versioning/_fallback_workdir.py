@@ -68,7 +68,14 @@ class MetadataWorkdir(FallbackWorkdir):
             return None
         node_date: date | None = None
         if data.node_date:
-            node_date = date.fromisoformat(data.node_date)
+            try:
+                node_date = date.fromisoformat(data.node_date)
+            except ValueError:
+                log.warning(
+                    "invalid node_date %r in metadata at %s, ignoring",
+                    data.node_date,
+                    self.metadata_dir,
+                )
         return meta(
             tag=data.tag,
             distance=data.distance,

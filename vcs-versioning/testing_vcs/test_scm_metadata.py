@@ -50,6 +50,12 @@ class TestScmVersionDataRoundTrip:
         # Missing required fields like "distance"
         assert read_scm_version_data(tmp_path) is None
 
+    def test_read_invalid_distance_returns_none(self, tmp_path: Path) -> None:
+        (tmp_path / "scm_version.json").write_text(
+            '{"tag": "1.0", "distance": "not-a-number"}', encoding="utf-8"
+        )
+        assert read_scm_version_data(tmp_path) is None
+
     def test_dirty_flag(self, tmp_path: Path) -> None:
         data = ScmVersionData(
             tag="0.1.0",

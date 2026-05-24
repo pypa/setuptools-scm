@@ -93,8 +93,10 @@ class TestBuildConfig:
         from vcs_versioning._environment import VcsEnvironment
 
         config = Configuration(relative_to=str(wd.cwd / "pyproject.toml"))
-        assert config._env is not None
-        assert isinstance(config._env, VcsEnvironment)
+        assert config._env is None
+        with pytest.warns(DeprecationWarning, match="without VcsEnvironment"):
+            env = config.env
+        assert isinstance(env, VcsEnvironment)
 
 
 class TestChainDiscoverWorkdir:

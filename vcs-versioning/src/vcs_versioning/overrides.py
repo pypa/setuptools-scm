@@ -445,6 +445,14 @@ _active_overrides: contextvars.ContextVar[GlobalOverrides | None] = (
 )
 
 
+def get_active_vcs_env() -> _environment.VcsEnvironment | None:
+    """Return the active ``VcsEnvironment`` from ``GlobalOverrides``, if any."""
+    active = _active_overrides.get()
+    if active is None:
+        return None
+    return active.vcs_env
+
+
 class ensure_context(ContextDecorator):
     """Context manager/decorator that ensures a GlobalOverrides context is active.
 

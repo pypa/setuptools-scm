@@ -62,7 +62,7 @@ def read_scm_version_data(source_dir: Path) -> ScmVersionData | None:
             branch=raw.get("branch"),
             node_date=raw.get("node_date"),
         )
-    except (json.JSONDecodeError, KeyError, TypeError) as exc:
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
         log.warning("failed to read %s: %s", path, exc)
         return None
 

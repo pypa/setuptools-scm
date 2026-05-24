@@ -9,7 +9,7 @@ vcs-versioning provides a flexible override system that allows integrators to:
 - Use custom environment variable prefixes (e.g., `HATCH_VCS_*` instead of `SETUPTOOLS_SCM_*`)
 - Automatically fall back to `VCS_VERSIONING_*` variables for universal configuration
 - Apply global overrides once at entry points using a context manager pattern
-- Access override values throughout the execution via thread-safe accessor functions
+- Access override values via ``config.env`` or the active ``GlobalOverrides`` instance
 
 ## Quick Start
 

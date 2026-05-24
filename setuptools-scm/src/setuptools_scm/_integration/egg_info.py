@@ -62,6 +62,12 @@ class _ScmManifestMaker(manifest_maker):
         self.filelist.graft(ei_cmd.egg_info)  # type: ignore[attr-defined,no-untyped-call]
 
 
+def _normalize_tracked_files(files: list[str]) -> list[str]:
+    """Convert absolute paths to CWD-relative paths for portable metadata."""
+    cwd = os.getcwd()
+    return [os.path.relpath(f, cwd) if os.path.isabs(f) else f for f in files]
+
+
 def _get_tracked_files(data: VersionInferenceData | None) -> list[str] | None:
     """Extract tracked files from the workdir, or ``None`` to fall back.
 
@@ -73,8 +79,7 @@ def _get_tracked_files(data: VersionInferenceData | None) -> list[str] | None:
     try:
         files = data.workdir.list_tracked_files()
         if files:
-            cwd = os.getcwd()
-            return [os.path.relpath(f, cwd) if os.path.isabs(f) else f for f in files]
+            return _normalize_tracked_files(files)
     except NotImplementedError:
         log.debug("workdir does not support list_tracked_files, using walk_revctrl")
     return None
@@ -135,7 +140,9 @@ class ScmEggInfoMixin(_egg_info):
                 try:
                     files = data.workdir.list_tracked_files()
                     if files:
-                        write_scm_file_list(egg_info_dir, files)
+                        write_scm_file_list(
+                            egg_info_dir, _normalize_tracked_files(files)
+                        )
                 except NotImplementedError:
                     log.debug("workdir does not support list_tracked_files")
 

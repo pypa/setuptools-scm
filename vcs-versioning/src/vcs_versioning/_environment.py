@@ -27,6 +27,39 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 _DEFAULT_SUBPROCESS_TIMEOUT = 40
+
+
+def resolve_runtime_env() -> VcsEnvironment:
+    """Resolve runtime settings for a ``Configuration`` without an explicit env.
+
+    Re-reads the process environment (so ``monkeypatch`` / env changes apply),
+    preserving the tool-prefix chain from an active ``GlobalOverrides`` context.
+    Field overrides from ``GlobalOverrides.from_active()`` (``hg_command``,
+    ``subprocess_timeout``, ``debug``) are merged on top when they differ.
+    """
+    import dataclasses as dc
+
+    from .overrides import get_active_vcs_env
+
+    active = get_active_vcs_env()
+    user_tools: tuple[str, ...] = ()
+    if active is not None:
+        user_tools = tuple(n for n in active.tool_names if n != "VCS_VERSIONING")
+    fresh = VcsEnvironment.from_env(*user_tools)
+    if active is None:
+        return fresh
+
+    merge_fields = ("hg_command", "subprocess_timeout", "debug")
+    changes = {
+        field: getattr(active, field)
+        for field in merge_fields
+        if getattr(active, field) != getattr(fresh, field)
+    }
+    if changes:
+        return dc.replace(fresh, **changes)
+    return fresh
+
+
 _DEFAULT_HG_COMMAND = "hg"
 
 
@@ -191,6 +224,6 @@ class VcsEnvironment:
         """
         from ._config import Configuration
 
-        config = Configuration.from_file(**kwargs)
+        config = Configuration.from_file(tool_names=self.tool_names, **kwargs)
         object.__setattr__(config, "_env", self)
         return config

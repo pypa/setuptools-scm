@@ -25,21 +25,16 @@ _DEFAULT_HG_COMMAND = "hg"
 
 
 def _get_hg_command() -> str:
-    """Read the hg command directly from environment variables.
-
-    Tries ``SETUPTOOLS_SCM_HG_COMMAND`` then ``VCS_VERSIONING_HG_COMMAND``,
-    falling back to ``"hg"``.
+    """Read the hg command from resolved runtime settings.
 
     Only used by standalone callers (``has_command``, bare
-    ``from_potential_worktree`` probes) that don't hold a
+    ``from_potential_worktree`` probes, file finders) that don't hold a
     ``Configuration``.  The chained API passes hg_command explicitly
     via ``config.env.hg_command``.
     """
-    for prefix in ("SETUPTOOLS_SCM", "VCS_VERSIONING"):
-        val = os.environ.get(f"{prefix}_HG_COMMAND")
-        if val is not None:
-            return val
-    return _DEFAULT_HG_COMMAND
+    from .._environment import resolve_runtime_env
+
+    return resolve_runtime_env().hg_command
 
 
 def run_hg(
@@ -280,7 +275,11 @@ class HgWorkdir(Workdir):
         from .._file_finders._hg import _hg_ls_files_and_dirs
 
         base = str(path) if path else str(self.path)
-        hg_files, hg_dirs = _hg_ls_files_and_dirs(str(self.path))
+        hg_files, hg_dirs = _hg_ls_files_and_dirs(
+            str(self.path),
+            hg_command=self._hg_command,
+            timeout=self._subprocess_timeout,
+        )
         return scm_find_files(base, hg_files, hg_dirs)
 
     def is_file_tracked(self, path: Path) -> bool:

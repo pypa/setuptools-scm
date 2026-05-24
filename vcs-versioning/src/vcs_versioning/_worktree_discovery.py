@@ -1,10 +1,15 @@
-"""Workdir discovery: probe a directory for SCM or fallback workdirs.
+"""Workdir discovery: probe directories for SCM or fallback workdirs.
 
-The ``discover_workdir`` function walks from the project directory upward,
-calling registered factory entry points from the
-``vcs_versioning.discover_workdir`` group.  The return type of each factory
-(``ScmWorkdir`` or ``FallbackWorkdir``) determines priority: SCM results are
-preferred over fallback results.
+``discover_workdir`` uses a two-phase algorithm, calling registered factory
+entry points from the ``vcs_versioning.discover_workdir`` group:
+
+1. **SCM phase** — probe ``absolute_root`` (and parent directories when
+   ``search_parent_directories`` is enabled) for live VCS checkouts.
+2. **Fallback phase** — if no SCM workdir was found, probe the project
+   directory (where ``relative_to`` / pyproject.toml lives) for fallback
+   workdirs only (archival files, egg-info metadata, etc.).
+
+SCM results are preferred over fallback results.
 """
 
 from __future__ import annotations
@@ -61,12 +66,13 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
 
     Algorithm:
     0. If config.parse is set, return a LegacyParseWorkdir (deprecated path).
-    1. Walk from project dir upward, calling each factory at each directory.
+    1. SCM phase: probe ``absolute_root`` (and parents when enabled).
        - ScmWorkdir result: verify project_path, return immediately.
-       - FallbackWorkdir result: stash as candidate, keep walking for SCM.
-    2. Return best stashed FallbackWorkdir if no SCM found.
-    3. Try StaticWorkdir from config.fallback_version / parentdir_prefix_version.
-    4. Return None.
+       - FallbackWorkdir result: stash as candidate, keep probing for SCM.
+    2. Fallback phase: probe ``project_dir`` (if different from scm root).
+    3. Return best stashed FallbackWorkdir if no SCM found.
+    4. Try StaticWorkdir from config.fallback_version / parentdir_prefix_version.
+    5. Return None.
     """
     if config.parse is not None:
         from ._legacy_parse import LegacyParseWorkdir

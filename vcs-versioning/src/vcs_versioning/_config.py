@@ -226,9 +226,8 @@ class Configuration:
     _env: Any = dataclasses.field(default=None, repr=False, compare=False)
     """The :class:`~vcs_versioning._environment.VcsEnvironment` for this config.
 
-    Populated by ``VcsEnvironment.build_config()`` or by ``__post_init__``
-    (falling back to ``VcsEnvironment.from_env()``).  Always non-None after
-    construction.
+    Populated by ``VcsEnvironment.build_config()`` or lazily on first
+    ``env`` access (with a ``DeprecationWarning``).  ``None`` until then.
 
     Typed as ``Any`` to avoid a circular import.
     """
@@ -236,11 +235,6 @@ class Configuration:
     # Deprecated fields (handled in __post_init__)
 
     def __post_init__(self, git_describe_command: _t.CMD_TYPE | None) -> None:
-        if self._env is None:
-            from ._environment import VcsEnvironment
-
-            self._env = VcsEnvironment.from_env()
-
         self.tag_regex = _check_tag_regex(self.tag_regex)
 
         self._bridge_root_to_project_path()
@@ -312,9 +306,20 @@ class Configuration:
     def env(self) -> Any:
         """The :class:`~vcs_versioning._environment.VcsEnvironment` for this config.
 
-        Always non-None — set by ``VcsEnvironment.build_config()`` or
-        defaulted to ``VcsEnvironment.from_env()`` in ``__post_init__``.
+        Always non-None after first access — set by ``VcsEnvironment.build_config()``
+        or lazily resolved on first access (with a ``DeprecationWarning``).
         """
+        if self._env is None:
+            warnings.warn(
+                "Configuration was created without VcsEnvironment. "
+                "Use VcsEnvironment.build_config() to attach runtime settings "
+                "explicitly.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            from ._environment import resolve_runtime_env
+
+            object.__setattr__(self, "_env", resolve_runtime_env())
         return self._env
 
     def discover_workdir(self) -> Any:
@@ -346,11 +351,13 @@ class Configuration:
         - **kwargs: additional keyword arguments to pass to the Configuration constructor
         """
 
+        tool_names: tuple[str, ...] | None = kwargs.pop("tool_names", None)
+
         if pyproject_data is None:
             pyproject_data = read_pyproject(Path(name))
         args = get_args_for_pyproject(pyproject_data, dist_name, kwargs)
 
-        args.update(read_toml_overrides(args["dist_name"]))
+        args.update(read_toml_overrides(args["dist_name"], tool_names=tool_names))
         relative_to = args.pop("relative_to", name)
         return cls.from_data(relative_to=relative_to, data=args)
 

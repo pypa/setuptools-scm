@@ -47,8 +47,8 @@ def _configure_loggers(
 ) -> None:
     """Internal function to configure SCM-related loggers.
 
-    This is called automatically by GlobalOverrides.__enter__().
-    Do not call directly - use GlobalOverrides context manager instead.
+    This is called by ``VcsEnvironment.configure_logging()`` and
+    ``GlobalOverrides.__enter__()``.  Do not call directly.
 
     Args:
         log_level: Logging level constant from logging module

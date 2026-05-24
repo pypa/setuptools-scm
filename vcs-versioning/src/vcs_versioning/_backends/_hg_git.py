@@ -92,11 +92,15 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         from .._file_finders._hg import _hg_ls_files_and_dirs
 
         base = str(path) if path else str(self.path)
-        hg_files, hg_dirs = _hg_ls_files_and_dirs(str(self.path))
+        hg_files, hg_dirs = _hg_ls_files_and_dirs(
+            str(self.path),
+            hg_command=self._hg_command,
+            timeout=self._subprocess_timeout,
+        )
         return scm_find_files(base, hg_files, hg_dirs)
 
     def is_file_tracked(self, path: Path) -> bool:
-        res = run_hg(["files", str(path)], cwd=self.path)
+        res = self.run_hg(["files", str(path)])
         return res.returncode == 0
 
     def is_shallow(self) -> bool:

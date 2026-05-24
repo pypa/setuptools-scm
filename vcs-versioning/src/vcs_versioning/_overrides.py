@@ -283,6 +283,7 @@ def read_toml_overrides(
     dist_name: str | None,
     *,
     env: Mapping[str, str] | None = None,
+    tool_names: tuple[str, ...] | None = None,
 ) -> ConfigOverridesDict:
     """Read TOML overrides from environment.
 
@@ -294,7 +295,7 @@ def read_toml_overrides(
         env = os.environ
 
     reader = EnvReader(
-        tools_names=("SETUPTOOLS_SCM", "VCS_VERSIONING"),
+        tools_names=tool_names or ("SETUPTOOLS_SCM", "VCS_VERSIONING"),
         env=env,
         dist_name=dist_name,
     )
