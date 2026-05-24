@@ -11,6 +11,7 @@ from typing import Any, NoReturn
 from . import _config
 from . import _types as _t
 from ._config import Configuration
+from ._environment import resolve_runtime_env
 
 # Backward-compat re-export used by vcs-versioning/setup.py
 from ._legacy_parse import (
@@ -260,6 +261,9 @@ def get_version(
     tag_regex = parse_tag_regex(tag_regex)
 
     scm_config = _config.ScmConfiguration.from_data(data=scm)
+
+    if _env is None:
+        _env = resolve_runtime_env()
 
     config_params = locals().copy()
     config_params.pop("scm", None)

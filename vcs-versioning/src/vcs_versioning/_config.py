@@ -24,6 +24,13 @@ from ._version_cls import _Version as _VersionAlias
 log = logging.getLogger(__name__)
 
 
+def _posix_project_path(path: str) -> str:
+    """Normalize a project-relative path to forward-slash form."""
+    if not path:
+        return path
+    return Path(path).as_posix()
+
+
 def _is_called_from_dataclasses() -> bool:
     """Check if the current call is from the dataclasses module."""
     import inspect
@@ -300,7 +307,7 @@ class Configuration:
         if computed == ".":
             computed = ""
 
-        self.project_path = computed
+        self.project_path = _posix_project_path(computed)
 
     @property
     def env(self) -> Any:
