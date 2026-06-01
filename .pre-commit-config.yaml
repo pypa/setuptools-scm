@@ -11,7 +11,7 @@ repos:
     -   id: debug-statements
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.15.12
+  rev: v0.15.15
   hooks:
     # Explicit --config so hooks match `uv run ruff` (astral-sh/ruff#11924).
     # Workspace = everything except setuptools-scm/ (src/, vcs-versioning/, docs/, …).
@@ -44,7 +44,7 @@ repos:
         - --config=setuptools-scm/pyproject.toml
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.20.2
+    rev: v2.1.0
     hooks:
     -   id: mypy
         # Both are named setup.py → duplicate module "setup"; runtime path hacks are not modeled
