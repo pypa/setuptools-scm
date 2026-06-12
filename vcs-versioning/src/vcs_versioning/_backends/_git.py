@@ -96,7 +96,10 @@ class GitWorkdir(Workdir):
         cls, wd: _t.PathT, config: Configuration | None = None
     ) -> GitWorkdir | None:
         wd = Path(wd).resolve()
-        real_wd = run_git(["rev-parse", "--show-prefix"], wd).parse_success(parse=str)
+        timeout = config.env.subprocess_timeout if config is not None else None
+        real_wd = run_git(
+            ["rev-parse", "--show-prefix"], wd, timeout=timeout
+        ).parse_success(parse=str)
         if real_wd is None:
             return None
         else:
@@ -291,7 +294,7 @@ def fail_on_missing_submodules(wd: GitWorkdir) -> None:
         return
 
     # Get submodule status - lines starting with '-' indicate uninitialized submodules
-    status_result = run_git(["submodule", "status"], wd.path)
+    status_result = wd.run_git(["submodule", "status"])
     if status_result.returncode != 0:
         # Command failed, might not be in a git repo or other error
         log.debug("Failed to check submodule status: %s", status_result.stderr)

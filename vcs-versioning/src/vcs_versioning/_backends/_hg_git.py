@@ -28,7 +28,11 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
     def from_potential_worktree(
         cls, wd: _t.PathT, config: _config_mod.Configuration | None = None
     ) -> GitWorkdirHgClient | None:
-        res = run_hg(["root"], cwd=wd).parse_success(parse=Path)
+        hg_cmd = config.env.hg_command if config is not None else None
+        timeout = config.env.subprocess_timeout if config is not None else None
+        res = run_hg(
+            ["root"], cwd=wd, hg_command=hg_cmd, timeout=timeout
+        ).parse_success(parse=Path)
         if res is None:
             return None
         result = cls(res)
@@ -36,8 +40,8 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         return result
 
     def is_dirty(self) -> bool:
-        res = self.run_hg(["id", "-T", "{dirty}"], check=True)
-        return bool(res.stdout)
+        res = self.run_hg(["id", "-T", "{if(dirty, 1, 0)}"], check=True)
+        return bool(int(res.stdout))
 
     def get_branch(self) -> str | None:
         res = self.run_hg(["id", "-T", "{bookmarks}"])

@@ -66,7 +66,9 @@ class HgWorkdir(Workdir):
     def from_potential_worktree(
         cls, wd: _t.PathT, config: Configuration | None = None
     ) -> HgWorkdir | None:
-        res = run_hg(["root"], wd)
+        hg_cmd = config.env.hg_command if config is not None else None
+        timeout = config.env.subprocess_timeout if config is not None else None
+        res = run_hg(["root"], wd, hg_command=hg_cmd, timeout=timeout)
         if res.returncode:
             return None
         return cls(Path(res.stdout), _config=config)
@@ -300,12 +302,12 @@ class HgWorkdir(Workdir):
         try:
             # Check if working directory is dirty first
             res = run_hg(
-                ["id", "-T", "{dirty}"],
+                ["id", "-T", "{if(dirty, 1, 0)}"],
                 cwd=self.path,
                 hg_command=self._hg_command,
                 timeout=self._subprocess_timeout,
             )
-            if res.returncode != 0 or not bool(res.stdout):
+            if res.returncode != 0 or not bool(int(res.stdout)):
                 return None
 
             status_res = run_hg(
