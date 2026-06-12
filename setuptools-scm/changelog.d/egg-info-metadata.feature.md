@@ -1,0 +1,1 @@
+Write ``scm_version.json`` and ``scm_file_list.json`` into egg-info directories during ``egg_info``, enabling sdist fallback version inference when no VCS is present. Add ``ScmEggInfoMixin`` for workdir-based file finding in ``find_sources()``.
