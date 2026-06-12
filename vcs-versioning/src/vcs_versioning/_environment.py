@@ -224,6 +224,8 @@ class VcsEnvironment:
         """
         from ._config import Configuration
 
-        config = Configuration.from_file(tool_names=self.tool_names, **kwargs)
+        config = Configuration.from_file(
+            tool_names=self.tool_names, env=self._env, **kwargs
+        )
         object.__setattr__(config, "_env", self)
         return config

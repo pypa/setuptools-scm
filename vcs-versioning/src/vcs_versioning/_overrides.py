@@ -156,7 +156,7 @@ def _read_pretended_metadata_for(
     from .overrides import EnvReader
 
     if env is None:
-        env = os.environ
+        env = config.env._env
 
     log.debug("dist name: %s", config.dist_name)
 
@@ -262,7 +262,7 @@ def _read_pretended_version_for(
     from .overrides import EnvReader
 
     if env is None:
-        env = os.environ
+        env = config.env._env
 
     log.debug("dist name: %s", config.dist_name)
 

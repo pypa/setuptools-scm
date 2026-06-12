@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import warnings
+from collections.abc import Mapping
 from pathlib import Path
 from re import Pattern
 from typing import TYPE_CHECKING, Any, Protocol
@@ -345,6 +346,9 @@ class Configuration:
         name: str | os.PathLike[str] = "pyproject.toml",
         dist_name: str | None = None,
         pyproject_data: PyProjectData | None = None,
+        *,
+        tool_names: tuple[str, ...] | None = None,
+        env: Mapping[str, str] | None = None,
         **kwargs: Any,
     ) -> Configuration:
         """
@@ -355,16 +359,18 @@ class Configuration:
         Parameters:
         - name: path to pyproject.toml
         - dist_name: name of the distribution
+        - tool_names: env-var prefix order for TOML overrides
+        - env: environment mapping for TOML overrides (default: os.environ)
         - **kwargs: additional keyword arguments to pass to the Configuration constructor
         """
-
-        tool_names: tuple[str, ...] | None = kwargs.pop("tool_names", None)
 
         if pyproject_data is None:
             pyproject_data = read_pyproject(Path(name))
         args = get_args_for_pyproject(pyproject_data, dist_name, kwargs)
 
-        args.update(read_toml_overrides(args["dist_name"], tool_names=tool_names))
+        args.update(
+            read_toml_overrides(args["dist_name"], tool_names=tool_names, env=env)
+        )
         relative_to = args.pop("relative_to", name)
         return cls.from_data(relative_to=relative_to, data=args)
 
