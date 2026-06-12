@@ -112,8 +112,11 @@ class ScmEggInfoMixin(_egg_info):
             super().find_sources()
 
     def run(self) -> None:
-        super().run()
+        # Write SCM metadata *before* super().run() so that find_sources()
+        # → manifest_maker → graft(egg_info) picks up the JSON files.
+        self.mkpath(self.egg_info)
         self._write_scm_metadata()
+        super().run()
 
     def _write_scm_metadata(self) -> None:
         """Write ``scm_version.json`` and ``scm_file_list.json`` into egg-info."""
@@ -130,8 +133,6 @@ class ScmEggInfoMixin(_egg_info):
             from vcs_versioning._scm_metadata import write_scm_version_data
 
             egg_info_dir = Path(self.egg_info)
-            if not egg_info_dir.is_dir():
-                return
 
             version_data = scm_version_data_from_scm_version(scm_version)
             write_scm_version_data(egg_info_dir, version_data)
