@@ -14,6 +14,9 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
     from ._backends import _git
+    from ._backends._scm_workdir import ScmWorkdir
+    from ._environment import VcsEnvironment
+    from ._fallback_workdir import FallbackWorkdir
 
 from . import _types as _t
 from ._overrides import read_toml_overrides
@@ -231,13 +234,13 @@ class Configuration:
         default_factory=lambda: ScmConfiguration()
     )
 
-    _env: Any = dataclasses.field(default=None, repr=False, compare=False)
+    _env: VcsEnvironment | None = dataclasses.field(
+        default=None, repr=False, compare=False
+    )
     """The :class:`~vcs_versioning._environment.VcsEnvironment` for this config.
 
     Populated by ``VcsEnvironment.build_config()`` or lazily on first
     ``env`` access (with a ``DeprecationWarning``).  ``None`` until then.
-
-    Typed as ``Any`` to avoid a circular import.
     """
 
     # Deprecated fields (handled in __post_init__)
@@ -311,7 +314,7 @@ class Configuration:
         self.project_path = _posix_project_path(computed)
 
     @property
-    def env(self) -> Any:
+    def env(self) -> VcsEnvironment:
         """The :class:`~vcs_versioning._environment.VcsEnvironment` for this config.
 
         Always non-None after first access — set by ``VcsEnvironment.build_config()``
@@ -328,14 +331,11 @@ class Configuration:
             from ._environment import resolve_runtime_env
 
             object.__setattr__(self, "_env", resolve_runtime_env())
+        assert self._env is not None
         return self._env
 
-    def discover_workdir(self) -> Any:
-        """Discover the workdir for this configuration.
-
-        Returns a ``ScmWorkdir``, ``FallbackWorkdir``, or ``None``.
-        Return type is ``Any`` to avoid heavy imports at module level.
-        """
+    def discover_workdir(self) -> ScmWorkdir | FallbackWorkdir | None:
+        """Discover the workdir for this configuration."""
         from ._worktree_discovery import discover_workdir
 
         return discover_workdir(self)

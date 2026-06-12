@@ -5,13 +5,13 @@ from dataclasses import dataclass
 from dataclasses import field as dc_field
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 from .._scm_version import ScmVersion
 
 if TYPE_CHECKING:
     from .._config import Configuration
-    from .._environment import VcsEnvironment
+
 
 log = logging.getLogger(__name__)
 
@@ -79,8 +79,7 @@ class ScmWorkdir:
         """
         if self._config is None:
             return None
-        env = cast("VcsEnvironment", self._config.env)
-        return env.subprocess_timeout
+        return self._config.env.subprocess_timeout
 
     @property
     def _hg_command(self) -> str | None:
@@ -91,8 +90,7 @@ class ScmWorkdir:
         """
         if self._config is None:
             return None
-        env = cast("VcsEnvironment", self._config.env)
-        return env.hg_command
+        return self._config.env.hg_command
 
     @property
     def project_path(self) -> str:

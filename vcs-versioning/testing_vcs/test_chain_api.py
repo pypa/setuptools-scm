@@ -15,8 +15,10 @@ from vcs_versioning._backends._scm_workdir import ScmWorkdir
 from vcs_versioning._environment import (
     _DEFAULT_HG_COMMAND,
     _DEFAULT_SUBPROCESS_TIMEOUT,
+    resolve_runtime_env,
 )
 from vcs_versioning._fallback_workdir import FallbackWorkdir
+from vcs_versioning.overrides import GlobalOverrides, get_active_vcs_env
 
 if TYPE_CHECKING:
     from vcs_versioning.test_api import WorkDir
@@ -167,7 +169,7 @@ class TestFullChain:
         env = VcsEnvironment.from_env(env={"VCS_VERSIONING_SUBPROCESS_TIMEOUT": "999"})
         config = env.build_config(relative_to=str(wd.cwd / "pyproject.toml"))
         workdir = config.discover_workdir()
-        assert workdir is not None
+        assert isinstance(workdir, ScmWorkdir)
         assert workdir._subprocess_timeout == 999
 
         scm_version = workdir.get_scm_version()
@@ -186,3 +188,48 @@ class TestFullChain:
         scm_version = workdir.get_scm_version()
         assert scm_version is not None
         assert scm_version.time.year == 2009
+
+
+class TestGetActiveVcsEnv:
+    def test_returns_env_from_session_context(self) -> None:
+        active = get_active_vcs_env()
+        assert active is not None
+        assert "SETUPTOOLS_SCM" in active.tool_names
+
+    def test_nested_context_overrides(self) -> None:
+        with GlobalOverrides.from_env("MY_TOOL", env={}) as ctx:
+            active = get_active_vcs_env()
+            assert active is not None
+            assert active is ctx.vcs_env
+            assert "MY_TOOL" in active.tool_names
+        # session context is restored
+        active = get_active_vcs_env()
+        assert active is not None
+        assert "SETUPTOOLS_SCM" in active.tool_names
+
+
+class TestResolveRuntimeEnv:
+    def test_returns_fresh_env_with_active_tool_names(self) -> None:
+        env = resolve_runtime_env()
+        assert isinstance(env, VcsEnvironment)
+        assert "SETUPTOOLS_SCM" in env.tool_names
+        assert "VCS_VERSIONING" in env.tool_names
+
+    def test_preserves_tool_names_from_nested_context(self) -> None:
+        with GlobalOverrides.from_env("CUSTOM_TOOL", env={}):
+            env = resolve_runtime_env()
+            assert "CUSTOM_TOOL" in env.tool_names
+            assert "VCS_VERSIONING" in env.tool_names
+
+    def test_merges_overridden_fields_from_context(self) -> None:
+        with GlobalOverrides.from_env("TEST", env={"TEST_SUBPROCESS_TIMEOUT": "200"}):
+            with GlobalOverrides.from_active(subprocess_timeout=999):
+                env = resolve_runtime_env()
+                assert env.subprocess_timeout == 999
+
+    def test_reads_process_env_for_fresh_values(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("SETUPTOOLS_SCM_IGNORE_VCS_ROOTS", "/tmp/ignore-me")
+        env = resolve_runtime_env()
+        assert "/tmp/ignore-me" in env.ignore_vcs_roots
