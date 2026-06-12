@@ -73,7 +73,12 @@ def scm_find_files(
 
 
 def _read_ignore_vcs_roots(env: Mapping[str, str] | None = None) -> list[str]:
-    """Read IGNORE_VCS_ROOTS from environment variables."""
+    """Read IGNORE_VCS_ROOTS from environment variables.
+
+    File finders are invoked via ``setuptools.file_finders`` entry points
+    which receive only a path, so they cannot access ``config.env``.
+    This function reads directly from the process environment.
+    """
     from ..overrides import EnvReader
 
     if env is None:
