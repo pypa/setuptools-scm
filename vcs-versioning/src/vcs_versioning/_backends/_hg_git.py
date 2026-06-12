@@ -36,20 +36,20 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         return result
 
     def is_dirty(self) -> bool:
-        res = run_hg(["id", "-T", "{dirty}"], cwd=self.path, check=True)
+        res = self.run_hg(["id", "-T", "{dirty}"], check=True)
         return bool(res.stdout)
 
     def get_branch(self) -> str | None:
-        res = run_hg(["id", "-T", "{bookmarks}"], cwd=self.path)
+        res = self.run_hg(["id", "-T", "{bookmarks}"])
         if res.returncode:
             log.info("branch err %s", res)
             return None
         return res.stdout
 
     def get_head_date(self) -> date | None:
-        return run_hg(
-            ["log", "-r", ".", "-T", "{shortdate(date)}"], cwd=self.path
-        ).parse_success(parse=date.fromisoformat, error_msg="head date err")
+        return self.run_hg(["log", "-r", ".", "-T", "{shortdate(date)}"]).parse_success(
+            parse=date.fromisoformat, error_msg="head date err"
+        )
 
     def get_dirty_tag_date(self) -> date | None:
         """Get the latest modification time of changed files in the working directory.
@@ -62,7 +62,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
 
         try:
             # Get list of changed files using hg status
-            status_res = run_hg(["status", "-m", "-a", "-r"], cwd=self.path)
+            status_res = self.run_hg(["status", "-m", "-a", "-r"])
             if status_res.returncode != 0:
                 return None
 
@@ -110,7 +110,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         pass
 
     def get_hg_node(self) -> str | None:
-        res = run_hg(["log", "-r", ".", "-T", "{node}"], cwd=self.path)
+        res = self.run_hg(["log", "-r", ".", "-T", "{node}"])
         if res.returncode:
             return None
         else:
@@ -134,7 +134,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
 
         if git_node is None:
             # trying again after hg -> git
-            run_hg(["gexport"], cwd=self.path)
+            self.run_hg(["gexport"])
             git_node = self._hg2git(hg_node)
 
             if git_node is None:
@@ -149,7 +149,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         return git_node
 
     def count_all_nodes(self) -> int:
-        res = run_hg(["log", "-r", "ancestors(.)", "-T", "."], cwd=self.path)
+        res = self.run_hg(["log", "-r", "ancestors(.)", "-T", "."])
         return len(res.stdout)
 
     def default_describe(self) -> _CompletedProcess:
@@ -159,7 +159,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         `git describe --dirty --tags --long --match *[0-9]*`
 
         """
-        res = run_hg(
+        res = self.run_hg(
             [
                 "log",
                 "-r",
@@ -167,7 +167,6 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
                 "-T",
                 "{tags}{if(tags, ' ', '')}",
             ],
-            cwd=self.path,
         )
         if res.returncode:
             return _FAKE_GIT_DESCRIBE_ERROR
@@ -188,7 +187,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
             logging.warning("tag not found hg=%s git=%s", hg_tags, git_tags)
             return _FAKE_GIT_DESCRIBE_ERROR
 
-        res = run_hg(["log", "-r", f"'{tag}'::.", "-T", "."], cwd=self.path)
+        res = self.run_hg(["log", "-r", f"'{tag}'::.", "-T", "."])
         if res.returncode:
             return _FAKE_GIT_DESCRIBE_ERROR
         distance = len(res.stdout) - 1
