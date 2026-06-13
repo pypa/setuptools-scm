@@ -148,6 +148,7 @@ class GitConfiguration:
         default_factory=lambda: _get_default_git_pre_parse()
     )
     describe_command: _t.CMD_TYPE | None = None
+    recommended_tag_format: bool = False
 
     @classmethod
     def from_data(cls, data: dict[str, Any]) -> GitConfiguration:

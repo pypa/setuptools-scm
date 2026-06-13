@@ -354,6 +354,8 @@ def version_from_describe(
 ) -> ScmVersion | None:
     if config.scm.git.describe_command is not None:
         describe_command = config.scm.git.describe_command
+    elif config.scm.git.recommended_tag_format:
+        describe_command = make_describe_command("*[vV][0-9]*")
 
     if describe_command is not None:
         if isinstance(describe_command, str):

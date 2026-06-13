@@ -878,6 +878,32 @@ def test_git_describe_command_init_conflict() -> None:
             )
 
 
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/1385")
+def test_recommended_tag_format_default_is_false() -> None:
+    """Default value for recommended_tag_format is False."""
+    config = Configuration()
+    assert config.scm.git.recommended_tag_format is False
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/1385")
+def test_recommended_tag_format_from_data() -> None:
+    """Test that recommended_tag_format is parsed from nested SCM configuration."""
+    config_data = {"scm": {"git": {"recommended_tag_format": True}}}
+    config = Configuration.from_data(relative_to=".", data=config_data)
+    assert config.scm.git.recommended_tag_format is True
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/1385")
+def test_recommended_tag_format_ignores_non_version_tag(wd: WorkDir) -> None:
+    """recommended_tag_format restricts describe to v/V-prefixed numeric tags."""
+    wd.commit_testfile()
+    wd("git tag v0.1.0")
+    wd.commit_testfile()
+    wd("git tag 2026-event")
+    scm = {"git": {"recommended_tag_format": True}}
+    assert wd.get_version(scm=scm).startswith("0.1.1")
+
+
 def test_git_no_commits_uses_fallback_version(wd: WorkDir) -> None:
     """Test that when git describe fails (no commits), fallback_version is used instead of 0.0."""
     # Reinitialize as empty repo to remove any existing commits
