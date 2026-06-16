@@ -11,11 +11,12 @@ import logging
 from pathlib import Path
 
 from .._config import Configuration
+from ._scm_workdir import ScmWorkdir
 
 log = logging.getLogger(__name__)
 
 
-def discover(path: Path, *, config: Configuration) -> object | None:
+def discover(path: Path, *, config: Configuration) -> ScmWorkdir | None:
     """Probe *path* for git, hg, or hg-git markers.
 
     Returns:

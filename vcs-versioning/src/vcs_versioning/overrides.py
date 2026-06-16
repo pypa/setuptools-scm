@@ -444,7 +444,7 @@ class GlobalOverrides:
         self.vcs_env.export(target)
 
 
-# Thread-local storage for active global overrides
+# ContextVar for active global overrides (async/generator-safe)
 _active_overrides: contextvars.ContextVar[GlobalOverrides | None] = (
     contextvars.ContextVar("vcs_versioning_overrides", default=None)
 )
