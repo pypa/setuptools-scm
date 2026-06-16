@@ -74,7 +74,9 @@ def _git_interpret_archive(fd: IO[bytes], toplevel: str) -> tuple[set[str], set[
         return git_files, git_dirs
 
 
-def _git_ls_files_and_dirs(toplevel: str) -> tuple[set[str], set[str]]:
+def _git_ls_files_and_dirs(
+    toplevel: str, *, timeout: int | None = None
+) -> tuple[set[str], set[str]]:
     # use git archive instead of git ls-file to honor
     # export-ignore git attribute
 
@@ -95,9 +97,9 @@ def _git_ls_files_and_dirs(toplevel: str) -> tuple[set[str], set[str]]:
             # ensure we avoid resource warnings by cleaning up the process
             proc.stdout.close()
             proc.terminate()
-            # Wait for process to actually terminate and be reaped
+            wait_timeout = timeout if timeout is not None else 5
             try:
-                proc.wait(timeout=5)  # Add timeout to avoid hanging
+                proc.wait(timeout=wait_timeout)
             except subprocess.TimeoutExpired:
                 log.warning("git archive process did not terminate gracefully, killing")
                 proc.kill()

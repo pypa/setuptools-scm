@@ -247,7 +247,9 @@ class GitWorkdir(Workdir):
         from .._file_finders._git import _git_ls_files_and_dirs
 
         base = str(path) if path else str(self.path)
-        git_files, git_dirs = _git_ls_files_and_dirs(str(self.path))
+        git_files, git_dirs = _git_ls_files_and_dirs(
+            str(self.path), timeout=self._subprocess_timeout
+        )
         return scm_find_files(base, git_files, git_dirs)
 
     def is_file_tracked(self, path: Path) -> bool:
