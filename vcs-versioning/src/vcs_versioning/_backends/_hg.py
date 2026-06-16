@@ -229,11 +229,8 @@ class HgWorkdir(Workdir):
             return None
 
     def hg_log(self, revset: str, template: str) -> str:
-        return run_hg(
+        return self.run_hg(
             ["log", "-r", revset, "-T", template],
-            cwd=self.path,
-            hg_command=self._hg_command,
-            timeout=self._subprocess_timeout,
             check=True,
         ).stdout
 
@@ -285,12 +282,7 @@ class HgWorkdir(Workdir):
         return scm_find_files(base, hg_files, hg_dirs)
 
     def is_file_tracked(self, path: Path) -> bool:
-        res = run_hg(
-            ["files", str(path)],
-            cwd=self.path,
-            hg_command=self._hg_command,
-            timeout=self._subprocess_timeout,
-        )
+        res = self.run_hg(["files", str(path)])
         return res.returncode == 0
 
     def get_dirty_tag_date(self) -> datetime.date | None:
@@ -300,30 +292,18 @@ class HgWorkdir(Workdir):
         or None if no files are changed or if an error occurs.
         """
         try:
-            # Check if working directory is dirty first
-            res = run_hg(
-                ["id", "-T", "{if(dirty, 1, 0)}"],
-                cwd=self.path,
-                hg_command=self._hg_command,
-                timeout=self._subprocess_timeout,
-            )
+            res = self.run_hg(["id", "-T", "{if(dirty, 1, 0)}"])
             if res.returncode != 0 or not bool(int(res.stdout)):
                 return None
 
-            status_res = run_hg(
-                ["status", "-m", "-a", "-r"],
-                cwd=self.path,
-                hg_command=self._hg_command,
-                timeout=self._subprocess_timeout,
-            )
+            status_res = self.run_hg(["status", "-m", "-a", "-r"])
             if status_res.returncode != 0:
                 return None
 
             changed_files = []
             for line in status_res.stdout.strip().split("\n"):
                 if line and len(line) > 2:
-                    # Format is "M filename" or "A filename" etc.
-                    filepath = line[2:]  # Skip status char and space
+                    filepath = line[2:]
                     changed_files.append(filepath)
 
             return get_latest_file_mtime(changed_files, self.path)

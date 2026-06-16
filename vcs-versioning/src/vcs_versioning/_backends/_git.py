@@ -210,14 +210,13 @@ class GitWorkdir(Workdir):
 
     def fetch_shallow(self) -> None:
         try:
-            run_git(
+            self.run_git(
                 ["fetch", "--unshallow", "--filter=blob:none"],
-                self.path,
                 check=True,
                 timeout=240,
             )
         except CalledProcessError:
-            run_git(["fetch", "--unshallow"], self.path, check=True, timeout=240)
+            self.run_git(["fetch", "--unshallow"], check=True, timeout=240)
 
     def node(self) -> str | None:
         return self.run_git(
