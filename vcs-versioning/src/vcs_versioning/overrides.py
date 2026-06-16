@@ -422,7 +422,12 @@ class GlobalOverrides:
         vcs_env_fields = {f.name for f in dc.fields(VcsEnvironment)}
         env_changes = {k: v for k, v in changes.items() if k in vcs_env_fields}
         if env_changes:
-            vcs_env = dc.replace(vcs_env, **env_changes)
+            prior_overrides = vcs_env._explicit_overrides
+            vcs_env = dc.replace(
+                vcs_env,
+                **env_changes,
+                _explicit_overrides=prior_overrides | frozenset(env_changes),
+            )
 
         return cls(
             vcs_env=vcs_env,

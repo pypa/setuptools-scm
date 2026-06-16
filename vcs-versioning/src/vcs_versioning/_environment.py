@@ -32,10 +32,11 @@ _DEFAULT_SUBPROCESS_TIMEOUT = 40
 def resolve_runtime_env() -> VcsEnvironment:
     """Resolve runtime settings for a ``Configuration`` without an explicit env.
 
-    Re-reads the process environment (so ``monkeypatch`` / env changes apply),
-    preserving the tool-prefix chain from an active ``GlobalOverrides`` context.
-    Field overrides from ``GlobalOverrides.from_active()`` (``hg_command``,
-    ``subprocess_timeout``, ``debug``) are merged on top when they differ.
+    Re-reads the active context's env mapping (so ``monkeypatch`` changes
+    apply), preserving the tool-prefix chain from an active
+    ``GlobalOverrides`` context.  Field overrides set via
+    ``GlobalOverrides.from_active()`` are merged on top when they differ
+    from the freshly-read values.
     """
     import dataclasses as dc
 
@@ -45,14 +46,13 @@ def resolve_runtime_env() -> VcsEnvironment:
     user_tools: tuple[str, ...] = ()
     if active is not None:
         user_tools = tuple(n for n in active.tool_names if n != "VCS_VERSIONING")
-    fresh = VcsEnvironment.from_env(*user_tools)
+    fresh = VcsEnvironment.from_env(*user_tools, env=active._env if active else None)
     if active is None:
         return fresh
 
-    merge_fields = ("hg_command", "subprocess_timeout", "debug")
     changes = {
         field: getattr(active, field)
-        for field in merge_fields
+        for field in active._explicit_overrides
         if getattr(active, field) != getattr(fresh, field)
     }
     if changes:
@@ -98,6 +98,9 @@ class VcsEnvironment:
         default_factory=lambda: os.environ, repr=False, compare=False
     )
     additional_loggers: tuple[logging.Logger, ...] = ()
+    _explicit_overrides: frozenset[str] = dataclasses.field(
+        default=frozenset(), repr=False, compare=False
+    )
 
     def log_level(self) -> int:
         """Logging level derived from the debug setting."""
@@ -151,6 +154,12 @@ class VcsEnvironment:
 
         set_var(f"{prefix}_SUBPROCESS_TIMEOUT", str(self.subprocess_timeout))
         set_var(f"{prefix}_HG_COMMAND", self.hg_command)
+
+        if self.ignore_vcs_roots:
+            set_var(
+                f"{prefix}_IGNORE_VCS_ROOTS",
+                os.pathsep.join(self.ignore_vcs_roots),
+            )
 
     @classmethod
     def from_env(
