@@ -179,8 +179,11 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         if not hg_tags:
             return _FAKE_GIT_DESCRIBE_ERROR
 
-        with self.path.joinpath(".hg/git-tags").open() as fp:
-            git_tags: dict[str, str] = dict(line.split()[::-1] for line in fp)
+        try:
+            with self.path.joinpath(".hg/git-tags").open() as fp:
+                git_tags: dict[str, str] = dict(line.split()[::-1] for line in fp)
+        except FileNotFoundError:
+            return _FAKE_GIT_DESCRIBE_ERROR
 
         tag: str
         for hg_tag in hg_tags:
