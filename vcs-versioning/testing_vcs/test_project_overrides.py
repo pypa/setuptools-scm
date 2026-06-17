@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from vcs_versioning._project_overrides import read_project_overrides
 
 
@@ -60,4 +61,29 @@ class TestReadProjectOverrides:
             encoding="utf-8",
         )
         result = read_project_overrides(tmp_path, "sub/project")
+        assert result == {}
+
+    def test_unknown_keys_raises_valueerror(self, tmp_path: Path) -> None:
+        config_dir = tmp_path / ".config"
+        config_dir.mkdir()
+        (config_dir / "python-vcs-versioning.toml").write_text(
+            '["."]\nbogus_key = "oops"\n',
+            encoding="utf-8",
+        )
+        with pytest.raises(ValueError, match="Unknown keys.*bogus_key"):
+            read_project_overrides(tmp_path, "")
+
+    def test_non_table_value_returns_empty(self, tmp_path: Path) -> None:
+        config_dir = tmp_path / ".config"
+        config_dir.mkdir()
+        (config_dir / "python-vcs-versioning.toml").write_text(
+            '["."]\n',
+            encoding="utf-8",
+        )
+        # Overwrite with non-table entry
+        (config_dir / "python-vcs-versioning.toml").write_text(
+            '"." = "not a table"\n',
+            encoding="utf-8",
+        )
+        result = read_project_overrides(tmp_path, "")
         assert result == {}

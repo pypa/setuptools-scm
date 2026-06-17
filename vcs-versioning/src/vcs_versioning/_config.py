@@ -314,10 +314,25 @@ class Configuration:
             pyproject_data = read_pyproject(Path(name))
         args = get_args_for_pyproject(pyproject_data, dist_name, kwargs)
 
+        # Per-project overrides: lower priority than env overrides
+        from ._project_overrides import read_project_overrides
+
+        relative_to = args.pop("relative_to", name)
+        resolved = resolve_paths(
+            relative_to=relative_to,
+            root=args.get("root", "."),
+            project_path=args.get("project_path"),
+        )
+        project_overrides = read_project_overrides(
+            scm_root=resolved.scm_probe_root,
+            project_path=resolved.project_path or "",
+        )
+        args.update(project_overrides)
+
+        # Env overrides: highest priority
         args.update(
             read_toml_overrides(args["dist_name"], tool_names=tool_names, env=env)
         )
-        relative_to = args.pop("relative_to", name)
         return cls.from_data(relative_to=relative_to, data=args)
 
     @classmethod

@@ -28,6 +28,23 @@ log = logging.getLogger(__name__)
 
 CONFIG_FILENAME = ".config/python-vcs-versioning.toml"
 
+ALLOWED_OVERRIDE_KEYS: frozenset[str] = frozenset(
+    {
+        "version_scheme",
+        "local_scheme",
+        "tag_regex",
+        "parentdir_prefix_version",
+        "fallback_version",
+        "fallback_root",
+        "write_to",
+        "write_to_template",
+        "version_file",
+        "version_file_template",
+        "dist_name",
+        "search_parent_directories",
+    }
+)
+
 
 def read_project_overrides(scm_root: Path, project_path: str) -> dict[str, Any]:
     """Read per-project overrides from the SCM root config file.
@@ -39,6 +56,9 @@ def read_project_overrides(scm_root: Path, project_path: str) -> dict[str, Any]:
 
     Returns:
         A dictionary of configuration overrides, or empty dict if none found.
+
+    Raises:
+        ValueError: If the override file contains unknown keys.
     """
     config_file = scm_root / CONFIG_FILENAME
     if not config_file.is_file():
@@ -54,6 +74,22 @@ def read_project_overrides(scm_root: Path, project_path: str) -> dict[str, Any]:
 
     key = project_path if project_path else "."
     overrides = data.get(key, {})
+    if not isinstance(overrides, dict):
+        log.warning(
+            "expected table for key %r in %s, got %s",
+            key,
+            config_file,
+            type(overrides).__name__,
+        )
+        return {}
+
+    unknown_keys = set(overrides) - ALLOWED_OVERRIDE_KEYS
+    if unknown_keys:
+        raise ValueError(
+            f"Unknown keys in {config_file} [{key}]: {sorted(unknown_keys)}. "
+            f"Allowed keys: {sorted(ALLOWED_OVERRIDE_KEYS)}"
+        )
+
     if overrides:
         log.info(
             "loaded per-project overrides for %r from %s: %s",
@@ -61,4 +97,4 @@ def read_project_overrides(scm_root: Path, project_path: str) -> dict[str, Any]:
             config_file,
             overrides,
         )
-    return dict(overrides) if isinstance(overrides, dict) else {}
+    return dict(overrides)
