@@ -723,6 +723,9 @@ def test_integration_function_call_order(
 
 
 @pytest.mark.issue("xmlsec-regression")
+@pytest.mark.skipif(
+    sys.implementation.name == "pypy", reason="xmlsec build fails on PyPy in CI"
+)
 def test_xmlsec_download_regression(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
