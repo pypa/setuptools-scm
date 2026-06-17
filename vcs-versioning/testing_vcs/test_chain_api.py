@@ -19,10 +19,16 @@ from vcs_versioning._environment import (
     resolve_runtime_env,
 )
 from vcs_versioning._fallback_workdir import FallbackWorkdir
+from vcs_versioning._pyproject_reading import PyProjectData
 from vcs_versioning.overrides import GlobalOverrides, get_active_vcs_env
 
 if TYPE_CHECKING:
     from vcs_versioning.test_api import WorkDir
+
+
+def _empty_pyproject() -> PyProjectData:
+    """An empty PyProjectData so tests don't inherit ambient pyproject.toml."""
+    return PyProjectData.empty("vcs-versioning")
 
 
 @pytest.fixture
@@ -78,6 +84,7 @@ class TestBuildConfig:
     def test_build_config_sets_env(self, wd: WorkDir) -> None:
         env = VcsEnvironment.from_env(env={"SOURCE_DATE_EPOCH": "1234567890"})
         config = env.build_config(
+            pyproject_data=_empty_pyproject(),
             relative_to=str(wd.cwd / "pyproject.toml"),
         )
         assert config._env is env
@@ -86,6 +93,7 @@ class TestBuildConfig:
     def test_build_config_forwards_kwargs(self, wd: WorkDir) -> None:
         env = VcsEnvironment.from_env()
         config = env.build_config(
+            pyproject_data=_empty_pyproject(),
             relative_to=str(wd.cwd / "pyproject.toml"),
             dist_name="explicit",
         )
@@ -108,7 +116,10 @@ class TestChainDiscoverWorkdir:
     def test_discover_finds_git(self, wd: WorkDir) -> None:
         wd.commit_testfile()
         env = VcsEnvironment.from_env()
-        config = env.build_config(relative_to=str(wd.cwd / "pyproject.toml"))
+        config = env.build_config(
+            pyproject_data=_empty_pyproject(),
+            relative_to=str(wd.cwd / "pyproject.toml"),
+        )
         workdir = config.discover_workdir()
         assert workdir is not None
         assert isinstance(workdir, ScmWorkdir)
@@ -117,6 +128,7 @@ class TestChainDiscoverWorkdir:
     def test_discover_returns_none_for_non_vcs(self, tmp_path: Path) -> None:
         env = VcsEnvironment.from_env()
         config = env.build_config(
+            pyproject_data=_empty_pyproject(),
             relative_to=str(tmp_path / "pyproject.toml"),
         )
         workdir = config.discover_workdir()
@@ -130,7 +142,10 @@ class TestFullChain:
         wd("git tag v1.0.0")
 
         env = VcsEnvironment.from_env()
-        config = env.build_config(relative_to=str(wd.cwd / "pyproject.toml"))
+        config = env.build_config(
+            pyproject_data=_empty_pyproject(),
+            relative_to=str(wd.cwd / "pyproject.toml"),
+        )
         workdir = config.discover_workdir()
         assert workdir is not None
 
@@ -146,7 +161,10 @@ class TestFullChain:
         wd.commit_testfile()
 
         env = VcsEnvironment.from_env()
-        config = env.build_config(relative_to=str(wd.cwd / "pyproject.toml"))
+        config = env.build_config(
+            pyproject_data=_empty_pyproject(),
+            relative_to=str(wd.cwd / "pyproject.toml"),
+        )
         workdir = config.discover_workdir()
         assert workdir is not None
 
@@ -160,7 +178,10 @@ class TestFullChain:
     def test_workdir_receives_config(self, wd: WorkDir) -> None:
         wd.commit_testfile()
         env = VcsEnvironment.from_env()
-        config = env.build_config(relative_to=str(wd.cwd / "pyproject.toml"))
+        config = env.build_config(
+            pyproject_data=_empty_pyproject(),
+            relative_to=str(wd.cwd / "pyproject.toml"),
+        )
         workdir = config.discover_workdir()
         assert workdir is not None
         assert workdir._config is config
@@ -170,7 +191,10 @@ class TestFullChain:
         wd("git tag v1.0.0")
 
         env = VcsEnvironment.from_env(env={"VCS_VERSIONING_SUBPROCESS_TIMEOUT": "999"})
-        config = env.build_config(relative_to=str(wd.cwd / "pyproject.toml"))
+        config = env.build_config(
+            pyproject_data=_empty_pyproject(),
+            relative_to=str(wd.cwd / "pyproject.toml"),
+        )
         workdir = config.discover_workdir()
         assert isinstance(workdir, ScmWorkdir)
         assert workdir._subprocess_timeout == 999
@@ -184,7 +208,10 @@ class TestFullChain:
         wd.commit_testfile()
 
         env = VcsEnvironment.from_env(env={"SOURCE_DATE_EPOCH": "1234567890"})
-        config = env.build_config(relative_to=str(wd.cwd / "pyproject.toml"))
+        config = env.build_config(
+            pyproject_data=_empty_pyproject(),
+            relative_to=str(wd.cwd / "pyproject.toml"),
+        )
         workdir = config.discover_workdir()
         assert workdir is not None
 
