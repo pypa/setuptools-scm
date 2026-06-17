@@ -71,6 +71,7 @@ Source = "https://github.com/pypa/setuptools-scm"
 dirty-tag = "vcs_versioning._version_schemes:get_local_dirty_tag"
 "fail-on-uncommitted-changes" = "vcs_versioning._version_schemes:get_local_fail_on_uncommitted_changes"
 no-local-version = "vcs_versioning._version_schemes:get_no_local_node"
+no-local-version-strict = "vcs_versioning._version_schemes:get_no_local_node_strict"
 node-and-date = "vcs_versioning._version_schemes:get_local_node_and_date"
 node-and-timestamp = "vcs_versioning._version_schemes:get_local_node_and_timestamp"
 

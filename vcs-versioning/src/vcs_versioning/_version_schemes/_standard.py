@@ -44,6 +44,11 @@ def guess_next_dev_version(version: ScmVersion) -> str:
 def guess_next_simple_semver(
     version: ScmVersion, retain: int, increment: bool = True
 ) -> str:
+    if increment and getattr(version.tag, "dev", None) == 0:
+        parts = list(version.tag.release)
+        while len(parts) < SEMVER_LEN:
+            parts.append(0)
+        return ".".join(str(i) for i in parts)
     parts = list(version.tag.release[:retain])
     while len(parts) < retain:
         parts.append(0)
@@ -56,15 +61,12 @@ def guess_next_simple_semver(
 
 def simplified_semver_version(version: ScmVersion) -> str:
     if version.exact:
-        return guess_next_simple_semver(version, retain=SEMVER_LEN, increment=False)
-    elif version.branch is not None and "feature" in version.branch:
+        return version.format_with("{tag}")
+    if version.branch is not None and "feature" in version.branch:
         return version.format_next_version(
             guess_next_simple_semver, retain=SEMVER_MINOR
         )
-    else:
-        return version.format_next_version(
-            guess_next_simple_semver, retain=SEMVER_PATCH
-        )
+    return version.format_next_version(guess_next_simple_semver, retain=SEMVER_PATCH)
 
 
 def release_branch_semver_version(version: ScmVersion) -> str:
@@ -272,4 +274,17 @@ def get_local_dirty_tag(version: ScmVersion) -> str:
 
 
 def get_no_local_node(version: ScmVersion) -> str:
+    return ""
+
+
+def get_no_local_node_strict(version: ScmVersion) -> str:
+    """Strip local version, but fail when the working tree is dirty.
+
+    Equivalent to ``["fail-on-uncommitted-changes", "no-local-version"]``
+    as a single entry-point name: ``no-local-version-strict``.
+    """
+    if version.dirty:
+        raise DirtyWorkingTreeError(
+            "Working tree has uncommitted changes (SCM reports dirty)."
+        )
     return ""

@@ -110,6 +110,12 @@ class GitWorkdir(Workdir):
             default=False,
         )
 
+    def is_file_tracked(self, path: Path) -> bool:
+        return (
+            run_git(["ls-files", "--error-unmatch", str(path)], self.path).returncode
+            == 0
+        )
+
     def get_branch(self) -> str | None:
         return run_git(
             ["rev-parse", "--abbrev-ref", "HEAD"],
