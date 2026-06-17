@@ -17,6 +17,8 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from ._version_fields import VersionFields
+
 log = logging.getLogger(__name__)
 
 SCM_VERSION_FILENAME = "scm_version.json"
@@ -91,12 +93,9 @@ def read_scm_file_list(source_dir: Path) -> list[str] | None:
 
 
 def scm_version_data_from_scm_version(
-    scm_version: Any,
+    scm_version: VersionFields,
 ) -> ScmVersionData:
-    """Build ``ScmVersionData`` from a live ``ScmVersion`` object.
-
-    Accepts ``Any`` to avoid a circular import with ``_scm_version``.
-    """
+    """Build ``ScmVersionData`` from a live ``ScmVersion`` object."""
     raw_date = scm_version.node_date
     return ScmVersionData(
         tag=str(scm_version.tag),
