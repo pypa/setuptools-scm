@@ -26,6 +26,7 @@ from .._scm_version import ScmVersion, meta, tag_to_version
 from ._scm_workdir import Workdir, get_latest_file_mtime
 
 if TYPE_CHECKING:
+    from .._protocols import DescribeCapable
     from . import _hg_git as hg_git
 log = logging.getLogger(__name__)
 
@@ -388,7 +389,7 @@ def parse(
 
 
 def version_from_describe(
-    wd: GitWorkdir | hg_git.GitWorkdirHgClient,
+    wd: DescribeCapable,
     config: Configuration,
     describe_command: _t.CMD_TYPE | None,
 ) -> ScmVersion | None:
@@ -399,12 +400,11 @@ def version_from_describe(
         if isinstance(describe_command, str):
             describe_command = shlex.split(describe_command)
             # todo: figure how to ensure git with gitdir gets correctly invoked
-        if describe_command[0] == "git":
-            describe_res = wd.run_git(describe_command[1:])
+        cmd_args = [str(a) for a in describe_command]
+        if cmd_args[0] == "git":
+            describe_res = wd.run_git(cmd_args[1:])
         else:
-            describe_res = _run(
-                describe_command, wd.path, timeout=wd._subprocess_timeout
-            )
+            describe_res = _run(cmd_args, wd.path, timeout=wd._subprocess_timeout)
     else:
         describe_res = wd.default_describe()
 
@@ -418,9 +418,10 @@ def version_from_describe(
 def _git_parse_inner(
     config: Configuration,
     wd: GitWorkdir | hg_git.GitWorkdirHgClient,
-    pre_parse: (Callable[[GitWorkdir | hg_git.GitWorkdirHgClient], None]) | None = None,
+    pre_parse: Callable[[GitWorkdir | hg_git.GitWorkdirHgClient], None] | None = None,
     describe_command: _t.CMD_TYPE | None = None,
 ) -> ScmVersion:
+    # wd satisfies both DescribeCapable and WorkdirState protocols.
     if pre_parse:
         pre_parse(wd)
 
