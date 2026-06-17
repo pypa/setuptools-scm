@@ -356,3 +356,42 @@ class Configuration:
             scm=scm_config,
             **data,
         )
+
+
+_DEPRECATED_LEGACY_ATTRS: frozenset[str] = frozenset(
+    {
+        "absolute_root",
+        "relative_to",
+        "root",
+    }
+)
+
+
+@dataclasses.dataclass(frozen=True)
+class FrozenLegacyConfig:
+    """Read-only view of Configuration for backward-compatible code paths.
+
+    Wraps a ``Configuration`` and emits ``DeprecationWarning`` on first
+    attribute access for fields that are being migrated to new APIs.
+    Frozen dataclass -- all attributes are immutable.
+
+    Use ``FrozenLegacyConfig(config)`` in legacy code paths that receive
+    a config but should be guided toward the new explicit API chain.
+    """
+
+    _config: Configuration = dataclasses.field(repr=False)
+    _warned: set[str] = dataclasses.field(
+        default_factory=set, repr=False, compare=False, hash=False
+    )
+
+    def __getattr__(self, name: str) -> Any:
+        if name in _DEPRECATED_LEGACY_ATTRS and name not in self._warned:
+            self._warned.add(name)
+            warnings.warn(
+                f"Accessing '{name}' on legacy config view is deprecated. "
+                f"Use ResolvedPaths or the new explicit API chain instead. "
+                f"This will become an error in vcs-versioning 2.0.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        return getattr(self._config, name)

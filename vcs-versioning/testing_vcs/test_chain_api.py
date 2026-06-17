@@ -6,6 +6,7 @@ No context managers are needed.
 
 from __future__ import annotations
 
+import dataclasses
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -235,3 +236,43 @@ class TestResolveRuntimeEnv:
         monkeypatch.setenv("SETUPTOOLS_SCM_IGNORE_VCS_ROOTS", "/tmp/ignore-me")
         env = resolve_runtime_env()
         assert "/tmp/ignore-me" in env.ignore_vcs_roots
+
+
+class TestFrozenLegacyConfig:
+    def test_proxies_non_deprecated_attrs(self) -> None:
+        from vcs_versioning._config import Configuration, FrozenLegacyConfig
+
+        config = Configuration()
+        frozen = FrozenLegacyConfig(config)
+        assert frozen.version_scheme == config.version_scheme
+        assert frozen.dist_name == config.dist_name
+
+    def test_deprecated_attr_emits_warning(self) -> None:
+        from vcs_versioning._config import Configuration, FrozenLegacyConfig
+
+        config = Configuration()
+        frozen = FrozenLegacyConfig(config)
+        with pytest.warns(DeprecationWarning, match="absolute_root.*deprecated"):
+            _ = frozen.absolute_root
+
+    def test_warns_only_once_per_attr(self) -> None:
+        from vcs_versioning._config import Configuration, FrozenLegacyConfig
+
+        config = Configuration()
+        frozen = FrozenLegacyConfig(config)
+        with pytest.warns(DeprecationWarning):
+            _ = frozen.absolute_root
+        # Second access should not warn
+        import warnings as _w
+
+        with _w.catch_warnings():
+            _w.simplefilter("error")
+            _ = frozen.absolute_root
+
+    def test_setattr_raises(self) -> None:
+        from vcs_versioning._config import Configuration, FrozenLegacyConfig
+
+        config = Configuration()
+        frozen = FrozenLegacyConfig(config)
+        with pytest.raises((AttributeError, dataclasses.FrozenInstanceError)):
+            frozen.version_scheme = "something"  # type: ignore[attr-defined]
