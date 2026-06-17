@@ -88,17 +88,9 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
     if not factories:
         log.debug("no discovery factories registered")
 
-    # Determine the actual project directory (where pyproject.toml / setup.py lives).
-    # This may differ from absolute_root when root="../../.." is used.
-    if config.relative_to is not None:
-        rel = Path(str(config.relative_to))
-        project_dir = (rel if rel.is_dir() else rel.parent).resolve()
-    else:
-        project_dir = Path(config.absolute_root).resolve()
-
-    # absolute_root may point at the declared SCM root (via root=".."),
-    # which can be above project_dir.  We always probe both.
-    scm_root_hint = Path(config.absolute_root).resolve()
+    # Use the canonical path resolution from config.
+    project_dir = config._resolved_paths.project_dir
+    scm_root_hint = config._resolved_paths.scm_probe_root
 
     fallback_candidate: FallbackWorkdir | None = None
 

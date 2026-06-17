@@ -165,6 +165,8 @@ filterwarnings = [
   "error",
   "ignore:.*tool\\.setuptools_scm.*",
   "ignore:.*git archive did not support describe output.*:UserWarning",
+  "ignore:.*without VcsEnvironment.*:DeprecationWarning",
+  "ignore:.*Passing config to workdir.*:DeprecationWarning",
 ]
 log_level = "debug"
 log_cli_level = "info"

@@ -20,19 +20,13 @@ if TYPE_CHECKING:
 
 from . import _types as _t
 from ._overrides import read_toml_overrides
+from ._paths import resolve_paths
 from ._pyproject_reading import PyProjectData, get_args_for_pyproject, read_pyproject
 from ._version_cls import Version as _Version
 from ._version_cls import _validate_version_cls
 from ._version_cls import _Version as _VersionAlias
 
 log = logging.getLogger(__name__)
-
-
-def _posix_project_path(path: str) -> str:
-    """Normalize a project-relative path to forward-slash form."""
-    if not path:
-        return path
-    return Path(path).as_posix()
 
 
 def _is_called_from_dataclasses() -> bool:
@@ -122,33 +116,6 @@ class ParseFunction(Protocol):
     def __call__(
         self, root: _t.PathT, *, config: Configuration
     ) -> _t.SCMVERSION | None: ...
-
-
-def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
-    log.debug("check absolute root=%s relative_to=%s", root, relative_to)
-    if relative_to:
-        if (
-            os.path.isabs(root)
-            and os.path.isabs(relative_to)
-            and not os.path.commonpath([root, relative_to]) == root
-        ):
-            warnings.warn(
-                f"absolute root path '{root}' overrides relative_to '{relative_to}'",
-                stacklevel=2,
-            )
-        if os.path.isdir(relative_to):
-            warnings.warn(
-                "relative_to is expected to be a file,"
-                f" it's the directory {relative_to}\n"
-                "assuming the parent directory was passed",
-                stacklevel=2,
-            )
-            log.debug("dir %s", relative_to)
-            root = os.path.join(relative_to, root)
-        else:
-            log.debug("file %s", relative_to)
-            root = os.path.join(os.path.dirname(relative_to), root)
-    return os.path.abspath(root)
 
 
 @dataclasses.dataclass
@@ -248,7 +215,13 @@ class Configuration:
     def __post_init__(self, git_describe_command: _t.CMD_TYPE | None) -> None:
         self.tag_regex = _check_tag_regex(self.tag_regex)
 
-        self._bridge_root_to_project_path()
+        self._resolved_paths = resolve_paths(
+            relative_to=self.relative_to,
+            root=self.root,
+            project_path=self.project_path,
+        )
+        if self.project_path is None and self._resolved_paths.project_path is not None:
+            self.project_path = self._resolved_paths.project_path
 
         # Handle deprecated git_describe_command
         # Check if it's a descriptor object (happens when no value is passed)
@@ -283,35 +256,7 @@ class Configuration:
 
     @property
     def absolute_root(self) -> str:
-        return _check_absolute_root(self.root, self.relative_to)
-
-    def _bridge_root_to_project_path(self) -> None:
-        """Derive ``project_path`` from legacy ``root`` when not explicitly set.
-
-        Silently computes the value for internal use during the migration
-        period.  A deprecation warning will be added in a future release
-        once the new discovery path is fully proven.
-        """
-        if self.project_path is not None:
-            return
-        if self.root == "." or self.relative_to is None:
-            return
-
-        abs_root = Path(self.absolute_root).resolve()
-        rel_path = Path(str(self.relative_to))
-        project_dir = (
-            rel_path.resolve() if rel_path.is_dir() else rel_path.parent.resolve()
-        )
-
-        try:
-            computed = str(project_dir.relative_to(abs_root))
-        except ValueError:
-            return
-
-        if computed == ".":
-            computed = ""
-
-        self.project_path = _posix_project_path(computed)
+        return str(self._resolved_paths.scm_probe_root)
 
     @property
     def env(self) -> VcsEnvironment:

@@ -98,9 +98,9 @@ class ScmWorkdir:
         assert self.project_root is not None
         if self.path == self.project_root:
             return ""
-        from .._config import _posix_project_path
+        from .._paths import relative_project_path
 
-        return _posix_project_path(str(self.project_root.relative_to(self.path)))
+        return relative_project_path(self.path, self.project_root)
 
     @property
     def config(self) -> Configuration:
