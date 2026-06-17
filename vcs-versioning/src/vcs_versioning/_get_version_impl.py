@@ -265,11 +265,27 @@ def get_version(
     if _env is None:
         _env = resolve_runtime_env()
 
-    config_params = locals().copy()
-    config_params.pop("scm", None)
-    config_params.pop("scm_config", None)
-
-    config = _config.Configuration(scm=scm_config, **config_params)
+    config = _config.Configuration(
+        root=root,
+        version_scheme=version_scheme,
+        local_scheme=local_scheme,
+        write_to=write_to,
+        write_to_template=write_to_template,
+        version_file=version_file,
+        version_file_template=version_file_template,
+        relative_to=relative_to,
+        tag_regex=tag_regex,
+        parentdir_prefix_version=parentdir_prefix_version,
+        fallback_version=fallback_version,
+        fallback_root=fallback_root,
+        parse=parse,
+        git_describe_command=git_describe_command,
+        dist_name=dist_name,
+        version_cls=version_cls,
+        search_parent_directories=search_parent_directories,
+        scm=scm_config,
+        _env=_env,
+    )
     maybe_version = _get_version(config, force_write_version_files=True)
 
     if maybe_version is None:
