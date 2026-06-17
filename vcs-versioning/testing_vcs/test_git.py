@@ -124,6 +124,7 @@ def sudo_devnull(
         ["sudo", *args],
         stdin=subprocess.DEVNULL,
         check=check,
+        timeout=2,
     )
 
 
@@ -134,7 +135,10 @@ def break_folder_permissions(path: Path) -> Generator[None, None, None]:
         pytest.skip("sudo executable not found")
     original_stat = path.stat()
 
-    proc = sudo_devnull(["chown", "-R", "12345", path])
+    try:
+        proc = sudo_devnull(["chown", "-R", "12345", path])
+    except subprocess.TimeoutExpired:
+        pytest.xfail("sudo waiting for password, is passwordless sudo available?")
     if proc.returncode != 0:
         pytest.xfail("Failed to change ownership, is passwordless sudo available?")
 

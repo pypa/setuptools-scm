@@ -49,3 +49,7 @@ class Workdir:
 
     def run_describe(self, config: Configuration) -> ScmVersion:
         raise NotImplementedError(self.run_describe)
+
+    def is_file_tracked(self, path: Path) -> bool:
+        """Return True if *path* is tracked by version control."""
+        raise NotImplementedError(self.is_file_tracked)

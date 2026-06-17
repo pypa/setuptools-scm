@@ -147,46 +147,48 @@ Control timestamps for reproducible builds (from [reproducible-builds.org](https
     **Example:**
     ```bash
     # Override local_scheme for CI builds
-    export SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE='{local_scheme = "no-local-version"}'
+    export SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE='{local_scheme = "no-local-version-strict"}'
     ```
 
 #### Fail on uncommitted changes in release CI
 
-To stop a build when the working tree has uncommitted changes (the same `dirty` state
-setuptools-scm uses for local version segments), set `local_scheme` to a **list** whose
-first entry is `fail-on-uncommitted-changes` and whose second entry is your usual local
-scheme (match what you use in `pyproject.toml`, for example `node-and-date` or
-`no-local-version`). This keeps your chosen `version_scheme` unchanged.
+The simplest way to enforce a clean tree **and** strip local segments for PyPI uploads
+is `no-local-version-strict`:
 
-This takes precedence over `[tool.setuptools_scm]` / `[tool.vcs-versioning]` in
-`pyproject.toml` (see priority under [About Overrides](#about-overrides)).
+```bash
+export SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE='{local_scheme = "no-local-version-strict"}'
+```
 
-Use the distribution-specific variable so the override applies only to your package (the
-name is normalized the same way as for other `*_FOR_${DIST_NAME}` variables; see
-[integrations](integrations.md#publishing-to-pypi-from-cicd)):
+This fails the build when the working tree is dirty and otherwise produces a version
+without a local segment — exactly what release CI needs.
+
+If you need a different fallback local scheme (e.g. `node-and-date` instead of
+stripping the local part), use a **list** whose first entry is
+`fail-on-uncommitted-changes` and whose second entry is your usual scheme:
 
 ```bash
 export SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE='{local_scheme = ["fail-on-uncommitted-changes", "node-and-date"]}'
 ```
 
-With `no-local-version` for PyPI uploads:
+These overrides take precedence over `[tool.setuptools_scm]` / `[tool.vcs-versioning]`
+in `pyproject.toml` (see priority under [About Overrides](#about-overrides)).
 
-```bash
-export SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE='{local_scheme = ["fail-on-uncommitted-changes", "no-local-version"]}'
-```
+Use the distribution-specific variable so the override applies only to your package (the
+name is normalized the same way as for other `*_FOR_${DIST_NAME}` variables; see
+[integrations](integrations.md#publishing-to-pypi-from-cicd)).
 
 If you use `[tool.vcs-versioning]` (and not setuptools-scm), set the same TOML value on
 `VCS_VERSIONING_OVERRIDES_FOR_${DIST_NAME}` instead, for example:
 
 ```bash
-export VCS_VERSIONING_OVERRIDES_FOR_MYPACKAGE='{local_scheme = ["fail-on-uncommitted-changes", "node-and-date"]}'
+export VCS_VERSIONING_OVERRIDES_FOR_MYPACKAGE='{local_scheme = "no-local-version-strict"}'
 ```
 
 **GitHub Actions:** set `env` on the job or step that builds release artifacts:
 
 ```yaml
 env:
-  SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = ["fail-on-uncommitted-changes", "node-and-date"]}'
+  SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version-strict"}'
 ```
 
 ### SCM Root Discovery

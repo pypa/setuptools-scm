@@ -225,7 +225,7 @@ class EnvReader:
             >>> class MySchema(TypedDict, total=False):
             ...     local_scheme: str
             >>> reader = EnvReader(tools_names=("TOOL",), env={
-            ...     "TOOL_OVERRIDES": '{"local_scheme": "no-local-version"}',
+            ...     "TOOL_OVERRIDES": '{local_scheme = "no-local-version"}',
             ... })
             >>> result: MySchema = reader.read_toml("OVERRIDES", schema=MySchema)
             >>> result["local_scheme"]

@@ -42,6 +42,9 @@ class HgWorkdir(Workdir):
             return None
         return cls(Path(res.stdout))
 
+    def is_file_tracked(self, path: Path) -> bool:
+        return run_hg(["files", str(path)], cwd=self.path).returncode == 0
+
     def get_meta(self, config: Configuration) -> ScmVersion | None:
         # TODO: support bookmarks and topics (but nowadays bookmarks are
         # mainly used to emulate Git branches, which is already supported with

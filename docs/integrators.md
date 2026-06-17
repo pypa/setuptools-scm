@@ -442,7 +442,7 @@ with GlobalOverrides.from_env("MY_TOOL"):
 | Pretend Version (generic) | `{TOOL}_PRETEND_VERSION`<br>`VCS_VERSIONING_PRETEND_VERSION` | `HATCH_VCS_PRETEND_VERSION=1.0.0` |
 | Pretend Metadata (specific) | `{TOOL}_PRETEND_METADATA_FOR_{DIST}`<br>`VCS_VERSIONING_PRETEND_METADATA_FOR_{DIST}` | `HATCH_VCS_PRETEND_METADATA_FOR_MY_PKG='{node="g123", distance=4}'` |
 | Pretend Metadata (generic) | `{TOOL}_PRETEND_METADATA`<br>`VCS_VERSIONING_PRETEND_METADATA` | `HATCH_VCS_PRETEND_METADATA='{dirty=true}'` |
-| Config Overrides (specific) | `{TOOL}_OVERRIDES_FOR_{DIST}`<br>`VCS_VERSIONING_OVERRIDES_FOR_{DIST}` | `HATCH_VCS_OVERRIDES_FOR_MY_PKG='{"local_scheme": "no-local-version"}'` |
+| Config Overrides (specific) | `{TOOL}_OVERRIDES_FOR_{DIST}`<br>`VCS_VERSIONING_OVERRIDES_FOR_{DIST}` | `HATCH_VCS_OVERRIDES_FOR_MY_PKG='{local_scheme = "no-local-version"}'` |
 
 ## Complete Integration Example
 

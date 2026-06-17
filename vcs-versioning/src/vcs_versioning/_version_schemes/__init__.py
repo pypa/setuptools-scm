@@ -25,6 +25,7 @@ from ._standard import (
     get_local_node_and_date,
     get_local_node_and_timestamp,
     get_no_local_node,
+    get_no_local_node_strict,
     guess_next_date_ver,
     guess_next_dev_version,
     guess_next_simple_semver,
@@ -71,6 +72,7 @@ __all__ = [
     "get_local_node_and_date",
     "get_local_node_and_timestamp",
     "get_no_local_node",
+    "get_no_local_node_strict",
     # Towncrier
     "version_from_fragments",
     # Utilities
