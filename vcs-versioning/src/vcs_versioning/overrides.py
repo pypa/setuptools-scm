@@ -451,7 +451,11 @@ _active_overrides: contextvars.ContextVar[GlobalOverrides | None] = (
 
 
 def get_active_vcs_env() -> _environment.VcsEnvironment | None:
-    """Return the active ``VcsEnvironment`` from ``GlobalOverrides``, if any."""
+    """Return the active ``VcsEnvironment`` from ``GlobalOverrides``, if any.
+
+    The returned object is a frozen dataclass — safe to hold across await
+    points or store on long-lived objects without risk of mutation.
+    """
     active = _active_overrides.get()
     if active is None:
         return None

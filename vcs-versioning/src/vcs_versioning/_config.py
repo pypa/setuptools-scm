@@ -323,8 +323,9 @@ class Configuration:
         if self._env is None:
             warnings.warn(
                 "Configuration was created without VcsEnvironment. "
-                "Use VcsEnvironment.build_config() to attach runtime settings "
-                "explicitly.",
+                "Use VcsEnvironment.build_config() to create configurations "
+                "with runtime settings attached explicitly. "
+                "This will become an error in vcs-versioning 2.0.",
                 DeprecationWarning,
                 stacklevel=2,
             )

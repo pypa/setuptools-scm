@@ -96,7 +96,9 @@ class TestBuildConfig:
 
         config = Configuration(relative_to=str(wd.cwd / "pyproject.toml"))
         assert config._env is None
-        with pytest.warns(DeprecationWarning, match="without VcsEnvironment"):
+        with pytest.warns(
+            DeprecationWarning, match="without VcsEnvironment.*build_config"
+        ):
             env = config.env
         assert isinstance(env, VcsEnvironment)
 
