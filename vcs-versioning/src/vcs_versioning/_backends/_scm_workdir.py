@@ -113,9 +113,6 @@ class ScmWorkdir:
             )
         return self._config
 
-    def run_describe(self) -> ScmVersion:
-        raise NotImplementedError(self.run_describe)
-
     def get_scm_version(self) -> ScmVersion | None:
         raise NotImplementedError
 

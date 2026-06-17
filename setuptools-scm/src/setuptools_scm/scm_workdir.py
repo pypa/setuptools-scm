@@ -32,7 +32,7 @@ class ScmWorkdir(_CoreScmWorkdir):
         from ._compat_helpers import _bind_config
 
         with _bind_config(self, config):
-            return super().run_describe()
+            return super().get_scm_version()  # type: ignore[return-value]
 
 
 Workdir = ScmWorkdir

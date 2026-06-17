@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import warnings
 
 from collections.abc import Iterator
 
@@ -19,7 +20,17 @@ def _bind_config(
     When *config* is ``None`` this is a no-op, so callers don't need a guard.
     Accessing ``config.env`` within the bound context will create a fallback
     ``VcsEnvironment`` with a deprecation warning if one was not explicitly set.
+
+    Emits a DeprecationWarning directing callers toward the workdir-centric API
+    (``VcsEnvironment.build_config() -> config.discover_workdir()``).
     """
+    warnings.warn(
+        "Passing config to workdir methods is deprecated. "
+        "Use VcsEnvironment.build_config() and config.discover_workdir() "
+        "to obtain a configured workdir directly.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
     if config is None:
         yield
         return

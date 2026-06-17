@@ -32,13 +32,6 @@ class TestScmWorkdir:
         wd = ScmWorkdir(path=tmp_path, project_root=project)
         assert wd.project_path == "python/modules/mymod"
 
-    def test_run_describe_not_implemented(self, tmp_path: Path) -> None:
-        from vcs_versioning._config import Configuration
-
-        wd = ScmWorkdir(path=tmp_path, _config=Configuration())
-        with pytest.raises(NotImplementedError):
-            wd.run_describe()
-
     def test_get_scm_version_not_implemented(self, tmp_path: Path) -> None:
         from vcs_versioning._config import Configuration
 
