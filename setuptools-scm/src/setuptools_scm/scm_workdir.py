@@ -32,7 +32,10 @@ class ScmWorkdir(_CoreScmWorkdir):
         from ._compat_helpers import _bind_config
 
         with _bind_config(self, config):
-            return super().get_scm_version()  # type: ignore[return-value]
+            version = super().get_scm_version()
+        if version is None:
+            raise LookupError(f"no version could be determined from {self.path}")
+        return version
 
 
 Workdir = ScmWorkdir
