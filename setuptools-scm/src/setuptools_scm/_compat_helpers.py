@@ -24,6 +24,10 @@ def _bind_config(
     Emits a DeprecationWarning directing callers toward the workdir-centric API
     (``VcsEnvironment.build_config() -> config.discover_workdir()``).
     """
+    if config is None:
+        yield
+        return
+
     warnings.warn(
         "Passing config to workdir methods is deprecated. "
         "Use VcsEnvironment.build_config() and config.discover_workdir() "
@@ -31,10 +35,6 @@ def _bind_config(
         DeprecationWarning,
         stacklevel=3,
     )
-    if config is None:
-        yield
-        return
-
     old_config = workdir._config
     workdir._config = config
     try:
