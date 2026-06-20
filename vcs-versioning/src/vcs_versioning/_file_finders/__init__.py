@@ -77,13 +77,18 @@ def _read_ignore_vcs_roots(env: Mapping[str, str] | None = None) -> list[str]:
 
     File finders are invoked via ``setuptools.file_finders`` entry points
     which receive only a path, so they cannot access ``config.env``.
-    This function reads directly from the process environment.
+    This function reads directly from the process environment, preferring
+    tool names from the active VcsEnvironment when available.
     """
-    from ..overrides import EnvReader
+    from ..overrides import EnvReader, get_active_vcs_env
 
     if env is None:
         env = os.environ
-    reader = EnvReader(tools_names=("SETUPTOOLS_SCM", "VCS_VERSIONING"), env=env)
+    active_env = get_active_vcs_env()
+    tool_names = (
+        active_env.tool_names if active_env else ("SETUPTOOLS_SCM", "VCS_VERSIONING")
+    )
+    reader = EnvReader(tools_names=tool_names, env=env)
     raw = reader.read("IGNORE_VCS_ROOTS", split=os.pathsep, default=[])
     return [os.path.normcase(p) for p in raw]
 
