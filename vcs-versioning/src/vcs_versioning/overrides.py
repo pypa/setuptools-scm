@@ -17,13 +17,11 @@ See the integrators documentation for more details.
 
 from __future__ import annotations
 
+import contextvars
 import logging
 import os
-import warnings
 from collections.abc import Mapping, MutableMapping
 from contextlib import ContextDecorator
-from contextvars import ContextVar
-from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar, overload
 
@@ -40,6 +38,8 @@ TSchema = TypeVar("TSchema", bound=TypedDict)  # type: ignore[valid-type]
 
 if TYPE_CHECKING:
     from pytest import MonkeyPatch
+
+    from . import _environment
 
 log = logging.getLogger(__name__)
 
@@ -235,22 +235,21 @@ class EnvReader:
         return load_toml_or_inline_map(data, schema=schema)
 
 
-@dataclass(frozen=True)
 class GlobalOverrides:
     """Global environment variable overrides for VCS versioning.
+
+    Thin wrapper around :class:`~vcs_versioning._environment.VcsEnvironment`
+    that adds context-manager semantics (logging configuration on entry)
+    and backward-compatible attribute access.
 
     Use as a context manager to apply overrides for the execution scope.
     Logging is automatically configured when entering the context.
 
     Attributes:
-        debug: Debug logging level (int from logging module) or False to disable
-        subprocess_timeout: Timeout for subprocess commands in seconds
-        hg_command: Command to use for Mercurial operations
-        source_date_epoch: Unix timestamp for reproducible builds (None if not set)
-        ignore_vcs_roots: List of VCS root paths to ignore for file finding
+        vcs_env: The underlying VcsEnvironment holding all parsed settings
         tool: Tool prefix used to read these overrides
         dist_name: Optional distribution name for dist-specific env var lookups
-        additional_loggers: List of logger instances to configure alongside vcs_versioning
+        additional_loggers: Logger instances to configure alongside vcs_versioning
 
     Usage:
         with GlobalOverrides.from_env("HATCH_VCS", dist_name="my-package") as overrides:
@@ -263,34 +262,54 @@ class GlobalOverrides:
             version = get_version(...)
     """
 
-    debug: int | Literal[False]
-    subprocess_timeout: int
-    hg_command: str
-    source_date_epoch: int | None
-    ignore_vcs_roots: list[str]
-    tool: str
-    env_reader: EnvReader
-    dist_name: str | None = None
-    additional_loggers: tuple[logging.Logger, ...] = ()
+    __slots__ = ("vcs_env", "tool", "dist_name", "_token")
 
-    def __post_init__(self) -> None:
-        """Validate that env_reader configuration matches GlobalOverrides settings."""
-        # Verify that the env_reader's dist_name matches
-        if self.env_reader.dist_name != self.dist_name:
-            raise ValueError(
-                f"EnvReader dist_name mismatch: "
-                f"GlobalOverrides has {self.dist_name!r}, "
-                f"but EnvReader has {self.env_reader.dist_name!r}"
-            )
+    def __init__(
+        self,
+        vcs_env: _environment.VcsEnvironment,
+        tool: str,
+        dist_name: str | None = None,
+    ) -> None:
+        self.vcs_env = vcs_env
+        self.tool = tool
+        self.dist_name = dist_name
+        self._token: contextvars.Token[GlobalOverrides | None] | None = None
 
-        # Verify that the env_reader has the correct tool prefix
-        expected_tools = (self.tool, "VCS_VERSIONING")
-        if self.env_reader.tools_names != expected_tools:
-            raise ValueError(
-                f"EnvReader tools_names mismatch: "
-                f"expected {expected_tools}, "
-                f"but got {self.env_reader.tools_names}"
-            )
+    # ------------------------------------------------------------------
+    # Backward-compatible properties delegating to vcs_env
+    # ------------------------------------------------------------------
+
+    @property
+    def debug(self) -> int | Literal[False]:
+        return self.vcs_env.debug
+
+    @property
+    def subprocess_timeout(self) -> int:
+        return self.vcs_env.subprocess_timeout
+
+    @property
+    def hg_command(self) -> str:
+        return self.vcs_env.hg_command
+
+    @property
+    def source_date_epoch(self) -> int | None:
+        return self.vcs_env.source_date_epoch
+
+    @property
+    def ignore_vcs_roots(self) -> list[str]:
+        return list(self.vcs_env.ignore_vcs_roots)
+
+    @property
+    def additional_loggers(self) -> tuple[logging.Logger, ...]:
+        return self.vcs_env.additional_loggers
+
+    @property
+    def env_reader(self) -> EnvReader:
+        return self.vcs_env.make_reader(dist_name=self.dist_name)
+
+    # ------------------------------------------------------------------
+    # Construction
+    # ------------------------------------------------------------------
 
     @classmethod
     def from_env(
@@ -302,7 +321,8 @@ class GlobalOverrides:
     ) -> GlobalOverrides:
         """Read all global overrides from environment variables.
 
-        Checks both tool-specific prefix and VCS_VERSIONING prefix as fallback.
+        Delegates entirely to :meth:`VcsEnvironment.from_env` for env-var
+        parsing, then wraps the result with context-manager semantics.
 
         Args:
             tool: Tool prefix (e.g., "HATCH_VCS", "SETUPTOOLS_SCM")
@@ -314,13 +334,12 @@ class GlobalOverrides:
         Returns:
             GlobalOverrides instance ready to use as context manager
         """
+        import dataclasses as dc
 
-        # Create EnvReader for reading environment variables with fallback
-        reader = EnvReader(
-            tools_names=(tool, "VCS_VERSIONING"), env=env, dist_name=dist_name
-        )
+        from ._environment import VcsEnvironment
 
-        # Convert additional_loggers to a tuple of logger instances
+        vcs_env = VcsEnvironment.from_env(tool, env=env, dist_name=dist_name)
+
         logger_tuple: tuple[logging.Logger, ...]
         if isinstance(additional_loggers, logging.Logger):
             logger_tuple = (additional_loggers,)
@@ -329,146 +348,60 @@ class GlobalOverrides:
         else:
             logger_tuple = ()
 
-        # Read debug flag - support multiple formats
-        debug_val = reader.read("DEBUG")
-        if debug_val is None:
-            debug: int | Literal[False] = False
-        else:
-            # Try to parse as integer log level
-            try:
-                parsed_int = int(debug_val)
-                # If it's a small integer (0, 1), treat as boolean flag
-                # Otherwise treat as explicit log level (10, 20, 30, etc.)
-                if parsed_int in (0, 1):
-                    debug = logging.DEBUG if parsed_int else False
-                else:
-                    debug = parsed_int
-            except ValueError:
-                # Not an integer - check if it's a level name (DEBUG, INFO, WARNING, etc.)
-                level_name = debug_val.upper()
-                level_value = getattr(logging, level_name, None)
-                if isinstance(level_value, int):
-                    # Valid level name found
-                    debug = level_value
-                else:
-                    # Unknown value - treat as boolean flag (any non-empty value means DEBUG)
-                    debug = logging.DEBUG
-
-        # Read subprocess timeout
-        timeout_val = reader.read("SUBPROCESS_TIMEOUT")
-        subprocess_timeout = 40  # default
-        if timeout_val is not None:
-            try:
-                subprocess_timeout = int(timeout_val)
-            except ValueError:
-                log.warning(
-                    "Invalid SUBPROCESS_TIMEOUT value '%s', using default %d",
-                    timeout_val,
-                    subprocess_timeout,
-                )
-
-        # Read hg command
-        hg_command = reader.read("HG_COMMAND") or "hg"
-
-        # Read SOURCE_DATE_EPOCH (standard env var, no prefix)
-        source_date_epoch_val = env.get("SOURCE_DATE_EPOCH")
-        source_date_epoch: int | None = None
-        if source_date_epoch_val is not None:
-            try:
-                source_date_epoch = int(source_date_epoch_val)
-            except ValueError:
-                log.warning(
-                    "Invalid SOURCE_DATE_EPOCH value '%s', ignoring",
-                    source_date_epoch_val,
-                )
-
-        # Read ignore_vcs_roots - paths separated by os.pathsep
-        ignore_vcs_roots_raw = reader.read(
-            "IGNORE_VCS_ROOTS", split=os.pathsep, default=[]
-        )
-        ignore_vcs_roots = [os.path.normcase(p) for p in ignore_vcs_roots_raw]
+        if logger_tuple:
+            vcs_env = dc.replace(vcs_env, additional_loggers=logger_tuple)
 
         return cls(
-            debug=debug,
-            subprocess_timeout=subprocess_timeout,
-            hg_command=hg_command,
-            source_date_epoch=source_date_epoch,
-            ignore_vcs_roots=ignore_vcs_roots,
+            vcs_env=vcs_env,
             tool=tool,
-            env_reader=reader,
             dist_name=dist_name,
-            additional_loggers=logger_tuple,
         )
+
+    # ------------------------------------------------------------------
+    # Context manager
+    # ------------------------------------------------------------------
 
     def __enter__(self) -> GlobalOverrides:
         """Enter context: set this as the active override and configure logging."""
-        token = _active_overrides.set(self)
-        # Store the token so we can restore in __exit__
-        object.__setattr__(self, "_token", token)
-
-        # Automatically configure logging using the log_level property
-        from ._log import _configure_loggers
-
-        _configure_loggers(
-            log_level=self.log_level(), additional_loggers=list(self.additional_loggers)
-        )
-
+        self._token = _active_overrides.set(self)
+        self.vcs_env.configure_logging()
         return self
 
     def __exit__(self, *exc_info: Any) -> None:
         """Exit context: restore previous override state."""
-        token = getattr(self, "_token", None)
-        if token is not None:
-            _active_overrides.reset(token)
-            object.__delattr__(self, "_token")
+        if self._token is not None:
+            _active_overrides.reset(self._token)
+            self._token = None
+
+    # ------------------------------------------------------------------
+    # Utilities
+    # ------------------------------------------------------------------
 
     def log_level(self) -> int:
-        """Get the appropriate logging level from the debug setting.
-
-        Returns:
-            logging level constant (DEBUG, WARNING, etc.)
-        """
-        if self.debug is False:
-            return logging.WARNING
-        return self.debug
+        """Get the appropriate logging level from the debug setting."""
+        return self.vcs_env.log_level()
 
     def source_epoch_or_utc_now(self) -> datetime:
-        """Get datetime from SOURCE_DATE_EPOCH or current UTC time.
-
-        Returns:
-            datetime object in UTC timezone
-        """
-        from datetime import datetime, timezone
-
-        if self.source_date_epoch is not None:
-            return datetime.fromtimestamp(self.source_date_epoch, timezone.utc)
-        else:
-            return datetime.now(timezone.utc)
+        """Get datetime from SOURCE_DATE_EPOCH or current UTC time."""
+        return self.vcs_env.source_epoch_or_utc_now()
 
     @classmethod
     def from_active(cls, **changes: Any) -> GlobalOverrides:
-        """Create a new GlobalOverrides instance based on the currently active one.
+        """Create a new GlobalOverrides based on the currently active one.
 
-        Uses dataclasses.replace() to create a modified copy of the active overrides.
-        If no overrides are currently active, raises a RuntimeError.
+        Supports changing ``dist_name``, ``tool``, ``additional_loggers``,
+        and any ``VcsEnvironment`` field (``debug``, ``subprocess_timeout``,
+        ``hg_command``, ``source_date_epoch``, ``ignore_vcs_roots``).
 
-        Args:
-            **changes: Fields to update in the new instance
-
-        Returns:
-            New GlobalOverrides instance with the specified changes
+        If ``tool`` changes, a new ``VcsEnvironment`` is created by re-reading
+        from the stored env mapping with the new tool prefix.
 
         Raises:
             RuntimeError: If no GlobalOverrides context is currently active
-
-        Example:
-            >>> with GlobalOverrides.from_env("TEST"):
-            ...     # Create a modified version with different debug level
-            ...     with GlobalOverrides.from_active(debug=logging.INFO):
-            ...         # This context has INFO level instead
-            ...         pass
         """
-        from dataclasses import replace
+        import dataclasses as dc
+
+        from ._environment import VcsEnvironment
 
         active = _active_overrides.get()
         if active is None:
@@ -477,166 +410,56 @@ class GlobalOverrides:
                 "Use from_env() to create the initial context."
             )
 
-        # If dist_name or tool is being changed, create a new EnvReader with the updated settings
-        new_dist_name = changes.get("dist_name", active.dist_name)
-        new_tool = changes.get("tool", active.tool)
+        new_tool = changes.pop("tool", active.tool)
+        new_dist_name = changes.pop("dist_name", active.dist_name)
 
-        if ("dist_name" in changes and changes["dist_name"] != active.dist_name) or (
-            "tool" in changes and changes["tool"] != active.tool
-        ):
-            changes["env_reader"] = EnvReader(
-                tools_names=(new_tool, "VCS_VERSIONING"),
-                env=active.env_reader.env,
-                dist_name=new_dist_name,
+        if new_tool != active.tool:
+            vcs_env = VcsEnvironment.from_env(new_tool, env=active.vcs_env._env)
+        else:
+            vcs_env = active.vcs_env
+
+        # Remaining changes are VcsEnvironment field overrides (includes additional_loggers)
+        vcs_env_fields = {f.name for f in dc.fields(VcsEnvironment)}
+        env_changes = {k: v for k, v in changes.items() if k in vcs_env_fields}
+        if env_changes:
+            prior_overrides = vcs_env._explicit_overrides
+            vcs_env = dc.replace(
+                vcs_env,
+                **env_changes,
+                _explicit_overrides=prior_overrides | frozenset(env_changes),
             )
 
-        return replace(active, **changes)
+        return cls(
+            vcs_env=vcs_env,
+            tool=new_tool,
+            dist_name=new_dist_name,
+        )
 
     def export(self, target: MutableMapping[str, str] | MonkeyPatch) -> None:
         """Export overrides to environment variables.
 
         Can export to either a dict-like environment or a pytest monkeypatch fixture.
         This is useful for tests that need to propagate overrides to subprocesses.
-
-        Args:
-            target: Either a MutableMapping (e.g., dict, os.environ) or a pytest
-                   MonkeyPatch instance (or any object with a setenv method)
-
-        Example:
-            >>> # Export to environment dict
-            >>> overrides = GlobalOverrides.from_env("TEST", env={"TEST_DEBUG": "1"})
-            >>> env = {}
-            >>> overrides.export(env)
-            >>> print(env["TEST_DEBUG"])
-            1
-
-            >>> # Export via pytest monkeypatch
-            >>> def test_something(monkeypatch):
-            ...     overrides = GlobalOverrides.from_env("TEST")
-            ...     overrides.export(monkeypatch)
-            ...     # Environment is now set
         """
-
-        # Helper to set variable based on target type
-        def set_var(key: str, value: str) -> None:
-            if isinstance(target, MutableMapping):
-                target[key] = value
-            else:
-                target.setenv(key, value)
-
-        # Export SOURCE_DATE_EPOCH
-        if self.source_date_epoch is not None:
-            set_var("SOURCE_DATE_EPOCH", str(self.source_date_epoch))
-
-        # Export tool-prefixed variables
-        prefix = self.tool
-
-        # Export debug
-        if self.debug is False:
-            set_var(f"{prefix}_DEBUG", "0")
-        else:
-            set_var(f"{prefix}_DEBUG", str(self.debug))
-
-        # Export subprocess timeout
-        set_var(f"{prefix}_SUBPROCESS_TIMEOUT", str(self.subprocess_timeout))
-
-        # Export hg command
-        set_var(f"{prefix}_HG_COMMAND", self.hg_command)
+        self.vcs_env.export(target)
 
 
-# Thread-local storage for active global overrides
-_active_overrides: ContextVar[GlobalOverrides | None] = ContextVar(
-    "vcs_versioning_overrides", default=None
+# ContextVar for active global overrides (async/generator-safe)
+_active_overrides: contextvars.ContextVar[GlobalOverrides | None] = (
+    contextvars.ContextVar("vcs_versioning_overrides", default=None)
 )
 
-# Flag to track if we've already warned about auto-creating context
-_auto_create_warning_issued = False
 
+def get_active_vcs_env() -> _environment.VcsEnvironment | None:
+    """Return the active ``VcsEnvironment`` from ``GlobalOverrides``, if any.
 
-# Accessor functions for getting current override values
-
-
-def get_active_overrides() -> GlobalOverrides:
-    """Get the currently active GlobalOverrides instance.
-
-    If no context is active, creates one from the current environment
-    using SETUPTOOLS_SCM prefix for legacy compatibility.
-
-    Note: The auto-created instance reads from os.environ at call time,
-    so it will pick up environment changes (e.g., from pytest monkeypatch).
-
-    Returns:
-        GlobalOverrides instance
+    The returned object is a frozen dataclass — safe to hold across await
+    points or store on long-lived objects without risk of mutation.
     """
-    global _auto_create_warning_issued
-
-    overrides = _active_overrides.get()
-    if overrides is None:
-        # Auto-create context from environment for backwards compatibility
-        # Note: We create a fresh instance each time to pick up env changes
-        if not _auto_create_warning_issued:
-            warnings.warn(
-                "No GlobalOverrides context is active. "
-                "Auto-creating one with SETUPTOOLS_SCM prefix for backwards compatibility. "
-                "Consider using 'with GlobalOverrides.from_env(\"YOUR_TOOL\"):' explicitly.",
-                UserWarning,
-                stacklevel=2,
-            )
-            _auto_create_warning_issued = True
-        overrides = GlobalOverrides.from_env(
-            "SETUPTOOLS_SCM",
-            env=os.environ,
-            additional_loggers=logging.getLogger("setuptools_scm"),
-        )
-    return overrides
-
-
-def get_debug_level() -> int | Literal[False]:
-    """Get current debug level from active override context.
-
-    Returns:
-        logging level constant (DEBUG, INFO, WARNING, etc.) or False
-    """
-    return get_active_overrides().debug
-
-
-def get_subprocess_timeout() -> int:
-    """Get current subprocess timeout from active override context.
-
-    Returns:
-        Subprocess timeout in seconds
-    """
-    return get_active_overrides().subprocess_timeout
-
-
-def get_hg_command() -> str:
-    """Get current Mercurial command from active override context.
-
-    Returns:
-        Mercurial command string
-    """
-    return get_active_overrides().hg_command
-
-
-def get_source_date_epoch() -> int | None:
-    """Get SOURCE_DATE_EPOCH from active override context.
-
-    Returns:
-        Unix timestamp or None
-    """
-    return get_active_overrides().source_date_epoch
-
-
-def source_epoch_or_utc_now() -> datetime:
-    """Get datetime from SOURCE_DATE_EPOCH or current UTC time.
-
-    Uses the active GlobalOverrides context. If no SOURCE_DATE_EPOCH is set,
-    returns the current UTC time.
-
-    Returns:
-        datetime object in UTC timezone
-    """
-    return get_active_overrides().source_epoch_or_utc_now()
+    active = _active_overrides.get()
+    if active is None:
+        return None
+    return active.vcs_env
 
 
 class ensure_context(ContextDecorator):
@@ -683,7 +506,7 @@ class ensure_context(ContextDecorator):
     def __enter__(self) -> GlobalOverrides:
         """Enter context: create GlobalOverrides if none is active."""
         # Check if there's already an active context
-        existing = _active_overrides.get()
+        existing: GlobalOverrides | None = _active_overrides.get()
 
         if existing is not None:
             # Already have a context, just return it
@@ -710,10 +533,4 @@ __all__ = [
     "EnvReader",
     "GlobalOverrides",
     "ensure_context",
-    "get_active_overrides",
-    "get_debug_level",
-    "get_hg_command",
-    "get_source_date_epoch",
-    "get_subprocess_timeout",
-    "source_epoch_or_utc_now",
 ]

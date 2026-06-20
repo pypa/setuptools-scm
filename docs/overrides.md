@@ -11,6 +11,30 @@ environments where you need different behavior without modifying `pyproject.toml
 
 All environment variables support both `SETUPTOOLS_SCM_*` and `VCS_VERSIONING_*` prefixes. The `VCS_VERSIONING_*` prefix serves as a universal fallback that works across all tools using vcs-versioning.
 
+### Configuration Priority
+
+When building a `Configuration`, settings are merged in this priority order
+(highest wins):
+
+1. **Environment TOML overrides** -- `TOOL_OVERRIDES_FOR_DIST` / `TOOL_OVERRIDES`
+2. **Per-project overrides** -- `.config/python-vcs-versioning.toml` in the SCM root
+3. **Integrator keyword arguments** -- e.g. kwargs from `build_configuration_from_pyproject`
+4. **pyproject.toml section** -- `[tool.setuptools_scm]` or `[tool.vcs-versioning]`
+5. **Defaults** -- built-in vcs-versioning defaults
+
+### Version Resolution Pipeline
+
+Once configuration is built, the version is resolved in this order:
+
+1. **Pretend version** -- `TOOL_PRETEND_VERSION` / `_FOR_DIST` short-circuits everything
+2. **Workdir discovery** -- `discover_workdir(config)` tries:
+    - `config.parse` callback (legacy, deprecated) -- highest priority within discovery
+    - Registered `vcs_versioning.discover_workdir` entry-point factories (git, hg, etc.)
+    - Fallback workdirs (archival files, PKG-INFO, static fallback)
+3. **Legacy parse entry points** -- `setuptools_scm.parse_scm` / `parse_scm_fallback` (third-party only)
+4. **Metadata overrides** -- `TOOL_PRETEND_METADATA` / `_FOR_DIST` applied on top of resolved version
+5. **Format** -- `version_scheme` + `local_scheme` produce the final version string
+
 ## Version Detection Overrides
 
 ### Pretend Versions

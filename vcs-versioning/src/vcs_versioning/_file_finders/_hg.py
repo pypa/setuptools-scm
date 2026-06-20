@@ -28,10 +28,15 @@ def _hg_toplevel(path: str) -> str | None:
         return None
 
 
-def _hg_ls_files_and_dirs(toplevel: str) -> tuple[set[str], set[str]]:
+def _hg_ls_files_and_dirs(
+    toplevel: str,
+    *,
+    hg_command: str | None = None,
+    timeout: int | None = None,
+) -> tuple[set[str], set[str]]:
     hg_files: set[str] = set()
     hg_dirs = {toplevel}
-    res = run_hg(["files"], cwd=toplevel)
+    res = run_hg(["files"], cwd=toplevel, hg_command=hg_command, timeout=timeout)
     if res.returncode:
         return set(), set()
     for name in res.stdout.splitlines():

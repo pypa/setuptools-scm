@@ -11,19 +11,26 @@ from typing import TypeVar, overload
 
 from . import _types as _t
 
+log = logging.getLogger(__name__)
+
+_DEFAULT_SUBPROCESS_TIMEOUT = 40
+
 
 def _get_timeout(env: Mapping[str, str]) -> int:
-    """Get subprocess timeout from override context or environment.
+    """Read subprocess timeout from resolved runtime settings.
 
-    This function is kept for backward compatibility but now uses the
-    global override system.
+    Only used by standalone callers (``has_command``) that don't hold
+    a ``Configuration``.  The chained API passes timeout explicitly
+    via ``config.env.subprocess_timeout``.
+
+    *env* is accepted for API compatibility but ignored; the current
+    process environment is always read via :func:`resolve_runtime_env`.
     """
-    from .overrides import get_subprocess_timeout
+    del env
+    from ._environment import resolve_runtime_env
 
-    return get_subprocess_timeout()
+    return resolve_runtime_env().subprocess_timeout
 
-
-log = logging.getLogger(__name__)
 
 PARSE_RESULT = TypeVar("PARSE_RESULT")
 T = TypeVar("T")

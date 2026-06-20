@@ -7,15 +7,20 @@ import logging
 import os
 import re
 import warnings
+from collections.abc import Mapping
 from pathlib import Path
 from re import Pattern
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
     from ._backends import _git
+    from ._backends._scm_workdir import ScmWorkdir
+    from ._environment import VcsEnvironment
+    from ._fallback_workdir import FallbackWorkdir
 
 from . import _types as _t
 from ._overrides import read_toml_overrides
+from ._paths import resolve_paths
 from ._pyproject_reading import PyProjectData, get_args_for_pyproject, read_pyproject
 from ._version_cls import Version as _Version
 from ._version_cls import _validate_version_cls
@@ -113,33 +118,6 @@ class ParseFunction(Protocol):
     ) -> _t.SCMVERSION | None: ...
 
 
-def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
-    log.debug("check absolute root=%s relative_to=%s", root, relative_to)
-    if relative_to:
-        if (
-            os.path.isabs(root)
-            and os.path.isabs(relative_to)
-            and not os.path.commonpath([root, relative_to]) == root
-        ):
-            warnings.warn(
-                f"absolute root path '{root}' overrides relative_to '{relative_to}'",
-                stacklevel=2,
-            )
-        if os.path.isdir(relative_to):
-            warnings.warn(
-                "relative_to is expected to be a file,"
-                f" it's the directory {relative_to}\n"
-                "assuming the parent directory was passed",
-                stacklevel=2,
-            )
-            log.debug("dir %s", relative_to)
-            root = os.path.join(relative_to, root)
-        else:
-            log.debug("file %s", relative_to)
-            root = os.path.join(os.path.dirname(relative_to), root)
-    return os.path.abspath(root)
-
-
 @dataclasses.dataclass
 class GitConfiguration:
     """Git-specific configuration options"""
@@ -177,8 +155,10 @@ class ScmConfiguration:
     git: GitConfiguration = dataclasses.field(default_factory=GitConfiguration)
 
     @classmethod
-    def from_data(cls, data: dict[str, Any]) -> ScmConfiguration:
+    def from_data(cls, data: dict[str, Any] | None) -> ScmConfiguration:
         """Create ScmConfiguration from configuration data"""
+        if data is None:
+            return cls()
         scm_data = data.copy()
 
         # Handle git-specific configuration
@@ -212,6 +192,7 @@ class Configuration:
     dist_name: str | None = None
     version_cls: type[_VersionAlias] = _Version
     search_parent_directories: bool = False
+    project_path: str | None = None
 
     parent: _t.PathT | None = None
 
@@ -220,10 +201,27 @@ class Configuration:
         default_factory=lambda: ScmConfiguration()
     )
 
+    _env: VcsEnvironment | None = dataclasses.field(
+        default=None, repr=False, compare=False
+    )
+    """The :class:`~vcs_versioning._environment.VcsEnvironment` for this config.
+
+    Populated by ``VcsEnvironment.build_config()`` or lazily on first
+    ``env`` access (with a ``DeprecationWarning``).  ``None`` until then.
+    """
+
     # Deprecated fields (handled in __post_init__)
 
     def __post_init__(self, git_describe_command: _t.CMD_TYPE | None) -> None:
         self.tag_regex = _check_tag_regex(self.tag_regex)
+
+        self._resolved_paths = resolve_paths(
+            relative_to=self.relative_to,
+            root=self.root,
+            project_path=self.project_path,
+        )
+        if self.project_path is None and self._resolved_paths.project_path is not None:
+            self.project_path = self._resolved_paths.project_path
 
         # Handle deprecated git_describe_command
         # Check if it's a descriptor object (happens when no value is passed)
@@ -258,7 +256,35 @@ class Configuration:
 
     @property
     def absolute_root(self) -> str:
-        return _check_absolute_root(self.root, self.relative_to)
+        return str(self._resolved_paths.scm_probe_root)
+
+    @property
+    def env(self) -> VcsEnvironment:
+        """The :class:`~vcs_versioning._environment.VcsEnvironment` for this config.
+
+        Always non-None after first access — set by ``VcsEnvironment.build_config()``
+        or lazily resolved on first access (with a ``DeprecationWarning``).
+        """
+        if self._env is None:
+            warnings.warn(
+                "Configuration was created without VcsEnvironment. "
+                "Use VcsEnvironment.build_config() to create configurations "
+                "with runtime settings attached explicitly. "
+                "This will become an error in vcs-versioning 2.0.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            from ._environment import resolve_runtime_env
+
+            object.__setattr__(self, "_env", resolve_runtime_env())
+        assert self._env is not None
+        return self._env
+
+    def discover_workdir(self) -> ScmWorkdir | FallbackWorkdir | None:
+        """Discover the workdir for this configuration."""
+        from ._worktree_discovery import discover_workdir
+
+        return discover_workdir(self)
 
     @classmethod
     def from_file(
@@ -266,6 +292,9 @@ class Configuration:
         name: str | os.PathLike[str] = "pyproject.toml",
         dist_name: str | None = None,
         pyproject_data: PyProjectData | None = None,
+        *,
+        tool_names: tuple[str, ...] | None = None,
+        env: Mapping[str, str] | None = None,
         **kwargs: Any,
     ) -> Configuration:
         """
@@ -276,6 +305,8 @@ class Configuration:
         Parameters:
         - name: path to pyproject.toml
         - dist_name: name of the distribution
+        - tool_names: env-var prefix order for TOML overrides
+        - env: environment mapping for TOML overrides (default: os.environ)
         - **kwargs: additional keyword arguments to pass to the Configuration constructor
         """
 
@@ -283,8 +314,25 @@ class Configuration:
             pyproject_data = read_pyproject(Path(name))
         args = get_args_for_pyproject(pyproject_data, dist_name, kwargs)
 
-        args.update(read_toml_overrides(args["dist_name"]))
+        # Per-project overrides: lower priority than env overrides
+        from ._project_overrides import read_project_overrides
+
         relative_to = args.pop("relative_to", name)
+        resolved = resolve_paths(
+            relative_to=relative_to,
+            root=args.get("root", "."),
+            project_path=args.get("project_path"),
+        )
+        project_overrides = read_project_overrides(
+            scm_root=resolved.scm_probe_root,
+            project_path=resolved.project_path or "",
+        )
+        args.update(project_overrides)
+
+        # Env overrides: highest priority
+        args.update(
+            read_toml_overrides(args["dist_name"], tool_names=tool_names, env=env)
+        )
         return cls.from_data(relative_to=relative_to, data=args)
 
     @classmethod
@@ -301,9 +349,6 @@ class Configuration:
 
         # Handle nested SCM configuration
         scm_data = data.pop("scm", {})
-
-        # Handle nested SCM configuration
-
         scm_config = ScmConfiguration.from_data(scm_data)
         return cls(
             relative_to=relative_to,
@@ -311,3 +356,42 @@ class Configuration:
             scm=scm_config,
             **data,
         )
+
+
+_DEPRECATED_LEGACY_ATTRS: frozenset[str] = frozenset(
+    {
+        "absolute_root",
+        "relative_to",
+        "root",
+    }
+)
+
+
+@dataclasses.dataclass(frozen=True)
+class FrozenLegacyConfig:
+    """Read-only view of Configuration for backward-compatible code paths.
+
+    Wraps a ``Configuration`` and emits ``DeprecationWarning`` on first
+    attribute access for fields that are being migrated to new APIs.
+    Frozen dataclass -- all attributes are immutable.
+
+    Use ``FrozenLegacyConfig(config)`` in legacy code paths that receive
+    a config but should be guided toward the new explicit API chain.
+    """
+
+    _config: Configuration = dataclasses.field(repr=False)
+    _warned: set[str] = dataclasses.field(
+        default_factory=set, repr=False, compare=False, hash=False
+    )
+
+    def __getattr__(self, name: str) -> Any:
+        if name in _DEPRECATED_LEGACY_ATTRS and name not in self._warned:
+            self._warned.add(name)
+            warnings.warn(
+                f"Accessing '{name}' on legacy config view is deprecated. "
+                f"Use ResolvedPaths or the new explicit API chain instead. "
+                f"This will become an error in vcs-versioning 2.0.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        return getattr(self._config, name)

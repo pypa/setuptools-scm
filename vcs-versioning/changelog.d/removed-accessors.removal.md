@@ -1,0 +1,1 @@
+Remove module-level accessor functions from ``vcs_versioning.overrides``: ``get_active_overrides()``, ``get_debug_level()``, ``get_subprocess_timeout()``, ``get_hg_command()``, ``get_source_date_epoch()``, and ``source_epoch_or_utc_now()``. Use ``VcsEnvironment.from_env()`` or ``config.env`` instead. External consumer audit confirmed no downstream usage of these functions.

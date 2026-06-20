@@ -19,6 +19,8 @@ if TYPE_CHECKING:
     from setuptools import Distribution
     from vcs_versioning import Configuration
     from vcs_versioning import ScmVersion
+    from vcs_versioning._backends._scm_workdir import ScmWorkdir
+    from vcs_versioning._fallback_workdir import FallbackWorkdir
 
 log = logging.getLogger(__name__)
 
@@ -107,6 +109,10 @@ class VersionInferenceData:
 
     scm_version: ScmVersion | None
     """The ScmVersion object (may be None if from fallback/pretend)."""
+
+    workdir: ScmWorkdir | FallbackWorkdir | None = None
+    """The discovered workdir, if any.  Carried here so the egg_info mixin
+    can write metadata files and provide file-finder data without a ContextVar."""
 
 
 def get_version_inference_data(dist: Distribution) -> VersionInferenceData | None:

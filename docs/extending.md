@@ -42,6 +42,56 @@
       show_root_heading: yes
       heading_level: 4
 
+## Adding a workdir discovery factory
+
+The `vcs_versioning.discover_workdir` entry-point group controls how
+setuptools-scm finds VCS checkouts and fallback metadata. Each factory
+receives a directory path and the current `Configuration`, and returns
+a `ScmWorkdir`, `FallbackWorkdir`, or `None`.
+
+```python
+# mypackage/discovery.py
+from pathlib import Path
+from vcs_versioning._backends._scm_workdir import ScmWorkdir
+from vcs_versioning._fallback_workdir import FallbackWorkdir
+from vcs_versioning._config import Configuration
+
+
+def discover_my_scm(
+    path: Path, *, config: Configuration
+) -> ScmWorkdir | FallbackWorkdir | None:
+    if (path / ".myscm").is_dir():
+        return MyScmWorkdir(path=path, _config=config)
+    return None
+```
+
+Register it in your `pyproject.toml`:
+
+```toml
+[project.entry-points."vcs_versioning.discover_workdir"]
+myscm = "mypackage.discovery:discover_my_scm"
+```
+
+Discovery runs in two phases:
+
+1. **SCM phase** — probes the configured root (and parent directories when
+   `search_parent_directories` is enabled) for live VCS checkouts.
+   A `ScmWorkdir` result is returned immediately.
+2. **Fallback phase** — if no SCM workdir was found, probes the project
+   directory for fallback metadata (archival files, egg-info, etc.).
+
+SCM results always take priority over fallback results.
+
+### Built-in factories
+
+| Entry point | Package | Type |
+|---|---|---|
+| `hg-git` | vcs-versioning | SCM (Git + Mercurial) |
+| `archival` | vcs-versioning | Fallback (`.git_archival.txt`) |
+| `pkginfo` | setuptools-scm | Fallback (`PKG-INFO`) |
+| `egg-info` | setuptools-scm | Fallback (`*.egg-info/scm_version.json`) |
+
+
 ## Version number construction
 
 ### `setuptools_scm.version_scheme`

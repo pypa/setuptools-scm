@@ -21,29 +21,57 @@ log = logging.getLogger(__name__)
 _HG_PSEUDO_TAGS = frozenset({"tip", "qbase", "qtip", "qparent"})
 
 
+_DEFAULT_HG_COMMAND = "hg"
+
+
 def _get_hg_command() -> str:
-    """Get the hg command from override context or environment."""
-    from ..overrides import get_hg_command
+    """Read the hg command from resolved runtime settings.
 
-    return get_hg_command()
+    Only used by standalone callers (``has_command``, bare
+    ``from_potential_worktree`` probes, file finders) that don't hold a
+    ``Configuration``.  The chained API passes hg_command explicitly
+    via ``config.env.hg_command``.
+    """
+    from .._environment import resolve_runtime_env
+
+    return resolve_runtime_env().hg_command
 
 
-def run_hg(args: list[str], cwd: _t.PathT, **kwargs: Any) -> CompletedProcess:
+def run_hg(
+    args: list[str],
+    cwd: _t.PathT,
+    *,
+    hg_command: str | None = None,
+    timeout: int | None = None,
+    **kwargs: Any,
+) -> CompletedProcess:
     """Run mercurial command with the configured hg executable."""
-    cmd = [_get_hg_command(), *args]
-    return _run(cmd, cwd=cwd, **kwargs)
+    cmd = [hg_command or _get_hg_command(), *args]
+    return _run(cmd, cwd=cwd, timeout=timeout, **kwargs)
 
 
 class HgWorkdir(Workdir):
+    def run_hg(
+        self, args: list[str], *, check: bool = False, timeout: int | None = None
+    ) -> CompletedProcess:
+        return run_hg(
+            args,
+            self.path,
+            check=check,
+            timeout=timeout or self._subprocess_timeout,
+            hg_command=self._hg_command,
+        )
+
     @classmethod
-    def from_potential_worktree(cls, wd: _t.PathT) -> HgWorkdir | None:
-        res = run_hg(["root"], wd)
+    def from_potential_worktree(
+        cls, wd: _t.PathT, config: Configuration | None = None
+    ) -> HgWorkdir | None:
+        hg_cmd = config.env.hg_command if config is not None else None
+        timeout = config.env.subprocess_timeout if config is not None else None
+        res = run_hg(["root"], wd, hg_command=hg_cmd, timeout=timeout)
         if res.returncode:
             return None
-        return cls(Path(res.stdout))
-
-    def is_file_tracked(self, path: Path) -> bool:
-        return run_hg(["files", str(path)], cwd=self.path).returncode == 0
+        return cls(Path(res.stdout), _config=config)
 
     def get_meta(self, config: Configuration) -> ScmVersion | None:
         # TODO: support bookmarks and topics (but nowadays bookmarks are
@@ -89,9 +117,8 @@ class HgWorkdir(Workdir):
 
     def _get_branch_info(self) -> tuple[str, bool, str]:
         """Get branch name, dirty status, and dirty date."""
-        branch, dirty_str, dirty_date = run_hg(
+        branch, dirty_str, dirty_date = self.run_hg(
             ["id", "-T", "{branch}\n{if(dirty, 1, 0)}\n{date|shortdate}"],
-            cwd=self.path,
             check=True,
         ).stdout.split("\n")
         dirty = bool(int(dirty_str))
@@ -199,8 +226,9 @@ class HgWorkdir(Workdir):
             return None
 
     def hg_log(self, revset: str, template: str) -> str:
-        return run_hg(
-            ["log", "-r", revset, "-T", template], cwd=self.path, check=True
+        return self.run_hg(
+            ["log", "-r", revset, "-T", template],
+            check=True,
         ).stdout
 
     def get_latest_normalizable_tag(self) -> str | None:
@@ -233,6 +261,27 @@ class HgWorkdir(Workdir):
 
         return bool(self.hg_log(revset, "."))
 
+    def get_scm_version(self) -> ScmVersion | None:
+        """Obtain version metadata from this hg work directory."""
+        return self.get_meta(self.config)
+
+    def list_tracked_files(self, path: Path | str = "") -> list[str]:
+        """List files tracked by mercurial."""
+        from .._file_finders import scm_find_files
+        from .._file_finders._hg import _hg_ls_files_and_dirs
+
+        base = str(path) if path else str(self.path)
+        hg_files, hg_dirs = _hg_ls_files_and_dirs(
+            str(self.path),
+            hg_command=self._hg_command,
+            timeout=self._subprocess_timeout,
+        )
+        return scm_find_files(base, hg_files, hg_dirs)
+
+    def is_file_tracked(self, path: Path) -> bool:
+        res = self.run_hg(["files", str(path)])
+        return res.returncode == 0
+
     def get_dirty_tag_date(self) -> datetime.date | None:
         """Get the latest modification time of changed files in the working directory.
 
@@ -240,21 +289,18 @@ class HgWorkdir(Workdir):
         or None if no files are changed or if an error occurs.
         """
         try:
-            # Check if working directory is dirty first
-            res = run_hg(["id", "-T", "{dirty}"], cwd=self.path)
-            if res.returncode != 0 or not bool(res.stdout):
+            res = self.run_hg(["id", "-T", "{if(dirty, 1, 0)}"])
+            if res.returncode != 0 or not bool(int(res.stdout)):
                 return None
 
-            # Get list of changed files using hg status
-            status_res = run_hg(["status", "-m", "-a", "-r"], cwd=self.path)
+            status_res = self.run_hg(["status", "-m", "-a", "-r"])
             if status_res.returncode != 0:
                 return None
 
             changed_files = []
             for line in status_res.stdout.strip().split("\n"):
                 if line and len(line) > 2:
-                    # Format is "M filename" or "A filename" etc.
-                    filepath = line[2:]  # Skip status char and space
+                    filepath = line[2:]
                     changed_files.append(filepath)
 
             return get_latest_file_mtime(changed_files, self.path)
@@ -266,10 +312,12 @@ class HgWorkdir(Workdir):
 
 
 def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
-    hg_cmd = _get_hg_command()
+    hg_cmd = config.env.hg_command
     _require_command(hg_cmd)
     if os.path.exists(os.path.join(root, ".hg/git")):
-        res = run_hg(["path"], root)
+        res = run_hg(
+            ["path"], root, hg_command=hg_cmd, timeout=config.env.subprocess_timeout
+        )
         if not res.returncode:
             for line in res.stdout.split("\n"):
                 if line.startswith("default ="):
@@ -278,11 +326,13 @@ def parse(root: _t.PathT, config: Configuration) -> ScmVersion | None:
                         from ._git import _git_parse_inner
                         from ._hg_git import GitWorkdirHgClient
 
-                        wd_hggit = GitWorkdirHgClient.from_potential_worktree(root)
+                        wd_hggit = GitWorkdirHgClient.from_potential_worktree(
+                            root, config
+                        )
                         if wd_hggit:
                             return _git_parse_inner(config, wd_hggit)
 
-    wd = HgWorkdir.from_potential_worktree(config.absolute_root)
+    wd = HgWorkdir.from_potential_worktree(config.absolute_root, config)
 
     if wd is None:
         return None

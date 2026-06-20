@@ -26,6 +26,7 @@ from .._scm_version import ScmVersion, meta, tag_to_version
 from ._scm_workdir import Workdir, get_latest_file_mtime
 
 if TYPE_CHECKING:
+    from .._protocols import DescribeCapable
     from . import _hg_git as hg_git
 log = logging.getLogger(__name__)
 
@@ -80,10 +81,26 @@ def run_git(
 class GitWorkdir(Workdir):
     """experimental, may change at any time"""
 
+    def run_git(
+        self,
+        args: Sequence[str | os.PathLike[str]],
+        *,
+        check: bool = False,
+        timeout: int | None = None,
+    ) -> _CompletedProcess:
+        return run_git(
+            args, self.path, check=check, timeout=timeout or self._subprocess_timeout
+        )
+
     @classmethod
-    def from_potential_worktree(cls, wd: _t.PathT) -> GitWorkdir | None:
+    def from_potential_worktree(
+        cls, wd: _t.PathT, config: Configuration | None = None
+    ) -> GitWorkdir | None:
         wd = Path(wd).resolve()
-        real_wd = run_git(["rev-parse", "--show-prefix"], wd).parse_success(parse=str)
+        timeout = config.env.subprocess_timeout if config is not None else None
+        real_wd = run_git(
+            ["rev-parse", "--show-prefix"], wd, timeout=timeout
+        ).parse_success(parse=str)
         if real_wd is None:
             return None
         else:
@@ -100,32 +117,26 @@ class GitWorkdir(Workdir):
         if not samefile(real_wd, wd):
             return None
 
-        return cls(Path(real_wd))
+        result = cls(Path(real_wd))
+        result._config = config
+        return result
 
     def is_dirty(self) -> bool:
-        return run_git(
-            ["status", "--porcelain", "--untracked-files=no"], self.path
+        return self.run_git(
+            ["status", "--porcelain", "--untracked-files=no"],
         ).parse_success(
             parse=bool,
             default=False,
         )
 
-    def is_file_tracked(self, path: Path) -> bool:
-        return (
-            run_git(["ls-files", "--error-unmatch", str(path)], self.path).returncode
-            == 0
-        )
-
     def get_branch(self) -> str | None:
-        return run_git(
+        return self.run_git(
             ["rev-parse", "--abbrev-ref", "HEAD"],
-            self.path,
         ).parse_success(
             parse=str,
             error_msg="branch err (abbrev-err)",
-        ) or run_git(
+        ) or self.run_git(
             ["symbolic-ref", "--short", "HEAD"],
-            self.path,
         ).parse_success(
             parse=str,
             error_msg="branch err (symbolic-ref)",
@@ -146,13 +157,12 @@ class GitWorkdir(Workdir):
             log.debug("dt utc: %s", dt_utc)
             return dt_utc
 
-        res = run_git(
+        res = self.run_git(
             [
                 *("-c", "log.showSignature=false"),
                 *("log", "-n", "1", "HEAD"),
                 "--format=%cI",
             ],
-            self.path,
         )
         return res.parse_success(
             parse=parse_timestamp,
@@ -170,7 +180,9 @@ class GitWorkdir(Workdir):
 
         try:
             # Get list of changed files
-            changed_files_res = run_git(["diff", "--name-only"], self.path)
+            changed_files_res = self.run_git(
+                ["diff", "--name-only"],
+            )
             if changed_files_res.returncode != 0:
                 return None
 
@@ -186,36 +198,59 @@ class GitWorkdir(Workdir):
 
     def head_is_exact_tag(self) -> bool:
         """True when HEAD points exactly at a tag (including lightweight tags)."""
-        res = run_git(
+        res = self.run_git(
             ["describe", "--exact-match", "--tags", "HEAD"],
-            self.path,
         )
         return res.returncode == 0
 
     def fetch_shallow(self) -> None:
         try:
-            run_git(
+            self.run_git(
                 ["fetch", "--unshallow", "--filter=blob:none"],
-                self.path,
                 check=True,
                 timeout=240,
             )
         except CalledProcessError:
-            run_git(["fetch", "--unshallow"], self.path, check=True, timeout=240)
+            self.run_git(["fetch", "--unshallow"], check=True, timeout=240)
 
     def node(self) -> str | None:
-        return run_git(
-            ["rev-parse", "--verify", "--quiet", "HEAD"], self.path
+        return self.run_git(
+            ["rev-parse", "--verify", "--quiet", "HEAD"],
         ).parse_success(
             parse=str,
         )
 
     def count_all_nodes(self) -> int:
-        res = run_git(["rev-list", "HEAD"], self.path)
+        res = self.run_git(["rev-list", "HEAD"])
         return res.stdout.count("\n") + 1
 
     def default_describe(self) -> _CompletedProcess:
-        return run_git(DEFAULT_DESCRIBE[1:], self.path)
+        return self.run_git(DEFAULT_DESCRIBE[1:])
+
+    def get_scm_version(self) -> ScmVersion | None:
+        """Obtain version metadata from this git work directory."""
+        config = self.config
+        effective_pre_parse = _GIT_PRE_PARSE_FUNCTIONS.get(
+            config.scm.git.pre_parse, warn_on_shallow
+        )
+        return _git_parse_inner(config, self, pre_parse=effective_pre_parse)
+
+    def list_tracked_files(self, path: Path | str = "") -> list[str]:
+        """List files tracked by git, honoring export-ignore."""
+        from .._file_finders import scm_find_files
+        from .._file_finders._git import _git_ls_files_and_dirs
+
+        base = str(path) if path else str(self.path)
+        git_files, git_dirs = _git_ls_files_and_dirs(
+            str(self.path), timeout=self._subprocess_timeout
+        )
+        return scm_find_files(base, git_files, git_dirs)
+
+    def is_file_tracked(self, path: Path) -> bool:
+        res = self.run_git(
+            ["ls-files", "--error-unmatch", str(path)],
+        )
+        return res.returncode == 0
 
 
 def warn_on_shallow(wd: GitWorkdir) -> None:
@@ -255,7 +290,7 @@ def fail_on_missing_submodules(wd: GitWorkdir) -> None:
         return
 
     # Get submodule status - lines starting with '-' indicate uninitialized submodules
-    status_result = run_git(["submodule", "status"], wd.path)
+    status_result = wd.run_git(["submodule", "status"])
     if status_result.returncode != 0:
         # Command failed, might not be in a git repo or other error
         log.debug("Failed to check submodule status: %s", status_result.stderr)
@@ -306,16 +341,16 @@ def get_working_directory(config: Configuration, root: _t.PathT) -> GitWorkdir |
     """
 
     if config.parent:  # todo broken
-        return GitWorkdir.from_potential_worktree(config.parent)
+        return GitWorkdir.from_potential_worktree(config.parent, config)
 
     for potential_root in discover.walk_potential_roots(
         root, search_parents=config.search_parent_directories
     ):
-        potential_wd = GitWorkdir.from_potential_worktree(potential_root)
+        potential_wd = GitWorkdir.from_potential_worktree(potential_root, config)
         if potential_wd is not None:
             return potential_wd
 
-    return GitWorkdir.from_potential_worktree(root)
+    return GitWorkdir.from_potential_worktree(root, config)
 
 
 def parse(
@@ -348,7 +383,7 @@ def parse(
 
 
 def version_from_describe(
-    wd: GitWorkdir | hg_git.GitWorkdirHgClient,
+    wd: DescribeCapable,
     config: Configuration,
     describe_command: _t.CMD_TYPE | None,
 ) -> ScmVersion | None:
@@ -359,10 +394,11 @@ def version_from_describe(
         if isinstance(describe_command, str):
             describe_command = shlex.split(describe_command)
             # todo: figure how to ensure git with gitdir gets correctly invoked
-        if describe_command[0] == "git":
-            describe_res = run_git(describe_command[1:], wd.path)
+        cmd_args = [str(a) for a in describe_command]
+        if cmd_args[0] == "git":
+            describe_res = wd.run_git(cmd_args[1:])
         else:
-            describe_res = _run(describe_command, wd.path)
+            describe_res = _run(cmd_args, wd.path, timeout=wd._subprocess_timeout)
     else:
         describe_res = wd.default_describe()
 
@@ -376,9 +412,10 @@ def version_from_describe(
 def _git_parse_inner(
     config: Configuration,
     wd: GitWorkdir | hg_git.GitWorkdirHgClient,
-    pre_parse: (Callable[[GitWorkdir | hg_git.GitWorkdirHgClient], None]) | None = None,
+    pre_parse: Callable[[GitWorkdir | hg_git.GitWorkdirHgClient], None] | None = None,
     describe_command: _t.CMD_TYPE | None = None,
 ) -> ScmVersion:
+    # wd satisfies both DescribeCapable and WorkdirState protocols.
     if pre_parse:
         pre_parse(wd)
 

@@ -52,6 +52,9 @@ def get_version(
     search_parent_directories: bool = False,
     scm: dict[str, Any] | None = None,
 ) -> str:
+    from vcs_versioning._environment import VcsEnvironment
+
+    env = VcsEnvironment.from_env("SETUPTOOLS_SCM")
     with ensure_context("SETUPTOOLS_SCM", additional_loggers=_setuptools_scm_logger):
         return _get_version_public(
             root=root,
@@ -73,4 +76,5 @@ def get_version(
             normalize=normalize,
             search_parent_directories=search_parent_directories,
             scm=scm,
+            _env=env,
         )

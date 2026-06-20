@@ -15,6 +15,8 @@ from vcs_versioning.overrides import ensure_context
 
 from .build_py import ScmVersionFileMixin
 from .build_py import build_py as scm_build_py
+from .egg_info import ScmEggInfoMixin
+from .egg_info import egg_info as scm_egg_info
 from .pyproject_reading import PyProjectData
 from .pyproject_reading import read_pyproject
 from .setup_cfg import SetuptoolsBasicData
@@ -58,6 +60,38 @@ def _register_build_py_command(dist: setuptools.Distribution) -> None:
 
     dist.cmdclass["build_py"] = wrapped
     log.debug("Wrapped project build_py with setuptools_scm version-file mixin")
+
+
+def _register_egg_info_command(dist: setuptools.Distribution) -> None:
+    """Register our custom egg_info command for workdir-based file finding.
+
+    This ensures SOURCES.txt is generated from the discovered workdir
+    (bypassing walk_revctrl) and SCM metadata files are written into
+    the egg-info directory.
+    """
+    if not dist.cmdclass:
+        dist.cmdclass = {}
+
+    existing_egg_info = dist.cmdclass.get("egg_info")
+
+    if existing_egg_info is None:
+        dist.cmdclass["egg_info"] = scm_egg_info
+        log.debug("Registered setuptools_scm egg_info command")
+        return
+
+    project_egg_info = cast(type[setuptools.Command], existing_egg_info)
+
+    if issubclass(project_egg_info, ScmEggInfoMixin):
+        return
+
+    wrapped = type(
+        "_SetuptoolsScmWrappedEggInfo",
+        (ScmEggInfoMixin, project_egg_info),
+        {},
+    )
+
+    dist.cmdclass["egg_info"] = wrapped
+    log.debug("Wrapped project egg_info with setuptools_scm egg-info mixin")
 
 
 def _log_hookstart(hook: str, dist: setuptools.Distribution) -> None:
@@ -141,8 +175,8 @@ def version_keyword(
         )
         result.apply(dist)
 
-    # Register custom build_py to write version files to build directory
     _register_build_py_command(dist)
+    _register_egg_info_command(dist)
 
 
 @ensure_context("SETUPTOOLS_SCM", additional_loggers=_setuptools_scm_logger)
@@ -201,5 +235,5 @@ def _infer_version_impl(
     )
     result.apply(dist)
 
-    # Register custom build_py to write version files to build directory
     _register_build_py_command(dist)
+    _register_egg_info_command(dist)

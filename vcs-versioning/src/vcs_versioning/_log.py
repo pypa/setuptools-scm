@@ -28,25 +28,13 @@ def _get_all_scm_loggers(
 ) -> list[logging.Logger]:
     """Get all SCM-related loggers that need configuration.
 
-    Always configures vcs_versioning logger.
-    If additional_loggers is provided, also configures those loggers.
-    If not provided, tries to get them from active GlobalOverrides context.
+    Always includes the ``vcs_versioning`` logger.
+    If *additional_loggers* is provided, those are appended.
     """
     loggers = [logging.getLogger("vcs_versioning")]
 
     if additional_loggers is not None:
         loggers.extend(additional_loggers)
-    else:
-        # Try to get additional loggers from active overrides context
-        try:
-            from .overrides import _active_overrides
-
-            overrides = _active_overrides.get()
-            if overrides is not None:
-                loggers.extend(overrides.additional_loggers)
-        except ImportError:
-            # During early initialization, overrides module might not be available yet
-            pass
 
     return loggers
 
@@ -59,8 +47,8 @@ def _configure_loggers(
 ) -> None:
     """Internal function to configure SCM-related loggers.
 
-    This is called automatically by GlobalOverrides.__enter__().
-    Do not call directly - use GlobalOverrides context manager instead.
+    This is called by ``VcsEnvironment.configure_logging()`` and
+    ``GlobalOverrides.__enter__()``.  Do not call directly.
 
     Args:
         log_level: Logging level constant from logging module

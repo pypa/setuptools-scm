@@ -4,6 +4,7 @@ import logging
 import os
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 from typing import Any
 from typing import Protocol
 from typing import TypeAlias
@@ -11,26 +12,38 @@ from typing import TypeAlias
 from setuptools import Distribution
 from vcs_versioning._pyproject_reading import PyProjectData
 
+if TYPE_CHECKING:
+    from vcs_versioning import _config
+
 from .build_py import VersionInferenceData
 from .build_py import set_version_inference_data
 from .pyproject_reading import should_infer
 
 log = logging.getLogger(__name__)
 
-# Environment variable to control writing version files to the source tree
-# at inference time. By default, version files ARE written to source.
-# Set to "0"/"false"/"no" to disable (e.g., for read-only source trees).
-WRITE_TO_SOURCE_ENV_VAR = "SETUPTOOLS_SCM_WRITE_TO_SOURCE"
+_FALSY_VALUES = frozenset(("0", "false", "no"))
 
 
-def _should_write_to_source() -> bool:
+def _should_write_to_source(config: _config.Configuration) -> bool:
     """Check if version files should be written to source at inference time.
 
-    Returns True by default. Returns False only if SETUPTOOLS_SCM_WRITE_TO_SOURCE
-    is explicitly set to a falsy value ("0", "false", "no").
+    Uses the config's environment (tool names + dist name) to read
+    ``WRITE_TO_SOURCE`` -- e.g. ``SETUPTOOLS_SCM_WRITE_TO_SOURCE``.
+
+    Returns True by default.  Returns False only when the resolved value
+    is a falsy string (``"0"``, ``"false"``, ``"no"``).
     """
-    value = os.environ.get(WRITE_TO_SOURCE_ENV_VAR, "").lower()
-    return value not in ("0", "false", "no")
+    from vcs_versioning.overrides import EnvReader
+
+    reader = EnvReader(
+        tools_names=config.env.tool_names,
+        env=os.environ,
+        dist_name=config.dist_name,
+    )
+    value = reader.read("WRITE_TO_SOURCE")
+    if value is None:
+        return True
+    return value.lower() not in _FALSY_VALUES
 
 
 def infer_version_with_config(
@@ -40,35 +53,55 @@ def infer_version_with_config(
 ) -> VersionInferenceData:
     """Infer version and return VersionInferenceData.
 
-    By default, version files are written to the source tree during inference.
-    This ensures they are available for editable installs and development workflows.
+    Runs the version pipeline inline:
+    ``Configuration -> discover_workdir -> get_scm_version -> format_version``
 
-    Version files are also written to the build directory during build_py
-    (for wheel builds and strict editable installs).
+    The discovered workdir is stored in the returned data so that downstream
+    consumers (egg_info mixin, file finders) can access it without a ContextVar.
 
     Set SETUPTOOLS_SCM_WRITE_TO_SOURCE=0 to disable writing to the source tree
     (e.g., for read-only source directories like Bazel builds).
 
     Returns:
-        VersionInferenceData containing version string, Configuration, and ScmVersion
+        VersionInferenceData containing version, Configuration, ScmVersion, and workdir
     """
-    from vcs_versioning._config import Configuration
+    from vcs_versioning._environment import VcsEnvironment
     from vcs_versioning._get_version_impl import _version_missing
-    from vcs_versioning._get_version_impl import parse_version
     from vcs_versioning._get_version_impl import write_version_files
+    from vcs_versioning._legacy_parse import has_legacy_parse_eps
+    from vcs_versioning._legacy_parse import parse_fallback_version
+    from vcs_versioning._legacy_parse import parse_scm_version
+    from vcs_versioning._overrides import _apply_metadata_overrides
+    from vcs_versioning._overrides import _read_pretended_version_for
     from vcs_versioning._version_schemes import format_version
 
-    config = Configuration.from_file(
+    env = VcsEnvironment.from_env("SETUPTOOLS_SCM")
+    config = env.build_config(
         dist_name=dist_name, pyproject_data=pyproject_data, **(overrides or {})
     )
 
-    scm_version = parse_version(config)
-    if scm_version is None:
-        _version_missing(config)
+    workdir = None
+    scm_version: Any = None
 
+    pretended = _read_pretended_version_for(config)
+    if pretended is not None:
+        scm_version = pretended
+    else:
+        workdir = config.discover_workdir()
+        if workdir is not None:
+            scm_version = workdir.get_scm_version()
+
+        if scm_version is None and has_legacy_parse_eps():
+            scm_version = parse_scm_version(config) or parse_fallback_version(config)
+
+    if scm_version is None:
+        _version_missing(config, tool=env.tool_names[0])
+
+    scm_version = _apply_metadata_overrides(scm_version, config)
+    assert scm_version is not None
     version_string = format_version(scm_version)
 
-    if _should_write_to_source():
+    if _should_write_to_source(config):
         try:
             write_version_files(config, version=version_string, scm_version=scm_version)
         except OSError as e:
@@ -82,6 +115,7 @@ def infer_version_with_config(
         version=version_string,
         config=config,
         scm_version=scm_version,
+        workdir=workdir,
     )
 
 

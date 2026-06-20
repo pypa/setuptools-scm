@@ -1575,3 +1575,98 @@ def test_version_file_contains_commit_node_in_editable_strict(
     )
     aux_content = aux_version_file.read_text()
     assert short_node in aux_content
+
+
+def _sdist_names(wd: WorkDir) -> list[str]:
+    """Build an sdist in *wd* and return the list of archive member names."""
+    import shutil
+    import tarfile
+
+    dist_dir = wd.cwd / "dist"
+    if dist_dir.exists():
+        shutil.rmtree(dist_dir)
+    egg_info_dirs = list(wd.cwd.glob("*.egg-info"))
+    for d in egg_info_dirs:
+        shutil.rmtree(d)
+
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--sdist", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert build_result.returncode == 0, (
+        f"sdist build failed:\nstdout: {build_result.stdout}\n"
+        f"stderr: {build_result.stderr}"
+    )
+
+    sdists = list(dist_dir.glob("*.tar.gz"))
+    assert len(sdists) == 1, f"Expected 1 sdist, found {len(sdists)}"
+
+    with tarfile.open(sdists[0], "r:gz") as tar:
+        return tar.getnames()
+
+
+def test_manifest_in_excludes_scm_tracked_files(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """MANIFEST.in exclusions must be honoured even when the egg_info mixin
+    supplies tracked files directly (bypassing walk_revctrl).
+
+    First verifies that without the exclusion the file IS included,
+    then adds ``exclude secret.txt`` and verifies the file is gone.
+    """
+    monkeypatch.chdir(wd.cwd)
+
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "test-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+        """),
+    )
+
+    pkg_dir = wd.cwd / "test_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("")
+
+    wd.write("secret.txt", "do-not-ship")
+
+    # Empty MANIFEST.in -- no exclusions
+    wd.write("MANIFEST.in", "")
+
+    wd(wd.add_command)
+    wd.commit()
+    wd("git tag v1.0.0")
+
+    # -- Phase 1: empty MANIFEST.in → file is included ----------------------
+    names = _sdist_names(wd)
+
+    assert any("secret.txt" in n for n in names), (
+        f"secret.txt should be included when MANIFEST.in is empty: {names}"
+    )
+    assert any("test_pkg/__init__.py" in n for n in names), (
+        f"test_pkg/__init__.py should be in sdist: {names}"
+    )
+
+    # -- Phase 2: MANIFEST.in excludes the file → gone ----------------------
+    wd.write("MANIFEST.in", "exclude secret.txt\n")
+    wd(wd.add_command)
+    wd.commit()
+
+    names = _sdist_names(wd)
+
+    assert not any("secret.txt" in n for n in names), (
+        f"secret.txt should have been excluded by MANIFEST.in: {names}"
+    )
+    assert any("test_pkg/__init__.py" in n for n in names), (
+        f"test_pkg/__init__.py should still be in sdist: {names}"
+    )

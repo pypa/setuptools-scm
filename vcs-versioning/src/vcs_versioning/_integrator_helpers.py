@@ -96,7 +96,8 @@ def build_configuration_from_pyproject_internal(
         config_data.update(integrator_overrides)
 
     # Step 4: Apply environment TOML overrides (highest priority)
-    env_overrides = read_toml_overrides(actual_dist_name)
+    tool_names = (pyproject_data.tool_name.upper().replace("-", "_"),)
+    env_overrides = read_toml_overrides(actual_dist_name, tool_names=tool_names)
     if env_overrides:
         log.debug("Applying environment TOML overrides: %s", list(env_overrides.keys()))
         config_data.update(env_overrides)

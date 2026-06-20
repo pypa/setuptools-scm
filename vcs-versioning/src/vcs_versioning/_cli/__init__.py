@@ -43,11 +43,13 @@ def _get_version_for_cli(config: Configuration, opts: CliNamespace) -> str:
 def main(
     args: list[str] | None = None, *, _given_pyproject_data: PyProjectData | None = None
 ) -> int:
+    from .._environment import VcsEnvironment
     from ..overrides import GlobalOverrides
 
     # Apply global overrides for the entire CLI execution
     # Logging is automatically configured when entering the context
     with GlobalOverrides.from_env("SETUPTOOLS_SCM"):
+        env = VcsEnvironment.from_env("SETUPTOOLS_SCM")
         parser = get_cli_parser("python -m vcs_versioning")
         opts = parser.parse_args(args, namespace=CliNamespace())
         inferred_root: str = opts.root or "."
@@ -55,8 +57,8 @@ def main(
         pyproject = opts.config or _find_pyproject(inferred_root)
 
         try:
-            config = Configuration.from_file(
-                pyproject,
+            config = env.build_config(
+                name=pyproject,
                 root=(os.path.abspath(opts.root) if opts.root is not None else None),
                 pyproject_data=_given_pyproject_data,
             )
@@ -68,7 +70,7 @@ def main(
                 f" Reason: {ex}.",
                 file=sys.stderr,
             )
-            config = Configuration(root=inferred_root)
+            config = Configuration(root=inferred_root, _env=env)
 
         version = _get_version_for_cli(config, opts)
         return command(opts, version, config)
