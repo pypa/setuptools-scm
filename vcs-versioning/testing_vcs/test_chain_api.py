@@ -7,6 +7,7 @@ No context managers are needed.
 from __future__ import annotations
 
 import dataclasses
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -262,7 +263,7 @@ class TestResolveRuntimeEnv:
     ) -> None:
         monkeypatch.setenv("SETUPTOOLS_SCM_IGNORE_VCS_ROOTS", "/tmp/ignore-me")
         env = resolve_runtime_env()
-        assert "/tmp/ignore-me" in env.ignore_vcs_roots
+        assert os.path.normcase("/tmp/ignore-me") in env.ignore_vcs_roots
 
 
 class TestFrozenLegacyConfig:
