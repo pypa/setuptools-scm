@@ -15,9 +15,12 @@ import logging
 from dataclasses import asdict, dataclass
 from datetime import date
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ._version_fields import VersionFields
+
+if TYPE_CHECKING:
+    from ._scm_version import ScmVersion
 
 log = logging.getLogger(__name__)
 
@@ -93,7 +96,7 @@ def read_scm_file_list(source_dir: Path) -> list[str] | None:
 
 
 def scm_version_data_from_scm_version(
-    scm_version: VersionFields,
+    scm_version: ScmVersion | VersionFields,
 ) -> ScmVersionData:
     """Build ``ScmVersionData`` from a live ``ScmVersion`` object."""
     raw_date = scm_version.node_date
