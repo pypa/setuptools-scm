@@ -100,11 +100,17 @@ def scm_version_data_from_scm_version(
 ) -> ScmVersionData:
     """Build ``ScmVersionData`` from a live ``ScmVersion`` object."""
     raw_date = scm_version.node_date
+    if isinstance(raw_date, date):
+        node_date_str: str | None = raw_date.isoformat()
+    elif isinstance(raw_date, str):
+        node_date_str = raw_date
+    else:
+        node_date_str = None
     return ScmVersionData(
         tag=str(scm_version.tag),
         distance=scm_version.distance,
         node=scm_version.node,
         dirty=scm_version.dirty,
         branch=scm_version.branch,
-        node_date=raw_date.isoformat() if isinstance(raw_date, date) else None,
+        node_date=node_date_str,
     )
