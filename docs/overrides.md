@@ -17,9 +17,10 @@ When building a `Configuration`, settings are merged in this priority order
 (highest wins):
 
 1. **Environment TOML overrides** -- `TOOL_OVERRIDES_FOR_DIST` / `TOOL_OVERRIDES`
-2. **Integrator keyword arguments** -- e.g. kwargs from `build_configuration_from_pyproject`
-3. **pyproject.toml section** -- `[tool.setuptools_scm]` or `[tool.vcs-versioning]`
-4. **Defaults** -- built-in vcs-versioning defaults
+2. **Per-project overrides** -- `.config/python-vcs-versioning.toml` in the SCM root
+3. **Integrator keyword arguments** -- e.g. kwargs from `build_configuration_from_pyproject`
+4. **pyproject.toml section** -- `[tool.setuptools_scm]` or `[tool.vcs-versioning]`
+5. **Defaults** -- built-in vcs-versioning defaults
 
 ### Version Resolution Pipeline
 
