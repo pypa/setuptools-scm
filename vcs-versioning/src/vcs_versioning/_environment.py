@@ -166,6 +166,7 @@ class VcsEnvironment:
         cls,
         *tool_names: str,
         env: Mapping[str, str] | None = None,
+        dist_name: str | None = None,
     ) -> VcsEnvironment:
         """Read runtime settings from environment variables.
 
@@ -179,7 +180,7 @@ class VcsEnvironment:
 
         from .overrides import EnvReader
 
-        reader = EnvReader(tools_names=all_names, env=env, dist_name=None)
+        reader = EnvReader(tools_names=all_names, env=env, dist_name=dist_name)
 
         timeout_val = reader.read("SUBPROCESS_TIMEOUT")
         subprocess_timeout = _DEFAULT_SUBPROCESS_TIMEOUT

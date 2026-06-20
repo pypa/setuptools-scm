@@ -338,7 +338,7 @@ class GlobalOverrides:
 
         from ._environment import VcsEnvironment
 
-        vcs_env = VcsEnvironment.from_env(tool, env=env)
+        vcs_env = VcsEnvironment.from_env(tool, env=env, dist_name=dist_name)
 
         logger_tuple: tuple[logging.Logger, ...]
         if isinstance(additional_loggers, logging.Logger):
