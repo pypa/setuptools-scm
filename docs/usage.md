@@ -444,14 +444,48 @@ v1.0.0+20240115
 3. **Git compatibility**: Works well with Git's tag sorting and filtering
 4. **Tool compatibility**: Many other tools expect version tags to have a "v" prefix
 
-### Custom Tag Patterns
+### Filtering Non-Version Tags
 
-If you need different tag patterns, you can customize the tag regex:
+If your repository uses tags for multiple purposes (e.g. event markers,
+deployment tags), non-version tags can interfere with version detection.
+Use `tag.strict` to require tags to look like dotted versions:
 
 ```toml title="pyproject.toml"
-[tool.setuptools_scm]
-tag_regex = "^release-(?P<version>[0-9]+\\.[0-9]+\\.[0-9]+)$"
+[tool.setuptools_scm.tag]
+strict = true  # only consider tags with at least one dot (e.g. v1.0, 2025.06.03)
 ```
+
+### Monorepo / Multi-Package Tag Prefixes
+
+For repositories containing multiple packages, use `tag.prefix` to scope
+version tags to a specific package:
+
+```toml title="hatchling/pyproject.toml"
+[tool.setuptools_scm.tag]
+prefix = "hatchling-v"  # matches hatchling-v1.0.0, ignores hatch-v2.0.0
+```
+
+```toml title="hatch/pyproject.toml"
+[tool.setuptools_scm.tag]
+prefix = "hatch-v"  # matches hatch-v2.0.0, ignores hatchling-v1.0.0
+```
+
+`tag.prefix` and `tag.strict` compose -- see the
+[Tag Matching Configuration](config.md#tag-matching-configuration) reference for details.
+
+### Custom Tag Patterns
+
+For advanced use cases, you can customize the tag regex directly:
+
+```toml title="pyproject.toml"
+[tool.setuptools_scm.tag]
+regex = '^release-(?P<version>[0-9]+\.[0-9]+\.[0-9]+)$'
+```
+
+!!! tip
+
+    Most use cases are better served by `tag.prefix` and `tag.strict` than
+    by writing a custom regex.
 
 ## Node ID Prefixes
 
