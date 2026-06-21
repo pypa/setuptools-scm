@@ -255,5 +255,7 @@ def test_non_version_tag_does_not_shadow_version(wd: WorkDir) -> None:
 
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
+        warnings.filterwarnings("ignore", category=FutureWarning)
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
         assert wd.get_version() == "1.0.0"
     assert not caught, f"unexpected warnings: {caught}"

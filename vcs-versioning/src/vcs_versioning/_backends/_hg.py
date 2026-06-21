@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -169,9 +170,14 @@ class HgWorkdir(Workdir):
 
         Pre-filters with tag_regex so non-version tags are silently skipped
         without emitting warnings from tag_to_version().
+        Strips tag.prefix before matching when configured.
         """
+        tag_prefix = config.tag.prefix
         for tag_str in tags:
-            if not config.tag_regex.match(tag_str):
+            check_str = tag_str
+            if tag_prefix and tag_str.startswith(tag_prefix):
+                check_str = tag_str[len(tag_prefix) :]
+            if not config.tag.regex.match(check_str):
                 log.debug("skipping non-version tag %r", tag_str)
                 continue
             version = tag_to_version(tag_str, config)
@@ -189,7 +195,7 @@ class HgWorkdir(Workdir):
     ) -> ScmVersion | None:
         """Get version based on distance from latest tag."""
         try:
-            tag_str = self.get_latest_normalizable_tag()
+            tag_str = self.get_latest_normalizable_tag(config)
             if tag_str is None:
                 dist = self.get_distance_revs("")
             else:
@@ -231,16 +237,33 @@ class HgWorkdir(Workdir):
             check=True,
         ).stdout
 
-    def get_latest_normalizable_tag(self) -> str | None:
-        # Gets all tags containing a '.' (see #229) from oldest to newest
-        outlines = self.hg_log(
-            revset="ancestors(.) and tag('re:\\.')",
-            template="{tags}{if(tags, '\n', '')}",
-        ).split()
-        if not outlines:
+    def _hg_tag_pattern(self, config: Configuration) -> str:
+        """Build a Mercurial regex pattern from tag configuration."""
+        prefix = re.escape(config.tag.prefix) if config.tag.prefix else ""
+        if config.tag.strict:
+            # Require at least one dot in the version part
+            return rf"{prefix}\d+\.\d+"
+        else:
+            return rf"{prefix}\d+"
+
+    def get_latest_normalizable_tag(
+        self, config: Configuration | None = None
+    ) -> str | None:
+        if config is not None:
+            pattern = self._hg_tag_pattern(config)
+        else:
+            pattern = r"\."
+        result = self.hg_log(
+            revset=".",
+            template=f"{{latesttag(r're:{pattern}')}}",
+        )
+        if not result or result == "null":
             return None
-        tag = outlines[-1].split()[-1]
-        return tag
+        # latesttag() returns colon-separated tags when multiple match
+        # at the same distance; take the last one for consistency
+        if ":" in result:
+            result = result.rsplit(":", 1)[-1]
+        return result
 
     def get_distance_revs(self, rev1: str, rev2: str = ".") -> int:
         revset = f"({rev1}::{rev2})"

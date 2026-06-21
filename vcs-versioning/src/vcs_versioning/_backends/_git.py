@@ -225,7 +225,9 @@ class GitWorkdir(Workdir):
         return res.stdout.count("\n") + 1
 
     def default_describe(self) -> _CompletedProcess:
-        return self.run_git(DEFAULT_DESCRIBE[1:])
+        match_glob = self.config.tag.describe_match_glob()
+        cmd = make_describe_command(match_glob)
+        return self.run_git(cmd[1:])
 
     def get_scm_version(self) -> ScmVersion | None:
         """Obtain version metadata from this git work directory."""
