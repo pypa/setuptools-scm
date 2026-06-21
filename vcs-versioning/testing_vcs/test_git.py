@@ -4,13 +4,11 @@ import contextlib
 import os
 import shutil
 import subprocess
-import sys
 import textwrap
 from collections.abc import Generator
 from datetime import date, datetime, timezone
 from os.path import join as opj
 from pathlib import Path
-from textwrap import dedent
 from unittest.mock import Mock, patch
 
 import pytest
@@ -59,37 +57,6 @@ def test_parse_describe_output(
 ) -> None:
     parsed = _git._git_parse_describe(given)
     assert parsed == (tag, number, node, dirty)
-
-
-def test_root_relative_to(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG", raising=False)
-    p = wd.cwd.joinpath("sub/package")
-    p.mkdir(parents=True)
-    p.joinpath("setup.py").write_text(
-        """from setuptools import setup
-setup(use_scm_version={"root": "../..",
-                       "relative_to": __file__})
-""",
-        encoding="utf-8",
-    )
-    res = run([sys.executable, "setup.py", "--version"], p)
-    assert res.stdout == "0.1.dev0+d20090213"
-
-
-def test_root_search_parent_directories(
-    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.delenv("SETUPTOOLS_SCM_DEBUG", raising=False)
-    p = wd.cwd.joinpath("sub/package")
-    p.mkdir(parents=True)
-    p.joinpath("setup.py").write_text(
-        """from setuptools import setup
-setup(use_scm_version={"search_parent_directories": True})
-""",
-        encoding="utf-8",
-    )
-    res = run([sys.executable, "setup.py", "--version"], p)
-    assert res.stdout == "0.1.dev0+d20090213"
 
 
 def test_git_gone(wd: WorkDir, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -196,75 +163,9 @@ def test_version_from_git(wd: WorkDir) -> None:
     assert wd.get_version(normalize=False) == "17.33.0-rc"
     assert wd.get_version(version_cls=NonNormalizedVersion) == "17.33.0-rc"
     assert (
-        wd.get_version(version_cls="setuptools_scm.NonNormalizedVersion")
+        wd.get_version(version_cls="vcs_versioning.NonNormalizedVersion")
         == "17.33.0-rc"
     )
-
-
-setup_py_with_normalize: dict[str, str] = {
-    "false": """
-        from setuptools import setup
-        setup(use_scm_version={'normalize': False, 'write_to': 'VERSION.txt'})
-        """,
-    "with_created_class": """
-from setuptools import setup
-
-class MyVersion:
-    def __init__(self, tag_str: str):
-        self.version = tag_str
-
-    def __repr__(self):
-        return self.version
-
-    @property
-    def public(self):
-        return self.version.split('+')[0]
-
-    @property
-    def local(self):
-        if '+' in self.version:
-            return self.version.split('+', 1)[1]
-        return None
-
-setup(use_scm_version={'version_cls': MyVersion, 'write_to': 'VERSION.txt'})
-        """,
-    "with_named_import": """
-        from setuptools import setup
-        setup(use_scm_version={
-            'version_cls': 'setuptools_scm.NonNormalizedVersion',
-            'write_to': 'VERSION.txt'
-        })
-        """,
-}
-
-
-@pytest.mark.parametrize(
-    "setup_py_txt",
-    [pytest.param(text, id=key) for key, text in setup_py_with_normalize.items()],
-)
-def test_git_version_unnormalized_setuptools(
-    setup_py_txt: str, wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """
-    Test that when integrating with setuptools without normalization,
-    the version is not normalized in write_to files,
-    but still normalized by setuptools for the final dist metadata.
-    """
-    # Enable writing version files at inference time (not just at build time)
-    monkeypatch.setenv("SETUPTOOLS_SCM_WRITE_TO_SOURCE", "1")
-    monkeypatch.chdir(wd.cwd)
-    wd.write("setup.py", dedent(setup_py_txt))
-
-    # do git operations and tag
-    wd.commit_testfile()
-    wd("git tag 17.33.0-rc1")
-
-    # setuptools still normalizes using packaging.Version (removing the dash)
-    res = wd([sys.executable, "setup.py", "--version"])
-    assert res == "17.33.0rc1"
-
-    # but the version tag in the file is non-normalized (with the dash)
-    assert wd.cwd.joinpath("VERSION.txt").read_text(encoding="utf-8") == "17.33.0-rc1"
 
 
 def test_unicode_version_scheme(wd: WorkDir) -> None:
@@ -307,18 +208,6 @@ def test_git_dirty_notag(
 
     assert version.startswith("0.1.dev1+g")
     assert version.endswith(tag)
-
-
-@pytest.mark.issue(193)
-@pytest.mark.xfail(reason="sometimes relative path results")
-def test_git_worktree_support(wd: WorkDir, tmp_path: Path) -> None:
-    wd.commit_testfile()
-    worktree = tmp_path / "work_tree"
-    wd(f"git worktree add -b work-tree {worktree}")
-
-    res = run([sys.executable, "-m", "setuptools_scm", "ls"], cwd=worktree)
-    assert "test.txt" in res.stdout
-    assert str(worktree) in res.stdout
 
 
 @pytest.fixture

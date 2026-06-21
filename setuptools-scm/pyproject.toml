@@ -98,14 +98,6 @@ setuptools_scm = "vcs_versioning._file_finders:find_files"
 [project.entry-points."setuptools.finalize_distribution_options"]
 setuptools_scm = "setuptools_scm._integration.setuptools:infer_version"
 
-[project.entry-points."setuptools_scm.files_command"]
-".git" = "vcs_versioning._file_finders._git:git_find_files"
-".hg" = "vcs_versioning._file_finders._hg:hg_find_files"
-
-[project.entry-points."setuptools_scm.files_command_fallback"]
-".git_archival.txt" = "vcs_versioning._file_finders._git:git_archive_find_files"
-".hg_archival.txt" = "vcs_versioning._file_finders._hg:hg_archive_find_files"
-
 [project.entry-points."vcs_versioning.discover_workdir"]
 pkginfo = "setuptools_scm._integration._discover:discover_pkginfo"
 egg-info = "setuptools_scm._integration._discover:discover_egg_info_metadata"
