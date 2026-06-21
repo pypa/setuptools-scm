@@ -1,7 +1,8 @@
 """Version scheme based on towncrier changelog fragments.
 
-This version scheme analyzes changelog fragments in the changelog.d/ directory
-to determine the appropriate version bump:
+This version scheme analyzes changelog fragments in the configured towncrier
+fragment directory (resolved from pyproject.toml or towncrier.toml, defaulting
+to changelog.d/) to determine the appropriate version bump:
 - Major bump: if 'major', 'breaking', or 'removal' fragments are present
 - Minor bump: if 'feature' or 'deprecation' fragments are present
 - Patch bump: if only 'bugfix', 'doc', or 'misc' fragments are present
