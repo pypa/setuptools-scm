@@ -185,7 +185,7 @@ def test_calver_zero_padding_preserved_with_normalize_false(
 
     pkg_dir = wd.cwd / "calver_test_pkg"
     pkg_dir.mkdir()
-    (pkg_dir / "__init__.py").write_text("")
+    (pkg_dir / "__init__.py").write_text("", encoding="utf-8")
 
     wd.commit_testfile()
     wd("git tag 2024.01.05")
