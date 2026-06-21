@@ -129,7 +129,7 @@ scm.git.describe_command = ["git", "describe", "--dirty", "--tags", "--long", "-
 
 [tool.ruff]
 lint.extend-select = ["YTT", "B", "C4", "DTZ", "ISC", "LOG", "G", "PIE", "PYI", "PT", "FLY", "I", "C90", "PERF", "W", "PGH", "PLE", "UP", "FURB", "RUF"]
-lint.ignore = ["B028", "LOG015", "PERF203"]
+lint.ignore = ["B028", "LOG015", "PERF203", "RUF076"]
 lint.preview = true
 
 # setuptools_scm alias modules: explicit `from m import x as x` re-exports for API stability
