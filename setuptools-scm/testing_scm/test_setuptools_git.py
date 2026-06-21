@@ -57,12 +57,21 @@ setup(use_scm_version={"search_parent_directories": True})
     assert res.stdout == "0.1.dev0+d20090213"
 
 
-setup_py_with_normalize: dict[str, str] = {
+setup_py_unnormalized_sic: dict[str, str] = {
     "false": """
         from setuptools import setup
         setup(use_scm_version={'normalize': False, 'write_to': 'VERSION.txt'})
         """,
-    "with_created_class": """
+    "with_named_import": """
+        from setuptools import setup
+        setup(use_scm_version={
+            'version_cls': 'setuptools_scm.NonNormalizedVersion',
+            'write_to': 'VERSION.txt'
+        })
+        """,
+}
+
+setup_py_unnormalized_custom_cls: str = """
 from setuptools import setup
 
 class MyVersion:
@@ -83,28 +92,20 @@ class MyVersion:
         return None
 
 setup(use_scm_version={'version_cls': MyVersion, 'write_to': 'VERSION.txt'})
-        """,
-    "with_named_import": """
-        from setuptools import setup
-        setup(use_scm_version={
-            'version_cls': 'setuptools_scm.NonNormalizedVersion',
-            'write_to': 'VERSION.txt'
-        })
-        """,
-}
+"""
 
 
 @pytest.mark.parametrize(
     "setup_py_txt",
-    [pytest.param(text, id=key) for key, text in setup_py_with_normalize.items()],
+    [pytest.param(text, id=key) for key, text in setup_py_unnormalized_sic.items()],
 )
 def test_git_version_unnormalized_setuptools(
     setup_py_txt: str, wd: WorkDir, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """
-    Test that when integrating with setuptools without normalization,
-    the version is not normalized in write_to files,
-    but still normalized by setuptools for the final dist metadata.
+    Test that normalize=False / NonNormalizedVersion prevents setuptools
+    from re-normalizing the version (via setuptools.sic wrapping).
+    Both --version output and write_to files preserve the raw tag.
     """
     monkeypatch.setenv("SETUPTOOLS_SCM_WRITE_TO_SOURCE", "1")
     monkeypatch.chdir(wd.cwd)
@@ -114,9 +115,133 @@ def test_git_version_unnormalized_setuptools(
     wd("git tag 17.33.0-rc1")
 
     res = wd([sys.executable, "setup.py", "--version"])
+    assert res == "17.33.0-rc1"
+
+    assert wd.cwd.joinpath("VERSION.txt").read_text(encoding="utf-8") == "17.33.0-rc1"
+
+
+def test_git_version_unnormalized_custom_cls(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    Test that a custom version_cls still gets write_to files un-normalized,
+    but setuptools may normalize the dist metadata version (no sic wrapping
+    for arbitrary custom classes).
+    """
+    monkeypatch.setenv("SETUPTOOLS_SCM_WRITE_TO_SOURCE", "1")
+    monkeypatch.chdir(wd.cwd)
+    wd.write("setup.py", dedent(setup_py_unnormalized_custom_cls))
+
+    wd.commit_testfile()
+    wd("git tag 17.33.0-rc1")
+
+    res = wd([sys.executable, "setup.py", "--version"])
     assert res == "17.33.0rc1"
 
     assert wd.cwd.joinpath("VERSION.txt").read_text(encoding="utf-8") == "17.33.0-rc1"
+
+
+@pytest.mark.issue(1354)
+def test_calver_zero_padding_preserved_with_normalize_false(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    Test that CalVer zero-padded versions (e.g. 2024.01.05) are preserved
+    in dist.metadata.version when normalize=false.
+
+    Without the sic() wrapping, setuptools' _normalize_version (which runs
+    after our finalize_options hook) would strip '2024.01.05' to '2024.1.5'.
+
+    Note: wheel filenames and dist-info METADATA are always canonicalized
+    by the wheel builder (bdist_wheel.safer_version) — that is a PEP 427
+    constraint outside setuptools-scm's control.
+    """
+    import subprocess
+    import textwrap
+    import zipfile
+
+    monkeypatch.chdir(wd.cwd)
+
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=64", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "calver-test-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            version_scheme = "calver-by-date"
+            normalize = false
+            version_file = "calver_test_pkg/_version.py"
+
+            [tool.setuptools.packages.find]
+            where = ["."]
+        """),
+    )
+
+    pkg_dir = wd.cwd / "calver_test_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("")
+
+    wd.commit_testfile()
+    wd("git tag 2024.01.05")
+
+    # --version uses dist.metadata.version which our sic() wrapping preserves
+    res = wd(
+        [
+            sys.executable,
+            "-c",
+            dedent("""\
+        from setuptools import Distribution
+        import setuptools_scm._integration.setuptools  # ensure hooks registered
+        d = Distribution(attrs={
+            'name': 'calver-test-pkg',
+        })
+        d.parse_config_files()
+        print(d.metadata.version)
+    """),
+        ]
+    )
+    assert res == "2024.01.05", (
+        f"dist.metadata.version should preserve zero-padding, got: {res}"
+    )
+
+    # Build wheel — filename is canonicalized by PEP 427, but build succeeds
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert build_result.returncode == 0, (
+        f"Build failed:\nstdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+
+    dist_dir = wd.cwd / "dist"
+    wheels = list(dist_dir.glob("*.whl"))
+    assert len(wheels) == 1, f"Expected 1 wheel, found {len(wheels)}"
+
+    # Version file inside the wheel should preserve zero-padded version
+    with zipfile.ZipFile(wheels[0], "r") as whl:
+        version_content = None
+        for name in whl.namelist():
+            if "_version.py" in name:
+                version_content = whl.read(name).decode("utf-8")
+                break
+
+        assert version_content is not None, (
+            f"Version file not found in wheel. Contents: {whl.namelist()}"
+        )
+        assert "2024.01.05" in version_content, (
+            f"Version file should contain zero-padded version.\n"
+            f"Content:\n{version_content}"
+        )
 
 
 @pytest.mark.issue(193)
