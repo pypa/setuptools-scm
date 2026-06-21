@@ -177,7 +177,7 @@ class HgWorkdir(Workdir):
             check_str = tag_str
             if tag_prefix and tag_str.startswith(tag_prefix):
                 check_str = tag_str[len(tag_prefix) :]
-            if not config.tag_regex.match(check_str):
+            if not config.tag.regex.match(check_str):
                 log.debug("skipping non-version tag %r", tag_str)
                 continue
             version = tag_to_version(tag_str, config)

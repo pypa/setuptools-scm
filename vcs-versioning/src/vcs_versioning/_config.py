@@ -173,6 +173,17 @@ class TagConfiguration:
     - ``False``: explicitly permissive, no warning.
     """
 
+    regex: Pattern[str] = DEFAULT_TAG_REGEX
+    """Regex applied after ``git describe`` to extract the version from a tag.
+
+    Must contain either a single capture group or a named group ``version``.
+    The new canonical location for what was previously ``tag_regex`` at the
+    top level of the configuration.
+    """
+
+    def __post_init__(self) -> None:
+        self.regex = _check_tag_regex(self.regex)
+
     def describe_match_glob(self) -> str:
         """Build the ``git describe --match`` glob from prefix + strict."""
         if self.strict:
@@ -186,10 +197,43 @@ class TagConfiguration:
         """Create TagConfiguration from configuration data."""
         if data is None:
             return cls()
-        return cls(**data)
+        tag_data = data.copy()
+        if "regex" in tag_data and isinstance(tag_data["regex"], str):
+            tag_data["regex"] = re.compile(tag_data["regex"])
+        return cls(**tag_data)
 
 
 _SENTINEL_TAG_CONFIG = TagConfiguration()
+
+
+class _TagRegexDescriptor:
+    """Data descriptor for deprecated top-level tag_regex field.
+
+    Proxies reads/writes to ``tag.regex`` and emits ``DeprecationWarning``.
+    """
+
+    def __get__(
+        self, obj: Configuration | None, objtype: type[Configuration] | None = None
+    ) -> Pattern[str]:
+        if obj is None:
+            return self  # type: ignore[return-value]
+
+        if not _is_called_from_dataclasses():
+            warnings.warn(
+                "Configuration field 'tag_regex' is deprecated. "
+                "Use 'tag.regex' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        return obj.tag.regex
+
+    def __set__(self, obj: Configuration, value: str | Pattern[str]) -> None:
+        warnings.warn(
+            "Configuration field 'tag_regex' is deprecated. Use 'tag.regex' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        obj.tag.regex = _check_tag_regex(value)
 
 
 @dataclasses.dataclass
@@ -220,7 +264,7 @@ class Configuration:
     root: _t.PathT = "."
     version_scheme: _t.VERSION_SCHEMES = DEFAULT_VERSION_SCHEME
     local_scheme: _t.VERSION_SCHEMES = DEFAULT_LOCAL_SCHEME
-    tag_regex: Pattern[str] = DEFAULT_TAG_REGEX
+    tag_regex: dataclasses.InitVar[str | Pattern[str] | None] = _TagRegexDescriptor()
     parentdir_prefix_version: str | None = None
     fallback_version: str | None = None
     fallback_root: _t.PathT = "."
@@ -272,8 +316,36 @@ class Configuration:
 
     # Deprecated fields (handled in __post_init__)
 
-    def __post_init__(self, git_describe_command: _t.CMD_TYPE | None) -> None:
-        self.tag_regex = _check_tag_regex(self.tag_regex)
+    def __post_init__(
+        self,
+        tag_regex: str | Pattern[str] | None,
+        git_describe_command: _t.CMD_TYPE | None,
+    ) -> None:
+        # Handle deprecated top-level tag_regex
+        if tag_regex is not None and not isinstance(tag_regex, _TagRegexDescriptor):
+            is_from_dataclasses = _is_called_from_dataclasses()
+            same_value = tag_regex == self.tag.regex or (
+                isinstance(tag_regex, Pattern)
+                and tag_regex.pattern == self.tag.regex.pattern
+            )
+            if is_from_dataclasses and same_value:
+                pass
+            else:
+                warnings.warn(
+                    "Configuration field 'tag_regex' is deprecated. "
+                    "Use 'tag.regex' instead.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                if self.tag.regex.pattern != DEFAULT_TAG_REGEX.pattern:
+                    raise ValueError(
+                        "Cannot specify both 'tag_regex' (deprecated) and "
+                        "'tag.regex'. Please use only 'tag.regex'."
+                    )
+                # Replace with a new TagConfiguration to avoid mutating shared objects
+                self.tag = dataclasses.replace(
+                    self.tag, regex=_check_tag_regex(tag_regex)
+                )
 
         if self.tag.strict is None:
             warnings.warn(
@@ -430,9 +502,23 @@ class Configuration:
             data.pop("version_cls", None), data.pop("normalize", True)
         )
 
-        # Handle nested configurations
-        tag_data = data.pop("tag", None)
-        tag_config = TagConfiguration.from_data(tag_data)
+        # Migrate top-level tag_regex into tag.regex
+        tag_data = data.pop("tag", None) or {}
+        top_level_tag_regex = data.pop("tag_regex", None)
+        if top_level_tag_regex is not None:
+            if "regex" in tag_data:
+                raise ValueError(
+                    "Cannot specify both 'tag_regex' (deprecated) and "
+                    "'tag.regex'. Please use only 'tag.regex'."
+                )
+            warnings.warn(
+                "Configuration key 'tag_regex' is deprecated. Use 'tag.regex' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            tag_data["regex"] = top_level_tag_regex
+
+        tag_config = TagConfiguration.from_data(tag_data if tag_data else None)
         scm_data = data.pop("scm", {})
         scm_config = ScmConfiguration.from_data(scm_data)
         return cls(

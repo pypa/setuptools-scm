@@ -91,12 +91,12 @@ def _parse_version_tag(
     tag_prefix = config.tag.prefix
     if tag_prefix and tag_str.startswith(tag_prefix):
         tag_str = tag_str[len(tag_prefix) :]
-    match = config.tag_regex.match(tag_str)
+    match = config.tag.regex.match(tag_str)
 
     if match:
         key: str | int = 1 if len(match.groups()) == 1 else "version"
         full = match.group(0)
-        log.debug("%r %r %s", tag, config.tag_regex, match)
+        log.debug("%r %r %s", tag, config.tag.regex, match)
         log.debug(
             "key %s data %s, %s, %r", key, match.groupdict(), match.groups(), full
         )
@@ -112,7 +112,7 @@ def _parse_version_tag(
             return result
 
         raise ValueError(
-            f'The tag_regex "{config.tag_regex.pattern}" matched tag "{tag}", '
+            f'The tag_regex "{config.tag.regex.pattern}" matched tag "{tag}", '
             "however the matched group has no value."
         )
     else:
