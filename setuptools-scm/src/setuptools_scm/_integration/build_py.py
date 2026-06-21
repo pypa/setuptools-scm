@@ -25,32 +25,46 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+def _sanitize_relative_path(relative_path: str) -> Path:
+    """Validate and return a safe relative path for writing under ``build_lib``.
+
+    Defense-in-depth: these values come from the project's own
+    ``pyproject.toml`` / ``setup.py`` (not a trust boundary), but we
+    reject obvious mistakes that could escape the build directory.
+
+    Raises:
+        ValueError: If the path is absolute or contains ``..`` segments.
+    """
+    p = Path(relative_path)
+    if p.is_absolute():
+        raise ValueError(
+            f"Version file path must be relative, got absolute: {relative_path}"
+        )
+    if ".." in p.parts:
+        raise ValueError(
+            f"Version file path must not contain '..' traversal: {relative_path}"
+        )
+    return p
+
+
 def _is_inside_package(relative_path: str, packages: list[str] | None) -> bool:
-    """Check if a file path is inside one of the distribution's packages.
+    """Check if a version file path is inside one of the distribution's packages.
 
     Files at the root level (e.g., ``VERSION``) or outside any declared
     package (e.g., ``version.h``) should NOT be written to ``build_lib``
     because that would include them in the wheel.
-
-    Args:
-        relative_path: The file path relative to build_lib (already transformed)
-        packages: The list of packages from the distribution
-
-    Returns:
-        True if the file is inside a declared package, False otherwise
     """
     if not packages:
         return False
 
-    file_path = Path(relative_path)
-    if not file_path.parts[:-1]:
-        # Root-level file (e.g., "VERSION", "_version.py")
+    path = _sanitize_relative_path(relative_path)
+    if len(path.parts) < 2:
         return False
 
     for pkg in packages:
-        pkg_dir = Path(pkg.replace(".", "/"))
+        pkg_path = Path(pkg.replace(".", "/"))
         try:
-            file_path.relative_to(pkg_dir)
+            path.relative_to(pkg_path)
             return True
         except ValueError:
             continue
@@ -276,6 +290,12 @@ class ScmVersionFileMixin(_build_py):
         from vcs_versioning._dump_version import DummyScmVersion
         from vcs_versioning._dump_version import _validate_template
         from vcs_versioning._version_cls import _version_as_tuple
+
+        try:
+            _sanitize_relative_path(relative_path)
+        except ValueError as e:
+            log.warning("Refusing to write version file: %s", e)
+            return None
 
         target = build_lib / relative_path
         log.debug("Writing version file: %s", target)

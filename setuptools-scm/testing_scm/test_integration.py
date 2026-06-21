@@ -1711,6 +1711,62 @@ class TestIsInsidePackage:
         assert not _is_inside_package("mypackage/_version.py", None)
         assert not _is_inside_package("mypackage/_version.py", [])
 
+    @pytest.mark.skipif(os.name != "posix", reason="posix absolute path form")
+    def test_rejects_absolute_path(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        with pytest.raises(ValueError, match="must be relative"):
+            _is_inside_package("/etc/passwd", ["mypackage"])
+
+    @pytest.mark.skipif(os.name != "nt", reason="windows absolute path form")
+    def test_rejects_absolute_path_windows(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        with pytest.raises(ValueError, match="must be relative"):
+            _is_inside_package("C:\\Users\\evil.py", ["mypackage"])
+
+    def test_rejects_traversal(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        with pytest.raises(ValueError, match="must not contain"):
+            _is_inside_package("mypackage/../../etc/passwd", ["mypackage"])
+
+
+class TestSanitizeRelativePath:
+    """Unit tests for _sanitize_relative_path."""
+
+    def test_accepts_simple_relative(self) -> None:
+        from setuptools_scm._integration.build_py import _sanitize_relative_path
+
+        result = _sanitize_relative_path("mypackage/_version.py")
+        assert result == Path("mypackage/_version.py")
+
+    @pytest.mark.skipif(os.name != "posix", reason="posix absolute path form")
+    def test_rejects_absolute_posix(self) -> None:
+        from setuptools_scm._integration.build_py import _sanitize_relative_path
+
+        with pytest.raises(ValueError, match="must be relative"):
+            _sanitize_relative_path("/tmp/evil.py")
+
+    @pytest.mark.skipif(os.name != "nt", reason="windows absolute path form")
+    def test_rejects_absolute_windows(self) -> None:
+        from setuptools_scm._integration.build_py import _sanitize_relative_path
+
+        with pytest.raises(ValueError, match="must be relative"):
+            _sanitize_relative_path("C:\\Windows\\evil.py")
+
+    def test_rejects_dotdot(self) -> None:
+        from setuptools_scm._integration.build_py import _sanitize_relative_path
+
+        with pytest.raises(ValueError, match="must not contain"):
+            _sanitize_relative_path("pkg/../../outside.py")
+
+    def test_accepts_root_level(self) -> None:
+        from setuptools_scm._integration.build_py import _sanitize_relative_path
+
+        result = _sanitize_relative_path("VERSION.txt")
+        assert result == Path("VERSION.txt")
+
 
 @pytest.mark.issue(1364)
 def test_root_level_version_file_not_in_wheel(
