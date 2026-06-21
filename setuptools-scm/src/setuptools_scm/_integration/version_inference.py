@@ -10,7 +10,9 @@ from typing import Protocol
 from typing import TypeAlias
 
 from setuptools import Distribution
+from setuptools import sic as setuptools_sic
 from vcs_versioning._pyproject_reading import PyProjectData
+from vcs_versioning._version_cls import NonNormalizedVersion
 
 if TYPE_CHECKING:
     from vcs_versioning import _config
@@ -159,7 +161,13 @@ class VersionInferenceConfig:
             self.pyproject_data,  # type: ignore[arg-type]
             self.overrides,
         )
-        dist.metadata.version = data.version
+        # When normalize=False, wrap in setuptools.sic() to prevent
+        # setuptools' _normalize_version from re-normalizing (stripping
+        # CalVer zero-padding, etc.) after our hook returns.
+        if issubclass(data.config.version_cls, NonNormalizedVersion):
+            dist.metadata.version = setuptools_sic(data.version)
+        else:
+            dist.metadata.version = data.version
 
         # Store version inference data for build_py to write to build directory
         set_version_inference_data(dist, data)
