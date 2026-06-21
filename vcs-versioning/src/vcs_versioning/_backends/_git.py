@@ -486,6 +486,8 @@ def archival_to_version(
     archival_describe = data.get("describe-name", DESCRIBE_UNSUPPORTED)
     if DESCRIBE_UNSUPPORTED in archival_describe:
         warnings.warn("git archive did not support describe output", stacklevel=2)
+    elif not archival_describe:
+        log.debug("describe-name is empty (no tags in repo), falling through")
     else:
         tag, number, node, _ = _git_parse_describe(archival_describe)
         return meta(
