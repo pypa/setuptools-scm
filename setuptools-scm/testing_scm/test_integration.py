@@ -1670,3 +1670,106 @@ def test_manifest_in_excludes_scm_tracked_files(
     assert any("test_pkg/__init__.py" in n for n in names), (
         f"test_pkg/__init__.py should still be in sdist: {names}"
     )
+
+
+class TestIsInsidePackage:
+    """Unit tests for _is_inside_package."""
+
+    def test_root_level_file_not_inside_package(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        assert not _is_inside_package("VERSION", ["mypackage"])
+
+    def test_root_level_py_file_not_inside_package(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        assert not _is_inside_package("_version.py", ["mypackage"])
+
+    def test_file_inside_package(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        assert _is_inside_package("mypackage/_version.py", ["mypackage"])
+
+    def test_file_inside_nested_package(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        assert _is_inside_package("mypackage/sub/_version.py", ["mypackage"])
+
+    def test_file_inside_dotted_package(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        assert _is_inside_package("mypackage/sub/_version.py", ["mypackage.sub"])
+
+    def test_file_not_in_any_package(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        assert not _is_inside_package("other/version.h", ["mypackage"])
+
+    def test_no_packages(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        assert not _is_inside_package("mypackage/_version.py", None)
+        assert not _is_inside_package("mypackage/_version.py", [])
+
+
+@pytest.mark.issue(1364)
+def test_root_level_version_file_not_in_wheel(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Root-level version files (e.g. VERSION) must not end up in the wheel.
+
+    Regression test for GH-1364: upgrading to setuptools-scm 10 caused
+    files like ``VERSION`` to appear at the wheel root because build_py
+    unconditionally wrote them to ``build_lib``.
+    """
+    monkeypatch.chdir(wd.cwd)
+
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "root-version-file-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            write_to = "VERSION.txt"
+
+            [tool.setuptools.packages.find]
+            where = ["."]
+        """),
+    )
+
+    pkg_dir = wd.cwd / "root_version_file_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("")
+
+    wd.commit_testfile()
+    wd("git tag v1.0.0")
+
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert build_result.returncode == 0, (
+        f"Build failed:\nstdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+
+    import zipfile
+
+    dist_dir = wd.cwd / "dist"
+    wheels = list(dist_dir.glob("*.whl"))
+    assert len(wheels) == 1
+
+    with zipfile.ZipFile(wheels[0], "r") as whl:
+        names = whl.namelist()
+        assert not any(n == "VERSION.txt" for n in names), (
+            f"Root-level VERSION.txt should NOT be in wheel, got: {names}"
+        )
