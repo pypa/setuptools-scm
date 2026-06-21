@@ -225,7 +225,9 @@ class GitWorkdir(Workdir):
         return res.stdout.count("\n") + 1
 
     def default_describe(self) -> _CompletedProcess:
-        return self.run_git(DEFAULT_DESCRIBE[1:])
+        match_glob = self.config.tag.describe_match_glob()
+        cmd = make_describe_command(match_glob)
+        return self.run_git(cmd[1:])
 
     def get_scm_version(self) -> ScmVersion | None:
         """Obtain version metadata from this git work directory."""
@@ -400,9 +402,7 @@ def version_from_describe(
         else:
             describe_res = _run(cmd_args, wd.path, timeout=wd._subprocess_timeout)
     else:
-        match_glob = config.tag.describe_match_glob()
-        effective_describe = make_describe_command(match_glob)
-        describe_res = wd.run_git(effective_describe[1:])
+        describe_res = wd.default_describe()
 
     def parse_describe(output: str) -> ScmVersion:
         tag, distance, node, dirty = _git_parse_describe(output)

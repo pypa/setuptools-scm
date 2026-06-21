@@ -259,6 +259,10 @@ class HgWorkdir(Workdir):
         )
         if not result or result == "null":
             return None
+        # latesttag() returns colon-separated tags when multiple match
+        # at the same distance; take the last one for consistency
+        if ":" in result:
+            result = result.rsplit(":", 1)[-1]
         return result
 
     def get_distance_revs(self, rev1: str, rev2: str = ".") -> int:
