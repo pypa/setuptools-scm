@@ -346,6 +346,94 @@ def test_git_archive_run_from_subdirectory(
     assert vcs_versioning._file_finders.find_files(".") == [opj(".", "test1.txt")]
 
 
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/662")
+def test_git_added_but_uncommitted_files_visible(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    wd.write("committed.txt", "test")
+    wd("git add committed.txt")
+    wd.commit()
+
+    wd.write("staged.txt", "test")
+    wd("git add staged.txt")
+    monkeypatch.chdir(wd.cwd)
+    found = set(vcs_versioning._file_finders.find_files("."))
+    assert opj(".", "staged.txt") in found
+    assert opj(".", "committed.txt") in found
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/662")
+def test_git_export_ignore_with_staged_files(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    wd.write("keep.txt", "test")
+    wd.write("ignore.txt", "test")
+    wd.write(
+        ".gitattributes",
+        "/ignore.txt export-ignore\n",
+    )
+    wd("git add keep.txt ignore.txt .gitattributes")
+    wd.commit()
+
+    wd.write("new_staged.txt", "test")
+    wd("git add new_staged.txt")
+    monkeypatch.chdir(wd.cwd)
+    found = set(vcs_versioning._file_finders.find_files("."))
+    assert opj(".", "keep.txt") in found
+    assert opj(".", "new_staged.txt") in found
+    assert opj(".", "ignore.txt") not in found
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/662")
+def test_git_submodule_files_listed(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Create a separate repo to use as submodule
+    sub_src = wd.cwd.parent / "sub_src"
+    sub_src.mkdir()
+    subprocess.check_call(["git", "init", str(sub_src)])
+    subprocess.check_call(
+        ["git", "-C", str(sub_src), "config", "user.email", "test@example.com"]
+    )
+    subprocess.check_call(["git", "-C", str(sub_src), "config", "user.name", "test"])
+    (sub_src / "sub_file.txt").write_text("sub content", encoding="utf-8")
+    (sub_src / ".gitattributes").write_text(
+        "/sub_ignored.txt export-ignore\n", encoding="utf-8"
+    )
+    (sub_src / "sub_ignored.txt").write_text("ignored", encoding="utf-8")
+    subprocess.check_call(["git", "-C", str(sub_src), "add", "."])
+    subprocess.check_call(["git", "-C", str(sub_src), "commit", "-m", "init sub"])
+
+    # Add as submodule (allow file:// protocol for local clone)
+    wd.write("parent_file.txt", "parent content")
+    wd("git add parent_file.txt")
+    wd.commit()
+    wd(
+        [
+            "git",
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            str(sub_src),
+            "mysub",
+        ]
+    )
+    wd.commit()
+
+    monkeypatch.chdir(wd.cwd)
+    found = set(vcs_versioning._file_finders.find_files("."))
+
+    # Parent files present
+    assert opj(".", "parent_file.txt") in found
+    assert opj(".", ".gitmodules") in found
+    # Submodule files listed with correct prefixed paths
+    assert opj(".", "mysub", "sub_file.txt") in found
+    assert opj(".", "mysub", ".gitattributes") in found
+    # export-ignore honored inside submodule
+    assert opj(".", "mysub", "sub_ignored.txt") not in found
+
+
 @pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/728")
 def test_git_branch_names_correct(wd: WorkDir) -> None:
     wd.commit_testfile()
