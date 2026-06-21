@@ -3,8 +3,10 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
+from pathlib import Path
 
 from .. import _types as _t
+from .._backends._git import run_git
 from .._compat import norm_real, strip_path_suffix
 from .._integration import data_from_mime
 from .._run_cmd import run as _run
@@ -66,9 +68,9 @@ def _git_ls_files_and_dirs(
     # The exclude pathspec filters out files marked with the export-ignore
     # gitattribute, matching the old git-archive behavior.
     # "." is needed as positive pathspec for the exclude to apply against.
-    res = _run(
+    # Uses run_git (--git-dir) to pin to the correct repository.
+    res = run_git(
         [
-            "git",
             "ls-files",
             "-z",
             "--recurse-submodules",
@@ -76,7 +78,7 @@ def _git_ls_files_and_dirs(
             ".",
             ":(exclude,attr:export-ignore)",
         ],
-        cwd=toplevel,
+        Path(toplevel),
         timeout=timeout,
     )
     if res.returncode:
