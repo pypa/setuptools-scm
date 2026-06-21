@@ -29,12 +29,18 @@ _FALSY_VALUES = frozenset(("0", "false", "no"))
 def _should_write_to_source(config: _config.Configuration) -> bool:
     """Check if version files should be written to source at inference time.
 
-    Uses the config's environment (tool names + dist name) to read
-    ``WRITE_TO_SOURCE`` -- e.g. ``SETUPTOOLS_SCM_WRITE_TO_SOURCE``.
+    Resolution order:
 
-    Returns True by default.  Returns False only when the resolved value
-    is a falsy string (``"0"``, ``"false"``, ``"no"``).
+    1. **Environment variable** (``SETUPTOOLS_SCM_WRITE_TO_SOURCE`` /
+       ``VCS_VERSIONING_WRITE_TO_SOURCE``) — highest priority, no warning.
+    2. **pyproject.toml** ``write_to_source`` option — explicit opt-in/out,
+       no warning.
+    3. **Unset** (neither env var nor config) — write to source **and** emit
+       a ``DeprecationWarning`` advising the user to set the option
+       explicitly, since the default will change in the next major release.
     """
+    import warnings
+
     from vcs_versioning.overrides import EnvReader
 
     reader = EnvReader(
@@ -42,10 +48,25 @@ def _should_write_to_source(config: _config.Configuration) -> bool:
         env=os.environ,
         dist_name=config.dist_name,
     )
-    value = reader.read("WRITE_TO_SOURCE")
-    if value is None:
-        return True
-    return value.lower() not in _FALSY_VALUES
+    env_value = reader.read("WRITE_TO_SOURCE")
+
+    if env_value is not None:
+        return env_value.lower() not in _FALSY_VALUES
+
+    if config.write_to_source is not None:
+        return config.write_to_source
+
+    warnings.warn(
+        "setuptools-scm writes version files to the source tree by default, "
+        "but this will change in a future major release. "
+        "Set 'write_to_source = true' (to keep current behavior) or "
+        "'write_to_source = false' (to only write to the build directory) "
+        "in [tool.setuptools_scm] in pyproject.toml to silence this warning. "
+        "You can also set the SETUPTOOLS_SCM_WRITE_TO_SOURCE environment variable.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+    return True
 
 
 def infer_version_with_config(

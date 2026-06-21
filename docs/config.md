@@ -165,6 +165,31 @@ Callables or other Python objects must be passed in `setup.py` (via the `use_scm
     `version_tuple` is a tuple of split numbers/strings and
     `scm_version` is the `ScmVersion` instance the current `version` was rendered from
 
+`write_to_source: bool | None = None`
+:   Controls whether version files (specified by `version_file` or `write_to`) are
+    written to the source tree during version inference.
+
+    | Value   | Behavior |
+    |---------|----------|
+    | unset   | Writes to source tree **and** emits a `DeprecationWarning` advising you to set this option explicitly, since the default will change in a future major release. |
+    | `true`  | Writes to source tree, no warning — explicit opt-in. |
+    | `false` | Does **not** write to source tree, no warning — explicit opt-out. Version files are still written to the build directory during `build_py`. |
+
+    The `SETUPTOOLS_SCM_WRITE_TO_SOURCE` environment variable overrides this setting
+    (see [Environment Variables](#environment-variables) below).
+
+    !!! note "Deprecation cycle"
+
+        In a future major release, the default will change from writing to source to
+        **not** writing to source. Set `write_to_source = true` now if you rely on
+        version files being present in your source tree.
+
+    ```toml title="pyproject.toml"
+    [tool.setuptools_scm]
+    version_file = "mypackage/_version.py"
+    write_to_source = true
+    ```
+
 ## setuptools-scm Specific Configuration
 
 These options control setuptools integration behavior.
@@ -233,6 +258,11 @@ These environment variables control setuptools-scm specific behavior.
 `SETUPTOOLS_SCM_OVERRIDES_FOR_${DIST_NAME}`
 :   A TOML inline table to override configuration from `pyproject.toml`.
     See the [overrides documentation](overrides.md#config-overrides) for details.
+
+`SETUPTOOLS_SCM_WRITE_TO_SOURCE`
+:   Override the `write_to_source` configuration option. Set to `1`/`true`/`yes`
+    to write version files to the source tree, or `0`/`false`/`no` to disable it.
+    When set, no deprecation warning is emitted regardless of the pyproject.toml setting.
 
 `SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT`
 :   Override the subprocess timeout (default: 40 seconds).

@@ -196,6 +196,19 @@ class Configuration:
 
     parent: _t.PathT | None = None
 
+    write_to_source: bool | None = None
+    """Whether to write version files to the source tree at inference time.
+
+    - ``None`` (default): write to source **and** emit a ``DeprecationWarning``
+      telling users to set this explicitly, since the default will change
+      in the next major release.
+    - ``True``: write to source tree, no warning.
+    - ``False``: do **not** write to source tree, no warning.
+
+    The ``SETUPTOOLS_SCM_WRITE_TO_SOURCE`` / ``VCS_VERSIONING_WRITE_TO_SOURCE``
+    environment variable overrides this setting.
+    """
+
     # Nested SCM configurations
     scm: ScmConfiguration = dataclasses.field(
         default_factory=lambda: ScmConfiguration()
