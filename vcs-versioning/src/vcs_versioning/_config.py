@@ -149,6 +149,50 @@ class GitConfiguration:
 
 
 @dataclasses.dataclass
+class TagConfiguration:
+    """Tag matching configuration options.
+
+    Controls which VCS tags are considered version tags and how they are parsed.
+    """
+
+    prefix: str = ""
+    """Literal prefix that version tags must start with.
+
+    The prefix is used to filter tags in ``git describe --match`` and is
+    stripped before version parsing.  For monorepos, set this to e.g.
+    ``"hatchling-v"`` so only ``hatchling-v1.0.0`` style tags are considered.
+    """
+
+    strict: bool | None = None
+    """Tri-state strictness for version-like tag matching.
+
+    - ``None`` (default): permissive ``*[0-9]*`` matching with a
+      ``FutureWarning`` that the default will change to ``True``.
+    - ``True``: strict — tags must contain at least one dot
+      (e.g. ``*[0-9]*.*[0-9]*``), rejecting event-style tags.
+    - ``False``: explicitly permissive, no warning.
+    """
+
+    def describe_match_glob(self) -> str:
+        """Build the ``git describe --match`` glob from prefix + strict."""
+        if self.strict:
+            version_glob = "*[0-9]*.*[0-9]*"
+        else:
+            version_glob = "*[0-9]*"
+        return f"{self.prefix}{version_glob}"
+
+    @classmethod
+    def from_data(cls, data: dict[str, Any] | None) -> TagConfiguration:
+        """Create TagConfiguration from configuration data."""
+        if data is None:
+            return cls()
+        return cls(**data)
+
+
+_SENTINEL_TAG_CONFIG = TagConfiguration()
+
+
+@dataclasses.dataclass
 class ScmConfiguration:
     """SCM-specific configuration options"""
 
@@ -209,7 +253,10 @@ class Configuration:
     environment variable overrides this setting.
     """
 
-    # Nested SCM configurations
+    # Nested configurations
+    tag: TagConfiguration = dataclasses.field(
+        default_factory=lambda: TagConfiguration()
+    )
     scm: ScmConfiguration = dataclasses.field(
         default_factory=lambda: ScmConfiguration()
     )
@@ -227,6 +274,29 @@ class Configuration:
 
     def __post_init__(self, git_describe_command: _t.CMD_TYPE | None) -> None:
         self.tag_regex = _check_tag_regex(self.tag_regex)
+
+        if self.tag.strict is None:
+            warnings.warn(
+                "tag.strict is not set. Currently defaults to False (permissive "
+                "tag matching). In a future major version the default will change "
+                "to True (require tags to contain a dot). "
+                "Set tag.strict = true or tag.strict = false explicitly in your "
+                "[tool.setuptools_scm] / [tool.vcs-versioning] config to silence "
+                "this warning.",
+                FutureWarning,
+                stacklevel=2,
+            )
+
+        if (
+            self.tag.prefix or self.tag.strict is not None
+        ) and self.scm.git.describe_command is not None:
+            warnings.warn(
+                "Both tag.prefix/tag.strict and scm.git.describe_command are set. "
+                "The explicit describe_command takes precedence; tag.prefix and "
+                "tag.strict will have no effect on the git describe match pattern.",
+                UserWarning,
+                stacklevel=2,
+            )
 
         self._resolved_paths = resolve_paths(
             relative_to=self.relative_to,
@@ -360,12 +430,15 @@ class Configuration:
             data.pop("version_cls", None), data.pop("normalize", True)
         )
 
-        # Handle nested SCM configuration
+        # Handle nested configurations
+        tag_data = data.pop("tag", None)
+        tag_config = TagConfiguration.from_data(tag_data)
         scm_data = data.pop("scm", {})
         scm_config = ScmConfiguration.from_data(scm_data)
         return cls(
             relative_to=relative_to,
             version_cls=version_cls,
+            tag=tag_config,
             scm=scm_config,
             **data,
         )

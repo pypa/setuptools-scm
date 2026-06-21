@@ -87,7 +87,11 @@ class mismatches:
 def _parse_version_tag(
     tag: str | object, config: _config.Configuration
 ) -> _TagDict | None:
-    match = config.tag_regex.match(str(tag))
+    tag_str = str(tag)
+    tag_prefix = config.tag.prefix
+    if tag_prefix and tag_str.startswith(tag_prefix):
+        tag_str = tag_str[len(tag_prefix) :]
+    match = config.tag_regex.match(tag_str)
 
     if match:
         key: str | int = 1 if len(match.groups()) == 1 else "version"

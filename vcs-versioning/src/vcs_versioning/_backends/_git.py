@@ -400,7 +400,9 @@ def version_from_describe(
         else:
             describe_res = _run(cmd_args, wd.path, timeout=wd._subprocess_timeout)
     else:
-        describe_res = wd.default_describe()
+        match_glob = config.tag.describe_match_glob()
+        effective_describe = make_describe_command(match_glob)
+        describe_res = wd.run_git(effective_describe[1:])
 
     def parse_describe(output: str) -> ScmVersion:
         tag, distance, node, dirty = _git_parse_describe(output)
