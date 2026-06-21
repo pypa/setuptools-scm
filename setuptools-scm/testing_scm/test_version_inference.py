@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import warnings
+
 from types import SimpleNamespace
 from typing import Any
 
@@ -10,6 +12,7 @@ from setuptools_scm._integration.version_inference import VersionAlreadySetWarni
 from setuptools_scm._integration.version_inference import VersionInferenceConfig
 from setuptools_scm._integration.version_inference import VersionInferenceNoOp
 from setuptools_scm._integration.version_inference import VersionInferenceResult
+from setuptools_scm._integration.version_inference import _should_write_to_source
 from setuptools_scm._integration.version_inference import get_version_inference_config
 
 # Common test data
@@ -266,3 +269,78 @@ class TestVersionInferenceDecision:
             pyproject_data=pyproject_data,
             expected=WARNING_PACKAGE,
         )
+
+
+def _make_config(
+    write_to_source: bool | None = None,
+    tool_names: tuple[str, ...] = ("SETUPTOOLS_SCM", "VCS_VERSIONING"),
+) -> Any:
+    """Create a minimal Configuration-like object for _should_write_to_source tests."""
+    from vcs_versioning._config import Configuration
+    from vcs_versioning._environment import VcsEnvironment
+
+    env = VcsEnvironment(tool_names=tool_names)
+    config = Configuration(write_to_source=write_to_source, _env=env)
+    return config
+
+
+@pytest.mark.issue(1301)
+class TestShouldWriteToSource:
+    """Test the three-state write_to_source config + env var override."""
+
+    def test_config_true_writes(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("SETUPTOOLS_SCM_WRITE_TO_SOURCE", raising=False)
+        config = _make_config(write_to_source=True)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            assert _should_write_to_source(config) is True
+        assert not any(issubclass(x.category, DeprecationWarning) for x in w)
+
+    def test_config_false_skips(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("SETUPTOOLS_SCM_WRITE_TO_SOURCE", raising=False)
+        config = _make_config(write_to_source=False)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            assert _should_write_to_source(config) is False
+        assert not any(issubclass(x.category, DeprecationWarning) for x in w)
+
+    def test_config_unset_writes_with_deprecation_warning(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("SETUPTOOLS_SCM_WRITE_TO_SOURCE", raising=False)
+        monkeypatch.delenv("VCS_VERSIONING_WRITE_TO_SOURCE", raising=False)
+        config = _make_config(write_to_source=None)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            result = _should_write_to_source(config)
+        assert result is True
+        dep_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
+        assert len(dep_warnings) == 1
+        assert "write_to_source" in str(dep_warnings[0].message)
+
+    @pytest.mark.parametrize("env_val", ["1", "true", "yes", "True", "YES"])
+    def test_env_var_truthy_overrides_config_false(
+        self, monkeypatch: pytest.MonkeyPatch, env_val: str
+    ) -> None:
+        monkeypatch.setenv("SETUPTOOLS_SCM_WRITE_TO_SOURCE", env_val)
+        config = _make_config(write_to_source=False)
+        assert _should_write_to_source(config) is True
+
+    @pytest.mark.parametrize("env_val", ["0", "false", "no", "False", "NO"])
+    def test_env_var_falsy_overrides_config_true(
+        self, monkeypatch: pytest.MonkeyPatch, env_val: str
+    ) -> None:
+        monkeypatch.setenv("SETUPTOOLS_SCM_WRITE_TO_SOURCE", env_val)
+        config = _make_config(write_to_source=True)
+        assert _should_write_to_source(config) is False
+
+    def test_env_var_set_suppresses_deprecation_warning(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """When env var is set, no deprecation warning even if config is unset."""
+        monkeypatch.setenv("SETUPTOOLS_SCM_WRITE_TO_SOURCE", "1")
+        config = _make_config(write_to_source=None)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            _should_write_to_source(config)
+        assert not any(issubclass(x.category, DeprecationWarning) for x in w)
