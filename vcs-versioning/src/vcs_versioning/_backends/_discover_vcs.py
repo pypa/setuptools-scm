@@ -35,18 +35,22 @@ def discover(path: Path, *, config: Configuration) -> ScmWorkdir | None:
     has_git = (path / ".git").exists()
     has_hg_git = has_hg and (path / ".hg" / "git").is_dir()
 
-    if has_jj:
+    if has_jj and not config.env.disable_jj:
         if not has_command("jj", args=["version"], warn=False):
             raise LookupError(
                 f"Jujutsu (jj) repository detected at {path} but the 'jj' "
                 "command is not available. Install jj "
-                "(https://jj-vcs.dev/docs/install) or remove the .jj directory "
-                "if this is not a jj-managed workspace."
+                "(https://jj-vcs.dev/docs/install), set the DISABLE_JJ=1 "
+                "environment variable to fall back to git, or remove the "
+                ".jj directory if this is not a jj-managed workspace."
             )
         log.debug("jujutsu detected at %s", path)
         from ._jj import JjWorkdir
 
         return JjWorkdir.from_potential_worktree(path, config)
+
+    if has_jj and config.env.disable_jj:
+        log.debug("jujutsu detected at %s but disabled via DISABLE_JJ", path)
 
     if has_hg and has_hg_git:
         log.debug("hg-git hybrid detected at %s", path)
