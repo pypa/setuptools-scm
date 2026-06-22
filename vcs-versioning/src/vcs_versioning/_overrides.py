@@ -153,18 +153,18 @@ def _read_pretended_metadata_for(
     Returns a dictionary with metadata field overrides like:
     {"node": "g1337beef", "distance": 4}
     """
-    from .overrides import EnvReader
-
-    if env is None:
-        env = config.env._env
-
     log.debug("dist name: %s", config.dist_name)
 
-    reader = EnvReader(
-        tools_names=config.env.tool_names,
-        env=env,
-        dist_name=config.dist_name,
-    )
+    if env is None:
+        reader = config.env.make_reader(config.dist_name)
+    else:
+        from .overrides import EnvReader
+
+        reader = EnvReader(
+            tools_names=config.env.tool_names,
+            env=env,
+            dist_name=config.dist_name,
+        )
 
     try:
         metadata_overrides = reader.read_toml(
@@ -259,18 +259,18 @@ def _read_pretended_version_for(
     tries ``SETUPTOOLS_SCM_PRETEND_VERSION``
     and ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_$UPPERCASE_DIST_NAME``
     """
-    from .overrides import EnvReader
-
-    if env is None:
-        env = config.env._env
-
     log.debug("dist name: %s", config.dist_name)
 
-    reader = EnvReader(
-        tools_names=config.env.tool_names,
-        env=env,
-        dist_name=config.dist_name,
-    )
+    if env is None:
+        reader = config.env.make_reader(config.dist_name)
+    else:
+        from .overrides import EnvReader
+
+        reader = EnvReader(
+            tools_names=config.env.tool_names,
+            env=env,
+            dist_name=config.dist_name,
+        )
     pretended = reader.read("PRETEND_VERSION")
 
     if pretended:

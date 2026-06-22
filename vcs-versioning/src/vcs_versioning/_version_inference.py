@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from ._environment import VcsEnvironment
     from ._pyproject_reading import PyProjectData
 
 
@@ -14,6 +15,7 @@ def infer_version_string(
     overrides: dict[str, Any] | None = None,
     *,
     force_write_version_files: bool = False,
+    env: VcsEnvironment | None = None,
 ) -> str:
     """
     Compute the inferred version string from the given inputs.
@@ -27,6 +29,8 @@ def infer_version_string(
         pyproject_data: Parsed PyProjectData (may be constructed via for_testing())
         overrides: Optional override configuration (same keys as [tool.setuptools_scm])
         force_write_version_files: When True, apply write_to/version_file effects
+        env: Optional VcsEnvironment. If None, resolves from the active
+             GlobalOverrides context or process environment.
 
     Returns:
         The computed version string.
@@ -34,10 +38,13 @@ def infer_version_string(
     Raises:
         SystemExit: If version cannot be determined (via _version_missing)
     """
-    from ._config import Configuration
+    from ._environment import resolve_runtime_env
     from ._get_version_impl import _get_version, _version_missing
 
-    config = Configuration.from_file(
+    if env is None:
+        env = resolve_runtime_env()
+
+    config = env.build_config(
         dist_name=dist_name, pyproject_data=pyproject_data, **(overrides or {})
     )
 

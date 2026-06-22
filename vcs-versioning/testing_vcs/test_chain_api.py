@@ -304,3 +304,106 @@ class TestFrozenLegacyConfig:
         frozen = FrozenLegacyConfig(config)
         with pytest.raises((AttributeError, dataclasses.FrozenInstanceError)):
             frozen.version_scheme = "something"  # type: ignore[attr-defined]
+
+
+class TestInferVersionStringEnv:
+    """Tests that infer_version_string properly resolves and attaches VcsEnvironment."""
+
+    def _pyproject(self) -> PyProjectData:
+        return PyProjectData.for_testing(
+            tool_name="vcs-versioning",
+            is_required=True,
+            section_present=True,
+            project_present=True,
+            project_name="test-pkg",
+        )
+
+    def test_no_deprecation_warning_with_pretend_version(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """infer_version_string must not leak DeprecationWarning for missing env."""
+        import warnings
+
+        from vcs_versioning._version_inference import infer_version_string
+
+        monkeypatch.setenv("SETUPTOOLS_SCM_PRETEND_VERSION", "1.2.3")
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings("error", category=DeprecationWarning)
+            result = infer_version_string("test-pkg", self._pyproject())
+
+        assert result == "1.2.3"
+
+    def test_resolves_env_from_global_overrides_context(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """infer_version_string respects the active GlobalOverrides context."""
+        from vcs_versioning._version_inference import infer_version_string
+
+        monkeypatch.setenv("MYTOOL_PRETEND_VERSION", "9.8.7")
+
+        with GlobalOverrides.from_env("MYTOOL"):
+            result = infer_version_string("test-pkg", self._pyproject())
+
+        assert result == "9.8.7"
+
+    def test_accepts_explicit_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """infer_version_string uses an explicitly passed VcsEnvironment."""
+        from vcs_versioning._version_inference import infer_version_string
+
+        env_mapping = {"VCS_VERSIONING_PRETEND_VERSION": "4.5.6"}
+        env = VcsEnvironment.from_env(env=env_mapping)
+
+        result = infer_version_string("test-pkg", self._pyproject(), env=env)
+        assert result == "4.5.6"
+
+
+class TestBuildConfigurationFromPyprojectEnv:
+    """Tests that build_configuration_from_pyproject attaches VcsEnvironment."""
+
+    def _pyproject(self) -> PyProjectData:
+        return PyProjectData.for_testing(
+            tool_name="vcs-versioning",
+            is_required=True,
+            section_present=True,
+            project_present=True,
+            project_name="test-pkg",
+        )
+
+    def test_no_deprecation_warning(self) -> None:
+        """build_configuration_from_pyproject must not leak DeprecationWarning."""
+        import warnings
+
+        from vcs_versioning import build_configuration_from_pyproject
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings("error", category=DeprecationWarning)
+            config = build_configuration_from_pyproject(
+                self._pyproject(), dist_name="test-pkg"
+            )
+
+        assert config._env is not None
+
+    def test_resolves_env_from_global_overrides_context(self) -> None:
+        """build_configuration_from_pyproject uses active GlobalOverrides."""
+        from vcs_versioning import build_configuration_from_pyproject
+
+        with GlobalOverrides.from_env("MYTOOL", env={}):
+            config = build_configuration_from_pyproject(
+                self._pyproject(), dist_name="test-pkg"
+            )
+
+        assert config._env is not None
+        assert "MYTOOL" in config._env.tool_names
+
+    def test_accepts_explicit_env(self) -> None:
+        """build_configuration_from_pyproject passes explicit env through."""
+        from vcs_versioning import build_configuration_from_pyproject
+
+        env = VcsEnvironment.from_env("CUSTOM", env={})
+
+        config = build_configuration_from_pyproject(
+            self._pyproject(), dist_name="test-pkg", env=env
+        )
+
+        assert config._env is env

@@ -450,6 +450,7 @@ class Configuration:
         *,
         tool_names: tuple[str, ...] | None = None,
         env: Mapping[str, str] | None = None,
+        _env: VcsEnvironment | None = None,
         **kwargs: Any,
     ) -> Configuration:
         """
@@ -462,6 +463,7 @@ class Configuration:
         - dist_name: name of the distribution
         - tool_names: env-var prefix order for TOML overrides
         - env: environment mapping for TOML overrides (default: os.environ)
+        - _env: VcsEnvironment to attach to the resulting Configuration
         - **kwargs: additional keyword arguments to pass to the Configuration constructor
         """
 
@@ -485,14 +487,20 @@ class Configuration:
         args.update(project_overrides)
 
         # Env overrides: highest priority
-        args.update(
-            read_toml_overrides(args["dist_name"], tool_names=tool_names, env=env)
-        )
-        return cls.from_data(relative_to=relative_to, data=args)
+        if _env is not None:
+            args.update(_env.read_toml_overrides(args["dist_name"]))
+        else:
+            args.update(
+                read_toml_overrides(args["dist_name"], tool_names=tool_names, env=env)
+            )
+        return cls.from_data(relative_to=relative_to, data=args, _env=_env)
 
     @classmethod
     def from_data(
-        cls, relative_to: str | os.PathLike[str], data: dict[str, Any]
+        cls,
+        relative_to: str | os.PathLike[str],
+        data: dict[str, Any],
+        _env: VcsEnvironment | None = None,
     ) -> Configuration:
         """
         given configuration data
@@ -526,6 +534,7 @@ class Configuration:
             version_cls=version_cls,
             tag=tag_config,
             scm=scm_config,
+            _env=_env,
             **data,
         )
 

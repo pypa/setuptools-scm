@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ._config import Configuration
+    from ._environment import VcsEnvironment
     from ._pyproject_reading import PyProjectData
 
 log = logging.getLogger(__name__)
@@ -22,6 +23,7 @@ def build_configuration_from_pyproject_internal(
     pyproject_data: PyProjectData,
     *,
     dist_name: str | None = None,
+    env: VcsEnvironment | None = None,
     **integrator_overrides: Any,
 ) -> Configuration:
     """Build Configuration with complete workflow orchestration.
@@ -34,7 +36,7 @@ def build_configuration_from_pyproject_internal(
     2. Determine dist_name (argument > pyproject.project_name)
     3. Merge integrator overrides (override config file)
     4. Read and apply env TOML overrides (highest priority)
-    5. Build Configuration with proper validation
+    5. Build Configuration with proper validation and VcsEnvironment attached
 
     Priority order (highest to lowest):
         1. Environment TOML overrides (TOOL_OVERRIDES_FOR_DIST, TOOL_OVERRIDES)
@@ -45,6 +47,8 @@ def build_configuration_from_pyproject_internal(
     Args:
         pyproject_data: Parsed pyproject data from PyProjectData.from_file() or manual composition
         dist_name: Distribution name for env var lookups (overrides pyproject_data.project_name)
+        env: Optional VcsEnvironment. If None, resolves from the active
+             GlobalOverrides context or process environment.
         **integrator_overrides: Integrator-provided config overrides
                                (override config file, but overridden by env)
 
@@ -67,8 +71,11 @@ def build_configuration_from_pyproject_internal(
     """
     # Import here to avoid circular dependencies
     from ._config import Configuration
-    from ._overrides import read_toml_overrides
+    from ._environment import resolve_runtime_env
     from ._pyproject_reading import get_args_for_pyproject
+
+    if env is None:
+        env = resolve_runtime_env()
 
     # Step 1: Get base config from pyproject section
     # This also handles dist_name resolution
@@ -96,8 +103,7 @@ def build_configuration_from_pyproject_internal(
         config_data.update(integrator_overrides)
 
     # Step 4: Apply environment TOML overrides (highest priority)
-    tool_names = (pyproject_data.tool_name.upper().replace("-", "_"),)
-    env_overrides = read_toml_overrides(actual_dist_name, tool_names=tool_names)
+    env_overrides = env.read_toml_overrides(actual_dist_name)
     if env_overrides:
         log.debug("Applying environment TOML overrides: %s", list(env_overrides.keys()))
         config_data.update(env_overrides)
@@ -106,7 +112,7 @@ def build_configuration_from_pyproject_internal(
     relative_to = pyproject_data.path
     log.debug("Building Configuration with relative_to=%s", relative_to)
 
-    return Configuration.from_data(relative_to=relative_to, data=config_data)
+    return Configuration.from_data(relative_to=relative_to, data=config_data, _env=env)
 
 
 __all__ = [
