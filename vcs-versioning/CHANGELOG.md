@@ -2,6 +2,18 @@
 
 <!-- towncrier release notes start -->
 
+## 2.1.0 (2026-06-22)
+
+### Added
+
+- Add `VcsEnvironment.build_config_from_pyproject`, `build_config_from_data`, and `pyproject_tool_names` methods for canonical env-first configuration creation. ([#1424](https://github.com/pypa/setuptools-scm/issues/1424))
+
+
+### Fixed
+
+- Fix DeprecationWarning leak in pretend API by ensuring all public APIs attach VcsEnvironment to Configuration before accessing env-dependent properties. ([#1424](https://github.com/pypa/setuptools-scm/issues/1424))
+- Fix fallback discovery so an unprocessed `.git_archival.txt` no longer shadows a valid `PKG-INFO` in PyPI sdists. ([#1431](https://github.com/pypa/setuptools-scm/issues/1431))
+
 ## 2.0.1 (2026-06-22)
 
 ### Fixed
