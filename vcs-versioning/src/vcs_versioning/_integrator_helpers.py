@@ -72,7 +72,6 @@ def build_configuration_from_pyproject_internal(
     # Import here to avoid circular dependencies
     from ._config import Configuration
     from ._environment import resolve_runtime_env
-    from ._overrides import read_toml_overrides
     from ._pyproject_reading import get_args_for_pyproject
 
     if env is None:
@@ -104,9 +103,7 @@ def build_configuration_from_pyproject_internal(
         config_data.update(integrator_overrides)
 
     # Step 4: Apply environment TOML overrides (highest priority)
-    env_overrides = read_toml_overrides(
-        actual_dist_name, tool_names=env.tool_names, env=env._env
-    )
+    env_overrides = env.read_toml_overrides(actual_dist_name)
     if env_overrides:
         log.debug("Applying environment TOML overrides: %s", list(env_overrides.keys()))
         config_data.update(env_overrides)

@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any, Literal
 if TYPE_CHECKING:
     from pytest import MonkeyPatch
 
-    from . import _config, overrides
+    from . import _config, _overrides, overrides
 
 log = logging.getLogger(__name__)
 
@@ -317,3 +317,17 @@ class VcsEnvironment:
             else:
                 result.append(name.lower())
         return result
+
+    def read_toml_overrides(
+        self, dist_name: str | None
+    ) -> _overrides.ConfigOverridesDict:
+        """Read TOML config overrides from environment variables.
+
+        Uses this environment's tool_names and env dict, delegating to
+        the standalone ``read_toml_overrides`` function.
+        """
+        from ._overrides import read_toml_overrides as _read_toml_overrides
+
+        return _read_toml_overrides(
+            dist_name, tool_names=self.tool_names, env=self._env
+        )

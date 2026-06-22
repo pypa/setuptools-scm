@@ -487,9 +487,12 @@ class Configuration:
         args.update(project_overrides)
 
         # Env overrides: highest priority
-        args.update(
-            read_toml_overrides(args["dist_name"], tool_names=tool_names, env=env)
-        )
+        if _env is not None:
+            args.update(_env.read_toml_overrides(args["dist_name"]))
+        else:
+            args.update(
+                read_toml_overrides(args["dist_name"], tool_names=tool_names, env=env)
+            )
         return cls.from_data(relative_to=relative_to, data=args, _env=_env)
 
     @classmethod
