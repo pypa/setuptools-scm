@@ -91,12 +91,14 @@ def build_configuration_from_pyproject(
     This allows integrators to provide their own transformations
     while still respecting user environment variable overrides.
     """
-    from ._integrator_helpers import build_configuration_from_pyproject_internal
+    from ._environment import resolve_runtime_env
 
-    return build_configuration_from_pyproject_internal(
+    if env is None:
+        env = resolve_runtime_env()
+
+    return env.build_config_from_pyproject(
         pyproject_data=pyproject_data,
         dist_name=dist_name,
-        env=env,
         **integrator_overrides,
     )
 

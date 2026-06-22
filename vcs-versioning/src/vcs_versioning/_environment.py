@@ -251,3 +251,69 @@ class VcsEnvironment:
             tool_names=self.tool_names, env=self._env, _env=self, **kwargs
         )
         return config
+
+    def build_config_from_data(
+        self,
+        relative_to: str | os.PathLike[str],
+        data: dict[str, Any],
+    ) -> _config.Configuration:
+        """Create a ``Configuration`` from pre-assembled data dict.
+
+        Use this when you have already extracted and merged configuration
+        data (e.g. from pyproject section + overrides) and want to build
+        a validated Configuration without re-reading files.
+        """
+        from ._config import Configuration
+
+        return Configuration.from_data(relative_to=relative_to, data=data, _env=self)
+
+    def build_config_from_pyproject(
+        self,
+        pyproject_data: Any,
+        *,
+        dist_name: str | None = None,
+        **integrator_overrides: Any,
+    ) -> _config.Configuration:
+        """Create a ``Configuration`` from PyProjectData with full workflow.
+
+        Canonical entry point for integrators. Orchestrates:
+        1. Extract config from pyproject_data.section
+        2. Determine dist_name
+        3. Apply integrator overrides
+        4. Apply environment TOML overrides
+        5. Build and validate Configuration with this env attached
+        """
+        from ._integrator_helpers import build_configuration_from_pyproject_internal
+
+        return build_configuration_from_pyproject_internal(
+            pyproject_data=pyproject_data,
+            dist_name=dist_name,
+            env=self,
+            **integrator_overrides,
+        )
+
+    def pyproject_tool_names(self) -> list[str]:
+        """Derive TOML section names from env-var prefixes.
+
+        Maps env-var prefixes to their canonical pyproject [tool.X] section
+        names. The ``VCS_VERSIONING`` prefix always maps to ``vcs-versioning``
+        (with dash). Other prefixes are lowercased with underscores preserved.
+
+        Examples:
+            - ``SETUPTOOLS_SCM`` -> ``setuptools_scm``
+            - ``VCS_VERSIONING`` -> ``vcs-versioning``
+            - ``HATCH_VCS`` -> ``hatch_vcs``
+
+        .. todo::
+            This uses special-case mapping (VCS_VERSIONING -> vcs-versioning).
+            The tool names should be made properly configurable via an explicit
+            mapping parameter on VcsEnvironment rather than guessing from
+            env-var prefix casing conventions.
+        """
+        result: list[str] = []
+        for name in self.tool_names:
+            if name == "VCS_VERSIONING":
+                result.append("vcs-versioning")
+            else:
+                result.append(name.lower())
+        return result
