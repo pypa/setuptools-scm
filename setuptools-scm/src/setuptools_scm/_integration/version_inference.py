@@ -16,6 +16,7 @@ from vcs_versioning._version_cls import NonNormalizedVersion
 
 if TYPE_CHECKING:
     from vcs_versioning import _config
+    from vcs_versioning._environment import VcsEnvironment
 
 from .build_py import VersionInferenceData
 from .build_py import set_version_inference_data
@@ -73,6 +74,8 @@ def infer_version_with_config(
     dist_name: str | None,
     pyproject_data: PyProjectData,
     overrides: dict[str, Any] | None = None,
+    *,
+    env: VcsEnvironment | None = None,
 ) -> VersionInferenceData:
     """Infer version and return VersionInferenceData.
 
@@ -88,7 +91,7 @@ def infer_version_with_config(
     Returns:
         VersionInferenceData containing version, Configuration, ScmVersion, and workdir
     """
-    from vcs_versioning._environment import VcsEnvironment
+    from vcs_versioning._environment import VcsEnvironment as _VcsEnvironment
     from vcs_versioning._get_version_impl import _version_missing
     from vcs_versioning._get_version_impl import write_version_files
     from vcs_versioning._legacy_parse import has_legacy_parse_eps
@@ -98,7 +101,8 @@ def infer_version_with_config(
     from vcs_versioning._overrides import _read_pretended_version_for
     from vcs_versioning._version_schemes import format_version
 
-    env = VcsEnvironment.from_env("SETUPTOOLS_SCM")
+    if env is None:
+        env = _VcsEnvironment.from_env("SETUPTOOLS_SCM")
     config = env.build_config(
         dist_name=dist_name, pyproject_data=pyproject_data, **(overrides or {})
     )
@@ -235,6 +239,7 @@ def infer_version_string(
     overrides: dict[str, Any] | None = None,
     *,
     force_write_version_files: bool = False,
+    env: VcsEnvironment | None = None,
 ) -> str:
     """
     Compute the inferred version string from the given inputs without requiring a
@@ -246,20 +251,25 @@ def infer_version_string(
         pyproject_data: Parsed PyProjectData (may be constructed via for_testing())
         overrides: Optional override configuration (same keys as [tool.setuptools_scm])
         force_write_version_files: When True, apply write_to/version_file effects
+        env: Optional VcsEnvironment. If None, resolves one with SETUPTOOLS_SCM prefix.
 
     Returns:
         The computed version string.
     """
+    from vcs_versioning._environment import VcsEnvironment as _VcsEnvironment
     from vcs_versioning._version_inference import (
         infer_version_string as _vcs_infer_version_string,
     )
 
-    # Delegate to vcs_versioning implementation
+    if env is None:
+        env = _VcsEnvironment.from_env("SETUPTOOLS_SCM")
+
     return _vcs_infer_version_string(
         dist_name,
         pyproject_data,
         overrides,
         force_write_version_files=force_write_version_files,
+        env=env,
     )
 
 

@@ -25,6 +25,7 @@ def build_configuration_from_pyproject(
     pyproject_data: PyProjectData,
     *,
     dist_name: str | None = None,
+    env: VcsEnvironment | None = None,
     **integrator_overrides: Any,
 ) -> Configuration:
     """Build Configuration from PyProjectData with full workflow.
@@ -36,7 +37,7 @@ def build_configuration_from_pyproject(
     2. Determine dist_name (argument > pyproject.project_name)
     3. Apply integrator overrides (override config file)
     4. Apply environment TOML overrides (highest priority)
-    5. Create and validate Configuration instance
+    5. Create and validate Configuration instance with VcsEnvironment attached
 
     Integrators create PyProjectData themselves:
 
@@ -73,6 +74,8 @@ def build_configuration_from_pyproject(
     Args:
         pyproject_data: Parsed pyproject data (integrator creates this)
         dist_name: Distribution name (overrides pyproject_data.project_name)
+        env: Optional VcsEnvironment. If None, resolves from the active
+             GlobalOverrides context or process environment.
         **integrator_overrides: Integrator-provided config overrides
                                (override config file, but overridden by env)
 
@@ -93,6 +96,7 @@ def build_configuration_from_pyproject(
     return build_configuration_from_pyproject_internal(
         pyproject_data=pyproject_data,
         dist_name=dist_name,
+        env=env,
         **integrator_overrides,
     )
 
