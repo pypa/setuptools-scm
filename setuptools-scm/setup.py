@@ -41,6 +41,7 @@ def _package_version() -> str:
         local_scheme=local_scheme,
         tag_regex=r"^setuptools-scm-(?P<version>v?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$",
         scm={"git": {"describe_command": make_describe_command("setuptools-scm-*")}},
+        dist_name="setuptools-scm",
     )
 
 
