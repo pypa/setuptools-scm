@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 10.1.1 (2026-06-22)
+
+### Fixed
+
+- Update CI to use PyPy 3.11 as cryptography has no PyPy 3.10 build available ([#1421](https://github.com/pypa/setuptools-scm/issues/1421))
+
 ## 10.1.0 (2026-06-22)
 
 ### Added
