@@ -154,12 +154,12 @@ def test_jj_colocated_prefers_jj(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd("jj tag set v2.0.0 -r @-")
 
-    # Verify both markers exist (jj git init creates colocated by default)
-    assert (wd.cwd / ".jj").is_dir()
-    assert (wd.cwd / ".git").exists()
+    resolved = wd.cwd.resolve()
+    assert (resolved / ".jj").is_dir()
+    assert (resolved / ".git").exists()
 
-    config = Configuration(root=wd.cwd)
-    result = discover(wd.cwd, config=config)
+    config = Configuration(root=resolved)
+    result = discover(resolved, config=config)
 
     assert result is not None
     assert type(result).__name__ == "JjWorkdir"
@@ -171,12 +171,13 @@ def test_jj_disable_jj_falls_back_to_git(wd: WorkDir) -> None:
 
     wd.commit_testfile()
 
-    assert (wd.cwd / ".jj").is_dir()
-    assert (wd.cwd / ".git").exists()
+    resolved = wd.cwd.resolve()
+    assert (resolved / ".jj").is_dir()
+    assert (resolved / ".git").exists()
 
     env = VcsEnvironment(disable_jj=True)
-    config = env.build_config(root=wd.cwd)
-    result = discover(wd.cwd, config=config)
+    config = env.build_config(root=resolved)
+    result = discover(resolved, config=config)
 
     assert result is not None
     assert type(result).__name__ == "GitWorkdir"
