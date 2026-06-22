@@ -88,18 +88,28 @@ class JjWorkdir(Workdir):
         return res.parse_success(parse=bool, default=False)
 
     def get_branch(self) -> str | None:
-        res = self.run_jj(
-            [
-                "log",
-                "--no-graph",
-                "-r",
-                "@",
-                "-T",
-                'local_bookmarks.map(|b| b.name()).join(",")',
-            ],
-        )
-        branch = res.parse_success(parse=str)
-        return branch if branch else None
+        """Return the first local bookmark on the working copy's parent.
+
+        In jj, ``@`` is the (potentially empty) working-copy commit.
+        Bookmarks are normally set on ``@-``, the parent that was created
+        by ``jj commit``.  We also check ``@`` as a fallback in case the
+        user placed a bookmark directly on the working copy.
+        """
+        for rev in ("@-", "@"):
+            res = self.run_jj(
+                [
+                    "log",
+                    "--no-graph",
+                    "-r",
+                    rev,
+                    "-T",
+                    'local_bookmarks.map(|b| b.name()).join(",")',
+                ],
+            )
+            branch = res.parse_success(parse=str)
+            if branch:
+                return branch
+        return None
 
     def get_head_date(self) -> date | None:
         def parse_timestamp(text: str) -> date | None:

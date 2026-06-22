@@ -156,6 +156,9 @@ class VcsEnvironment:
         set_var(f"{prefix}_SUBPROCESS_TIMEOUT", str(self.subprocess_timeout))
         set_var(f"{prefix}_HG_COMMAND", self.hg_command)
 
+        if self.disable_jj:
+            set_var(f"{prefix}_DISABLE_JJ", "1")
+
         if self.ignore_vcs_roots:
             set_var(
                 f"{prefix}_IGNORE_VCS_ROOTS",

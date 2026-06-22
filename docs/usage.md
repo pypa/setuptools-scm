@@ -736,13 +736,22 @@ pip install -e .
 
 **Bookmarks vs branches.** Jujutsu uses "bookmarks" rather than branches.
 The jj backend reports the first local bookmark of the working copy's parent
-as the branch name in version metadata.
+(`@-`) as the branch name in version metadata, falling back to `@` if no
+bookmark is found on the parent.
+
+**No archive support.** Unlike Git (`.git_archival.txt`) and Mercurial
+(`.hg_archival`), Jujutsu does not have a native archive mechanism that
+embeds version metadata. Building from source archives (e.g. GitHub release
+tarballs) requires using `SETUPTOOLS_SCM_PRETEND_VERSION` or
+`fallback_version` in your configuration.
 
 #### Docker / container builds
 
 In colocated Jujutsu repositories, the `.jj/` directory marker is present
 alongside `.git/`. When building in containers where only Git is available,
-use `SETUPTOOLS_SCM_DISABLE_JJ=1` to prevent the missing-jj error:
+use `SETUPTOOLS_SCM_DISABLE_JJ=1` to skip jj discovery and fall back to
+the Git backend. Only `.git` needs to be mounted — `.jj` is intentionally
+omitted since the Git backend reads directly from the Git storage:
 
 ```dockerfile
 FROM python
