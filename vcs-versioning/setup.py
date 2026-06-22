@@ -79,6 +79,7 @@ def _package_version() -> str:
         scm={
             "git": {"describe_command": git.make_describe_command("vcs-versioning-*")}
         },
+        dist_name="vcs-versioning",
         fallback_version="0.1.1+pre.tag",
     )
 
