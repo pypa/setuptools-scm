@@ -25,7 +25,7 @@ Use the `[tool.setuptools_scm]` section when you need to:
 
 - Write version files (`version_file`)
 - Customize version schemes (`version_scheme`, `local_scheme`)
-- Set custom tag patterns (`tag_regex`)
+- Set tag matching options (`tag.prefix`, `tag.strict`, `tag.regex`)
 - Configure fallback behavior (`fallback_version`)
 - Or any other non-default behavior
 
@@ -48,20 +48,82 @@ Callables or other Python objects must be passed in `setup.py` (via the `use_scm
   either an entrypoint name or a callable.
   See [Version number construction](extending.md#setuptools_scmlocal_scheme) for predefined implementations.
 
-`tag_regex: str|Pattern[str]`
-:   A Python regex string to extract the version part from any SCM tag.
-    The regex needs to contain either a single match group, or a group
-    named `version`, that captures the actual version information.
+## Tag Matching Configuration
 
-    Defaults to the value of [vcs_versioning._config.DEFAULT_TAG_REGEX][]
-    which supports tags with optional "v" prefix (recommended), project prefixes,
-    and various version formats.
+These options control which VCS tags are considered version tags and how they
+are parsed.  They are configured under the `tag` table in `pyproject.toml`:
+
+```toml title="pyproject.toml"
+[tool.setuptools_scm.tag]
+prefix = ""        # default – no prefix filtering
+strict = true      # require tags to contain at least one dot
+```
+
+`tag.prefix: str = ""`
+:   A literal prefix that version tags must start with.  The prefix is used
+    to filter tags in `git describe --match` and is stripped before version
+    parsing.
+
+    Use this for monorepos or multi-package repositories where each package
+    has its own tag namespace.
+
+    ```toml title="pyproject.toml – monorepo example"
+    [tool.setuptools_scm.tag]
+    prefix = "hatchling-v"   # matches hatchling-v1.0.0, strips to 1.0.0
+    ```
+
+    | `tag.prefix` value | Tags matched | Extracted version |
+    |--------------------|-------------|-------------------|
+    | `""` (default)     | `v1.0.0`, `1.0.0`, `2026-event` | `v1.0.0`, `1.0.0` |
+    | `"v"` | `v1.0.0`, `V1.0.0` | `1.0.0` |
+    | `"hatchling-v"` | `hatchling-v1.0.0` | `1.0.0` |
+    | `"py-v"` | `py-v2.3.1` | `2.3.1` |
+
+`tag.strict: bool | None = None`
+:   Controls how strictly tags must look like version numbers.
+
+    | Value   | Behavior |
+    |---------|----------|
+    | unset (`None`) | Current permissive matching (`*[0-9]*`) with a `FutureWarning` advising you to set this explicitly. |
+    | `true` | **Strict** – tags must contain at least one dot (e.g. `*[0-9]*.*[0-9]*`).  Event-like tags such as `2026-event` are rejected. |
+    | `false` | **Permissive** – matches any tag containing a digit (`*[0-9]*`), no warning. |
+
+    !!! note "Migration"
+
+        In a future major release the default will change from permissive to strict.
+        Set `tag.strict = false` now if you rely on the permissive matching, or
+        `tag.strict = true` to adopt the stricter behavior early.
+
+    `tag.prefix` and `tag.strict` compose naturally:
+
+    | `tag.prefix` | `tag.strict` | Effective `--match` glob |
+    |---|---|---|
+    | `""` | `false` / unset | `*[0-9]*` |
+    | `""` | `true` | `*[0-9]*.*[0-9]*` |
+    | `"hatchling-v"` | `false` / unset | `hatchling-v*[0-9]*` |
+    | `"hatchling-v"` | `true` | `hatchling-v*[0-9]*.*[0-9]*` |
+
+`tag.regex: str | Pattern[str]`
+:   A Python regex to extract the version part from a tag *after* the
+    `tag.prefix` has been stripped.  The regex needs a single capture group
+    or a named group `version`.
+
+    Defaults to [vcs_versioning._config.DEFAULT_TAG_REGEX][] which supports
+    tags with optional "v" prefix, project prefixes, and various version
+    formats.
 
     !!! tip
 
-        The default regex supports common tag formats like `v1.0.0`, `myproject-v1.0.0`,
-        and `1.0.0`. For best practices on tag naming, see
-        [Version Tag Formats](usage.md#version-tag-formats).
+        Most users should use `tag.prefix` and `tag.strict` instead of
+        customizing the regex directly.
+
+`tag_regex` (deprecated)
+:   **Deprecated**: Use `tag.regex` instead.
+
+    Top-level `tag_regex` is still accepted for backward compatibility but
+    emits a `DeprecationWarning`.  It cannot be used together with `tag.regex`.
+
+## Other Configuration
 
 `parentdir_prefix_version: str | None = None`
 :   If the normal methods for detecting the version (SCM version,
@@ -117,6 +179,12 @@ Callables or other Python objects must be passed in `setup.py` (via the `use_scm
 
     Defaults to the value set by [vcs_versioning._backends._git.DEFAULT_DESCRIBE][]
 
+    !!! warning "Overrides tag.prefix / tag.strict"
+
+        When `scm.git.describe_command` is explicitly set, `tag.prefix` and
+        `tag.strict` have no effect on the describe match pattern (a warning
+        is emitted).  The explicit command takes full precedence.
+
 `scm.git.pre_parse`
 :   A string specifying which git pre-parse function to use before parsing version information.
     Available options:
@@ -164,6 +232,31 @@ Callables or other Python objects must be passed in `setup.py` (via the `use_scm
     `version` is the generated next_version as string,
     `version_tuple` is a tuple of split numbers/strings and
     `scm_version` is the `ScmVersion` instance the current `version` was rendered from
+
+`write_to_source: bool | None = None`
+:   Controls whether version files (specified by `version_file` or `write_to`) are
+    written to the source tree during version inference.
+
+    | Value   | Behavior |
+    |---------|----------|
+    | unset   | Writes to source tree **and** emits a `DeprecationWarning` advising you to set this option explicitly, since the default will change in a future major release. |
+    | `true`  | Writes to source tree, no warning — explicit opt-in. |
+    | `false` | Does **not** write to source tree, no warning — explicit opt-out. Version files are still written to the build directory during `build_py`. |
+
+    The `SETUPTOOLS_SCM_WRITE_TO_SOURCE` environment variable overrides this setting
+    (see [Environment Variables](#environment-variables) below).
+
+    !!! note "Deprecation cycle"
+
+        In a future major release, the default will change from writing to source to
+        **not** writing to source. Set `write_to_source = true` now if you rely on
+        version files being present in your source tree.
+
+    ```toml title="pyproject.toml"
+    [tool.setuptools_scm]
+    version_file = "mypackage/_version.py"
+    write_to_source = true
+    ```
 
 ## setuptools-scm Specific Configuration
 
@@ -234,9 +327,28 @@ These environment variables control setuptools-scm specific behavior.
 :   A TOML inline table to override configuration from `pyproject.toml`.
     See the [overrides documentation](overrides.md#config-overrides) for details.
 
+`SETUPTOOLS_SCM_WRITE_TO_SOURCE`
+:   Override the `write_to_source` configuration option. Set to `1`/`true`/`yes`
+    to write version files to the source tree, or `0`/`false`/`no` to disable it.
+    When set, no deprecation warning is emitted regardless of the pyproject.toml setting.
+
 `SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT`
 :   Override the subprocess timeout (default: 40 seconds).
     See the [overrides documentation](overrides.md#subprocess-timeouts) for details.
+
+`SETUPTOOLS_SCM_DISABLE_JJ`
+:   Disable Jujutsu (jj) backend discovery. When set to `1`/`true`/`yes`,
+    setuptools-scm will skip the jj backend even if a `.jj/` directory is
+    present, falling back to Git or Mercurial detection instead.
+
+    This is useful in container or CI environments where a colocated
+    Jujutsu/Git repository is used but the `jj` binary is not installed.
+    Without this variable, a missing `jj` binary in a `.jj/` repository
+    raises an error.
+
+    Also available as `VCS_VERSIONING_DISABLE_JJ`.
+
+    See [Jujutsu repositories](usage.md#jujutsu-jj-repositories) for details.
 
 ## Automatic File Inclusion
 
@@ -248,7 +360,7 @@ These environment variables control setuptools-scm specific behavior.
 
 `setuptools-scm` provides a `setuptools.file_finders` entry point that:
 
-1. Automatically discovers SCM-managed files (Git, Mercurial)
+1. Automatically discovers SCM-managed files (Git, Mercurial, Jujutsu)
 2. Includes them in source distributions (`python -m build --sdist`)
 3. Works for `include_package_data = True` in package building
 
@@ -263,6 +375,7 @@ setuptools_scm = "setuptools_scm._file_finders:find_files"
 
 - All files tracked by Git (`git ls-files`)
 - All files tracked by Mercurial (`hg files`)
+- All files tracked by Jujutsu (`jj file list`)
 - Includes: source code, documentation, tests, config files, etc.
 - Excludes: untracked files, files in `.gitignore`/`.hgignore`
 

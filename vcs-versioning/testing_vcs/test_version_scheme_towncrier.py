@@ -11,6 +11,7 @@ from vcs_versioning._version_cls import Version
 from vcs_versioning._version_schemes._towncrier import (
     _determine_bump_type,
     _find_fragments,
+    _resolve_fragment_directory,
     version_from_fragments,
 )
 
@@ -514,3 +515,65 @@ def test_version_from_fragments_dirty(
     result = version_from_fragments(version)
     # Should still bump correctly, dirty flag affects local version
     assert result.startswith("1.3.0.dev5")
+
+
+class TestResolveFragmentDirectory:
+    """Tests for _resolve_fragment_directory config resolution."""
+
+    def test_default_when_no_config(self, tmp_path: Path) -> None:
+        """Falls back to changelog.d when no config files exist."""
+        assert _resolve_fragment_directory(tmp_path) == "changelog.d"
+
+    def test_reads_from_pyproject_toml(self, tmp_path: Path) -> None:
+        """Reads directory from [tool.towncrier] in pyproject.toml."""
+        pyproject = tmp_path / "pyproject.toml"
+        pyproject.write_text('[tool.towncrier]\ndirectory = "changes"\n')
+
+        assert _resolve_fragment_directory(tmp_path) == "changes"
+
+    def test_reads_from_towncrier_toml(self, tmp_path: Path) -> None:
+        """Reads directory from towncrier.toml when pyproject.toml has no setting."""
+        towncrier_toml = tmp_path / "towncrier.toml"
+        towncrier_toml.write_text('directory = "my-fragments"\n')
+
+        assert _resolve_fragment_directory(tmp_path) == "my-fragments"
+
+    def test_pyproject_takes_priority_over_towncrier_toml(self, tmp_path: Path) -> None:
+        """pyproject.toml [tool.towncrier] takes priority over towncrier.toml."""
+        pyproject = tmp_path / "pyproject.toml"
+        pyproject.write_text('[tool.towncrier]\ndirectory = "from-pyproject"\n')
+        towncrier_toml = tmp_path / "towncrier.toml"
+        towncrier_toml.write_text('directory = "from-towncrier"\n')
+
+        assert _resolve_fragment_directory(tmp_path) == "from-pyproject"
+
+    def test_pyproject_without_towncrier_section(self, tmp_path: Path) -> None:
+        """Falls back to default when pyproject.toml exists but has no towncrier section."""
+        pyproject = tmp_path / "pyproject.toml"
+        pyproject.write_text("[tool.other]\nfoo = 1\n")
+
+        assert _resolve_fragment_directory(tmp_path) == "changelog.d"
+
+
+@pytest.mark.issue(1380)
+def test_version_from_fragments_custom_directory(tmp_path: Path) -> None:
+    """End-to-end: towncrier-fragments reads custom directory from config."""
+    # Configure towncrier to use a custom directory
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text('[tool.towncrier]\ndirectory = "changes"\n')
+
+    # Create fragments in the custom directory
+    changes_dir = tmp_path / "changes"
+    changes_dir.mkdir()
+    (changes_dir / "42.feature.md").write_text("New feature")
+
+    config = _config.Configuration(root=tmp_path)
+    version = ScmVersion(
+        tag=Version("1.0.0"),
+        distance=3,
+        node="abc123",
+        dirty=False,
+        config=config,
+    )
+    result = version_from_fragments(version)
+    assert result.startswith("1.1.0.dev3")

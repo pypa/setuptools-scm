@@ -1,7 +1,8 @@
 """Version scheme based on towncrier changelog fragments.
 
-This version scheme analyzes changelog fragments in the changelog.d/ directory
-to determine the appropriate version bump:
+This version scheme analyzes changelog fragments in the configured towncrier
+fragment directory (resolved from pyproject.toml or towncrier.toml, defaulting
+to changelog.d/) to determine the appropriate version bump:
 - Major bump: if 'major', 'breaking', or 'removal' fragments are present
 - Minor bump: if 'feature' or 'deprecation' fragments are present
 - Patch bump: if only 'bugfix', 'doc', or 'misc' fragments are present
@@ -15,10 +16,13 @@ import logging
 from pathlib import Path
 
 from .._scm_version import ScmVersion
+from .._toml import read_toml_content
 from ._common import SEMVER_MINOR, SEMVER_PATCH
 from ._standard import guess_next_dev_version, guess_next_simple_semver
 
 log = logging.getLogger(__name__)
+
+DEFAULT_FRAGMENT_DIRECTORY = "changelog.d"
 
 # Fragment types that indicate different version bumps
 MAJOR_FRAGMENT_TYPES = {"major", "breaking", "removal"}
@@ -28,8 +32,33 @@ PATCH_FRAGMENT_TYPES = {"bugfix", "doc", "misc"}
 ALL_FRAGMENT_TYPES = MAJOR_FRAGMENT_TYPES | MINOR_FRAGMENT_TYPES | PATCH_FRAGMENT_TYPES
 
 
+def _resolve_fragment_directory(root: Path) -> str:
+    """Resolve the towncrier fragment directory from config files.
+
+    Checks (in order):
+    1. pyproject.toml [tool.towncrier] directory
+    2. towncrier.toml top-level directory
+
+    Falls back to "changelog.d" if not configured.
+    """
+    pyproject_path = root / "pyproject.toml"
+    pyproject_data = read_toml_content(pyproject_path, default={})
+    towncrier_section = pyproject_data.get("tool", {}).get("towncrier", {})
+    if directory := towncrier_section.get("directory"):
+        log.debug("Found towncrier directory in pyproject.toml: %s", directory)
+        return str(directory)
+
+    towncrier_toml_path = root / "towncrier.toml"
+    towncrier_data = read_toml_content(towncrier_toml_path, default={})
+    if directory := towncrier_data.get("directory"):
+        log.debug("Found towncrier directory in towncrier.toml: %s", directory)
+        return str(directory)
+
+    return DEFAULT_FRAGMENT_DIRECTORY
+
+
 def _find_fragments(
-    root: Path, changelog_dir: str = "changelog.d"
+    root: Path, changelog_dir: str = DEFAULT_FRAGMENT_DIRECTORY
 ) -> dict[str, list[str]]:
     """Find and categorize changelog fragments.
 
@@ -145,7 +174,8 @@ def version_from_fragments(version: ScmVersion) -> str:
     log.debug("Analyzing fragments in %s", root)
 
     # Find and analyze fragments
-    fragments = _find_fragments(root)
+    changelog_dir = _resolve_fragment_directory(root)
+    fragments = _find_fragments(root, changelog_dir=changelog_dir)
     bump_type = _determine_bump_type(fragments)
 
     if bump_type is None:
@@ -188,7 +218,8 @@ def get_release_version(version: ScmVersion) -> str | None:
     root = _get_changelog_root(version)
     log.debug("Analyzing fragments for release version in %s", root)
 
-    fragments = _find_fragments(root)
+    changelog_dir = _resolve_fragment_directory(root)
+    fragments = _find_fragments(root, changelog_dir=changelog_dir)
     bump_type = _determine_bump_type(fragments)
 
     if bump_type is None:

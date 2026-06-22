@@ -2,6 +2,39 @@
 
 <!-- towncrier release notes start -->
 
+## 2.0.0 (2026-06-22)
+
+### Removed
+
+- Remove module-level accessor functions from ``vcs_versioning.overrides``: ``get_active_overrides()``, ``get_debug_level()``, ``get_subprocess_timeout()``, ``get_hg_command()``, ``get_source_date_epoch()``, and ``source_epoch_or_utc_now()``. Use ``VcsEnvironment.from_env()`` or ``config.env`` instead. External consumer audit confirmed no downstream usage of these functions. ([#removed-accessors](https://github.com/pypa/setuptools-scm/issues/removed-accessors))
+
+
+### Added
+
+- Introduce ``VcsEnvironment`` and the chained API (``env → config → workdir → version``) for explicit runtime settings. Add ``Configuration.env``, ``Configuration.discover_workdir()``, and the ``vcs_versioning.discover_workdir`` entry-point group. Integrators can now use ``VcsEnvironment.from_env("MY_TOOL").build_config()`` to thread timeout, hg command, and other settings without ambient globals. ([#chained-api](https://github.com/pypa/setuptools-scm/issues/chained-api))
+- Warn when ``version_file`` or ``write_to`` targets a file that is tracked by version control. A tracked version file causes ``git describe --dirty`` to report a dirty tree after builds rewrite it, leading to unexpected dev-version bumps on tag checkouts. The warning advises removing the file from VCS and adding it to the ignore file. ([#468](https://github.com/pypa/setuptools-scm/issues/468))
+- Add native Jujutsu (jj) VCS backend with version inference, file finder, and strict error when `.jj/` is detected but `jj` is not installed. The `SETUPTOOLS_SCM_DISABLE_JJ=1` environment variable can be used to opt out of jj discovery in environments where `jj` is not available. ([#1070](https://github.com/pypa/setuptools-scm/issues/1070))
+- Add ``no-local-version-strict`` local scheme that combines ``no-local-version`` and ``fail-on-uncommitted-changes`` in a single entry-point. When the working tree is dirty the build fails with ``DirtyWorkingTreeError``; otherwise the local segment is stripped, producing PyPI-safe versions suitable for release builds. ([#1238](https://github.com/pypa/setuptools-scm/issues/1238))
+- Modernize Mercurial backend to use `latesttag(pattern)` template instead of manual tag discovery with revsets, reducing subprocess calls and enabling tag.prefix/tag.strict support for Mercurial repositories. ([#1335](https://github.com/pypa/setuptools-scm/issues/1335))
+- Add `tag.prefix` and `tag.strict` configuration options for controlling which VCS tags are considered version tags. `tag.prefix` filters and strips a literal prefix (for monorepo tag schemes like `hatchling-v1.0.0`). `tag.strict` (tri-state) requires tags to contain at least one dot, rejecting non-version tags like event markers. Both compose to generate the `git describe --match` glob automatically. ([#1411](https://github.com/pypa/setuptools-scm/issues/1411))
+
+
+### Fixed
+
+- Replace bare ``assert`` in ``ScmWorkdir.config`` and ``FallbackWorkdir.config`` with a ``RuntimeError`` that explains how to properly associate a ``Configuration`` with a workdir. ([#workdir-config-error](https://github.com/pypa/setuptools-scm/issues/workdir-config-error))
+- Filter Mercurial pseudo-tags (tip, qbase, qtip, qparent) and iterate all tags when resolving versions, fixing spurious "no version found" warnings from MQ extension tags. ([#310](https://github.com/pypa/setuptools-scm/issues/310))
+- The ``semver-pep440`` and ``semver-pep440-release-branch`` version schemes now
+  correctly handle ``.dev0`` tags and pre-release tags. Exact checkout on a tag
+  returns the tag as-is (``2.0.dev0`` stays ``2.0.dev0``, ``1.0.0rc1`` stays
+  ``1.0.0rc1``). Non-exact ``.dev0`` tags are treated as explicit version anchors,
+  producing ``X.Y.0.devN`` instead of incorrectly bumping past the anchored version. ([#523](https://github.com/pypa/setuptools-scm/issues/523))
+- Replace git archive with git ls-files for file discovery, fixing freshly added files being hidden while still honoring export-ignore via gitattributes ([#662](https://github.com/pypa/setuptools-scm/issues/662))
+- Fix git archivals from repositories with no tags failing to determine a version. ([#1288](https://github.com/pypa/setuptools-scm/issues/1288))
+- Override user-defined shell aliases when invoking VCS commands, preventing alias expansions from corrupting subprocess output. ([#1359](https://github.com/pypa/setuptools-scm/issues/1359))
+- Suppress spurious "toml section missing" warnings when setuptools-scm is used only for file finding or with simplified activation. The log message is now debug-level and only emitted when the package is actually a build requirement. ([#1368](https://github.com/pypa/setuptools-scm/issues/1368))
+- Read towncrier fragment directory from `[tool.towncrier]` in `pyproject.toml` or the top-level `directory` key in `towncrier.toml` instead of hardcoding `changelog.d/`. ([#1380](https://github.com/pypa/setuptools-scm/issues/1380))
+- Add the py.typed marker file. ([#1392](https://github.com/pypa/setuptools-scm/issues/1392))
+
 ## 1.1.1 (2026-03-27)
 
 ### Fixed

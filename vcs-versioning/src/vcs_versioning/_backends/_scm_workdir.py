@@ -2,11 +2,16 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from dataclasses import field as dc_field
 from datetime import date, datetime, timezone
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from .._config import Configuration
 from .._scm_version import ScmVersion
+
+if TYPE_CHECKING:
+    from .._config import Configuration
+
 
 log = logging.getLogger(__name__)
 
@@ -31,12 +36,10 @@ def get_latest_file_mtime(changed_files: list[str], base_path: Path) -> date | N
             file_stat = full_path.stat()
             latest_mtime = max(latest_mtime, file_stat.st_mtime)
         except OSError:
-            # File might not exist or be accessible, skip it
             log.debug("Failed to get mtime for %s", full_path)
             continue
 
     if latest_mtime > 0:
-        # Convert to UTC date
         dt = datetime.fromtimestamp(latest_mtime, timezone.utc)
         return dt.date()
 
@@ -44,12 +47,81 @@ def get_latest_file_mtime(changed_files: list[str], base_path: Path) -> date | N
 
 
 @dataclass()
-class Workdir:
-    path: Path
+class ScmWorkdir:
+    """Base class for VCS work directories.
 
-    def run_describe(self, config: Configuration) -> ScmVersion:
-        raise NotImplementedError(self.run_describe)
+    Two absolute paths model the duality of a project within a VCS checkout:
+    ``path`` is the VCS root (where .git/.hg lives) and ``project_root`` is
+    the project directory (where pyproject.toml lives).  For top-level projects
+    the two are identical.
+
+    The optional ``_config`` reference is set by ``discover_workdir`` so that
+    methods like ``is_dirty`` and ``node`` can read runtime settings
+    (subprocess timeout, hg command) from ``config._env`` without a ContextVar.
+    """
+
+    path: Path
+    project_root: Path | None = dc_field(default=None)
+
+    _config: Configuration | None = dc_field(default=None, repr=False, compare=False)
+    """Back-reference to the ``Configuration`` that discovered this workdir."""
+
+    def __post_init__(self) -> None:
+        if self.project_root is None:
+            self.project_root = self.path
+
+    @property
+    def _subprocess_timeout(self) -> int | None:
+        """Subprocess timeout from ``config.env``.
+
+        Returns ``None`` only when the workdir has no config at all
+        (e.g. bare ``from_potential_worktree`` probes).
+        """
+        if self._config is None:
+            return None
+        return self._config.env.subprocess_timeout
+
+    @property
+    def _hg_command(self) -> str | None:
+        """Hg command from ``config.env``.
+
+        Returns ``None`` only when the workdir has no config at all
+        (e.g. bare ``from_potential_worktree`` probes).
+        """
+        if self._config is None:
+            return None
+        return self._config.env.hg_command
+
+    @property
+    def project_path(self) -> str:
+        """Discovered relative path from VCS root to project directory."""
+        assert self.project_root is not None
+        if self.path == self.project_root:
+            return ""
+        from .._paths import relative_project_path
+
+        return relative_project_path(self.path, self.project_root)
+
+    @property
+    def config(self) -> Configuration:
+        """The ``Configuration`` that discovered this workdir."""
+        if self._config is None:
+            raise RuntimeError(
+                f"{type(self).__name__} has no associated Configuration. "
+                "Use Configuration.discover_workdir() to obtain a properly "
+                "configured workdir, or set workdir._config = config explicitly."
+            )
+        return self._config
+
+    def get_scm_version(self) -> ScmVersion | None:
+        raise NotImplementedError
+
+    def list_tracked_files(self, path: Path | str = "") -> list[str]:
+        raise NotImplementedError
 
     def is_file_tracked(self, path: Path) -> bool:
-        """Return True if *path* is tracked by version control."""
-        raise NotImplementedError(self.is_file_tracked)
+        raise NotImplementedError
+
+
+# Backward-compat alias so existing imports keep working.
+Workdir = ScmWorkdir

@@ -723,6 +723,9 @@ def test_integration_function_call_order(
 
 
 @pytest.mark.issue("xmlsec-regression")
+@pytest.mark.skipif(
+    sys.implementation.name == "pypy", reason="xmlsec build fails on PyPy in CI"
+)
 def test_xmlsec_download_regression(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1572,3 +1575,257 @@ def test_version_file_contains_commit_node_in_editable_strict(
     )
     aux_content = aux_version_file.read_text()
     assert short_node in aux_content
+
+
+def _sdist_names(wd: WorkDir) -> list[str]:
+    """Build an sdist in *wd* and return the list of archive member names."""
+    import shutil
+    import tarfile
+
+    dist_dir = wd.cwd / "dist"
+    if dist_dir.exists():
+        shutil.rmtree(dist_dir)
+    egg_info_dirs = list(wd.cwd.glob("*.egg-info"))
+    for d in egg_info_dirs:
+        shutil.rmtree(d)
+
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--sdist", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert build_result.returncode == 0, (
+        f"sdist build failed:\nstdout: {build_result.stdout}\n"
+        f"stderr: {build_result.stderr}"
+    )
+
+    sdists = list(dist_dir.glob("*.tar.gz"))
+    assert len(sdists) == 1, f"Expected 1 sdist, found {len(sdists)}"
+
+    with tarfile.open(sdists[0], "r:gz") as tar:
+        return tar.getnames()
+
+
+def test_manifest_in_excludes_scm_tracked_files(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """MANIFEST.in exclusions must be honoured even when the egg_info mixin
+    supplies tracked files directly (bypassing walk_revctrl).
+
+    First verifies that without the exclusion the file IS included,
+    then adds ``exclude secret.txt`` and verifies the file is gone.
+    """
+    monkeypatch.chdir(wd.cwd)
+
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "test-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+        """),
+    )
+
+    pkg_dir = wd.cwd / "test_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("")
+
+    wd.write("secret.txt", "do-not-ship")
+
+    # Empty MANIFEST.in -- no exclusions
+    wd.write("MANIFEST.in", "")
+
+    wd(wd.add_command)
+    wd.commit()
+    wd("git tag v1.0.0")
+
+    # -- Phase 1: empty MANIFEST.in → file is included ----------------------
+    names = _sdist_names(wd)
+
+    assert any("secret.txt" in n for n in names), (
+        f"secret.txt should be included when MANIFEST.in is empty: {names}"
+    )
+    assert any("test_pkg/__init__.py" in n for n in names), (
+        f"test_pkg/__init__.py should be in sdist: {names}"
+    )
+
+    # -- Phase 2: MANIFEST.in excludes the file → gone ----------------------
+    wd.write("MANIFEST.in", "exclude secret.txt\n")
+    wd(wd.add_command)
+    wd.commit()
+
+    names = _sdist_names(wd)
+
+    assert not any("secret.txt" in n for n in names), (
+        f"secret.txt should have been excluded by MANIFEST.in: {names}"
+    )
+    assert any("test_pkg/__init__.py" in n for n in names), (
+        f"test_pkg/__init__.py should still be in sdist: {names}"
+    )
+
+
+class TestIsInsidePackage:
+    """Unit tests for _is_inside_package."""
+
+    def test_root_level_file_not_inside_package(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        assert not _is_inside_package("VERSION", ["mypackage"])
+
+    def test_root_level_py_file_not_inside_package(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        assert not _is_inside_package("_version.py", ["mypackage"])
+
+    def test_file_inside_package(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        assert _is_inside_package("mypackage/_version.py", ["mypackage"])
+
+    def test_file_inside_nested_package(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        assert _is_inside_package("mypackage/sub/_version.py", ["mypackage"])
+
+    def test_file_inside_dotted_package(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        assert _is_inside_package("mypackage/sub/_version.py", ["mypackage.sub"])
+
+    def test_file_not_in_any_package(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        assert not _is_inside_package("other/version.h", ["mypackage"])
+
+    def test_no_packages(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        assert not _is_inside_package("mypackage/_version.py", None)
+        assert not _is_inside_package("mypackage/_version.py", [])
+
+    @pytest.mark.skipif(os.name != "posix", reason="posix absolute path form")
+    def test_rejects_absolute_path(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        with pytest.raises(ValueError, match="must be relative"):
+            _is_inside_package("/etc/passwd", ["mypackage"])
+
+    @pytest.mark.skipif(os.name != "nt", reason="windows absolute path form")
+    def test_rejects_absolute_path_windows(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        with pytest.raises(ValueError, match="must be relative"):
+            _is_inside_package("C:\\Users\\evil.py", ["mypackage"])
+
+    def test_rejects_traversal(self) -> None:
+        from setuptools_scm._integration.build_py import _is_inside_package
+
+        with pytest.raises(ValueError, match="must not contain"):
+            _is_inside_package("mypackage/../../etc/passwd", ["mypackage"])
+
+
+class TestSanitizeRelativePath:
+    """Unit tests for _sanitize_relative_path."""
+
+    def test_accepts_simple_relative(self) -> None:
+        from setuptools_scm._integration.build_py import _sanitize_relative_path
+
+        result = _sanitize_relative_path("mypackage/_version.py")
+        assert result == Path("mypackage/_version.py")
+
+    @pytest.mark.skipif(os.name != "posix", reason="posix absolute path form")
+    def test_rejects_absolute_posix(self) -> None:
+        from setuptools_scm._integration.build_py import _sanitize_relative_path
+
+        with pytest.raises(ValueError, match="must be relative"):
+            _sanitize_relative_path("/tmp/evil.py")
+
+    @pytest.mark.skipif(os.name != "nt", reason="windows absolute path form")
+    def test_rejects_absolute_windows(self) -> None:
+        from setuptools_scm._integration.build_py import _sanitize_relative_path
+
+        with pytest.raises(ValueError, match="must be relative"):
+            _sanitize_relative_path("C:\\Windows\\evil.py")
+
+    def test_rejects_dotdot(self) -> None:
+        from setuptools_scm._integration.build_py import _sanitize_relative_path
+
+        with pytest.raises(ValueError, match="must not contain"):
+            _sanitize_relative_path("pkg/../../outside.py")
+
+    def test_accepts_root_level(self) -> None:
+        from setuptools_scm._integration.build_py import _sanitize_relative_path
+
+        result = _sanitize_relative_path("VERSION.txt")
+        assert result == Path("VERSION.txt")
+
+
+@pytest.mark.issue(1364)
+def test_root_level_version_file_not_in_wheel(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Root-level version files (e.g. VERSION) must not end up in the wheel.
+
+    Regression test for GH-1364: upgrading to setuptools-scm 10 caused
+    files like ``VERSION`` to appear at the wheel root because build_py
+    unconditionally wrote them to ``build_lib``.
+    """
+    monkeypatch.chdir(wd.cwd)
+
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "root-version-file-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            write_to = "VERSION.txt"
+
+            [tool.setuptools.packages.find]
+            where = ["."]
+        """),
+    )
+
+    pkg_dir = wd.cwd / "root_version_file_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("")
+
+    wd.commit_testfile()
+    wd("git tag v1.0.0")
+
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert build_result.returncode == 0, (
+        f"Build failed:\nstdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+
+    import zipfile
+
+    dist_dir = wd.cwd / "dist"
+    wheels = list(dist_dir.glob("*.whl"))
+    assert len(wheels) == 1
+
+    with zipfile.ZipFile(wheels[0], "r") as whl:
+        names = whl.namelist()
+        assert not any(n == "VERSION.txt" for n in names), (
+            f"Root-level VERSION.txt should NOT be in wheel, got: {names}"
+        )

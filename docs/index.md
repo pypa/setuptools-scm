@@ -1,6 +1,6 @@
 # About
 
-`setuptools-scm` extracts Python package versions from `git` or `hg` metadata
+`setuptools-scm` extracts Python package versions from `git`, `hg`, or `jj` (Jujutsu) metadata
 instead of declaring them as the version argument
 or in a file managed by a source code management (SCM) system.
 
@@ -14,7 +14,7 @@ or [configuring Git archive][git-archive-docs].
 
     **Important:** Simply installing `setuptools-scm` as a build dependency will automatically enable its file finder, which includes **all SCM-tracked files** in your source distributions. This happens even if you're not using setuptools-scm for versioning.
 
-    - ✅ **Expected**: All Git/Mercurial tracked files will be included in your sdist
+    - ✅ **Expected**: All Git/Mercurial/Jujutsu tracked files will be included in your sdist
     - ⚠️ **Surprise**: This includes development files, configs, tests, docs, etc.
     - 🛠️ **Control**: Use `MANIFEST.in` to exclude unwanted files
 
@@ -28,7 +28,7 @@ or [configuring Git archive][git-archive-docs].
 a standalone library that provides the core VCS version extraction and formatting functionality.
 
 **vcs-versioning** (core library):
-:   Handles version extraction from Git and Mercurial repositories, version scheme logic,
+:   Handles version extraction from Git, Mercurial, and Jujutsu repositories, version scheme logic,
     tag parsing, and version formatting. These are universal concepts that work across
     different build systems and integrations.
 

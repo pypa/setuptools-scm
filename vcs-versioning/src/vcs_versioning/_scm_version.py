@@ -87,12 +87,16 @@ class mismatches:
 def _parse_version_tag(
     tag: str | object, config: _config.Configuration
 ) -> _TagDict | None:
-    match = config.tag_regex.match(str(tag))
+    tag_str = str(tag)
+    tag_prefix = config.tag.prefix
+    if tag_prefix and tag_str.startswith(tag_prefix):
+        tag_str = tag_str[len(tag_prefix) :]
+    match = config.tag.regex.match(tag_str)
 
     if match:
         key: str | int = 1 if len(match.groups()) == 1 else "version"
         full = match.group(0)
-        log.debug("%r %r %s", tag, config.tag_regex, match)
+        log.debug("%r %r %s", tag, config.tag.regex, match)
         log.debug(
             "key %s data %s, %s, %r", key, match.groupdict(), match.groups(), full
         )
@@ -108,7 +112,7 @@ def _parse_version_tag(
             return result
 
         raise ValueError(
-            f'The tag_regex "{config.tag_regex.pattern}" matched tag "{tag}", '
+            f'The tag_regex "{config.tag.regex.pattern}" matched tag "{tag}", '
             "however the matched group has no value."
         )
     else:
@@ -179,12 +183,30 @@ def tag_to_version(
 def _source_epoch_or_utc_now() -> datetime:
     """Get datetime from SOURCE_DATE_EPOCH or current UTC time.
 
-    Uses the active GlobalOverrides context if available, otherwise returns
-    current UTC time.
+    Used as the default_factory for ``ScmVersion.time``.  In the normal
+    chained API path, ``meta()`` sets ``time`` explicitly from
+    ``config.env.source_date_epoch`` so this factory is only reached
+    when constructing ``ScmVersion`` directly (tests, external plugins).
     """
-    from .overrides import source_epoch_or_utc_now
+    import os
+    from datetime import timezone
 
-    return source_epoch_or_utc_now()
+    val = os.environ.get("SOURCE_DATE_EPOCH")
+    if val is not None:
+        try:
+            return datetime.fromtimestamp(int(val), timezone.utc)
+        except (ValueError, OSError):
+            pass
+    return datetime.now(timezone.utc)
+
+
+def _time_from_source_date_epoch(source_date_epoch: int | None) -> datetime:
+    """Convert an explicit SOURCE_DATE_EPOCH to datetime, or return utcnow."""
+    from datetime import timezone
+
+    if source_date_epoch is not None:
+        return datetime.fromtimestamp(source_date_epoch, timezone.utc)
+    return datetime.now(timezone.utc)
 
 
 @dataclasses.dataclass
@@ -258,6 +280,17 @@ class ScmVersion:
     ) -> str:
         guessed = guess_next(self, *k, **kw)
         return self.format_with(fmt, guessed=guessed)
+
+    def format(self) -> str:
+        """Format this version using the configured version and local schemes.
+
+        This is the final step in the chain::
+
+            env -> config -> workdir -> scm_version -> scm_version.format()
+        """
+        from ._version_schemes import format_version
+
+        return format_version(self)
 
     def matches(self, **expectations: Unpack[VersionExpectations]) -> bool | mismatches:
         """Check if this ScmVersion matches the given expectations.
@@ -369,7 +402,6 @@ def meta(
     log.info("version %s -> %s", tag, parsed_version)
     assert parsed_version is not None, f"Can't parse version {tag}"
 
-    # Pass time explicitly to avoid triggering default_factory if provided
     kwargs: _ScmVersionKwargs = {
         "distance": distance,
         "node": node,
@@ -380,6 +412,8 @@ def meta(
     }
     if time is not None:
         kwargs["time"] = time
+    else:
+        kwargs["time"] = _time_from_source_date_epoch(config.env.source_date_epoch)
 
     scm_version = ScmVersion(parsed_version, config=config, **kwargs)
     return scm_version

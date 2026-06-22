@@ -9,7 +9,7 @@ vcs-versioning provides a flexible override system that allows integrators to:
 - Use custom environment variable prefixes (e.g., `HATCH_VCS_*` instead of `SETUPTOOLS_SCM_*`)
 - Automatically fall back to `VCS_VERSIONING_*` variables for universal configuration
 - Apply global overrides once at entry points using a context manager pattern
-- Access override values throughout the execution via thread-safe accessor functions
+- Access override values via ``config.env`` or the active ``GlobalOverrides`` instance
 
 ## Quick Start
 
@@ -76,19 +76,15 @@ export HATCH_VCS_DEBUG=30  # WARNING
 
 ### Accessing Override Values
 
-Within the context, you can access override values:
+Within the context, you can access override values directly from the returned instance:
 
 ```python
-from vcs_versioning.overrides import GlobalOverrides, get_active_overrides
+from vcs_versioning.overrides import GlobalOverrides
 
 with GlobalOverrides.from_env("HATCH_VCS") as overrides:
-    # Direct access
     print(f"Debug level: {overrides.debug}")
     print(f"Timeout: {overrides.subprocess_timeout}")
-
-    # Or via accessor function
-    current = get_active_overrides()
-    log_level = current.log_level()  # Returns int from logging module
+    log_level = overrides.log_level()  # Returns int from logging module
 ```
 
 ### Creating Modified Overrides
@@ -566,39 +562,18 @@ def test_with_vcs_versioning_fallback():
 
 ### Inspecting Active Overrides
 
+The `GlobalOverrides.from_env()` context manager returns the active overrides instance:
+
 ```python
-from vcs_versioning import get_active_overrides
+from vcs_versioning.overrides import GlobalOverrides
 
-# Outside any context
-overrides = get_active_overrides()
-assert overrides is None
-
-# Inside a context
-with GlobalOverrides.from_env("HATCH_VCS"):
-    overrides = get_active_overrides()
-    assert overrides is not None
+with GlobalOverrides.from_env("HATCH_VCS") as overrides:
     assert overrides.tool == "HATCH_VCS"
+    print(f"Debug: {overrides.debug}")
+    print(f"Timeout: {overrides.subprocess_timeout}")
+    print(f"Hg command: {overrides.hg_command}")
+    print(f"Source epoch: {overrides.source_date_epoch}")
 ```
-
-### Using Accessor Functions Directly
-
-```python
-from vcs_versioning import (
-    get_debug_level,
-    get_subprocess_timeout,
-    get_hg_command,
-    get_source_date_epoch,
-)
-
-with GlobalOverrides.from_env("HATCH_VCS"):
-    # These functions return values from the active context
-    debug = get_debug_level()
-    timeout = get_subprocess_timeout()
-    hg_cmd = get_hg_command()
-    epoch = get_source_date_epoch()
-```
-
-Outside a context, these functions fall back to reading `os.environ` directly for backward compatibility.
 
 ### Custom Distribution-Specific Overrides
 
@@ -993,6 +968,86 @@ with GlobalOverrides.from_env("MY_TOOL", dist_name="my-pkg"):
 ```
 
 The experimental API provides better separation of concerns and proper override priority handling.
+
+## Breaking Change: Chained API Replaces Magic Globals
+
+!!! danger "Breaking Change"
+
+    Runtime settings (`subprocess_timeout`, `hg_command`,
+    `source_date_epoch`, `ignore_vcs_roots`) are no longer read from
+    magic globals.  They flow through the explicit chain:
+    `VcsEnvironment -> Configuration -> workdir -> version`.
+
+    We have audited downstream users and do not expect breakage, but
+    this is a semantic change to how runtime settings are obtained.
+    Code that constructs `Configuration()` directly without a
+    `VcsEnvironment` will now get a `DeprecationWarning` on first
+    access to `config.env`.
+
+### The chained API
+
+Each step receives its dependencies from the previous one -- no
+`ContextVar`, no ambient state:
+
+1. **`VcsEnvironment.from_env("MY_TOOL")`** reads the process environment once
+2. **`env.build_config(...)`** produces a `Configuration` with the environment attached
+3. **`config.discover_workdir()`** returns a workdir that reads timeout / hg-command from `config.env`
+4. **`workdir.get_scm_version()`** produces the version
+
+### Backward compatibility
+
+If you construct a `Configuration` without going through
+`VcsEnvironment.build_config()`, the first access to `config.env`
+will:
+
+1. Emit a `DeprecationWarning`
+2. Create a `VcsEnvironment.from_env()` — reading the current process
+   environment for `SOURCE_DATE_EPOCH`, timeout, hg command, etc.
+
+This keeps existing code working (env vars are still honoured), but
+with a visible signal to migrate to the explicit chained API.
+
+setuptools-scm creates a `VcsEnvironment` by default in its integration
+layer, so end-users building with setuptools-scm are unaffected.
+
+### What stays
+
+`GlobalOverrides` is retained for:
+
+- **Logging / debug-level configuration** (auto-configures loggers on entry)
+- **`EnvReader`** convenience accessor
+- **`export()`** helper for propagating settings to subprocesses in tests
+
+### Migration path
+
+Replace:
+
+```python
+with GlobalOverrides.from_env("MY_TOOL"):
+    config = Configuration.from_file(...)
+    version = _get_version(config)
+```
+
+With:
+
+```python
+from vcs_versioning._environment import VcsEnvironment
+
+env = VcsEnvironment.from_env("MY_TOOL")
+config = env.build_config(dist_name="my-pkg", pyproject_data=pyproject)
+workdir = config.discover_workdir()
+scm_version = workdir.get_scm_version()
+version_string = format_version(scm_version)
+```
+
+If you still need logging configuration, wrap the outer scope:
+
+```python
+with GlobalOverrides.from_env("MY_TOOL"):  # logging only
+    env = VcsEnvironment.from_env("MY_TOOL")
+    config = env.build_config(...)
+    ...
+```
 
 ## See Also
 

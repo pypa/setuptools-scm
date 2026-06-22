@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import TypeGuard
 
 from .. import _types as _t
@@ -72,34 +72,56 @@ def scm_find_files(
     return res
 
 
-def is_toplevel_acceptable(toplevel: str | None) -> TypeGuard[str]:
-    """Check if a VCS toplevel directory is acceptable (not in ignore list)"""
-    import os
+def _read_ignore_vcs_roots(env: Mapping[str, str] | None = None) -> list[str]:
+    """Read IGNORE_VCS_ROOTS from environment variables.
 
+    File finders are invoked via ``setuptools.file_finders`` entry points
+    which receive only a path, so they cannot access ``config.env``.
+    This function reads directly from the process environment, preferring
+    tool names from the active VcsEnvironment when available.
+    """
+    from ..overrides import EnvReader, get_active_vcs_env
+
+    if env is None:
+        env = os.environ
+    active_env = get_active_vcs_env()
+    tool_names = (
+        active_env.tool_names if active_env else ("SETUPTOOLS_SCM", "VCS_VERSIONING")
+    )
+    reader = EnvReader(tools_names=tool_names, env=env)
+    raw = reader.read("IGNORE_VCS_ROOTS", split=os.pathsep, default=[])
+    return [os.path.normcase(p) for p in raw]
+
+
+def is_toplevel_acceptable(
+    toplevel: str | None,
+    *,
+    ignore_vcs_roots: list[str] | None = None,
+) -> TypeGuard[str]:
+    """Check if a VCS toplevel directory is acceptable (not in ignore list).
+
+    Args:
+        toplevel: The VCS toplevel directory to check
+        ignore_vcs_roots: Explicit list of roots to ignore. When ``None``,
+            reads ``IGNORE_VCS_ROOTS`` from the process environment.
+    """
     if toplevel is None:
         return False
 
-    # Use the env_reader from the active GlobalOverrides context
-    # This ensures we respect the current environment configuration
-    from ..overrides import get_active_overrides
-
-    overrides = get_active_overrides()
-    ignored_raw = overrides.env_reader.read(
-        "IGNORE_VCS_ROOTS", split=os.pathsep, default=[]
-    )
-    ignored = [os.path.normcase(p) for p in ignored_raw]
+    if ignore_vcs_roots is None:
+        ignore_vcs_roots = _read_ignore_vcs_roots()
 
     log.debug(
         "toplevel: %r\n    ignored %s",
         toplevel,
-        ignored,
+        ignore_vcs_roots,
     )
 
-    return toplevel not in ignored
+    return toplevel not in ignore_vcs_roots
 
 
 def find_files(path: _t.PathT = "") -> list[str]:
-    """Discover files using registered file finder entry points"""
+    """Discover files using registered file finder entry points."""
     eps = [
         *entry_points(group="setuptools_scm.files_command"),
         *entry_points(group="setuptools_scm.files_command_fallback"),
@@ -109,6 +131,7 @@ def find_files(path: _t.PathT = "") -> list[str]:
         res: list[str] = command(path)
         if res:
             return res
+
     return []
 
 

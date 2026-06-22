@@ -23,8 +23,8 @@ from vcs_versioning._version_schemes import (
     ScmVersion,
     get_local_node_and_date,
     get_no_local_node,
-    guess_next_dev_version,
 )
+from vcs_versioning._version_schemes._towncrier import version_from_fragments
 
 log = logging.getLogger("vcs_versioning")
 
@@ -73,12 +73,13 @@ def _package_version() -> str:
         fallback_root=".",
         relative_to=str(_pyproject_path),
         parse=_parse,
-        version_scheme=guess_next_dev_version,
+        version_scheme=version_from_fragments,
         local_scheme=local_scheme,
         tag_regex=r"^vcs-versioning-(?P<version>v?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$",
         scm={
             "git": {"describe_command": git.make_describe_command("vcs-versioning-*")}
         },
+        dist_name="vcs-versioning",
         fallback_version="0.1.1+pre.tag",
     )
 

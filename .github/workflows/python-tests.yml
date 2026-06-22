@@ -44,6 +44,46 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set pretend versions from release PR title
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const title = context.payload.pull_request.title;
+            console.log(`PR title: ${title}`);
+
+            const scmMatch = title.match(/setuptools-scm v(\d+\.\d+\.\d+)/);
+            const vcsMatch = title.match(/vcs-versioning v(\d+\.\d+\.\d+)/);
+
+            if (!scmMatch && !vcsMatch) {
+              console.log('No release versions in PR title (normal for non-release PRs)');
+              return;
+            }
+
+            const fs = require('fs');
+            const envFile = process.env.GITHUB_ENV;
+
+            if (scmMatch) {
+              const ver = `${scmMatch[1]}.dev0`;
+              fs.appendFileSync(envFile, `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_SETUPTOOLS_SCM=${ver}\n`);
+              console.log(`Set setuptools-scm pretend version: ${ver}`);
+            }
+            if (vcsMatch) {
+              const ver = `${vcsMatch[1]}.dev0`;
+              fs.appendFileSync(envFile, `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_VCS_VERSIONING=${ver}\n`);
+              fs.appendFileSync(envFile, `VCS_VERSIONING_PRETEND_VERSION_FOR_VCS_VERSIONING=${ver}\n`);
+              console.log(`Set vcs-versioning pretend version: ${ver}`);
+            }
+
+      - name: Debug version inference
+        shell: bash
+        run: |
+          echo "=== Version Debug for ${{ matrix.package }} ==="
+          echo "Git describe:"
+          git describe --dirty --tags --long --match "${{ matrix.package }}-*" 2>&1 || echo "(no matching tags)"
+          echo "Relevant PRETEND env vars:"
+          env | grep -i PRETEND || echo "(none set)"
+
       - name: Build ${{ matrix.package }}
         uses: hynek/build-and-inspect-python-package@d44ca7d91762de7a7d5436ddae667c6da6d1c3df # v2.18.0
         with:
@@ -113,6 +153,9 @@ jobs:
           echo "C:\Program Files\gnupg\bin" >> $env:GITHUB_PATH
           echo "C:\Program Files\Mercurial\" >> $env:GITHUB_PATH
           git config --system gpg.program "C:\Program Files\gnupg\bin\gpg.exe"
+          git config --system core.longpaths true
+          mkdir "D:\Temp"
+          echo "TEMP=D:\Temp" >> $env:GITHUB_ENV
         if: runner.os == 'Windows'
       - run: uv sync --all-packages --all-groups
       - name: Download vcs-versioning packages
@@ -128,16 +171,32 @@ jobs:
       - name: Install built wheels
         shell: bash
         run: |
-          # Install vcs-versioning first (dependency of setuptools-scm)
-          uv pip install dist/vcs_versioning-*.whl
-          # Then install setuptools-scm
-          uv pip install dist/setuptools_scm-*.whl
+          # Use --no-deps: uv sync already resolved all dependencies from workspace;
+          # we just replace the editable installs with the built wheels.
+          uv pip install --no-deps dist/vcs_versioning-*.whl
+          uv pip install --no-deps dist/setuptools_scm-*.whl
       - run: |
           $(hg debuginstall --template "{pythonexe}") -m pip install hg-git --user
         if: matrix.os == 'ubuntu-latest'
       # this hopefully helps with os caches, hg init sometimes gets 20s timeouts
       - run: hg version
         shell: bash
+      - name: Install Jujutsu (jj) on Linux
+        if: runner.os == 'Linux'
+        run: |
+          JJ_VERSION="0.42.0"
+          curl -fsSL "https://github.com/jj-vcs/jj/releases/download/v${JJ_VERSION}/jj-v${JJ_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
+            | tar xz --strip-components=0 -C /usr/local/bin ./jj
+          jj version
+      - name: Install Jujutsu (jj) on Windows
+        if: runner.os == 'Windows' && matrix.python_version != 'msys2'
+        shell: pwsh
+        run: |
+          $JJ_VERSION = "0.42.0"
+          Invoke-WebRequest -Uri "https://github.com/jj-vcs/jj/releases/download/v${JJ_VERSION}/jj-v${JJ_VERSION}-x86_64-pc-windows-msvc.zip" -OutFile jj.zip
+          Expand-Archive jj.zip -DestinationPath "$env:RUNNER_TEMP\jj"
+          echo "$env:RUNNER_TEMP\jj" >> $env:GITHUB_PATH
+          & "$env:RUNNER_TEMP\jj\jj.exe" version
       - name: Run tests for both packages
         run: uv run --no-sync pytest setuptools-scm/testing_scm/ vcs-versioning/testing_vcs/
         timeout-minutes: 25

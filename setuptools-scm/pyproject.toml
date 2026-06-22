@@ -2,7 +2,7 @@
 build-backend = "setuptools.build_meta"
 requires = [
   "setuptools>=77.0.3",
-  "vcs-versioning>=1.0.0.dev0",
+  "vcs-versioning>=2.0.0.dev0",
   # https://github.com/pypa/setuptools-scm/issues/1222: was <=2.0.2 for #1090 (old pip+toml);
   # pip 21.2+ vendors tomli, so the workaround is no longer needed.
   'tomli>=1; python_version < "3.11"',
@@ -37,7 +37,7 @@ dynamic = [
 ]
 dependencies = [
   # Core VCS functionality - workspace dependency
-  "vcs-versioning>=1.0.0.dev0",
+  "vcs-versioning>=2.0.0.dev0",
   "packaging>=20",
   # https://github.com/pypa/setuptools-scm/issues/1112 - re-pin in a breaking release
   "setuptools", # >= 61",
@@ -98,13 +98,9 @@ setuptools_scm = "vcs_versioning._file_finders:find_files"
 [project.entry-points."setuptools.finalize_distribution_options"]
 setuptools_scm = "setuptools_scm._integration.setuptools:infer_version"
 
-[project.entry-points."setuptools_scm.files_command"]
-".git" = "vcs_versioning._file_finders._git:git_find_files"
-".hg" = "vcs_versioning._file_finders._hg:hg_find_files"
-
-[project.entry-points."setuptools_scm.files_command_fallback"]
-".git_archival.txt" = "vcs_versioning._file_finders._git:git_archive_find_files"
-".hg_archival.txt" = "vcs_versioning._file_finders._hg:hg_archive_find_files"
+[project.entry-points."vcs_versioning.discover_workdir"]
+pkginfo = "setuptools_scm._integration._discover:discover_pkginfo"
+egg-info = "setuptools_scm._integration._discover:discover_egg_info_metadata"
 
 # VCS-related entry points are now provided by vcs-versioning package
 # Only file-finder entry points remain in setuptools_scm
@@ -125,7 +121,7 @@ scm.git.describe_command = ["git", "describe", "--dirty", "--tags", "--long", "-
 
 [tool.ruff]
 lint.extend-select = ["YTT", "B", "C4", "DTZ", "ISC", "LOG", "G", "PIE", "PYI", "PT", "FLY", "I", "C90", "PERF", "W", "PGH", "PLE", "UP", "FURB", "RUF"]
-lint.ignore = ["B028", "LOG015", "PERF203"]
+lint.ignore = ["B028", "LOG015", "PERF203", "RUF076"]
 lint.preview = true
 
 # setuptools_scm alias modules: explicit `from m import x as x` re-exports for API stability
@@ -161,6 +157,8 @@ filterwarnings = [
   "error",
   "ignore:.*tool\\.setuptools_scm.*",
   "ignore:.*git archive did not support describe output.*:UserWarning",
+  "ignore:.*without VcsEnvironment.*:DeprecationWarning",
+  "ignore:.*Passing config to workdir.*:DeprecationWarning",
 ]
 log_level = "debug"
 log_cli_level = "info"

@@ -1,0 +1,41 @@
+{
+  "terminalAllowlist": [
+    "uv",
+    "pre-commit",
+    "mkdocs",
+    "rg",
+    "python",
+    "git:status",
+    "git:diff",
+    "git:log",
+    "git:show",
+    "git:fetch",
+    "git:branch",
+    "git:stash",
+    "git:remote",
+    "git:tag",
+    "git:rev-parse",
+    "git:rev-list",
+    "git:describe",
+    "git:ls-files",
+    "git:ls-remote",
+    "git:shortlog",
+    "git:blame",
+    "git:reflog",
+    "git:cherry"
+  ],
+  "autoRun": {
+    "allow_instructions": [
+      "Read-only filesystem operations are fine: ls, cat, head, tail, wc, find, file, du.",
+      "Python tooling is fine: uv, pytest, mypy, ruff, pre-commit, mkdocs, towncrier.",
+      "Read-only git commands are fine: git status, git diff, git log, git show, git fetch, git branch, git stash list, git remote, git tag, git describe, git rev-parse, git ls-files.",
+      "Search tools are fine: rg, grep, find."
+    ],
+    "block_instructions": [
+      "Any git commit, git commit --amend, or git merge --commit requires approval.",
+      "Any git push (including --force, --force-with-lease) requires approval.",
+      "Any git reset --hard, git clean -fd, git rebase, or branch deletion (git branch -d/-D) requires approval.",
+      "Any git checkout/switch that discards uncommitted changes requires approval."
+    ]
+  }
+}

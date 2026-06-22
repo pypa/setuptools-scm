@@ -76,154 +76,119 @@ For **development uploads** (test-PyPI, nightly) where the tree may be dirty, us
 
 ### GitHub Actions Example
 
-Here's a complete GitHub Actions workflow that:
+Here's a complete GitHub Actions workflow following the
+[PyPA recommended publishing guide](https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/).
+It uses:
 
-- Runs tests on all branches
-- Uploads development versions to test-PyPI from feature branches (with `no-local-version`)
-- Uploads development versions to PyPI from the main branch (with `no-local-version-strict`)
-- Uploads tagged releases to PyPI (using exact tag versions)
+- A **dedicated build job** with [`build-and-inspect-python-package`](https://github.com/hynek/build-and-inspect-python-package) (BAIPP) to build once and store artifacts
+- **OIDC Trusted Publishers** for keyless, tokenless authentication to PyPI/test-PyPI
+- Separate publish jobs that only download and upload the pre-built artifacts
 
 ```yaml title=".github/workflows/ci.yml"
 name: CI/CD
 
 on:
   push:
-    branches: ["main", "develop"]
+    branches: ["main"]
   pull_request:
-    branches: ["main", "develop"]
   release:
     types: [published]
 
 jobs:
-  test:
+  build:
+    name: Build distribution packages
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+    env:
+      # Replace MYPACKAGE with your actual package name (normalized).
+      # For package "my-awesome.package", use "MY_AWESOME_PACKAGE".
+      # "strict" fails the build on dirty trees — catches accidental pollution.
+      SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version-strict"}'
 
     steps:
     - uses: actions/checkout@v4
       with:
-        # Fetch full history for setuptools-scm
         fetch-depth: 0
 
+    - uses: hynek/build-and-inspect-python-package@v2
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download built packages
+      uses: actions/download-artifact@v4
+      with:
+        name: Packages
+        path: dist/
+
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install dependencies
+    - name: Install built wheel and test dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install build pytest
-        pip install -e .
+        pip install pytest
+        pip install dist/*.whl
 
     - name: Run tests
       run: pytest
 
   publish-test-pypi:
-    needs: test
+    name: Publish to test-PyPI
+    needs: [build, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref != 'refs/heads/main'
-    env:
-      # Replace MYPACKAGE with your actual package name (normalized)
-      # For package "my-awesome.package", use "MY_AWESOME_PACKAGE"
-      SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version"}'
+    environment: test-pypi
+    permissions:
+      id-token: write
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Download built packages
+      uses: actions/download-artifact@v4
       with:
-        fetch-depth: 0
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
-
-    - name: Install build dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install build twine
-
-    - name: Build package
-      run: python -m build
+        name: Packages
+        path: dist/
 
     - name: Upload to test-PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         repository-url: https://test.pypi.org/legacy/
-        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
 
   publish-pypi:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    env:
-      # Replace MYPACKAGE with your actual package name (normalized)
-      # "strict" fails the build on dirty trees — catches accidental pollution
-      SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version-strict"}'
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
-
-    - name: Install build dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install build twine
-
-    - name: Build package
-      run: python -m build
-
-    - name: Upload to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        password: ${{ secrets.PYPI_API_TOKEN }}
-
-  publish-release:
-    needs: test
-    runs-on: ubuntu-latest
+    name: Publish to PyPI
+    needs: [build, test]
     if: github.event_name == 'release'
-    env:
-      # Fail on dirty trees for release builds
-      SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version-strict"}'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Download built packages
+      uses: actions/download-artifact@v4
       with:
-        fetch-depth: 0
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
-
-    - name: Install build dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install build twine
-
-    - name: Build package
-      run: python -m build
+        name: Packages
+        path: dist/
 
     - name: Upload to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        password: ${{ secrets.PYPI_API_TOKEN }}
 ```
 
 ### GitLab CI Example
 
-Here's an equivalent GitLab CI configuration:
+Here's an equivalent GitLab CI configuration using a dedicated build stage with artifacts:
 
 ```yaml title=".gitlab-ci.yml"
 stages:
+  - build
   - test
   - publish
 
@@ -237,60 +202,57 @@ cache:
 before_script:
   - python -m pip install --upgrade pip
 
-test:
-  stage: test
-  image: python:3.11
-  script:
-    - pip install build pytest
-    - pip install -e .
-    - pytest
-  parallel:
-    matrix:
-      - PYTHON_VERSION: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-  image: python:${PYTHON_VERSION}
-
-publish-test-pypi:
-  stage: publish
-  image: python:3.11
+build:
+  stage: build
+  image: python:3.12
   variables:
-    TWINE_USERNAME: __token__
-    TWINE_PASSWORD: $TEST_PYPI_API_TOKEN
-    # Replace MYPACKAGE with your actual package name (normalized)
-    SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version"}'
-  script:
-    - pip install build twine
-    - python -m build
-    - twine upload --repository testpypi dist/*
-  rules:
-    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE == "push"
-
-publish-pypi:
-  stage: publish
-  image: python:3.11
-  variables:
-    TWINE_USERNAME: __token__
-    TWINE_PASSWORD: $PYPI_API_TOKEN
     # Replace MYPACKAGE with your actual package name (normalized)
     # "strict" fails the build on dirty trees — catches accidental pollution
     SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version-strict"}'
   script:
-    - pip install build twine
+    - pip install build
     - python -m build
-    - twine upload dist/*
+  artifacts:
+    paths:
+      - dist/
+
+test:
+  stage: test
+  needs:
+    - build
+  parallel:
+    matrix:
+      - PYTHON_VERSION: ["3.10", "3.11", "3.12", "3.13"]
+  image: python:${PYTHON_VERSION}
+  script:
+    - pip install pytest
+    - pip install dist/*.whl
+    - pytest
+
+publish-test-pypi:
+  stage: publish
+  image: python:3.12
+  dependencies:
+    - build
+  id_tokens:
+    PYPI_ID_TOKEN:
+      aud: testpypi
+  script:
+    - pip install twine
+    - twine upload --repository testpypi dist/*
   rules:
     - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
 
-publish-release:
+publish-pypi:
   stage: publish
-  image: python:3.11
-  variables:
-    TWINE_USERNAME: __token__
-    TWINE_PASSWORD: $PYPI_API_TOKEN
-    # Fail on dirty trees for release builds
-    SETUPTOOLS_SCM_OVERRIDES_FOR_MYPACKAGE: '{local_scheme = "no-local-version-strict"}'
+  image: python:3.12
+  dependencies:
+    - build
+  id_tokens:
+    PYPI_ID_TOKEN:
+      aud: pypi
   script:
-    - pip install build twine
-    - python -m build
+    - pip install twine
     - twine upload dist/*
   rules:
     - if: $CI_COMMIT_TAG
@@ -349,9 +311,9 @@ However, the environment variable approach is preferred for CI/CD as it allows d
 
 ### Security Notes
 
-- Store PyPI API tokens as repository secrets
-- Use separate tokens for test-PyPI and production PyPI
-- Consider using [Trusted Publishers](https://docs.pypi.org/trusted-publishers/) for enhanced security
+- Use [Trusted Publishers](https://docs.pypi.org/trusted-publishers/) (OIDC) instead of long-lived API tokens — this enables keyless authentication and digital attestations
+- Configure separate PyPI environments (`pypi`, `test-pypi`) in your repository settings for environment protection rules
+- See the [PyPA publishing guide](https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/) for the full recommended setup
 
 ### Troubleshooting
 

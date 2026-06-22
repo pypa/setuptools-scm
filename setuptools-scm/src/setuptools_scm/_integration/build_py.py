@@ -19,8 +19,57 @@ if TYPE_CHECKING:
     from setuptools import Distribution
     from vcs_versioning import Configuration
     from vcs_versioning import ScmVersion
+    from vcs_versioning._backends._scm_workdir import ScmWorkdir
+    from vcs_versioning._fallback_workdir import FallbackWorkdir
 
 log = logging.getLogger(__name__)
+
+
+def _sanitize_relative_path(relative_path: str) -> Path:
+    """Validate and return a safe relative path for writing under ``build_lib``.
+
+    Defense-in-depth: these values come from the project's own
+    ``pyproject.toml`` / ``setup.py`` (not a trust boundary), but we
+    reject obvious mistakes that could escape the build directory.
+
+    Raises:
+        ValueError: If the path is absolute or contains ``..`` segments.
+    """
+    p = Path(relative_path)
+    if p.is_absolute():
+        raise ValueError(
+            f"Version file path must be relative, got absolute: {relative_path}"
+        )
+    if ".." in p.parts:
+        raise ValueError(
+            f"Version file path must not contain '..' traversal: {relative_path}"
+        )
+    return p
+
+
+def _is_inside_package(relative_path: str, packages: list[str] | None) -> bool:
+    """Check if a version file path is inside one of the distribution's packages.
+
+    Files at the root level (e.g., ``VERSION``) or outside any declared
+    package (e.g., ``version.h``) should NOT be written to ``build_lib``
+    because that would include them in the wheel.
+    """
+    if not packages:
+        return False
+
+    path = _sanitize_relative_path(relative_path)
+    if len(path.parts) < 2:
+        return False
+
+    for pkg in packages:
+        pkg_path = Path(pkg.replace(".", "/"))
+        try:
+            path.relative_to(pkg_path)
+            return True
+        except ValueError:
+            continue
+
+    return False
 
 
 def _transform_version_file_path(
@@ -108,6 +157,10 @@ class VersionInferenceData:
     scm_version: ScmVersion | None
     """The ScmVersion object (may be None if from fallback/pretend)."""
 
+    workdir: ScmWorkdir | FallbackWorkdir | None = None
+    """The discovered workdir, if any.  Carried here so the egg_info mixin
+    can write metadata files and provide file-finder data without a ContextVar."""
+
 
 def get_version_inference_data(dist: Distribution) -> VersionInferenceData | None:
     """Get the version inference data from the distribution.
@@ -151,6 +204,11 @@ class ScmVersionFileMixin(_build_py):
     def _write_version_files(self) -> list[str]:
         """Write version files to the build directory.
 
+        Only writes files that are inside one of the distribution's packages.
+        Root-level files (e.g., ``VERSION``) or files outside any package
+        (e.g., ``version.h``) are skipped to avoid polluting the wheel with
+        files that were never meant to be distributed.
+
         Returns a list of absolute paths to the files written, for use
         in get_outputs() so editable wheels include them.
         """
@@ -168,35 +226,52 @@ class ScmVersionFileMixin(_build_py):
         log.info("Writing version files to build directory: %s", build_lib)
 
         package_dir = getattr(self.distribution, "package_dir", None)
+        packages: list[str] | None = getattr(self.distribution, "packages", None)
         written: list[str] = []
 
         if config.write_to:
             transformed_path = _transform_version_file_path(
                 str(config.write_to), package_dir
             )
-            target = self._write_single_version_file(
-                build_lib=build_lib,
-                relative_path=transformed_path,
-                template=config.write_to_template,
-                version=data.version,
-                scm_version=data.scm_version,
-            )
-            if target is not None:
-                written.append(target)
+            if not _is_inside_package(transformed_path, packages):
+                log.debug(
+                    "Skipping write_to=%s (transformed=%s): "
+                    "not inside any distribution package",
+                    config.write_to,
+                    transformed_path,
+                )
+            else:
+                target = self._write_single_version_file(
+                    build_lib=build_lib,
+                    relative_path=transformed_path,
+                    template=config.write_to_template,
+                    version=data.version,
+                    scm_version=data.scm_version,
+                )
+                if target is not None:
+                    written.append(target)
 
         if config.version_file:
             transformed_path = _transform_version_file_path(
                 str(config.version_file), package_dir
             )
-            target = self._write_single_version_file(
-                build_lib=build_lib,
-                relative_path=transformed_path,
-                template=config.version_file_template,
-                version=data.version,
-                scm_version=data.scm_version,
-            )
-            if target is not None:
-                written.append(target)
+            if not _is_inside_package(transformed_path, packages):
+                log.debug(
+                    "Skipping version_file=%s (transformed=%s): "
+                    "not inside any distribution package",
+                    config.version_file,
+                    transformed_path,
+                )
+            else:
+                target = self._write_single_version_file(
+                    build_lib=build_lib,
+                    relative_path=transformed_path,
+                    template=config.version_file_template,
+                    version=data.version,
+                    scm_version=data.scm_version,
+                )
+                if target is not None:
+                    written.append(target)
 
         return written
 
@@ -215,6 +290,12 @@ class ScmVersionFileMixin(_build_py):
         from vcs_versioning._dump_version import DummyScmVersion
         from vcs_versioning._dump_version import _validate_template
         from vcs_versioning._version_cls import _version_as_tuple
+
+        try:
+            _sanitize_relative_path(relative_path)
+        except ValueError as e:
+            log.warning("Refusing to write version file: %s", e)
+            return None
 
         target = build_lib / relative_path
         log.debug("Writing version file: %s", target)

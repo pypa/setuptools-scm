@@ -8,7 +8,13 @@ from __future__ import annotations
 from typing import Any
 
 # Public API exports
-from ._config import DEFAULT_LOCAL_SCHEME, DEFAULT_VERSION_SCHEME, Configuration
+from ._config import (
+    DEFAULT_LOCAL_SCHEME,
+    DEFAULT_VERSION_SCHEME,
+    Configuration,
+    TagConfiguration,
+)
+from ._environment import VcsEnvironment
 from ._pyproject_reading import PyProjectData
 from ._scm_version import ScmVersion
 from ._version_cls import NonNormalizedVersion, Version
@@ -98,6 +104,8 @@ __all__ = [
     "NonNormalizedVersion",
     "PyProjectData",
     "ScmVersion",
+    "TagConfiguration",
+    "VcsEnvironment",
     "Version",
     "build_configuration_from_pyproject",
     "infer_version_string",

@@ -231,8 +231,8 @@ def read_pyproject(
             actual_tool_name = name
             break
 
-    if not section_present:
-        log.warning(
+    if not section_present and is_required:
+        log.debug(
             "toml section missing %r does not contain any of the tool sections: %s",
             path,
             tool_names,

@@ -3,13 +3,12 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
-import tarfile
-from typing import IO
+from pathlib import Path
 
 from .. import _types as _t
+from .._backends._git import run_git
 from .._compat import norm_real, strip_path_suffix
 from .._integration import data_from_mime
-from .._run_cmd import no_git_env
 from .._run_cmd import run as _run
 from . import is_toplevel_acceptable, scm_find_files
 
@@ -61,52 +60,44 @@ def _git_toplevel(path: str) -> str | None:
         return None
 
 
-def _git_interpret_archive(fd: IO[bytes], toplevel: str) -> tuple[set[str], set[str]]:
-    with tarfile.open(fileobj=fd, mode="r|*") as tf:
-        git_files = set()
-        git_dirs = {toplevel}
-        for member in tf.getmembers():
-            name = os.path.normcase(member.name).replace("/", os.path.sep)
-            if member.type == tarfile.DIRTYPE:
-                git_dirs.add(name)
-            else:
-                git_files.add(name)
-        return git_files, git_dirs
-
-
-def _git_ls_files_and_dirs(toplevel: str) -> tuple[set[str], set[str]]:
-    # use git archive instead of git ls-file to honor
-    # export-ignore git attribute
-
-    cmd = ["git", "archive", "--prefix", toplevel + os.path.sep, "HEAD"]
-    log.info("running %s", " ".join(str(x) for x in cmd))
-    proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        cwd=toplevel,
-        stderr=subprocess.DEVNULL,
-        env=no_git_env(os.environ),
+def _git_ls_files_and_dirs(
+    toplevel: str, *, timeout: int | None = None
+) -> tuple[set[str], set[str]]:
+    # Use git ls-files with -z for NUL-separated output (safe parsing).
+    # --recurse-submodules lists files inside submodules with prefixed paths.
+    # The exclude pathspec filters out files marked with the export-ignore
+    # gitattribute, matching the old git-archive behavior.
+    # "." is needed as positive pathspec for the exclude to apply against.
+    # Uses run_git (--git-dir) to pin to the correct repository.
+    res = run_git(
+        [
+            "ls-files",
+            "-z",
+            "--recurse-submodules",
+            "--",
+            ".",
+            ":(exclude,attr:export-ignore)",
+        ],
+        Path(toplevel),
+        timeout=timeout,
     )
-    assert proc.stdout is not None
-    try:
-        try:
-            return _git_interpret_archive(proc.stdout, toplevel)
-        finally:
-            # ensure we avoid resource warnings by cleaning up the process
-            proc.stdout.close()
-            proc.terminate()
-            # Wait for process to actually terminate and be reaped
-            try:
-                proc.wait(timeout=5)  # Add timeout to avoid hanging
-            except subprocess.TimeoutExpired:
-                log.warning("git archive process did not terminate gracefully, killing")
-                proc.kill()
-                proc.wait()
-    except Exception:
-        # proc.wait() already called in finally block, check if it failed
-        if proc.returncode != 0:
-            log.error("listing git files failed - pretending there aren't any")
+    if res.returncode:
+        log.error("listing git files failed - pretending there aren't any")
         return set(), set()
+
+    git_files: set[str] = set()
+    git_dirs: set[str] = {toplevel}
+    for name in res.stdout.rstrip("\0").split("\0"):
+        if not name:
+            continue
+        name = os.path.normcase(name).replace("/", os.path.sep)
+        fullname = os.path.join(toplevel, name)
+        git_files.add(fullname)
+        dirname = os.path.dirname(fullname)
+        while len(dirname) > len(toplevel) and dirname not in git_dirs:
+            git_dirs.add(dirname)
+            dirname = os.path.dirname(dirname)
+    return git_files, git_dirs
 
 
 def git_find_files(path: _t.PathT = "") -> list[str]:

@@ -7,15 +7,20 @@ import logging
 import os
 import re
 import warnings
+from collections.abc import Mapping
 from pathlib import Path
 from re import Pattern
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
     from ._backends import _git
+    from ._backends._scm_workdir import ScmWorkdir
+    from ._environment import VcsEnvironment
+    from ._fallback_workdir import FallbackWorkdir
 
 from . import _types as _t
 from ._overrides import read_toml_overrides
+from ._paths import resolve_paths
 from ._pyproject_reading import PyProjectData, get_args_for_pyproject, read_pyproject
 from ._version_cls import Version as _Version
 from ._version_cls import _validate_version_cls
@@ -113,33 +118,6 @@ class ParseFunction(Protocol):
     ) -> _t.SCMVERSION | None: ...
 
 
-def _check_absolute_root(root: _t.PathT, relative_to: _t.PathT | None) -> str:
-    log.debug("check absolute root=%s relative_to=%s", root, relative_to)
-    if relative_to:
-        if (
-            os.path.isabs(root)
-            and os.path.isabs(relative_to)
-            and not os.path.commonpath([root, relative_to]) == root
-        ):
-            warnings.warn(
-                f"absolute root path '{root}' overrides relative_to '{relative_to}'",
-                stacklevel=2,
-            )
-        if os.path.isdir(relative_to):
-            warnings.warn(
-                "relative_to is expected to be a file,"
-                f" it's the directory {relative_to}\n"
-                "assuming the parent directory was passed",
-                stacklevel=2,
-            )
-            log.debug("dir %s", relative_to)
-            root = os.path.join(relative_to, root)
-        else:
-            log.debug("file %s", relative_to)
-            root = os.path.join(os.path.dirname(relative_to), root)
-    return os.path.abspath(root)
-
-
 @dataclasses.dataclass
 class GitConfiguration:
     """Git-specific configuration options"""
@@ -171,14 +149,104 @@ class GitConfiguration:
 
 
 @dataclasses.dataclass
+class TagConfiguration:
+    """Tag matching configuration options.
+
+    Controls which VCS tags are considered version tags and how they are parsed.
+    """
+
+    prefix: str = ""
+    """Literal prefix that version tags must start with.
+
+    The prefix is used to filter tags in ``git describe --match`` and is
+    stripped before version parsing.  For monorepos, set this to e.g.
+    ``"hatchling-v"`` so only ``hatchling-v1.0.0`` style tags are considered.
+    """
+
+    strict: bool | None = None
+    """Tri-state strictness for version-like tag matching.
+
+    - ``None`` (default): permissive ``*[0-9]*`` matching with a
+      ``FutureWarning`` that the default will change to ``True``.
+    - ``True``: strict — tags must contain at least one dot
+      (e.g. ``*[0-9]*.*[0-9]*``), rejecting event-style tags.
+    - ``False``: explicitly permissive, no warning.
+    """
+
+    regex: Pattern[str] = DEFAULT_TAG_REGEX
+    """Regex applied after ``git describe`` to extract the version from a tag.
+
+    Must contain either a single capture group or a named group ``version``.
+    The new canonical location for what was previously ``tag_regex`` at the
+    top level of the configuration.
+    """
+
+    def __post_init__(self) -> None:
+        self.regex = _check_tag_regex(self.regex)
+
+    def describe_match_glob(self) -> str:
+        """Build the ``git describe --match`` glob from prefix + strict."""
+        if self.strict:
+            version_glob = "*[0-9]*.*[0-9]*"
+        else:
+            version_glob = "*[0-9]*"
+        return f"{self.prefix}{version_glob}"
+
+    @classmethod
+    def from_data(cls, data: dict[str, Any] | None) -> TagConfiguration:
+        """Create TagConfiguration from configuration data."""
+        if data is None:
+            return cls()
+        tag_data = data.copy()
+        if "regex" in tag_data and isinstance(tag_data["regex"], str):
+            tag_data["regex"] = re.compile(tag_data["regex"])
+        return cls(**tag_data)
+
+
+_SENTINEL_TAG_CONFIG = TagConfiguration()
+
+
+class _TagRegexDescriptor:
+    """Data descriptor for deprecated top-level tag_regex field.
+
+    Proxies reads/writes to ``tag.regex`` and emits ``DeprecationWarning``.
+    """
+
+    def __get__(
+        self, obj: Configuration | None, objtype: type[Configuration] | None = None
+    ) -> Pattern[str]:
+        if obj is None:
+            return self  # type: ignore[return-value]
+
+        if not _is_called_from_dataclasses():
+            warnings.warn(
+                "Configuration field 'tag_regex' is deprecated. "
+                "Use 'tag.regex' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        return obj.tag.regex
+
+    def __set__(self, obj: Configuration, value: str | Pattern[str]) -> None:
+        warnings.warn(
+            "Configuration field 'tag_regex' is deprecated. Use 'tag.regex' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        obj.tag.regex = _check_tag_regex(value)
+
+
+@dataclasses.dataclass
 class ScmConfiguration:
     """SCM-specific configuration options"""
 
     git: GitConfiguration = dataclasses.field(default_factory=GitConfiguration)
 
     @classmethod
-    def from_data(cls, data: dict[str, Any]) -> ScmConfiguration:
+    def from_data(cls, data: dict[str, Any] | None) -> ScmConfiguration:
         """Create ScmConfiguration from configuration data"""
+        if data is None:
+            return cls()
         scm_data = data.copy()
 
         # Handle git-specific configuration
@@ -196,7 +264,7 @@ class Configuration:
     root: _t.PathT = "."
     version_scheme: _t.VERSION_SCHEMES = DEFAULT_VERSION_SCHEME
     local_scheme: _t.VERSION_SCHEMES = DEFAULT_LOCAL_SCHEME
-    tag_regex: Pattern[str] = DEFAULT_TAG_REGEX
+    tag_regex: dataclasses.InitVar[str | Pattern[str] | None] = _TagRegexDescriptor()
     parentdir_prefix_version: str | None = None
     fallback_version: str | None = None
     fallback_root: _t.PathT = "."
@@ -212,18 +280,103 @@ class Configuration:
     dist_name: str | None = None
     version_cls: type[_VersionAlias] = _Version
     search_parent_directories: bool = False
+    project_path: str | None = None
 
     parent: _t.PathT | None = None
 
-    # Nested SCM configurations
+    write_to_source: bool | None = None
+    """Whether to write version files to the source tree at inference time.
+
+    - ``None`` (default): write to source **and** emit a ``DeprecationWarning``
+      telling users to set this explicitly, since the default will change
+      in the next major release.
+    - ``True``: write to source tree, no warning.
+    - ``False``: do **not** write to source tree, no warning.
+
+    The ``SETUPTOOLS_SCM_WRITE_TO_SOURCE`` / ``VCS_VERSIONING_WRITE_TO_SOURCE``
+    environment variable overrides this setting.
+    """
+
+    # Nested configurations
+    tag: TagConfiguration = dataclasses.field(
+        default_factory=lambda: TagConfiguration()
+    )
     scm: ScmConfiguration = dataclasses.field(
         default_factory=lambda: ScmConfiguration()
     )
 
+    _env: VcsEnvironment | None = dataclasses.field(
+        default=None, repr=False, compare=False
+    )
+    """The :class:`~vcs_versioning._environment.VcsEnvironment` for this config.
+
+    Populated by ``VcsEnvironment.build_config()`` or lazily on first
+    ``env`` access (with a ``DeprecationWarning``).  ``None`` until then.
+    """
+
     # Deprecated fields (handled in __post_init__)
 
-    def __post_init__(self, git_describe_command: _t.CMD_TYPE | None) -> None:
-        self.tag_regex = _check_tag_regex(self.tag_regex)
+    def __post_init__(
+        self,
+        tag_regex: str | Pattern[str] | None,
+        git_describe_command: _t.CMD_TYPE | None,
+    ) -> None:
+        # Handle deprecated top-level tag_regex
+        if tag_regex is not None and not isinstance(tag_regex, _TagRegexDescriptor):
+            is_from_dataclasses = _is_called_from_dataclasses()
+            same_value = tag_regex == self.tag.regex or (
+                isinstance(tag_regex, Pattern)
+                and tag_regex.pattern == self.tag.regex.pattern
+            )
+            if is_from_dataclasses and same_value:
+                pass
+            else:
+                warnings.warn(
+                    "Configuration field 'tag_regex' is deprecated. "
+                    "Use 'tag.regex' instead.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+                if self.tag.regex.pattern != DEFAULT_TAG_REGEX.pattern:
+                    raise ValueError(
+                        "Cannot specify both 'tag_regex' (deprecated) and "
+                        "'tag.regex'. Please use only 'tag.regex'."
+                    )
+                # Replace with a new TagConfiguration to avoid mutating shared objects
+                self.tag = dataclasses.replace(
+                    self.tag, regex=_check_tag_regex(tag_regex)
+                )
+
+        if self.tag.strict is None:
+            warnings.warn(
+                "tag.strict is not set. Currently defaults to False (permissive "
+                "tag matching). In a future major version the default will change "
+                "to True (require tags to contain a dot). "
+                "Set tag.strict = true or tag.strict = false explicitly in your "
+                "[tool.setuptools_scm] / [tool.vcs-versioning] config to silence "
+                "this warning.",
+                FutureWarning,
+                stacklevel=2,
+            )
+
+        if (
+            self.tag.prefix or self.tag.strict is not None
+        ) and self.scm.git.describe_command is not None:
+            warnings.warn(
+                "Both tag.prefix/tag.strict and scm.git.describe_command are set. "
+                "The explicit describe_command takes precedence; tag.prefix and "
+                "tag.strict will have no effect on the git describe match pattern.",
+                UserWarning,
+                stacklevel=2,
+            )
+
+        self._resolved_paths = resolve_paths(
+            relative_to=self.relative_to,
+            root=self.root,
+            project_path=self.project_path,
+        )
+        if self.project_path is None and self._resolved_paths.project_path is not None:
+            self.project_path = self._resolved_paths.project_path
 
         # Handle deprecated git_describe_command
         # Check if it's a descriptor object (happens when no value is passed)
@@ -258,7 +411,35 @@ class Configuration:
 
     @property
     def absolute_root(self) -> str:
-        return _check_absolute_root(self.root, self.relative_to)
+        return str(self._resolved_paths.scm_probe_root)
+
+    @property
+    def env(self) -> VcsEnvironment:
+        """The :class:`~vcs_versioning._environment.VcsEnvironment` for this config.
+
+        Always non-None after first access — set by ``VcsEnvironment.build_config()``
+        or lazily resolved on first access (with a ``DeprecationWarning``).
+        """
+        if self._env is None:
+            warnings.warn(
+                "Configuration was created without VcsEnvironment. "
+                "Use VcsEnvironment.build_config() to create configurations "
+                "with runtime settings attached explicitly. "
+                "This will become an error in vcs-versioning 2.0.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            from ._environment import resolve_runtime_env
+
+            object.__setattr__(self, "_env", resolve_runtime_env())
+        assert self._env is not None
+        return self._env
+
+    def discover_workdir(self) -> ScmWorkdir | FallbackWorkdir | None:
+        """Discover the workdir for this configuration."""
+        from ._worktree_discovery import discover_workdir
+
+        return discover_workdir(self)
 
     @classmethod
     def from_file(
@@ -266,6 +447,9 @@ class Configuration:
         name: str | os.PathLike[str] = "pyproject.toml",
         dist_name: str | None = None,
         pyproject_data: PyProjectData | None = None,
+        *,
+        tool_names: tuple[str, ...] | None = None,
+        env: Mapping[str, str] | None = None,
         **kwargs: Any,
     ) -> Configuration:
         """
@@ -276,6 +460,8 @@ class Configuration:
         Parameters:
         - name: path to pyproject.toml
         - dist_name: name of the distribution
+        - tool_names: env-var prefix order for TOML overrides
+        - env: environment mapping for TOML overrides (default: os.environ)
         - **kwargs: additional keyword arguments to pass to the Configuration constructor
         """
 
@@ -283,8 +469,25 @@ class Configuration:
             pyproject_data = read_pyproject(Path(name))
         args = get_args_for_pyproject(pyproject_data, dist_name, kwargs)
 
-        args.update(read_toml_overrides(args["dist_name"]))
+        # Per-project overrides: lower priority than env overrides
+        from ._project_overrides import read_project_overrides
+
         relative_to = args.pop("relative_to", name)
+        resolved = resolve_paths(
+            relative_to=relative_to,
+            root=args.get("root", "."),
+            project_path=args.get("project_path"),
+        )
+        project_overrides = read_project_overrides(
+            scm_root=resolved.scm_probe_root,
+            project_path=resolved.project_path or "",
+        )
+        args.update(project_overrides)
+
+        # Env overrides: highest priority
+        args.update(
+            read_toml_overrides(args["dist_name"], tool_names=tool_names, env=env)
+        )
         return cls.from_data(relative_to=relative_to, data=args)
 
     @classmethod
@@ -299,15 +502,68 @@ class Configuration:
             data.pop("version_cls", None), data.pop("normalize", True)
         )
 
-        # Handle nested SCM configuration
+        # Migrate top-level tag_regex into tag.regex
+        tag_data = data.pop("tag", None) or {}
+        top_level_tag_regex = data.pop("tag_regex", None)
+        if top_level_tag_regex is not None:
+            if "regex" in tag_data:
+                raise ValueError(
+                    "Cannot specify both 'tag_regex' (deprecated) and "
+                    "'tag.regex'. Please use only 'tag.regex'."
+                )
+            warnings.warn(
+                "Configuration key 'tag_regex' is deprecated. Use 'tag.regex' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            tag_data["regex"] = top_level_tag_regex
+
+        tag_config = TagConfiguration.from_data(tag_data if tag_data else None)
         scm_data = data.pop("scm", {})
-
-        # Handle nested SCM configuration
-
         scm_config = ScmConfiguration.from_data(scm_data)
         return cls(
             relative_to=relative_to,
             version_cls=version_cls,
+            tag=tag_config,
             scm=scm_config,
             **data,
         )
+
+
+_DEPRECATED_LEGACY_ATTRS: frozenset[str] = frozenset(
+    {
+        "absolute_root",
+        "relative_to",
+        "root",
+    }
+)
+
+
+@dataclasses.dataclass(frozen=True)
+class FrozenLegacyConfig:
+    """Read-only view of Configuration for backward-compatible code paths.
+
+    Wraps a ``Configuration`` and emits ``DeprecationWarning`` on first
+    attribute access for fields that are being migrated to new APIs.
+    Frozen dataclass -- all attributes are immutable.
+
+    Use ``FrozenLegacyConfig(config)`` in legacy code paths that receive
+    a config but should be guided toward the new explicit API chain.
+    """
+
+    _config: Configuration = dataclasses.field(repr=False)
+    _warned: set[str] = dataclasses.field(
+        default_factory=set, repr=False, compare=False, hash=False
+    )
+
+    def __getattr__(self, name: str) -> Any:
+        if name in _DEPRECATED_LEGACY_ATTRS and name not in self._warned:
+            self._warned.add(name)
+            warnings.warn(
+                f"Accessing '{name}' on legacy config view is deprecated. "
+                f"Use ResolvedPaths or the new explicit API chain instead. "
+                f"This will become an error in vcs-versioning 2.0.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        return getattr(self._config, name)
