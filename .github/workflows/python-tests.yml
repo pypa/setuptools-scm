@@ -113,6 +113,9 @@ jobs:
           echo "C:\Program Files\gnupg\bin" >> $env:GITHUB_PATH
           echo "C:\Program Files\Mercurial\" >> $env:GITHUB_PATH
           git config --system gpg.program "C:\Program Files\gnupg\bin\gpg.exe"
+          git config --system core.longpaths true
+          mkdir "D:\Temp"
+          echo "TEMP=D:\Temp" >> $env:GITHUB_ENV
         if: runner.os == 'Windows'
       - run: uv sync --all-packages --all-groups
       - name: Download vcs-versioning packages
