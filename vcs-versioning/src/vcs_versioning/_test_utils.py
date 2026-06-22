@@ -206,6 +206,41 @@ name = {name}
 
         return self
 
+    def configure_jj_commands(self) -> None:
+        """Configure jj commands without initializing the repository."""
+        from vcs_versioning._backends._jj import parse as jj_parse
+
+        self.add_command = "jj file track ."
+        self.commit_command = "jj commit -m test-{reason}"
+        self.tag_command = "jj tag set {tag} -r @-"
+        self.parse = jj_parse
+
+    def setup_jj(self, *, init: bool = True) -> WorkDir:
+        """Set up Jujutsu (jj) SCM for this WorkDir.
+
+        Creates a colocated jj/git repo (``jj git init``).
+
+        Args:
+            init: Whether to initialize the jj repository (default: True)
+
+        Returns:
+            Self for method chaining
+
+        Raises:
+            pytest.skip: If jj executable is not found
+        """
+        if not has_command("jj", args=["version"], warn=False):
+            pytest.skip("jj executable not found")
+
+        self.configure_jj_commands()
+
+        if init:
+            self("jj git init")
+            self("jj config set --repo user.name 'a test'")
+            self("jj config set --repo user.email test@example.com")
+
+        return self
+
     def setup_hg(self, *, init: bool = True) -> WorkDir:
         """Set up mercurial SCM for this WorkDir.
 
