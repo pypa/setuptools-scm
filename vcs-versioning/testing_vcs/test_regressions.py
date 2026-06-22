@@ -138,6 +138,30 @@ def test_no_warn_when_version_file_not_tracked(tmp_path: Path, scm: str) -> None
     assert tracked_warnings == []
 
 
+@pytest.mark.issue(1423)
+def test_parse_version_importable_from_get_version_impl() -> None:
+    """setuptools-scm <=10.0.x imports parse_version from this module."""
+    from vcs_versioning._get_version_impl import parse_version
+
+    assert callable(parse_version)
+
+
+@pytest.mark.issue(1423)
+def test_parse_version_shim_returns_version(tmp_path: Path) -> None:
+    """The compat shim should resolve and return a ScmVersion."""
+    wd = WorkDir(tmp_path).setup_git()
+    wd.add_and_commit("initial")
+    wd("git tag -a v1.0.0 -m v1.0.0")
+
+    c = Configuration(root=tmp_path)
+
+    from vcs_versioning._get_version_impl import parse_version
+    from vcs_versioning._scm_version import ScmVersion
+
+    result = parse_version(c)
+    assert isinstance(result, ScmVersion)
+
+
 @pytest.mark.parametrize(
     ("input", "expected"),
     [

@@ -29,6 +29,18 @@ EMPTY_TAG_REGEX_DEPRECATION = DeprecationWarning(
 log = logging.getLogger(__name__)
 
 
+def parse_version(config: Configuration) -> ScmVersion | None:
+    """Backward-compat shim for setuptools-scm <=10.0.x.
+
+    Those releases import ``parse_version`` from this module.  The function
+    was inlined during the 10.1 / vcs-versioning 2.0 refactor, but we keep
+    the name importable so that older setuptools-scm pins still work with
+    newer vcs-versioning releases.
+    """
+    scm_version = _resolve_version(config)
+    return _apply_metadata_overrides(scm_version, config)
+
+
 def _finalize(
     scm_version: ScmVersion,
     config: Configuration,
