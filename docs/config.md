@@ -336,6 +336,20 @@ These environment variables control setuptools-scm specific behavior.
 :   Override the subprocess timeout (default: 40 seconds).
     See the [overrides documentation](overrides.md#subprocess-timeouts) for details.
 
+`SETUPTOOLS_SCM_DISABLE_JJ`
+:   Disable Jujutsu (jj) backend discovery. When set to `1`/`true`/`yes`,
+    setuptools-scm will skip the jj backend even if a `.jj/` directory is
+    present, falling back to Git or Mercurial detection instead.
+
+    This is useful in container or CI environments where a colocated
+    Jujutsu/Git repository is used but the `jj` binary is not installed.
+    Without this variable, a missing `jj` binary in a `.jj/` repository
+    raises an error.
+
+    Also available as `VCS_VERSIONING_DISABLE_JJ`.
+
+    See [Jujutsu repositories](usage.md#jujutsu-jj-repositories) for details.
+
 ## Automatic File Inclusion
 
 !!! warning "Setuptools File Finder Integration"
@@ -346,7 +360,7 @@ These environment variables control setuptools-scm specific behavior.
 
 `setuptools-scm` provides a `setuptools.file_finders` entry point that:
 
-1. Automatically discovers SCM-managed files (Git, Mercurial)
+1. Automatically discovers SCM-managed files (Git, Mercurial, Jujutsu)
 2. Includes them in source distributions (`python -m build --sdist`)
 3. Works for `include_package_data = True` in package building
 
@@ -361,6 +375,7 @@ setuptools_scm = "setuptools_scm._file_finders:find_files"
 
 - All files tracked by Git (`git ls-files`)
 - All files tracked by Mercurial (`hg files`)
+- All files tracked by Jujutsu (`jj file list`)
 - Includes: source code, documentation, tests, config files, etc.
 - Excludes: untracked files, files in `.gitignore`/`.hgignore`
 

@@ -61,6 +61,7 @@ hg-git = "vcs_versioning._backends._discover_vcs:discover"
 archival = "vcs_versioning._fallback_workdir:discover_archival"
 
 [project.entry-points."setuptools_scm.files_command"]
+".jj" = "vcs_versioning._file_finders._jj:jj_find_files"
 ".git" = "vcs_versioning._file_finders._git:git_find_files"
 ".hg" = "vcs_versioning._file_finders._hg:hg_find_files"
 

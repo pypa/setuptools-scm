@@ -494,6 +494,7 @@ to distinguish between different SCM systems:
 
 - **Git repositories**: Node IDs are prefixed with `g` (e.g., `g1a2b3c4d5`)
 - **Mercurial repositories**: Node IDs are prefixed with `h` (e.g., `h1a2b3c4d5`)
+- **Jujutsu repositories**: Node IDs are prefixed with `j` (e.g., `j1a2b3c4d5e6`)
 
 This prefixing serves several purposes:
 
@@ -512,6 +513,9 @@ specifying node IDs in environment variables like `SETUPTOOLS_SCM_PRETEND_METADA
 
 # Mercurial node ID
 1.0.0.dev5+h1a2b3c4d5
+
+# Jujutsu node ID
+1.0.0.dev5+j1a2b3c4d5e6
 ```
 
 !!! note
@@ -535,7 +539,7 @@ accordingly.
 
 ## Builtin mechanisms for obtaining version numbers
 
-1. the SCM itself (Git/Mercurial)
+1. the SCM itself (Git/Mercurial/Jujutsu)
 2. `.hg_archival` files (Mercurial archives)
 3. `.git_archival.txt` files (Git archives, see subsection below)
 4. `PKG-INFO`
@@ -691,6 +695,70 @@ exclude .gitattributes
     ```
 
 [git-archive-issue]: https://github.com/pypa/setuptools-scm/issues/806
+
+### Jujutsu (jj) repositories
+
+[Jujutsu](https://jj-vcs.dev/) is a Git-compatible version control system that
+uses Git as its storage backend. setuptools-scm has native support for Jujutsu
+repositories — when a `.jj/` directory is detected, the `jj` backend is used
+instead of the Git backend.
+
+#### How it works
+
+- **Automatic detection**: If `.jj/` exists in the project root, setuptools-scm
+  uses `jj` commands for version inference, even in colocated repositories
+  (where both `.jj/` and `.git/` exist).
+- **Tags**: Version tags are read via `jj log` with revset expressions.
+  Use `jj tag set v1.0.0` to create version tags.
+- **Distance**: The commit distance counts non-empty commits between the latest
+  tag and the working copy. In Jujutsu, the working copy itself is modeled as a
+  commit, so a dirty working copy adds 1 to the distance.
+- **File finder**: Tracked files are listed via `jj file list`.
+
+#### Special considerations
+
+**`jj` must be installed.** When a `.jj/` directory is detected but the `jj`
+binary is not on `PATH`, setuptools-scm raises a clear error instead of
+silently falling back to Git. This prevents incorrect versions from stale Git
+state in colocated repositories.
+
+**Opting out of jj detection.** If you have a `.jj/` directory but want to
+use the Git backend (e.g. in a container or CI environment without `jj`
+installed), set the `SETUPTOOLS_SCM_DISABLE_JJ=1` (or
+`VCS_VERSIONING_DISABLE_JJ=1`) environment variable. This skips jj discovery
+and falls back to Git/Mercurial detection.
+
+```bash
+# In a Dockerfile or CI config where jj is not available
+export SETUPTOOLS_SCM_DISABLE_JJ=1
+pip install -e .
+```
+
+**Bookmarks vs branches.** Jujutsu uses "bookmarks" rather than branches.
+The jj backend reports the first local bookmark of the working copy's parent
+(`@-`) as the branch name in version metadata, falling back to `@` if no
+bookmark is found on the parent.
+
+**No archive support.** Unlike Git (`.git_archival.txt`) and Mercurial
+(`.hg_archival`), Jujutsu does not have a native archive mechanism that
+embeds version metadata. Building from source archives (e.g. GitHub release
+tarballs) requires using `SETUPTOOLS_SCM_PRETEND_VERSION` or
+`fallback_version` in your configuration.
+
+#### Docker / container builds
+
+In colocated Jujutsu repositories, the `.jj/` directory marker is present
+alongside `.git/`. When building in containers where only Git is available,
+use `SETUPTOOLS_SCM_DISABLE_JJ=1` to skip jj discovery and fall back to
+the Git backend. Only `.git` needs to be mounted — `.jj` is intentionally
+omitted since the Git backend reads directly from the Git storage:
+
+```dockerfile
+FROM python
+ENV SETUPTOOLS_SCM_DISABLE_JJ=1
+RUN --mount=source=.git,target=.git,type=bind \
+    pip install --no-cache-dir -e .
+```
 
 ### File finders hook makes most of `MANIFEST.in` unnecessary
 

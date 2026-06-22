@@ -90,6 +90,7 @@ class VcsEnvironment:
 
     subprocess_timeout: int = _DEFAULT_SUBPROCESS_TIMEOUT
     hg_command: str = _DEFAULT_HG_COMMAND
+    disable_jj: bool = False
     source_date_epoch: int | None = None
     ignore_vcs_roots: tuple[str, ...] = ()
     tool_names: tuple[str, ...] = ("VCS_VERSIONING",)
@@ -155,6 +156,9 @@ class VcsEnvironment:
         set_var(f"{prefix}_SUBPROCESS_TIMEOUT", str(self.subprocess_timeout))
         set_var(f"{prefix}_HG_COMMAND", self.hg_command)
 
+        if self.disable_jj:
+            set_var(f"{prefix}_DISABLE_JJ", "1")
+
         if self.ignore_vcs_roots:
             set_var(
                 f"{prefix}_IGNORE_VCS_ROOTS",
@@ -196,6 +200,14 @@ class VcsEnvironment:
 
         hg_command = reader.read("HG_COMMAND") or _DEFAULT_HG_COMMAND
 
+        disable_jj_val = reader.read("DISABLE_JJ")
+        disable_jj = disable_jj_val is not None and disable_jj_val.lower() not in (
+            "",
+            "0",
+            "false",
+            "no",
+        )
+
         source_date_epoch_val = env.get("SOURCE_DATE_EPOCH")
         source_date_epoch: int | None = None
         if source_date_epoch_val is not None:
@@ -217,6 +229,7 @@ class VcsEnvironment:
         return cls(
             subprocess_timeout=subprocess_timeout,
             hg_command=hg_command,
+            disable_jj=disable_jj,
             source_date_epoch=source_date_epoch,
             ignore_vcs_roots=ignore_vcs_roots,
             tool_names=all_names,
