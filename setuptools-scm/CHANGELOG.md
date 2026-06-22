@@ -2,6 +2,36 @@
 
 <!-- towncrier release notes start -->
 
+## 10.1.1 (2026-06-22)
+
+### Fixed
+
+- Update CI to use PyPy 3.11 as cryptography has no PyPy 3.10 build available ([#1421](https://github.com/pypa/setuptools-scm/issues/1421))
+
+## 10.1.0 (2026-06-22)
+
+### Added
+
+- Add backward-compatible shims in ``setuptools_scm.git``, ``setuptools_scm.hg``, ``setuptools_scm.hg_git``, and ``setuptools_scm.scm_workdir`` so that external code calling ``get_scm_version(config)`` or ``run_describe(config)`` with an explicit ``Configuration`` continues to work. The shim automatically wires ``_config`` and ``VcsEnvironment`` onto the workdir. ([#compat-shims](https://github.com/pypa/setuptools-scm/issues/compat-shims))
+- Write ``scm_version.json`` and ``scm_file_list.json`` into egg-info directories during ``egg_info``, enabling sdist fallback version inference when no VCS is present. Add ``ScmEggInfoMixin`` for workdir-based file finding in ``find_sources()``. ([#egg-info-metadata](https://github.com/pypa/setuptools-scm/issues/egg-info-metadata))
+- Add `write_to_source` pyproject.toml option to control whether version files are written to the source tree. When unset, a deprecation warning advises setting it explicitly before the default changes in a future major release. The `SETUPTOOLS_SCM_WRITE_TO_SOURCE` environment variable overrides this setting. ([#1301](https://github.com/pypa/setuptools-scm/issues/1301))
+- Adopt the workdir-centric pipeline from vcs-versioning: version discovery now follows an explicit ``env → config → workdir → version`` chain instead of relying on ambient globals and ``parse`` entry points. The ``egg_info`` command writes ``scm_version.json`` and ``scm_file_list.json`` metadata so sdists can infer versions without a VCS checkout. Requires ``vcs-versioning >= 2.0.0.dev0``. ([#1378](https://github.com/pypa/setuptools-scm/issues/1378))
+
+
+### Fixed
+
+- Fix worktree file listing test to expect relative paths from the file finder. The test now passes on Linux; Windows remains xfail due to a subprocess limitation with worktree directories. ([#620](https://github.com/pypa/setuptools-scm/issues/620))
+- Remove the `_warn_on_old_setuptools()` check that incorrectly warned when a custom build-backend caused `setuptools.__version__` to return the project version instead of setuptools' version. The minimum setuptools version is now enforced via build-system requirements. ([#1192](https://github.com/pypa/setuptools-scm/issues/1192))
+- Wrap version in ``setuptools.sic()`` when ``normalize = false`` to prevent setuptools from re-normalizing the version after our hook returns. This preserves CalVer zero-padding (e.g. ``2024.01.05``) and other non-canonical version strings in ``dist.metadata.version``. ([#1354](https://github.com/pypa/setuptools-scm/issues/1354))
+- Skip writing non-package version files to build_lib, fixing incorrect inclusion of root-level version files in wheels. ([#1364](https://github.com/pypa/setuptools-scm/issues/1364))
+
+
+### Documentation
+
+- Rewrite the GitHub Actions CI/CD example to use a dedicated build job
+  (via `build-and-inspect-python-package`) and OIDC Trusted Publishers
+  instead of building in publishing jobs with long-lived API tokens. ([#1215](https://github.com/pypa/setuptools-scm/issues/1215))
+
 ## 10.0.5 (2026-03-27)
 
 ### Fixed
