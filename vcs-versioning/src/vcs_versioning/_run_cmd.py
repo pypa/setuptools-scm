@@ -166,6 +166,7 @@ def run(
         ),
         text=True,
         encoding="utf-8",
+        errors="surrogateescape",
         timeout=timeout,
     )
 
