@@ -347,27 +347,19 @@ class Configuration:
                     self.tag, regex=_check_tag_regex(tag_regex)
                 )
 
+        # TODO(#1429): re-introduce these warnings with non-conflicting logic
         if self.tag.strict is None:
-            warnings.warn(
-                "tag.strict is not set. Currently defaults to False (permissive "
-                "tag matching). In a future major version the default will change "
-                "to True (require tags to contain a dot). "
-                "Set tag.strict = true or tag.strict = false explicitly in your "
-                "[tool.setuptools_scm] / [tool.vcs-versioning] config to silence "
-                "this warning.",
-                FutureWarning,
-                stacklevel=2,
+            log.debug(
+                "tag.strict is not set — defaults to False (permissive tag matching)"
             )
 
         if (
             self.tag.prefix or self.tag.strict is not None
         ) and self.scm.git.describe_command is not None:
-            warnings.warn(
+            log.debug(
                 "Both tag.prefix/tag.strict and scm.git.describe_command are set. "
                 "The explicit describe_command takes precedence; tag.prefix and "
-                "tag.strict will have no effect on the git describe match pattern.",
-                UserWarning,
-                stacklevel=2,
+                "tag.strict will have no effect on the git describe match pattern."
             )
 
         self._resolved_paths = resolve_paths(
