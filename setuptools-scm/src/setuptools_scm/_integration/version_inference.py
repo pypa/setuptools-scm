@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -42,13 +41,7 @@ def _should_write_to_source(config: _config.Configuration) -> bool:
     """
     import warnings
 
-    from vcs_versioning.overrides import EnvReader
-
-    reader = EnvReader(
-        tools_names=config.env.tool_names,
-        env=os.environ,
-        dist_name=config.dist_name,
-    )
+    reader = config.env.make_reader(config.dist_name)
     env_value = reader.read("WRITE_TO_SOURCE")
 
     if env_value is not None:
@@ -173,6 +166,7 @@ class VersionInferenceConfig:
     dist_name: str | None
     pyproject_data: PyProjectData | None
     overrides: dict[str, Any] | None
+    env: VcsEnvironment | None = None
 
     def apply(self, dist: Distribution) -> None:
         """Apply version inference to the distribution.
@@ -185,6 +179,7 @@ class VersionInferenceConfig:
             self.dist_name,
             self.pyproject_data,  # type: ignore[arg-type]
             self.overrides,
+            env=self.env,
         )
         # When normalize=False, wrap in setuptools.sic() to prevent
         # setuptools' _normalize_version from re-normalizing (stripping
