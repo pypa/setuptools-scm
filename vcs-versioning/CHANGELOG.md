@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 2.1.1 (2026-06-23)
+
+### Fixed
+
+- Fix spurious ``DeprecationWarning`` for ``tag_regex`` when using default value via ``get_version()``. ([#1434](https://github.com/pypa/setuptools-scm/issues/1434))
+
 ## 2.1.0 (2026-06-22)
 
 ### Added
