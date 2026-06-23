@@ -10,7 +10,7 @@ from typing import Any, NoReturn
 
 from . import _config
 from . import _types as _t
-from ._config import Configuration
+from ._config import Configuration, TagConfiguration
 from ._environment import resolve_runtime_env
 
 # Backward-compat re-export used by vcs-versioning/setup.py
@@ -270,7 +270,18 @@ def get_version(
 
     version_cls = _validate_version_cls(version_cls, normalize)
     del normalize
-    tag_regex = parse_tag_regex(tag_regex)
+
+    if tag_regex is _config.DEFAULT_TAG_REGEX:
+        tag_config = TagConfiguration()
+    else:
+        warnings.warn(
+            "get_version() parameter 'tag_regex' is deprecated. "
+            "Use 'tag.regex' in pyproject.toml or pass a TagConfiguration "
+            "via Configuration(tag=...) instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        tag_config = TagConfiguration(regex=parse_tag_regex(tag_regex))
 
     scm_config = _config.ScmConfiguration.from_data(data=scm)
 
@@ -286,7 +297,6 @@ def get_version(
         version_file=version_file,
         version_file_template=version_file_template,
         relative_to=relative_to,
-        tag_regex=tag_regex,
         parentdir_prefix_version=parentdir_prefix_version,
         fallback_version=fallback_version,
         fallback_root=fallback_root,
@@ -296,6 +306,7 @@ def get_version(
         version_cls=version_cls,
         search_parent_directories=search_parent_directories,
         scm=scm_config,
+        tag=tag_config,
         _env=_env,
     )
     maybe_version = _get_version(config, force_write_version_files=True)

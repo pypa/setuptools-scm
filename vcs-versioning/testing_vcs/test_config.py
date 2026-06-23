@@ -7,7 +7,7 @@ import warnings
 
 import pytest
 from vcs_versioning import Configuration
-from vcs_versioning._config import TagConfiguration
+from vcs_versioning._config import DEFAULT_TAG_REGEX, TagConfiguration
 
 
 @pytest.mark.parametrize(
@@ -58,6 +58,21 @@ def test_deprecated_tag_regex_init_var() -> None:
     with pytest.warns(DeprecationWarning, match="Use 'tag.regex' instead"):
         conf = Configuration(tag_regex=tag_regex)
     assert conf.tag.regex is tag_regex
+
+
+@pytest.mark.issue(1434)
+def test_omitting_tag_regex_no_deprecation_warning() -> None:
+    """Omitting tag_regex (None default) should not emit DeprecationWarning."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        Configuration()
+
+
+@pytest.mark.issue(1434)
+def test_explicit_default_tag_regex_warns() -> None:
+    """Explicitly passing DEFAULT_TAG_REGEX still warns (deprecated param)."""
+    with pytest.warns(DeprecationWarning, match="Use 'tag.regex' instead"):
+        Configuration(tag_regex=DEFAULT_TAG_REGEX)
 
 
 def test_tag_regex_conflict() -> None:

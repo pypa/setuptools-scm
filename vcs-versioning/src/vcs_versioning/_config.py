@@ -342,7 +342,6 @@ class Configuration:
                         "Cannot specify both 'tag_regex' (deprecated) and "
                         "'tag.regex'. Please use only 'tag.regex'."
                     )
-                # Replace with a new TagConfiguration to avoid mutating shared objects
                 self.tag = dataclasses.replace(
                     self.tag, regex=_check_tag_regex(tag_regex)
                 )
