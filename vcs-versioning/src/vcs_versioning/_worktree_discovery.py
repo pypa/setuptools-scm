@@ -70,7 +70,10 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
        - ScmWorkdir result: verify project_path, return immediately.
        - FallbackWorkdir result: stash as candidate, keep probing for SCM.
     2. Fallback phase: probe ``project_dir`` (if different from scm root).
-    3. Return best stashed FallbackWorkdir if no SCM found.
+    3. Try each stashed FallbackWorkdir in discovery order; return the first
+       whose ``get_scm_version()`` is not None.  This prevents an
+       unprocessed ``.git_archival.txt`` from shadowing a valid ``PKG-INFO``
+       (see :issue:`1431`).
     4. Try StaticWorkdir from config.fallback_version / parentdir_prefix_version.
     5. Return None.
     """
@@ -92,7 +95,7 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
     project_dir = config._resolved_paths.project_dir
     scm_root_hint = config._resolved_paths.scm_probe_root
 
-    fallback_candidate: FallbackWorkdir | None = None
+    fallback_candidates: list[FallbackWorkdir] = []
 
     def _accept_scm(result: ScmWorkdir, ep_name: str) -> ScmWorkdir:
         result.project_root = project_dir
@@ -109,7 +112,6 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
         return result
 
     def _probe_dir(current_dir: Path, *, accept_scm: bool) -> ScmWorkdir | None:
-        nonlocal fallback_candidate
         for ep_name, factory in factories:
             try:
                 result = factory(current_dir, config=config)
@@ -122,7 +124,7 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
                 continue
             if accept_scm and isinstance(result, ScmWorkdir):
                 return _accept_scm(result, ep_name)
-            if isinstance(result, FallbackWorkdir) and fallback_candidate is None:
+            if isinstance(result, FallbackWorkdir):
                 result._config = config
                 log.debug(
                     "stashed fallback workdir %s from factory %s at %s",
@@ -130,7 +132,7 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
                     ep_name,
                     current_dir,
                 )
-                fallback_candidate = result
+                fallback_candidates.append(result)
         return None
 
     # Phase 1: SCM probes at scm_root_hint (the declared root) and optionally parents.
@@ -146,9 +148,19 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
     if project_dir != scm_root_hint:
         _probe_dir(project_dir, accept_scm=False)
 
-    if fallback_candidate is not None:
-        log.info("using fallback workdir %s", type(fallback_candidate).__name__)
-        return fallback_candidate
+    # Try each fallback candidate until one can provide a version (#1431).
+    # Earlier discovery code stashed all matching fallback workdirs; an
+    # unprocessed .git_archival.txt (raw $Format placeholders) would
+    # shadow a valid PKG-INFO if we only kept the first candidate.
+    for candidate in fallback_candidates:
+        if candidate.get_scm_version() is not None:
+            log.info("using fallback workdir %s", type(candidate).__name__)
+            return candidate
+    if fallback_candidates:
+        log.debug(
+            "all %d fallback candidates returned None for get_scm_version",
+            len(fallback_candidates),
+        )
 
     static = StaticWorkdir(path=project_dir, _config=config)
     if static.get_scm_version() is not None:
