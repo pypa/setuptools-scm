@@ -95,7 +95,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
         from .._file_finders import scm_find_files
         from .._file_finders._hg import _hg_ls_files_and_dirs
 
-        base = str(path) if path else str(self.path)
+        base = str(path) if path else str(self.project_root)
         hg_files, hg_dirs = _hg_ls_files_and_dirs(
             str(self.path),
             hg_command=self._hg_command,

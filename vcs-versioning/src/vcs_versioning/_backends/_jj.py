@@ -263,7 +263,7 @@ class JjWorkdir(Workdir):
         from .._file_finders import scm_find_files
         from .._file_finders._jj import _jj_ls_files_and_dirs
 
-        base = str(path) if path else str(self.path)
+        base = str(path) if path else str(self.project_root)
         jj_files, jj_dirs = _jj_ls_files_and_dirs(
             str(self.path), timeout=self._subprocess_timeout
         )

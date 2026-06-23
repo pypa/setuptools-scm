@@ -34,8 +34,8 @@ class TestLegacyParseWorkdir:
         return Configuration.from_file(pyproject)
 
     def test_requires_parse_fn(self, tmp_path: Path) -> None:
-        with pytest.raises(TypeError, match="requires a _parse_fn"):
-            LegacyParseWorkdir(path=tmp_path)
+        with pytest.raises(TypeError, match="parse_fn"):
+            LegacyParseWorkdir(path=tmp_path)  # type: ignore[call-arg]
 
     def test_get_scm_version_emits_deprecation(self, tmp_path: Path) -> None:
         config = self._make_config(tmp_path)
@@ -43,7 +43,7 @@ class TestLegacyParseWorkdir:
         def fake_parse(root: _t.PathT, *, config: Configuration) -> ScmVersion | None:
             return ScmVersion(tag=Version("1.0.0"), config=config)
 
-        wd = LegacyParseWorkdir(path=tmp_path, _parse_fn=fake_parse)
+        wd = LegacyParseWorkdir(path=tmp_path, parse_fn=fake_parse)
         wd._config = config
 
         with warnings.catch_warnings(record=True) as w:
@@ -62,7 +62,7 @@ class TestLegacyParseWorkdir:
         def fake_parse(root: _t.PathT, *, config: Configuration) -> ScmVersion | None:
             return None
 
-        wd = LegacyParseWorkdir(path=tmp_path, _parse_fn=fake_parse)
+        wd = LegacyParseWorkdir(path=tmp_path, parse_fn=fake_parse)
         wd._config = config
 
         with warnings.catch_warnings(record=True):
@@ -75,7 +75,7 @@ class TestLegacyParseWorkdir:
         def bad_parse(root: _t.PathT, *, config: Configuration) -> ScmVersion | None:
             return "not-a-version"  # type: ignore[return-value]
 
-        wd = LegacyParseWorkdir(path=tmp_path, _parse_fn=bad_parse)
+        wd = LegacyParseWorkdir(path=tmp_path, parse_fn=bad_parse)
         wd._config = config
 
         with warnings.catch_warnings(record=True):
