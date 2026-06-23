@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 10.1.2 (2026-06-22)
+
+### Fixed
+
+- Fix DeprecationWarning leak by threading VcsEnvironment through VersionInferenceConfig and using env.make_reader() in _should_write_to_source. ([#1424](https://github.com/pypa/setuptools-scm/issues/1424))
+
 ## 10.1.1 (2026-06-22)
 
 ### Fixed
