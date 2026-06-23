@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from dataclasses import field as dc_field
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, overload
 
 from .._scm_version import ScmVersion
 
@@ -14,6 +14,37 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
+
+
+class _ProjectRootDescriptor:
+    """Descriptor for ``project_root`` that defaults to ``path``.
+
+    Acts as default when no value has been set on the instance.
+    Stores explicitly assigned values in the instance ``__dict__``.
+    """
+
+    def __set_name__(self, owner: type, name: str) -> None:
+        self._name = name
+
+    @overload
+    def __get__(self, obj: None, objtype: type) -> _ProjectRootDescriptor: ...
+
+    @overload
+    def __get__(self, obj: ScmWorkdir, objtype: type | None = None) -> Path: ...
+
+    def __get__(
+        self, obj: ScmWorkdir | None, objtype: type | None = None
+    ) -> Path | _ProjectRootDescriptor:
+        if obj is None:
+            return self
+        value: Path | None = obj.__dict__.get(self._name)
+        if value is None:
+            return obj.path
+        return value
+
+    def __set__(self, obj: ScmWorkdir, value: Path | None) -> None:
+        if isinstance(value, Path):
+            obj.__dict__[self._name] = value
 
 
 def get_latest_file_mtime(changed_files: list[str], base_path: Path) -> date | None:
@@ -61,14 +92,10 @@ class ScmWorkdir:
     """
 
     path: Path
-    project_root: Path | None = dc_field(default=None)
+    project_root: Path = _ProjectRootDescriptor()  # type: ignore[assignment]
 
     _config: Configuration | None = dc_field(default=None, repr=False, compare=False)
     """Back-reference to the ``Configuration`` that discovered this workdir."""
-
-    def __post_init__(self) -> None:
-        if self.project_root is None:
-            self.project_root = self.path
 
     @property
     def _subprocess_timeout(self) -> int | None:
@@ -95,7 +122,6 @@ class ScmWorkdir:
     @property
     def project_path(self) -> str:
         """Discovered relative path from VCS root to project directory."""
-        assert self.project_root is not None
         if self.path == self.project_root:
             return ""
         from .._paths import relative_project_path

@@ -32,6 +32,16 @@ class WorkdirProtocol(Protocol):
     @property
     def path(self) -> Path: ...
 
+    @property
+    def project_root(self) -> Path:
+        """The project directory (where pyproject.toml lives).
+
+        For SCM workdirs this may differ from ``path`` (the VCS root).
+        For fallback workdirs this is always equal to ``path``.
+        Guaranteed non-None after construction.
+        """
+        ...
+
     def get_scm_version(self) -> ScmVersion | None:
         """Raw version metadata before overrides / formatting."""
         ...
@@ -48,9 +58,6 @@ class WorkdirProtocol(Protocol):
 @runtime_checkable
 class ScmWorkdirProtocol(WorkdirProtocol, Protocol):
     """Live VCS checkout: adds monorepo / nested-project fields."""
-
-    @property
-    def project_root(self) -> Path: ...
 
     @property
     def project_path(self) -> str:

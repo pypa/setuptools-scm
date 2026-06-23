@@ -84,7 +84,7 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
         return LegacyParseWorkdir(
             path=Path(config.absolute_root),
             _config=config,
-            _parse_fn=config.parse,
+            parse_fn=config.parse,
         )
 
     factories = _load_discovery_factories()

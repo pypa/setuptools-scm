@@ -77,7 +77,7 @@ def _get_tracked_files(data: VersionInferenceData | None) -> list[str] | None:
     if data is None or data.workdir is None:
         return None
     try:
-        files = data.workdir.list_tracked_files()
+        files = data.workdir.list_tracked_files(data.workdir.project_root)
         if files:
             return _normalize_tracked_files(files)
     except NotImplementedError:
@@ -139,7 +139,7 @@ class ScmEggInfoMixin(_egg_info):
 
             if data.workdir is not None:
                 try:
-                    files = data.workdir.list_tracked_files()
+                    files = data.workdir.list_tracked_files(data.workdir.project_root)
                     if files:
                         write_scm_file_list(
                             egg_info_dir, _normalize_tracked_files(files)

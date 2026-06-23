@@ -238,11 +238,15 @@ class GitWorkdir(Workdir):
         return _git_parse_inner(config, self, pre_parse=effective_pre_parse)
 
     def list_tracked_files(self, path: Path | str = "") -> list[str]:
-        """List files tracked by git, honoring export-ignore."""
+        """List files tracked by git, honoring export-ignore.
+
+        When no path is given, scopes to ``project_root`` (not the VCS root)
+        so that monorepo projects only list their own files.
+        """
         from .._file_finders import scm_find_files
         from .._file_finders._git import _git_ls_files_and_dirs
 
-        base = str(path) if path else str(self.path)
+        base = str(path) if path else str(self.project_root)
         git_files, git_dirs = _git_ls_files_and_dirs(
             str(self.path), timeout=self._subprocess_timeout
         )

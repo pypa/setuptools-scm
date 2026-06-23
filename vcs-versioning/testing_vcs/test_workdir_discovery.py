@@ -86,6 +86,48 @@ class TestDiscoverWorkdirGit:
         assert isinstance(result, ScmWorkdir)
         assert result.path == tmp_path
 
+    @pytest.mark.issue(1440)
+    def test_list_tracked_files_scoped_to_project_root(self, tmp_path: Path) -> None:
+        """In a monorepo, list_tracked_files() must only return files under project_root."""
+        # Resolve to real path to avoid Windows 8.3 short name mismatches
+        tmp_path = tmp_path.resolve()
+        _git_init(tmp_path)
+
+        # Create files in two sibling projects
+        proj_a = tmp_path / "project-a"
+        proj_b = tmp_path / "project-b"
+        proj_a.mkdir()
+        proj_b.mkdir()
+        (proj_a / "a.py").write_text("# a", encoding="utf-8")
+        (proj_b / "b.py").write_text("# b", encoding="utf-8")
+
+        subprocess.run(
+            ["git", "add", "."], cwd=tmp_path, check=True, capture_output=True
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "add projects"],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+        )
+
+        # Discover from project-a with root=".." (monorepo pattern)
+        config = Configuration(
+            relative_to=str(proj_a / "pyproject.toml"),
+            root="..",
+        )
+        result = discover_workdir(config)
+        assert result is not None
+        assert isinstance(result, ScmWorkdir)
+        assert result.path == tmp_path
+        assert result.project_root == proj_a
+
+        files = list(result.list_tracked_files())
+        # Should only contain files under project-a, not project-b or repo root
+        assert any("a.py" in f for f in files), f"expected a.py in {files}"
+        assert not any("b.py" in f for f in files), f"unexpected b.py in {files}"
+        assert not any("dummy" in f for f in files), f"unexpected dummy in {files}"
+
 
 class TestDiscoverWorkdirFallback:
     def test_discovers_pkginfo(self, tmp_path: Path) -> None:
@@ -260,6 +302,27 @@ class TestMetadataWorkdir:
 
         files = wd.list_tracked_files()
         assert files == ["src/pkg/__init__.py"]
+
+    @pytest.mark.issue(1439)
+    def test_custom_tag_regex_does_not_break_metadata(self, tmp_path: Path) -> None:
+        """Stored tags are already parsed; custom tag_regex must not re-parse them."""
+        data = ScmVersionData(
+            tag="1.5.5",
+            distance=0,
+            node="gabc1234",
+            dirty=False,
+            branch="main",
+            node_date=None,
+        )
+        write_scm_version_data(tmp_path, data)
+
+        config = Configuration(
+            tag_regex=r"^cuda-pathfinder-(?P<version>v\d+\.\d+\.\d+(?:[ab]\d+)?)",
+        )
+        wd = MetadataWorkdir(path=tmp_path, metadata_dir=tmp_path, _config=config)
+        version = wd.get_scm_version()
+        assert version is not None
+        assert str(version.tag) == "1.5.5"
 
     def test_missing_metadata_returns_none(self, tmp_path: Path) -> None:
         config = Configuration()
