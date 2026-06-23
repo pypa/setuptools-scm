@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 2.1.2 (2026-06-23)
+
+### Fixed
+
+- Fix MetadataWorkdir crash when using custom `tag_regex` — stored tags are already parsed version strings and no longer re-parsed through the tag regex. ([#1439](https://github.com/pypa/setuptools-scm/issues/1439))
+
 ## 2.1.1 (2026-06-23)
 
 ### Fixed
