@@ -85,6 +85,9 @@ def _git_ls_files_and_dirs(
         log.error("listing git files failed - pretending there aren't any")
         return set(), set()
 
+    # Normalize toplevel to match what scm_find_files expects:
+    # absolute, symlinks resolved, case-normalized (normcase).
+    toplevel = norm_real(toplevel)
     git_files: set[str] = set()
     git_dirs: set[str] = {toplevel}
     for name in res.stdout.rstrip("\0").split("\0"):

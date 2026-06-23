@@ -90,7 +90,7 @@ def _resolve_version(config: Configuration) -> ScmVersion | None:
     return None
 
 
-def _warn_if_tracked(target: Path, root: Path) -> None:
+def _warn_if_tracked(target: Path, root: Path, config: Configuration) -> None:
     """Warn when *target* is tracked in version control (#468).
 
     Writing a version file that is tracked makes ``git describe --dirty``
@@ -101,7 +101,7 @@ def _warn_if_tracked(target: Path, root: Path) -> None:
 
     for workdir_cls in (GitWorkdir, HgWorkdir):
         try:
-            wd = workdir_cls.from_potential_worktree(root)
+            wd = workdir_cls.from_potential_worktree(root, config)
         except Exception:
             continue
         if wd is not None and wd.is_file_tracked(target):
@@ -125,7 +125,7 @@ def write_version_files(
 
         write_to = Path(config.write_to)
         target = root / write_to if not write_to.is_absolute() else write_to
-        _warn_if_tracked(target, root)
+        _warn_if_tracked(target, root, config)
 
         dump_version(
             root=config.root,
@@ -142,7 +142,7 @@ def write_version_files(
         # todo: use a better name than fallback root
         assert config.relative_to is not None
         target = Path(config.relative_to).parent.joinpath(version_file)
-        _warn_if_tracked(target, root)
+        _warn_if_tracked(target, root, config)
 
         write_version_to_path(
             target,

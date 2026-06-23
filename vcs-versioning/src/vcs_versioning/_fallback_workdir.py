@@ -35,6 +35,11 @@ class FallbackWorkdir:
     """Back-reference to the ``Configuration`` that discovered this workdir."""
 
     @property
+    def project_root(self) -> Path:
+        """Fallback workdirs always live at the project root."""
+        return self.path
+
+    @property
     def config(self) -> Configuration:
         if self._config is None:
             raise RuntimeError(

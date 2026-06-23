@@ -86,6 +86,48 @@ class TestDiscoverWorkdirGit:
         assert isinstance(result, ScmWorkdir)
         assert result.path == tmp_path
 
+    @pytest.mark.issue(1440)
+    def test_list_tracked_files_scoped_to_project_root(self, tmp_path: Path) -> None:
+        """In a monorepo, list_tracked_files() must only return files under project_root."""
+        # Resolve to real path to avoid Windows 8.3 short name mismatches
+        tmp_path = tmp_path.resolve()
+        _git_init(tmp_path)
+
+        # Create files in two sibling projects
+        proj_a = tmp_path / "project-a"
+        proj_b = tmp_path / "project-b"
+        proj_a.mkdir()
+        proj_b.mkdir()
+        (proj_a / "a.py").write_text("# a", encoding="utf-8")
+        (proj_b / "b.py").write_text("# b", encoding="utf-8")
+
+        subprocess.run(
+            ["git", "add", "."], cwd=tmp_path, check=True, capture_output=True
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "add projects"],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+        )
+
+        # Discover from project-a with root=".." (monorepo pattern)
+        config = Configuration(
+            relative_to=str(proj_a / "pyproject.toml"),
+            root="..",
+        )
+        result = discover_workdir(config)
+        assert result is not None
+        assert isinstance(result, ScmWorkdir)
+        assert result.path == tmp_path
+        assert result.project_root == proj_a
+
+        files = list(result.list_tracked_files())
+        # Should only contain files under project-a, not project-b or repo root
+        assert any("a.py" in f for f in files), f"expected a.py in {files}"
+        assert not any("b.py" in f for f in files), f"unexpected b.py in {files}"
+        assert not any("dummy" in f for f in files), f"unexpected dummy in {files}"
+
 
 class TestDiscoverWorkdirFallback:
     def test_discovers_pkginfo(self, tmp_path: Path) -> None:

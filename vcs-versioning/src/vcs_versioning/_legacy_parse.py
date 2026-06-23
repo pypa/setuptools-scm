@@ -38,12 +38,7 @@ class LegacyParseWorkdir(ScmWorkdir):
     entry-point group.
     """
 
-    _parse_fn: ParseFunction | None = dc_field(default=None, repr=False)
-
-    def __post_init__(self) -> None:
-        super().__post_init__()
-        if self._parse_fn is None:
-            raise TypeError("LegacyParseWorkdir requires a _parse_fn")
+    parse_fn: ParseFunction = dc_field(repr=False, kw_only=True)
 
     def get_scm_version(self) -> ScmVersion | None:
         warnings.warn(
@@ -53,8 +48,7 @@ class LegacyParseWorkdir(ScmWorkdir):
             DeprecationWarning,
             stacklevel=2,
         )
-        assert self._parse_fn is not None
-        result = self._parse_fn(self.config.absolute_root, config=self.config)
+        result = self.parse_fn(self.config.absolute_root, config=self.config)
         if result is not None and not isinstance(result, ScmVersion):
             raise TypeError(
                 f"version parse result was {result!r}\n"
