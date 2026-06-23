@@ -347,20 +347,14 @@ class ScmVersion:
 
 def _parse_tag(
     tag: _Version | str, preformatted: bool, config: _config.Configuration
-) -> _Version:
+) -> _Version | None:
     if preformatted:
-        # For preformatted versions, tag should already be validated as a version object
-        # String validation is handled in meta function before calling this
         if isinstance(tag, str):
-            # This should not happen with enhanced meta, but kept for safety
             return _v.NonNormalizedVersion(tag)
         else:
-            # Already a version object (including test mocks), return as-is
             return tag
     elif not isinstance(tag, config.version_cls):
-        version = tag_to_version(tag, config)
-        assert version is not None
-        return version
+        return tag_to_version(tag, config)
     else:
         return tag
 
@@ -389,18 +383,20 @@ def meta(
     node_date: date | None = None,
     time: datetime | None = None,
 ) -> ScmVersion:
-    parsed_version: _Version
-    # Enhanced string validation for preformatted versions
+    parsed_version: _Version | None
     if preformatted and isinstance(tag, str):
-        # Validate PEP 440 compliance using NonNormalizedVersion
-        # Let validation errors bubble up to the caller
         parsed_version = _v.NonNormalizedVersion(tag)
     else:
-        # Use existing _parse_tag logic for non-preformatted or already validated inputs
         parsed_version = _parse_tag(tag, preformatted, config)
 
+    if parsed_version is None:
+        raise ValueError(
+            f"Can't parse version from tag {tag!r}"
+            f" (tag_regex={config.tag.regex.pattern!r},"
+            f" tag_prefix={config.tag.prefix!r})"
+        )
+
     log.info("version %s -> %s", tag, parsed_version)
-    assert parsed_version is not None, f"Can't parse version {tag}"
 
     kwargs: _ScmVersionKwargs = {
         "distance": distance,

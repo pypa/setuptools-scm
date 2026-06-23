@@ -303,6 +303,27 @@ class TestMetadataWorkdir:
         files = wd.list_tracked_files()
         assert files == ["src/pkg/__init__.py"]
 
+    @pytest.mark.issue(1439)
+    def test_custom_tag_regex_does_not_break_metadata(self, tmp_path: Path) -> None:
+        """Stored tags are already parsed; custom tag_regex must not re-parse them."""
+        data = ScmVersionData(
+            tag="1.5.5",
+            distance=0,
+            node="gabc1234",
+            dirty=False,
+            branch="main",
+            node_date=None,
+        )
+        write_scm_version_data(tmp_path, data)
+
+        config = Configuration(
+            tag_regex=r"^cuda-pathfinder-(?P<version>v\d+\.\d+\.\d+(?:[ab]\d+)?)",
+        )
+        wd = MetadataWorkdir(path=tmp_path, metadata_dir=tmp_path, _config=config)
+        version = wd.get_scm_version()
+        assert version is not None
+        assert str(version.tag) == "1.5.5"
+
     def test_missing_metadata_returns_none(self, tmp_path: Path) -> None:
         config = Configuration()
         wd = MetadataWorkdir(path=tmp_path, metadata_dir=tmp_path, _config=config)

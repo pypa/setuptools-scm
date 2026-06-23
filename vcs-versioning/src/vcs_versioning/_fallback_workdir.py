@@ -81,8 +81,20 @@ class MetadataWorkdir(FallbackWorkdir):
                     data.node_date,
                     self.metadata_dir,
                 )
+        # The tag in scm_version.json is already a parsed version string
+        # (e.g. "1.5.5"), not a raw VCS tag (e.g. "cuda-pathfinder-v1.5.5").
+        # Convert to version_cls so _parse_tag skips tag_regex matching.
+        try:
+            tag = self.config.version_cls(data.tag)
+        except Exception:
+            log.warning(
+                "cannot parse stored tag %r in metadata at %s",
+                data.tag,
+                self.metadata_dir,
+            )
+            return None
         return meta(
-            tag=data.tag,
+            tag=tag,
             distance=data.distance,
             node=data.node,
             dirty=data.dirty,
