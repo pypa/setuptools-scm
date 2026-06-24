@@ -4,7 +4,11 @@ import json
 import os
 import sys
 from collections.abc import Iterable
-from importlib.resources import files
+
+if sys.version_info >= (3, 9):
+    from importlib.resources import files
+else:
+    from importlib.resources import read_text as _read_text
 from pathlib import Path
 from typing import TypedDict
 
@@ -182,7 +186,10 @@ def _create_archival_file(opts: CliNamespace, config: Configuration) -> int:
     assert opts.archival_template is not None
 
     # Load template content from package resources
-    content = files(__package__).joinpath(opts.archival_template).read_text("utf-8")
+    if sys.version_info >= (3, 9):
+        content = files(__package__).joinpath(opts.archival_template).read_text("utf-8")
+    else:
+        content = _read_text(__package__, opts.archival_template, encoding="utf-8")
 
     # Print appropriate message based on template
     if opts.archival_template == "git_archival_stable.txt":
