@@ -103,9 +103,6 @@ setuptools_scm = "setuptools_scm._integration.setuptools:infer_version"
 pkginfo = "setuptools_scm._integration._discover:discover_pkginfo"
 egg-info = "setuptools_scm._integration._discover:discover_egg_info_metadata"
 
-# VCS-related entry points are now provided by vcs-versioning package
-# Only file-finder entry points remain in setuptools_scm
-
 [tool.setuptools.packages.find]
 where = ["src"]
 namespaces = false
