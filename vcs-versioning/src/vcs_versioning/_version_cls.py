@@ -1,7 +1,13 @@
 from __future__ import annotations
 
 import logging
-from typing import TypeAlias, cast
+import sys
+from typing import cast
+
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias
+else:
+    from typing_extensions import TypeAlias
 
 try:
     from packaging.version import InvalidVersion
@@ -67,7 +73,7 @@ def _version_as_tuple(version_str: str) -> tuple[int | str, ...]:
         return version_fields
 
 
-_Version: TypeAlias = Version | NonNormalizedVersion
+_Version: TypeAlias = "Version | NonNormalizedVersion"
 
 
 def import_name(name: str) -> object:
@@ -93,7 +99,7 @@ def _validate_version_cls(
         return Version
     elif isinstance(version_cls, str):
         try:
-            return cast(type[_Version], import_name(version_cls))
+            return cast("type[_Version]", import_name(version_cls))
         except Exception:
             raise ValueError(f"Unable to import version_cls='{version_cls}'") from None
     else:

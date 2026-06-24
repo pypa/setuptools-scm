@@ -4,7 +4,12 @@ import logging
 import sys
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, TypeAlias, TypedDict, TypeVar, cast, get_type_hints
+from typing import Any, TypedDict, TypeVar, cast, get_type_hints
+
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias
+else:
+    from typing_extensions import TypeAlias
 
 if sys.version_info >= (3, 11):
     from tomllib import loads as load_toml
@@ -14,8 +19,8 @@ else:
 
 log = logging.getLogger(__name__)
 
-TOML_RESULT: TypeAlias = dict[str, Any]
-TOML_LOADER: TypeAlias = Callable[[str], TOML_RESULT]
+TOML_RESULT: TypeAlias = "dict[str, Any]"
+TOML_LOADER: TypeAlias = "Callable[[str], TOML_RESULT]"
 
 # TypeVar for generic TypedDict support - the schema defines the return type
 TSchema = TypeVar("TSchema", bound=TypedDict)  # type: ignore[valid-type]
@@ -71,10 +76,15 @@ def _validate_against_schema(
     # Extract valid field names from the TypedDict
     try:
         valid_fields = frozenset(get_type_hints(schema).keys())
-    except NameError as e:
-        # If type hints can't be resolved, log warning and skip validation
-        log.warning("Could not resolve type hints for schema validation: %s", e)
-        return data
+    except (NameError, TypeError) as e:
+        # If type hints can't be resolved (e.g. PEP 604 unions on Python <3.10),
+        # fall back to __annotations__ keys directly
+        annotations = getattr(schema, "__annotations__", None)
+        if annotations:
+            valid_fields = frozenset(annotations.keys())
+        else:
+            log.warning("Could not resolve type hints for schema validation: %s", e)
+            return data
 
     # If the schema has no fields (empty TypedDict), skip validation
     if not valid_fields:

@@ -4,7 +4,7 @@
 name = "vcs-versioning.workspace"
 description = "workspace configuration for this monorepo"
 version = "0.1+private"
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 dependencies = [
     "vcs-versioning",
     "setuptools-scm",
@@ -18,12 +18,12 @@ create-release-proposal = "vcs_versioning_workspace.create_release_proposal:main
 # PP006 / uv: aggregate groups for local development (members define their own test deps)
 dev = [{ include-group = "docs" }, { include-group = "typing" }, { include-group = "release" }]
 docs = [
-  "mkdocs<2",
-  "mkdocs-include-markdown-plugin<8",
-  "mkdocs-material<10",
-  "mkdocstrings[python]>=1.0.4,<2",  # 0.29 renamed import to inventories
-  "pygments<2.20",
-  "griffe-public-wildcard-imports",
+  "mkdocs<2; python_version>='3.10'",
+  "mkdocs-include-markdown-plugin<8; python_version>='3.10'",
+  "mkdocs-material<10; python_version>='3.10'",
+  "mkdocstrings[python]>=1.0.4,<2; python_version>='3.10'",  # 0.29 renamed import to inventories
+  "pygments<2.20; python_version>='3.10'",
+  "griffe-public-wildcard-imports; python_version>='3.10'",
 ]
 typing = [
     "types-setuptools",

@@ -6,9 +6,9 @@
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = [
-  "setuptools>=77.0.3",
+  "setuptools>=45",
   "packaging>=20",
-  'typing-extensions; python_version < "3.11"',
+  'typing-extensions>=4.1; python_version < "3.11"',
 ]
 
 [project]
@@ -17,15 +17,17 @@ description = "the blessed package to manage your versions by vcs metadata"
 readme = "README.md"
 keywords = [
 ]
-license = "MIT"
+license = {text = "MIT"}
 authors = [
   { name = "Ronny Pfannschmidt", email = "opensource@ronnypfannschmidt.de" },
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -38,7 +40,7 @@ dynamic = [
 dependencies = [
   "packaging>=20",
   'tomli>=1; python_version < "3.11"',
-  'typing-extensions; python_version < "3.11"',
+  'typing-extensions>=4.1; python_version < "3.11"',
 ]
 
 [dependency-groups]

@@ -15,17 +15,17 @@ SCM results are preferred over fallback results.
 from __future__ import annotations
 
 import logging
-from importlib.metadata import entry_points
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, Union
 
 from ._backends._scm_workdir import ScmWorkdir
+from ._compat import entry_points
 from ._config import Configuration
 from ._fallback_workdir import FallbackWorkdir, StaticWorkdir
 
 log = logging.getLogger(__name__)
 
-AnyWorkdir = ScmWorkdir | FallbackWorkdir
+AnyWorkdir = Union[ScmWorkdir, FallbackWorkdir]
 
 
 class DiscoveryFactory(Protocol):

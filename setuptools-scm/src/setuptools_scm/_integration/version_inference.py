@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import logging
+import sys
 
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Protocol
-from typing import TypeAlias
+
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias
+else:
+    from typing_extensions import TypeAlias
 
 from setuptools import Distribution
 from setuptools import sic as setuptools_sic
@@ -222,9 +227,7 @@ class VersionInferenceNoOp:
 
 
 VersionInferenceResult: TypeAlias = (
-    VersionInferenceConfig  # Proceed with inference
-    | VersionAlreadySetWarning  # Warn: version already set
-    | VersionInferenceNoOp  # Don't infer (silent)
+    "VersionInferenceConfig | VersionAlreadySetWarning | VersionInferenceNoOp"
 )
 
 

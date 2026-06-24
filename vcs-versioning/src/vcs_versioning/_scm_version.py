@@ -9,10 +9,16 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import sys
 import warnings
 from collections.abc import Callable
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
+
+if sys.version_info >= (3, 10):
+    from typing import Concatenate, ParamSpec
+else:
+    from typing_extensions import Concatenate, ParamSpec
 
 from . import _config
 from . import _version_cls as _v
@@ -20,8 +26,6 @@ from ._node_utils import _format_node_for_output
 from ._version_cls import _Version
 
 if TYPE_CHECKING:
-    import sys
-
     if sys.version_info >= (3, 11):
         from typing import Unpack
     else:

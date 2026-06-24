@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import logging
 import os
+import sys
 from collections.abc import Callable, Mapping
-from typing import TypeGuard
+
+if sys.version_info >= (3, 10):
+    from typing import TypeGuard
+else:
+    from typing_extensions import TypeGuard
 
 from .. import _types as _t
 from .._compat import norm_real

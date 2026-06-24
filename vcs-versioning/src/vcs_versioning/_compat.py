@@ -3,10 +3,38 @@
 from __future__ import annotations
 
 import os
-from typing import TypeAlias
+import sys
+from importlib.metadata import entry_points as _stdlib_entry_points
+from typing import TYPE_CHECKING, Union
 
-# Path type for accepting both strings and PathLike objects
-PathT: TypeAlias = os.PathLike[str] | str
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias
+else:
+    from typing_extensions import TypeAlias
+
+if TYPE_CHECKING:
+    from importlib.metadata import EntryPoint
+
+    PathT: TypeAlias = os.PathLike[str] | str
+else:
+    PathT: TypeAlias = Union[os.PathLike, str]
+
+
+if sys.version_info >= (3, 10):
+    from importlib.metadata import entry_points as entry_points
+else:
+
+    def entry_points(
+        **params: str,
+    ) -> list[EntryPoint]:
+        """Backport of entry_points(group=...) for Python 3.8/3.9."""
+        groups = _stdlib_entry_points()
+        group = params.get("group", "")
+        name = params.get("name")
+        eps = list(groups.get(group, []))  # type: ignore[call-overload]
+        if name is not None:
+            eps = [ep for ep in eps if ep.name == name]
+        return eps
 
 
 def normalize_path_for_assertion(path: str) -> str:

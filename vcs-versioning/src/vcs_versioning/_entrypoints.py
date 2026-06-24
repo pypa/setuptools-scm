@@ -3,8 +3,9 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable, Iterator
 from importlib import metadata as im
-from importlib.metadata import entry_points
 from typing import TYPE_CHECKING, Any, cast
+
+from ._compat import entry_points
 
 __all__ = [
     "entry_points",
@@ -65,7 +66,7 @@ def _iter_version_schemes(
             or _get_from_object_reference_str(scheme_value, entrypoint),
         )
 
-    if isinstance(scheme_value, list | tuple):
+    if isinstance(scheme_value, (list, tuple)):
         for variant in scheme_value:
             if variant not in _memo:
                 _memo.add(variant)

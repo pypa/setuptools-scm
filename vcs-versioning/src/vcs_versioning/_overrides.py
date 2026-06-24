@@ -207,15 +207,25 @@ def _apply_metadata_overrides(
 
     log.info("Applying metadata overrides: %s", metadata_overrides)
 
-    # Get type hints from PretendMetadataDict for validation
-    field_types = get_type_hints(PretendMetadataDict)
+    # Get valid field names from PretendMetadataDict for validation.
+    # Use __annotations__ keys directly instead of get_type_hints() to avoid
+    # evaluating PEP 604 forward references on Python <3.10.
+    valid_fields = frozenset(PretendMetadataDict.__annotations__)
+
+    # Try to resolve actual types for runtime validation (best-effort)
+    try:
+        field_types: dict[str, Any] | None = get_type_hints(PretendMetadataDict)
+    except TypeError:
+        field_types = None
 
     # Apply each override individually using dataclasses.replace
     result = scm_version
 
     for field, value in metadata_overrides.items():
-        # Validate field types using the TypedDict annotations
-        if field in field_types:
+        if field not in valid_fields:
+            continue
+        # Runtime type validation (only when type hints are resolvable)
+        if field_types is not None and field in field_types:
             expected_type = field_types[field]
             # Handle Optional/Union types (e.g., str | None)
             if hasattr(expected_type, "__args__"):
