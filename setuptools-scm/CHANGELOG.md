@@ -2,6 +2,17 @@
 
 <!-- towncrier release notes start -->
 
+## 10.2.0 (2026-06-24)
+
+### Added
+
+- Restore Python 3.8 and 3.9 support, re-enabling use as a build dependency for projects like scikit-build that still support these versions. ([#1445](https://github.com/pypa/setuptools-scm/issues/1445))
+
+
+### Miscellaneous
+
+- Move PKG-INFO discovery tests from vcs-versioning to setuptools-scm where the entry points are registered. ([#1446](https://github.com/pypa/setuptools-scm/issues/1446))
+
 ## 10.1.2 (2026-06-22)
 
 ### Fixed
