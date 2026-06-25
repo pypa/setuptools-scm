@@ -5,11 +5,9 @@ exclude .git_archival.txt
 exclude .readthedocs.yaml
 include *.py
 include testing_scm/*.py
-include tox.ini
 include *.rst
 include LICENSE
 include *.toml
-include mypy.ini
 include testing_scm/Dockerfile.*
 include src/setuptools_scm/.git_archival.txt
 include README.md
