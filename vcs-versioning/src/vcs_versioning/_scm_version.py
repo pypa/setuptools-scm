@@ -152,19 +152,15 @@ def tag_to_version(
     version_str = tag_dict["version"]
     log.debug("version pre parse %s", version_str)
 
-    # Try to create version from base version first
     try:
         version: _Version = config.version_cls(version_str)
         log.debug("version=%r", version)
     except Exception:
         warnings.warn(
-            f"tag {tag!r} will be stripped of its suffix {tag_dict.get('suffix', '')!r}",
+            f"tag {tag!r} version {version_str!r} could not be parsed",
             stacklevel=2,
         )
-        # Fall back to trying without any suffix
-        version = config.version_cls(version_str)
-        log.debug("version=%r", version)
-        return version
+        return None
 
     # If base version is valid, check if we can preserve the suffix
     if suffix := tag_dict.get("suffix", ""):
