@@ -127,7 +127,7 @@ def version_keyword(
     _given_legacy_data: SetuptoolsBasicData | None = None,
     _get_version_inference_config: GetVersionInferenceConfig = get_version_inference_config,
 ) -> None:
-    """apply version infernce when setup(use_scm_version=...) is used
+    """apply version inference when setup(use_scm_version=...) is used
     this takes priority over the finalize_options based version
     """
     _log_hookstart("version_keyword", dist)

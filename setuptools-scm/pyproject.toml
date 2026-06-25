@@ -116,7 +116,7 @@ setuptools_scm = [".git_archival.txt"]
 root = ".."
 version_scheme = "towncrier-fragments"
 tag_regex = "^setuptools-scm-(?P<version>v?\\d+(?:\\.\\d+){0,2}[^\\+]*)(?:\\+.*)?$"
-fallback_version = "9.2.2" # we trnasion to towncrier informed here
+fallback_version = "9.2.2" # we transition to towncrier informed here
 scm.git.describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--match", "setuptools-scm-*"]
 
 [tool.ruff]
