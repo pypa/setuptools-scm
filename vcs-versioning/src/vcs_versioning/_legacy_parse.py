@@ -13,8 +13,6 @@ from __future__ import annotations
 
 import logging
 import warnings
-from dataclasses import dataclass
-from dataclasses import field as dc_field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -29,7 +27,6 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-@dataclass()
 class LegacyParseWorkdir(ScmWorkdir):
     """Wraps a legacy ``config.parse`` callable as a workdir.
 
@@ -38,7 +35,17 @@ class LegacyParseWorkdir(ScmWorkdir):
     entry-point group.
     """
 
-    parse_fn: ParseFunction = dc_field(repr=False, kw_only=True)
+    parse_fn: ParseFunction
+
+    def __init__(
+        self,
+        path: Path,
+        *,
+        parse_fn: ParseFunction,
+        _config: Configuration | None = None,
+    ) -> None:
+        super().__init__(path=path, _config=_config)
+        self.parse_fn = parse_fn
 
     def get_scm_version(self) -> ScmVersion | None:
         warnings.warn(

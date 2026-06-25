@@ -9,7 +9,11 @@ import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TypeAlias
+
+if sys.version_info >= (3, 10):
+    from typing import TypeAlias
+else:
+    from typing_extensions import TypeAlias
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -158,7 +162,7 @@ class PyProjectData:
 
 # Testing injection type for configuration reading
 GivenPyProjectResult: TypeAlias = (
-    PyProjectData | InvalidTomlError | FileNotFoundError | None
+    "PyProjectData | InvalidTomlError | FileNotFoundError | None"
 )
 
 
@@ -201,7 +205,7 @@ def read_pyproject(
     if _given_result is not None:
         if isinstance(_given_result, PyProjectData):
             return _given_result
-        if isinstance(_given_result, InvalidTomlError | FileNotFoundError):
+        if isinstance(_given_result, (InvalidTomlError, FileNotFoundError)):
             raise _given_result
 
     if _given_definition is not None:

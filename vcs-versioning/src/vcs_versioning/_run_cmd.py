@@ -4,6 +4,7 @@ import logging
 import os
 import shlex
 import subprocess
+import sys
 import textwrap
 import warnings
 from collections.abc import Callable, Mapping, Sequence
@@ -35,8 +36,13 @@ def _get_timeout(env: Mapping[str, str]) -> int:
 PARSE_RESULT = TypeVar("PARSE_RESULT")
 T = TypeVar("T")
 
+if sys.version_info >= (3, 9):
+    _CompletedProcessBase = subprocess.CompletedProcess[str]
+else:
+    _CompletedProcessBase = subprocess.CompletedProcess
 
-class CompletedProcess(subprocess.CompletedProcess[str]):
+
+class CompletedProcess(_CompletedProcessBase):
     @classmethod
     def from_raw(
         cls, input: subprocess.CompletedProcess[str], strip: bool = True

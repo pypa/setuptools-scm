@@ -99,13 +99,14 @@ def scm_version_data_from_scm_version(
     scm_version: ScmVersion | VersionFields,
 ) -> ScmVersionData:
     """Build ``ScmVersionData`` from a live ``ScmVersion`` object."""
-    match scm_version.node_date:
-        case date() as d:
-            node_date_str: str | None = d.isoformat()
-        case str() as s:
-            node_date_str = s
-        case _:
-            node_date_str = None
+    node_date = scm_version.node_date
+    node_date_str: str | None
+    if isinstance(node_date, date):
+        node_date_str = node_date.isoformat()
+    elif isinstance(node_date, str):
+        node_date_str = node_date
+    else:
+        node_date_str = None
     return ScmVersionData(
         tag=str(scm_version.tag),
         distance=scm_version.distance,

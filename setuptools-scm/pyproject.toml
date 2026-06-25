@@ -1,27 +1,29 @@
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = [
-  "setuptools>=77.0.3",
+  "setuptools>=45",
   "vcs-versioning>=2.0.0.dev0,<3",
   # https://github.com/pypa/setuptools-scm/issues/1222: was <=2.0.2 for #1090 (old pip+toml);
   # pip 21.2+ vendors tomli, so the workaround is no longer needed.
   'tomli>=1; python_version < "3.11"',
-  'typing-extensions; python_version < "3.11"',
+  'typing-extensions>=4.1; python_version < "3.11"',
 ]
 [project]
 name = "setuptools-scm"
 description = "the blessed package to manage your versions by scm tags"
 readme = "README.md"
-license = "MIT"
+license = {text = "MIT"}
 authors = [
     {name="Ronny Pfannschmidt", email="opensource@ronnypfannschmidt.de"}
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.8"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -43,7 +45,7 @@ dependencies = [
   # https://github.com/pypa/setuptools-scm/issues/1112 - re-pin in a breaking release
   "setuptools", # >= 61",
   'tomli>=1; python_version < "3.11"',
-  'typing-extensions; python_version < "3.11"',
+  'typing-extensions>=4.1; python_version < "3.11"',
 ]
 
 
@@ -55,13 +57,13 @@ toml = []
 [dependency-groups]
 dev = [{ include-group = "test" }]
 docs = [
-  "mkdocs",
-  "mkdocs-entangled-plugin",
-  "mkdocs-include-markdown-plugin",
-  "mkdocs-material",
-  "mkdocstrings[python]",
-  "pygments",
-  "griffe-public-wildcard-imports",
+  "mkdocs; python_version>='3.10'",
+  "mkdocs-entangled-plugin; python_version>='3.10'",
+  "mkdocs-include-markdown-plugin; python_version>='3.10'",
+  "mkdocs-material; python_version>='3.10'",
+  "mkdocstrings[python]; python_version>='3.10'",
+  "pygments; python_version>='3.10'",
+  "griffe-public-wildcard-imports; python_version>='3.10'",
 ]
 test = [
   "pip",
@@ -73,10 +75,10 @@ test = [
   "ruff",
   "mypy; implementation_name != 'pypy'",
   'typing-extensions; python_version < "3.11"',
-  "griffe",
-  "griffe-public-wildcard-imports",
+  "griffe; python_version>='3.10'",
+  "griffe-public-wildcard-imports; python_version>='3.10'",
   "flake8",
-  "griffecli",
+  "griffecli; python_version>='3.10'",
 ]
 
 [project.urls]
@@ -102,9 +104,6 @@ setuptools_scm = "setuptools_scm._integration.setuptools:infer_version"
 [project.entry-points."vcs_versioning.discover_workdir"]
 pkginfo = "setuptools_scm._integration._discover:discover_pkginfo"
 egg-info = "setuptools_scm._integration._discover:discover_egg_info_metadata"
-
-# VCS-related entry points are now provided by vcs-versioning package
-# Only file-finder entry points remain in setuptools_scm
 
 [tool.setuptools.packages.find]
 where = ["src"]

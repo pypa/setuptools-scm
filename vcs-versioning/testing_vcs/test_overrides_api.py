@@ -698,10 +698,7 @@ def test_read_toml_overrides_with_schema(
         "SETUPTOOLS_SCM_OVERRIDES": '{version_scheme = "guess-next-dev", local_scheme = "no-local-version", invalid_field = "bad"}'
     }
 
-    with (
-        patch.dict(os.environ, mock_env, clear=True),
-        caplog.at_level(logging.WARNING),
-    ):
+    with patch.dict(os.environ, mock_env, clear=True), caplog.at_level(logging.WARNING):
         result = read_toml_overrides(dist_name=None)
 
     # Valid fields should be present

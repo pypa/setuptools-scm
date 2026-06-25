@@ -46,7 +46,7 @@ def _register_build_py_command(dist: setuptools.Distribution) -> None:
         log.debug("Registered setuptools_scm build_py command")
         return
 
-    project_build_py = cast(type[setuptools.Command], existing_build_py)
+    project_build_py = cast("type[setuptools.Command]", existing_build_py)
 
     if issubclass(project_build_py, ScmVersionFileMixin):
         return
@@ -79,7 +79,7 @@ def _register_egg_info_command(dist: setuptools.Distribution) -> None:
         log.debug("Registered setuptools_scm egg_info command")
         return
 
-    project_egg_info = cast(type[setuptools.Command], existing_egg_info)
+    project_egg_info = cast("type[setuptools.Command]", existing_egg_info)
 
     if issubclass(project_egg_info, ScmEggInfoMixin):
         return
