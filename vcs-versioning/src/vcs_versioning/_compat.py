@@ -86,19 +86,6 @@ def strip_path_suffix(
     return full_path[: -len(suffix_path)]
 
 
-# Legacy aliases for backward compatibility during transition
-def assert_path_endswith(
-    full_path: str, suffix_path: str, error_msg: str | None = None
-) -> None:
-    """Legacy alias - use strip_path_suffix instead."""
-    strip_path_suffix(full_path, suffix_path, error_msg)
-
-
-def compute_path_prefix(full_path: str, suffix_path: str) -> str:
-    """Legacy alias - use strip_path_suffix instead."""
-    return strip_path_suffix(full_path, suffix_path)
-
-
 def norm_real(path: PathT) -> str:
     """Normalize and resolve a path (combining normcase and realpath).
 

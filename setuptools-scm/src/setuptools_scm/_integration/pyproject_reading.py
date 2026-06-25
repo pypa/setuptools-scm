@@ -16,8 +16,6 @@ from vcs_versioning._toml import TOML_RESULT
 
 log = logging.getLogger(__name__)
 
-_ROOT = "root"
-
 __all__ = [
     "PyProjectData",
     "get_args_for_pyproject",
