@@ -120,12 +120,28 @@ exclude_lines = [
 ]
 
 [tool.pytest.ini_options]
+minversion = "8.2"
 testpaths = ["testing_vcs"]
 python_files = ["test_*.py"]
-addopts = ["-ra", "--strict-markers", "-p", "vcs_versioning.test_api"]
+xfail_strict = true
+addopts = ["-ra", "--strict-config", "--strict-markers", "-p", "vcs_versioning.test_api"]
+timeout = 300
+filterwarnings = [
+  "error",
+  "ignore:.*tool\\.setuptools_scm.*",
+  "ignore:.*git archive did not support describe output.*:UserWarning",
+  "ignore:.*unprocessed git archival found.*:UserWarning",
+  "ignore:.*without VcsEnvironment.*:DeprecationWarning",
+  "ignore:.*Passing config to workdir.*:DeprecationWarning",
+  "ignore:.*tag_regex.*is deprecated.*:DeprecationWarning",
+  "ignore:.*write_to_source.*:DeprecationWarning",
+  "ignore:.*relative_to is expected to be a file.*:UserWarning",
+]
+log_level = "debug"
+log_cli_level = "info"
 markers = [
-  "issue: marks tests related to specific issues",
-  "no_init: use setup_hg(init=False) for wd fixture - hg check without worktree",
+  "issue(id): reference to github issue",
+  "no_init: skip initializing the VCS repository in the test fixture",
   "skip_commit: allows to skip committing in the helpers",
 ]
 

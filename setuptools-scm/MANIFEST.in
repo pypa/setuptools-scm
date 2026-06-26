@@ -12,6 +12,7 @@ include testing_scm/Dockerfile.*
 include src/setuptools_scm/.git_archival.txt
 include README.md
 include CHANGELOG.md
+include uv.lock
 
 recursive-include testing_scm *.bash
 prune .cursor

@@ -22,6 +22,18 @@ uv run pytest setuptools-scm/testing_scm/ -n12
 uv run pytest vcs-versioning/testing_vcs/ -n12
 ```
 
+## Pytest Configuration
+
+The pytest configuration is duplicated across three `pyproject.toml` files so each
+package can be tested in isolation (from sdists with their own `uv.lock`):
+
+- Root `pyproject.toml` - used during monorepo development
+- `setuptools-scm/pyproject.toml` - used when testing the sdist standalone
+- `vcs-versioning/pyproject.toml` - used when testing the sdist standalone
+
+**These must be kept in sync.** When changing pytest settings (timeout, filterwarnings,
+markers, etc.), update all three locations. The `testpaths` field differs per location.
+
 ## Changelog Fragments
 
 We use [towncrier](https://towncrier.readthedocs.io/) to manage changelog entries. This ensures that changelog entries are added alongside code changes and reduces merge conflicts.
