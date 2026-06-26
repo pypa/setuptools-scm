@@ -58,7 +58,6 @@ toml = []
 dev = [{ include-group = "test" }]
 docs = [
   "mkdocs; python_version>='3.10'",
-  "mkdocs-entangled-plugin; python_version>='3.10'",
   "mkdocs-include-markdown-plugin; python_version>='3.10'",
   "mkdocs-material; python_version>='3.10'",
   "mkdocstrings[python]; python_version>='3.10'",
