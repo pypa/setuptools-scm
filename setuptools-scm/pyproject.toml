@@ -84,7 +84,7 @@ test = [
 documentation = "https://setuptools-scm.readthedocs.io/"
 repository = "https://github.com/pypa/setuptools-scm/"
 
-[project.entry-points.console_scripts]
+[project.scripts]
 setuptools-scm = "vcs_versioning._cli:main"
 
 [project.entry-points."distutils.setup_keywords"]
