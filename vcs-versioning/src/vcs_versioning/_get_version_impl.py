@@ -105,7 +105,9 @@ def _warn_if_tracked(target: Path, root: Path, config: Configuration) -> bool:
         target = root / target
     resolved_target = target.resolve()
     resolved_root = root.resolve()
-    if not resolved_target.is_relative_to(resolved_root):
+    try:
+        resolved_target.relative_to(resolved_root)
+    except ValueError:
         # todo: emit as GitHub Actions warning via ::warning:: syntax
         warnings.warn(
             f"version file target {target} resolves outside of the project root {root}",
