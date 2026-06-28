@@ -10,7 +10,7 @@ from .._backends._git import run_git
 from .._compat import norm_real, strip_path_suffix
 from .._integration import data_from_mime
 from .._run_cmd import run as _run
-from . import is_toplevel_acceptable, scm_find_files
+from . import collect_files_and_dirs, is_toplevel_acceptable, scm_find_files
 
 log = logging.getLogger(__name__)
 
@@ -85,22 +85,8 @@ def _git_ls_files_and_dirs(
         log.error("listing git files failed - pretending there aren't any")
         return set(), set()
 
-    # Normalize toplevel to match what scm_find_files expects:
-    # absolute, symlinks resolved, case-normalized (normcase).
     toplevel = norm_real(toplevel)
-    git_files: set[str] = set()
-    git_dirs: set[str] = {toplevel}
-    for name in res.stdout.rstrip("\0").split("\0"):
-        if not name:
-            continue
-        name = os.path.normcase(name).replace("/", os.path.sep)
-        fullname = os.path.join(toplevel, name)
-        git_files.add(fullname)
-        dirname = os.path.dirname(fullname)
-        while len(dirname) > len(toplevel) and dirname not in git_dirs:
-            git_dirs.add(dirname)
-            dirname = os.path.dirname(dirname)
-    return git_files, git_dirs
+    return collect_files_and_dirs(res.stdout.rstrip("\0").split("\0"), toplevel)
 
 
 def git_find_files(path: _t.PathT = "") -> list[str]:
