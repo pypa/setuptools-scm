@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Protocol
+from typing import cast
 
 if sys.version_info >= (3, 10):
     from typing import TypeAlias
@@ -203,7 +204,9 @@ class VersionInferenceConfig:
 
         # Mark that this version was set by infer_version if overrides is None (infer_version context)
         if self.overrides is None:
-            dist._setuptools_scm_version_set_by_infer = True  # type: ignore[attr-defined]
+            from .build_py import _DistWithScm
+
+            cast(_DistWithScm, dist)._setuptools_scm_version_set_by_infer = True
 
 
 @dataclass

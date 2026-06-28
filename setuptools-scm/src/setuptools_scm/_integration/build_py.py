@@ -12,6 +12,7 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
+from typing import cast
 
 from setuptools.command.build_py import build_py as _build_py
 
@@ -162,6 +163,16 @@ class VersionInferenceData:
     can write metadata files and provide file-finder data without a ContextVar."""
 
 
+class _DistWithScm:
+    """Typing helper for Distribution with setuptools-scm attributes.
+
+    Used only as a cast target — never instantiated.
+    """
+
+    _setuptools_scm_version_inference_data: VersionInferenceData | None
+    _setuptools_scm_version_set_by_infer: bool
+
+
 def get_version_inference_data(dist: Distribution) -> VersionInferenceData | None:
     """Get the version inference data from the distribution.
 
@@ -172,7 +183,7 @@ def get_version_inference_data(dist: Distribution) -> VersionInferenceData | Non
 
 def set_version_inference_data(dist: Distribution, data: VersionInferenceData) -> None:
     """Store the version inference data on the distribution."""
-    dist._setuptools_scm_version_inference_data = data  # type: ignore[attr-defined]
+    cast(_DistWithScm, dist)._setuptools_scm_version_inference_data = data
 
 
 class ScmVersionFileMixin(_build_py):
