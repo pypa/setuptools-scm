@@ -14,8 +14,6 @@ from . import _types as _t
 
 log = logging.getLogger(__name__)
 
-_DEFAULT_SUBPROCESS_TIMEOUT = 40
-
 
 def _get_timeout(env: Mapping[str, str]) -> int:
     """Read subprocess timeout from resolved runtime settings.

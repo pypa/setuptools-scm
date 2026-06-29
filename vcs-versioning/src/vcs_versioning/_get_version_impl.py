@@ -6,12 +6,17 @@ import re
 import warnings
 from pathlib import Path
 from re import Pattern
-from typing import Any, NoReturn
+from typing import TYPE_CHECKING, Any, NoReturn
 
 from . import _config
 from . import _types as _t
 from ._config import Configuration, TagConfiguration
 from ._environment import resolve_runtime_env
+
+if TYPE_CHECKING:
+    from ._config import ParseFunction
+    from ._environment import VcsEnvironment
+    from ._version_cls import Version as _VersionType
 
 # Backward-compat re-export used by vcs-versioning/setup.py
 from ._legacy_parse import (
@@ -271,14 +276,14 @@ def get_version(
     parentdir_prefix_version: str | None = None,
     fallback_version: str | None = None,
     fallback_root: _t.PathT = ".",
-    parse: Any | None = None,
+    parse: ParseFunction | None = None,
     git_describe_command: _t.CMD_TYPE | None = None,
     dist_name: str | None = None,
-    version_cls: Any | None = None,
+    version_cls: type[_VersionType] | str | None = None,
     normalize: bool = True,
     search_parent_directories: bool = False,
     scm: dict[str, Any] | None = None,
-    _env: Any | None = None,
+    _env: VcsEnvironment | None = None,
 ) -> str:
     """
     If supplied, relative_to should be a file from which root may

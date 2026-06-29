@@ -101,6 +101,17 @@ jobs:
           name: changelog-vcs-versioning
           path: vcs-versioning
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Regenerate per-package lock files
+        run: |
+          # Hide workspace root so each member resolves independently
+          rm pyproject.toml uv.lock
+          (cd vcs-versioning && uv lock)
+          (cd setuptools-scm && uv lock)
+          git checkout pyproject.toml uv.lock
+
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from typing import Any
 from typing import Protocol
+from typing import cast
 
 if sys.version_info >= (3, 10):
     from typing import TypeAlias
@@ -21,6 +22,7 @@ from vcs_versioning._version_cls import NonNormalizedVersion
 if TYPE_CHECKING:
     from vcs_versioning import _config
     from vcs_versioning._environment import VcsEnvironment
+    from vcs_versioning._scm_version import ScmVersion
 
 from .build_py import VersionInferenceData
 from .build_py import set_version_inference_data
@@ -106,7 +108,7 @@ def infer_version_with_config(
     )
 
     workdir = None
-    scm_version: Any = None
+    scm_version: ScmVersion | None = None
 
     pretended = _read_pretended_version_for(config)
     if pretended is not None:
@@ -202,7 +204,9 @@ class VersionInferenceConfig:
 
         # Mark that this version was set by infer_version if overrides is None (infer_version context)
         if self.overrides is None:
-            dist._setuptools_scm_version_set_by_infer = True  # type: ignore[attr-defined]
+            from .build_py import _DistWithScm
+
+            cast(_DistWithScm, dist)._setuptools_scm_version_set_by_infer = True
 
 
 @dataclass

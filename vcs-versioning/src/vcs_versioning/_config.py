@@ -203,9 +203,6 @@ class TagConfiguration:
         return cls(**tag_data)
 
 
-_SENTINEL_TAG_CONFIG = TagConfiguration()
-
-
 class _TagRegexDescriptor:
     """Data descriptor for deprecated top-level tag_regex field.
 

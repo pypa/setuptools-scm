@@ -8,7 +8,7 @@ from .. import _types as _t
 from .._backends._hg import run_hg
 from .._compat import norm_real
 from .._integration import data_from_mime
-from . import is_toplevel_acceptable, scm_find_files
+from . import collect_files_and_dirs, is_toplevel_acceptable, scm_find_files
 
 log = logging.getLogger(__name__)
 
@@ -34,20 +34,10 @@ def _hg_ls_files_and_dirs(
     hg_command: str | None = None,
     timeout: int | None = None,
 ) -> tuple[set[str], set[str]]:
-    hg_files: set[str] = set()
-    hg_dirs = {toplevel}
     res = run_hg(["files"], cwd=toplevel, hg_command=hg_command, timeout=timeout)
     if res.returncode:
         return set(), set()
-    for name in res.stdout.splitlines():
-        name = os.path.normcase(name).replace("/", os.path.sep)
-        fullname = os.path.join(toplevel, name)
-        hg_files.add(fullname)
-        dirname = os.path.dirname(fullname)
-        while len(dirname) > len(toplevel) and dirname not in hg_dirs:
-            hg_dirs.add(dirname)
-            dirname = os.path.dirname(dirname)
-    return hg_files, hg_dirs
+    return collect_files_and_dirs(res.stdout.splitlines(), toplevel)
 
 
 def hg_find_files(path: str = "") -> list[str]:

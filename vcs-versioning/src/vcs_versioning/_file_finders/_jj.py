@@ -13,7 +13,7 @@ import subprocess
 from .. import _types as _t
 from .._compat import norm_real
 from .._run_cmd import run as _run
-from . import is_toplevel_acceptable, scm_find_files
+from . import collect_files_and_dirs, is_toplevel_acceptable, scm_find_files
 
 log = logging.getLogger(__name__)
 
@@ -51,19 +51,7 @@ def _jj_ls_files_and_dirs(
         log.error("listing jj files failed - pretending there aren't any")
         return set(), set()
 
-    jj_files: set[str] = set()
-    jj_dirs: set[str] = {toplevel}
-    for name in res.stdout.strip().split("\n"):
-        if not name:
-            continue
-        name = os.path.normcase(name).replace("/", os.path.sep)
-        fullname = os.path.join(toplevel, name)
-        jj_files.add(fullname)
-        dirname = os.path.dirname(fullname)
-        while len(dirname) > len(toplevel) and dirname not in jj_dirs:
-            jj_dirs.add(dirname)
-            dirname = os.path.dirname(dirname)
-    return jj_files, jj_dirs
+    return collect_files_and_dirs(res.stdout.strip().split("\n"), toplevel)
 
 
 def jj_find_files(path: _t.PathT = "") -> list[str]:

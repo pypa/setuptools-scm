@@ -19,7 +19,7 @@ from packaging.utils import canonicalize_name
 
 from . import _config
 from . import _types as _t
-from ._scm_version import ScmVersion, meta  # noqa: F401 - for type checking
+from ._scm_version import ScmVersion, meta
 from ._version_cls import Version as _Version
 
 log = logging.getLogger(__name__)

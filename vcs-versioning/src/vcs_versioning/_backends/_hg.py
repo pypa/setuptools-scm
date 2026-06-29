@@ -22,9 +22,6 @@ log = logging.getLogger(__name__)
 _HG_PSEUDO_TAGS = frozenset({"tip", "qbase", "qtip", "qparent"})
 
 
-_DEFAULT_HG_COMMAND = "hg"
-
-
 def _get_hg_command() -> str:
     """Read the hg command from resolved runtime settings.
 

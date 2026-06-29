@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 
 if sys.version_info >= (3, 10):
     from typing import TypeGuard
@@ -140,4 +140,35 @@ def find_files(path: _t.PathT = "") -> list[str]:
     return []
 
 
-__all__ = ["scm_find_files", "is_toplevel_acceptable", "find_files"]
+def collect_files_and_dirs(
+    raw_names: Iterable[str], toplevel: str
+) -> tuple[set[str], set[str]]:
+    """Normalize VCS file listings into absolute ``(files, dirs)`` sets.
+
+    Each backend produces a list of relative paths from its own command
+    (``git ls-files``, ``hg files``, ``jj file list``).  This helper
+    normalizes case and separators, joins with *toplevel*, and collects
+    the directory ancestry — the same loop that was previously duplicated
+    in every backend.
+    """
+    files: set[str] = set()
+    dirs: set[str] = {toplevel}
+    for name in raw_names:
+        if not name:
+            continue
+        name = os.path.normcase(name).replace("/", os.path.sep)
+        fullname = os.path.join(toplevel, name)
+        files.add(fullname)
+        dirname = os.path.dirname(fullname)
+        while len(dirname) > len(toplevel) and dirname not in dirs:
+            dirs.add(dirname)
+            dirname = os.path.dirname(dirname)
+    return files, dirs
+
+
+__all__ = [
+    "scm_find_files",
+    "is_toplevel_acceptable",
+    "find_files",
+    "collect_files_and_dirs",
+]
