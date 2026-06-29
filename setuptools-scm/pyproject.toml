@@ -50,7 +50,7 @@ dependencies = [
 
 
 [project.optional-dependencies]
-rich = ["rich"]
+rich = ["rich>=13"]
 simple = []
 toml = []
 
@@ -70,7 +70,7 @@ test = [
   "pytest",
   "pytest-timeout",  # Timeout protection for CI/CD
   "pytest-xdist",
-  "rich",
+  "rich>=13",
   "ruff",
   "mypy; implementation_name != 'pypy'",
   'typing-extensions; python_version < "3.11"',
