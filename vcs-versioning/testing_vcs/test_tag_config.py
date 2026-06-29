@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import warnings
 
+import pytest
+from packaging.version import Version
 from vcs_versioning import Configuration
 from vcs_versioning._config import TagConfiguration
 from vcs_versioning._scm_version import tag_to_version
@@ -107,6 +109,50 @@ class TestTagPrefixStripping:
         version = tag_to_version("v1.2.3", config)
         assert version is not None
         assert str(version) == "1.2.3"
+
+
+class TestTagToVersionSuffixPreservation:
+    """Test that tag_to_version preserves +local suffixes when possible."""
+
+    def test_tag_with_build_metadata_preserved(self) -> None:
+        config = Configuration()
+        version = tag_to_version("1.2.3+build.123", config)
+        assert version is not None
+        assert str(version) == "1.2.3+build.123"
+
+    def test_tag_with_invalid_suffix_stripped(self) -> None:
+        config = Configuration()
+        # "+invalid!!" is captured as suffix by the default regex but
+        # Version("1.2.3+invalid!!") raises, so the suffix gets stripped
+        with pytest.warns(UserWarning, match="will be stripped of its suffix"):
+            version = tag_to_version("1.2.3+invalid!!", config)
+        assert version is not None
+        assert str(version) == "1.2.3"
+
+    @pytest.mark.parametrize(
+        ("tag", "expected"),
+        [
+            ("1.0.0+ci.456", "1.0.0+ci.456"),
+            ("v2.0.0+build.789", "2.0.0+build.789"),
+            ("release-1.0.0+metadata", "1.0.0+metadata"),
+        ],
+    )
+    def test_various_build_metadata_tags(self, tag: str, expected: str) -> None:
+        config = Configuration()
+        version = tag_to_version(tag, config)
+        assert version is not None
+        assert str(version) == expected
+
+    def test_custom_version_cls_parse_failure_returns_none(self) -> None:
+        """When version_cls rejects the base version string, return None."""
+
+        def rejecting_version_cls(version_str: str) -> Version:
+            raise ValueError(f"rejected: {version_str}")
+
+        config = Configuration(version_cls=rejecting_version_cls)  # type: ignore[arg-type]
+        with pytest.warns(UserWarning, match="could not be parsed"):
+            result = tag_to_version("1.2.3", config)
+        assert result is None
 
 
 class TestConfigFromData:

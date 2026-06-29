@@ -82,11 +82,7 @@ def test_write_to_absolute_path_passes_when_subdir_of_root(tmp_path: Path) -> No
     write_version_files(replace(c, write_to="VERSION.py"), "1.0", v)
     subdir = tmp_path / "subdir"
     subdir.mkdir()
-    with pytest.raises(
-        # todo: python version specific error list
-        ValueError,
-        match=r".*VERSION.py' .* .*subdir.*",
-    ):
+    with pytest.warns(UserWarning, match=r"resolves outside of"):
         write_version_files(replace(c, root=subdir), "1.0", v)
 
 
@@ -136,6 +132,40 @@ def test_no_warn_when_version_file_not_tracked(tmp_path: Path, scm: str) -> None
         w for w in caught if "tracked by version control" in str(w.message)
     ]
     assert tracked_warnings == []
+
+
+@pytest.mark.issue(1451)
+def test_warn_if_tracked_relative_target_no_crash(tmp_path: Path) -> None:
+    """_warn_if_tracked must not crash when target is relative and root is absolute."""
+    from vcs_versioning._get_version_impl import _warn_if_tracked
+
+    wd = WorkDir(tmp_path).setup_git()
+    version_file = tmp_path / "pkg" / "__version__.py"
+    version_file.parent.mkdir()
+    version_file.write_text("__version__ = '0.0.0'\n")
+    wd.add_and_commit("add tracked version file")
+
+    c = Configuration(root=tmp_path)
+    relative_target = Path("pkg/__version__.py")
+
+    with pytest.warns(UserWarning, match="tracked by version control"):
+        _warn_if_tracked(relative_target, tmp_path, c)
+
+
+@pytest.mark.issue(1451)
+def test_warn_if_tracked_warns_when_target_escapes_root(tmp_path: Path) -> None:
+    """_warn_if_tracked must warn when target resolves outside root."""
+    from vcs_versioning._get_version_impl import _warn_if_tracked
+
+    project = tmp_path / "project"
+    project.mkdir()
+    WorkDir(project).setup_git()
+
+    c = Configuration(root=project)
+    escaping_target = Path("../../etc/passwd")
+
+    with pytest.warns(UserWarning, match="resolves outside of"):
+        _warn_if_tracked(escaping_target, project, c)
 
 
 @pytest.mark.issue(1423)

@@ -13,7 +13,7 @@ from vcs_versioning.test_api import WorkDir
 def inwd(
     request: pytest.FixtureRequest, wd: WorkDir, monkeypatch: pytest.MonkeyPatch
 ) -> WorkDir:
-    param: str = request.param  # type: ignore[attr-defined]
+    param: str = request.param
     if param == "git":
         wd.setup_git(monkeypatch)
     elif param == "hg":

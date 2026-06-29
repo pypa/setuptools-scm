@@ -9,5 +9,6 @@ include *.toml
 include LICENSE.txt
 include README.md
 include CHANGELOG.md
+include uv.lock
 
 prune .cursor

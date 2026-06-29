@@ -37,7 +37,7 @@ def _package_version() -> str:
         root="..",
         relative_to=str(pyproject_toml),
         fallback_root=".",
-        version_scheme="guess-next-dev",
+        version_scheme="towncrier-fragments",
         local_scheme=local_scheme,
         tag_regex=r"^setuptools-scm-(?P<version>v?\d+(?:\.\d+){0,2}[^\+]*)(?:\+.*)?$",
         scm={"git": {"describe_command": make_describe_command("setuptools-scm-*")}},

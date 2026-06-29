@@ -2,6 +2,14 @@
 
 <!-- towncrier release notes start -->
 
+## 2.2.1 (2026-06-29)
+
+### Fixed
+
+- Fix crash in `_warn_if_tracked` when the version file target is a relative path
+  by resolving it against the project root before comparison.
+  Also warn (instead of crashing) when the target resolves outside the project root. ([#1451](https://github.com/pypa/setuptools-scm/issues/1451))
+
 ## 2.2.0 (2026-06-24)
 
 ### Added
@@ -18,6 +26,7 @@
 ### Fixed
 
 - Fix MetadataWorkdir crash when using custom `tag_regex` — stored tags are already parsed version strings and no longer re-parsed through the tag regex. ([#1439](https://github.com/pypa/setuptools-scm/issues/1439))
+- Scope `list_tracked_files` to `project_root` in monorepo setups so that sdists no longer include files from sibling projects when `root=".."` is configured. ([#1440](https://github.com/pypa/setuptools-scm/issues/1440))
 
 ## 2.1.1 (2026-06-23)
 

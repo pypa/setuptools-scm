@@ -58,7 +58,6 @@ toml = []
 dev = [{ include-group = "test" }]
 docs = [
   "mkdocs; python_version>='3.10'",
-  "mkdocs-entangled-plugin; python_version>='3.10'",
   "mkdocs-include-markdown-plugin; python_version>='3.10'",
   "mkdocs-material; python_version>='3.10'",
   "mkdocstrings[python]; python_version>='3.10'",
@@ -85,7 +84,7 @@ test = [
 documentation = "https://setuptools-scm.readthedocs.io/"
 repository = "https://github.com/pypa/setuptools-scm/"
 
-[project.entry-points.console_scripts]
+[project.scripts]
 setuptools-scm = "vcs_versioning._cli:main"
 
 [project.entry-points."distutils.setup_keywords"]
@@ -116,7 +115,7 @@ setuptools_scm = [".git_archival.txt"]
 root = ".."
 version_scheme = "towncrier-fragments"
 tag_regex = "^setuptools-scm-(?P<version>v?\\d+(?:\\.\\d+){0,2}[^\\+]*)(?:\\+.*)?$"
-fallback_version = "9.2.2" # we trnasion to towncrier informed here
+fallback_version = "9.2.2" # we transition to towncrier informed here
 scm.git.describe_command = ["git", "describe", "--dirty", "--tags", "--long", "--match", "setuptools-scm-*"]
 
 [tool.ruff]
@@ -149,22 +148,27 @@ lines-between-types = 1
 order-by-type = true
 
 [tool.pytest.ini_options]
-minversion = "8"
+minversion = "8.2"
 testpaths = ["testing_scm"]
+xfail_strict = true
 addopts = ["-ra", "--strict-config", "--strict-markers", "-p", "vcs_versioning.test_api"]
-timeout = 300  # 5 minutes timeout per test for CI protection
+timeout = 300
 filterwarnings = [
   "error",
   "ignore:.*tool\\.setuptools_scm.*",
   "ignore:.*git archive did not support describe output.*:UserWarning",
+  "ignore:.*unprocessed git archival found.*:UserWarning",
   "ignore:.*without VcsEnvironment.*:DeprecationWarning",
   "ignore:.*Passing config to workdir.*:DeprecationWarning",
+  "ignore:.*tag_regex.*is deprecated.*:DeprecationWarning",
+  "ignore:.*write_to_source.*:DeprecationWarning",
+  "ignore:.*relative_to is expected to be a file.*:UserWarning",
 ]
 log_level = "debug"
 log_cli_level = "info"
-# disable unraisable until investigated
 markers = [
   "issue(id): reference to github issue",
+  "no_init: skip initializing the VCS repository in the test fixture",
   "skip_commit: allows to skip committing in the helpers",
 ]
 

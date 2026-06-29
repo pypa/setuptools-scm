@@ -6,12 +6,17 @@ import re
 import warnings
 from pathlib import Path
 from re import Pattern
-from typing import Any, NoReturn
+from typing import TYPE_CHECKING, Any, NoReturn
 
 from . import _config
 from . import _types as _t
 from ._config import Configuration, TagConfiguration
 from ._environment import resolve_runtime_env
+
+if TYPE_CHECKING:
+    from ._config import ParseFunction
+    from ._environment import VcsEnvironment
+    from ._version_cls import Version as _VersionType
 
 # Backward-compat re-export used by vcs-versioning/setup.py
 from ._legacy_parse import (
@@ -90,14 +95,30 @@ def _resolve_version(config: Configuration) -> ScmVersion | None:
     return None
 
 
-def _warn_if_tracked(target: Path, root: Path, config: Configuration) -> None:
+def _warn_if_tracked(target: Path, root: Path, config: Configuration) -> bool:
     """Warn when *target* is tracked in version control (#468).
 
     Writing a version file that is tracked makes ``git describe --dirty``
     report a dirty tree on tag checkouts, causing wrong version numbers.
+
+    Returns False if target resolves outside root (caller should skip the write).
     """
     from ._backends._git import GitWorkdir
     from ._backends._hg import HgWorkdir
+
+    if not target.is_absolute():
+        target = root / target
+    resolved_target = target.resolve()
+    resolved_root = root.resolve()
+    try:
+        resolved_target.relative_to(resolved_root)
+    except ValueError:
+        # todo: emit as GitHub Actions warning via ::warning:: syntax
+        warnings.warn(
+            f"version file target {target} resolves outside of the project root {root}",
+            stacklevel=2,
+        )
+        return False
 
     for workdir_cls in (GitWorkdir, HgWorkdir):
         try:
@@ -113,7 +134,8 @@ def _warn_if_tracked(target: Path, root: Path, config: Configuration) -> None:
                 " See https://github.com/pypa/setuptools-scm/issues/468",
                 stacklevel=3,
             )
-            return
+            return True
+    return True
 
 
 def write_version_files(
@@ -125,7 +147,8 @@ def write_version_files(
 
         write_to = Path(config.write_to)
         target = root / write_to if not write_to.is_absolute() else write_to
-        _warn_if_tracked(target, root, config)
+        if not _warn_if_tracked(target, root, config):
+            return
 
         dump_version(
             root=config.root,
@@ -142,7 +165,8 @@ def write_version_files(
         # todo: use a better name than fallback root
         assert config.relative_to is not None
         target = Path(config.relative_to).parent.joinpath(version_file)
-        _warn_if_tracked(target, root, config)
+        if not _warn_if_tracked(target, root, config):
+            return
 
         write_version_to_path(
             target,
@@ -252,14 +276,14 @@ def get_version(
     parentdir_prefix_version: str | None = None,
     fallback_version: str | None = None,
     fallback_root: _t.PathT = ".",
-    parse: Any | None = None,
+    parse: ParseFunction | None = None,
     git_describe_command: _t.CMD_TYPE | None = None,
     dist_name: str | None = None,
-    version_cls: Any | None = None,
+    version_cls: type[_VersionType] | str | None = None,
     normalize: bool = True,
     search_parent_directories: bool = False,
     scm: dict[str, Any] | None = None,
-    _env: Any | None = None,
+    _env: VcsEnvironment | None = None,
 ) -> str:
     """
     If supplied, relative_to should be a file from which root may

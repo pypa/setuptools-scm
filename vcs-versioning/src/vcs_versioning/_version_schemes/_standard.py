@@ -11,16 +11,12 @@ import re
 import warnings
 from datetime import date, datetime, timedelta, timezone
 from re import Match
-from typing import TYPE_CHECKING
 
 from .. import _modify_version
 from .._exceptions import DirtyWorkingTreeError
 from .._scm_version import ScmVersion, _parse_version_tag
 from .._version_cls import Version as PkgVersion
 from ._common import SEMVER_LEN, SEMVER_MINOR, SEMVER_PATCH
-
-if TYPE_CHECKING:
-    pass
 
 log = logging.getLogger(__name__)
 
