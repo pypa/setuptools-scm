@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 2.2.2 (2026-06-29)
+
+### Fixed
+
+- Add missing pytest-timeout to vcs-versioning test dependencies. ([#1461](https://github.com/pypa/setuptools-scm/issues/1461))
+
 ## 2.2.1 (2026-06-29)
 
 ### Fixed
