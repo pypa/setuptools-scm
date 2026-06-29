@@ -46,6 +46,7 @@ dependencies = [
 [dependency-groups]
 test = [
   "pytest",
+  "pytest-timeout",
   "pytest-xdist",
 ]
 
