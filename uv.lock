@@ -2275,7 +2275,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "packaging", specifier = ">=20" },
-    { name = "rich", marker = "extra == 'rich'" },
+    { name = "rich", marker = "extra == 'rich'", specifier = ">=13" },
     { name = "setuptools" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=1" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.1" },
@@ -2295,7 +2295,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-timeout" },
     { name = "pytest-xdist" },
-    { name = "rich" },
+    { name = "rich", specifier = ">=13" },
     { name = "ruff" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
@@ -2318,7 +2318,7 @@ test = [
     { name = "pytest" },
     { name = "pytest-timeout" },
     { name = "pytest-xdist" },
-    { name = "rich" },
+    { name = "rich", specifier = ">=13" },
     { name = "ruff" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
