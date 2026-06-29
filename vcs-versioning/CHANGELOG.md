@@ -2,6 +2,14 @@
 
 <!-- towncrier release notes start -->
 
+## 2.2.1 (2026-06-29)
+
+### Fixed
+
+- Fix crash in `_warn_if_tracked` when the version file target is a relative path
+  by resolving it against the project root before comparison.
+  Also warn (instead of crashing) when the target resolves outside the project root. ([#1451](https://github.com/pypa/setuptools-scm/issues/1451))
+
 ## 2.2.0 (2026-06-24)
 
 ### Added
