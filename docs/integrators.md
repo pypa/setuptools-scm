@@ -518,6 +518,44 @@ export MYBUILD_PRETEND_VERSION=1.2.3
 python -m build
 ```
 
+## scikit-build dynamic-metadata provider
+
+vcs-versioning ships a ready-made provider for
+[scikit-build/dynamic-metadata](https://github.com/scikit-build/dynamic-metadata),
+the backend-agnostic mechanism for filling in `dynamic` `[project]` fields. End
+users just reference it from `pyproject.toml` (see
+[Integrations](integrations.md#scikit-build-dynamic-metadata)); no glue code is
+required.
+
+The provider, `vcs_versioning.dynamic_metadata`, is a thin wrapper around the
+helpers above:
+
+```python
+def dynamic_metadata(settings, project):
+    field = settings.get("field", "version")  # only "version" is supported
+    overrides = {k: v for k, v in settings.items() if k != "field"}
+    dist_name = project.get("name")
+    with GlobalOverrides.from_env("VCS_VERSIONING", dist_name=dist_name):
+        pyproject = PyProjectData.from_file("pyproject.toml")
+        return {field: infer_version_string(
+            dist_name=dist_name,
+            pyproject_data=pyproject,
+            overrides=overrides or None,
+            force_write_version_files=True,
+        )}
+```
+
+Notes for anyone writing their own provider:
+
+- Config is read from `[tool.vcs-versioning]`; any extra keys in the
+  `[[tool.dynamic-metadata]]` table (besides `field`) are forwarded as overrides.
+- Hooks run with the current working directory at the project root, so
+  `PyProjectData.from_file("pyproject.toml")` resolves correctly.
+- This targets the standalone dynamic-metadata signature
+  `dynamic_metadata(settings, project)`. It is **not** the same protocol as
+  scikit-build-core's built-in `dynamic_metadata(field, settings)` loader — for
+  that path scikit-build-core keeps its own bundled provider.
+
 ## Testing with Custom Prefixes
 
 When testing your integration, you can mock the environment:
