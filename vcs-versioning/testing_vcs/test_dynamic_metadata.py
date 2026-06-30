@@ -5,8 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from vcs_versioning import test_api
-from vcs_versioning.dynamic_metadata import dynamic_metadata
+from vcs_versioning import dynamic_metadata, test_api
 
 
 def test_pretend_version(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
