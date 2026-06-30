@@ -1,5 +1,40 @@
 # Integrations
 
+## dynamic-metadata
+
+Any PEP 517 backend that supports the `tool.dynamic-metadata` array (as described in
+[scikit-build/dynamic-metadata](https://github.com/scikit-build/dynamic-metadata)),
+such as scikit-build-core 1.0+, can infer its version from VCS metadata using the
+`vcs_versioning` provider shipped with vcs-versioning:
+
+```toml title="pyproject.toml"
+[build-system]
+requires = ["scikit-build-core", "vcs-versioning"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "my-package"
+dynamic = ["version"]
+
+[tool.vcs-versioning]
+# normal vcs-versioning options go here, e.g.
+# local_scheme = "no-local-version"
+
+[[tool.dynamic-metadata]]
+provider = "vcs_versioning"
+```
+
+The provider always populates `version`. Version-scheme settings are read from
+`[tool.vcs-versioning]`. You may also pass options inline in the
+`[[tool.dynamic-metadata]]` table — any key there is forwarded as an override, so
+this is equivalent to the `local_scheme` above:
+
+```toml
+[[tool.dynamic-metadata]]
+provider = "vcs_versioning"
+local_scheme = "no-local-version"
+```
+
 ## ReadTheDocs
 
 ### Avoid having a dirty Git index

@@ -14,6 +14,7 @@ from ._config import (
     Configuration,
     TagConfiguration,
 )
+from ._dynamic_metadata import dynamic_metadata
 from ._environment import VcsEnvironment
 from ._pyproject_reading import PyProjectData
 from ._scm_version import ScmVersion
@@ -114,6 +115,7 @@ __all__ = [
     "VcsEnvironment",
     "Version",
     "build_configuration_from_pyproject",
+    "dynamic_metadata",
     "infer_version_string",
 ]
 
