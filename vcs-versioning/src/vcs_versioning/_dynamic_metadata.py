@@ -15,10 +15,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import vcs_versioning
+import vcs_versioning.overrides
+
 if TYPE_CHECKING:
     from collections.abc import Mapping
-
-import vcs_versioning
 
 __all__ = ["dynamic_metadata"]
 
@@ -32,11 +33,12 @@ def dynamic_metadata(
     project: Mapping[str, Any],
 ) -> dict[str, Any]:
     """Return the ``version`` field for a dynamic-metadata consumer."""
-    from vcs_versioning.overrides import GlobalOverrides
 
     dist_name = project.get("name")
     # dynamic-metadata runs hooks with cwd at the project root.
-    with GlobalOverrides.from_env("VCS_VERSIONING", dist_name=dist_name):
+    with vcs_versioning.overrides.GlobalOverrides.from_env(
+        "VCS_VERSIONING", dist_name=dist_name
+    ):
         pyproject = vcs_versioning.PyProjectData.from_file("pyproject.toml")
         version = vcs_versioning.infer_version_string(
             dist_name=dist_name,

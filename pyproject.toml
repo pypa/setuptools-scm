@@ -14,6 +14,9 @@ dependencies = [
 [project.scripts]
 create-release-proposal = "vcs_versioning_workspace.create_release_proposal:main"
 
+[project.entry-points."dynamic_metadata.provider"]
+"vcs_versioning" = "vcs_versioning._dynamic_metadata"
+
 [dependency-groups]
 # PP006 / uv: aggregate groups for local development (members define their own test deps)
 dev = [{ include-group = "docs" }, { include-group = "typing" }, { include-group = "release" }]
