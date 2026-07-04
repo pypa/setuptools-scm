@@ -91,6 +91,9 @@ node-and-timestamp = "vcs_versioning._version_schemes:get_local_node_and_timesta
 "semver-pep440-release-branch" = "vcs_versioning._version_schemes:release_branch_semver_version"
 "towncrier-fragments" = "vcs_versioning._version_schemes._towncrier:version_from_fragments"
 
+[project.entry-points."dynamic_metadata.provider"]
+"vcs_versioning" = "vcs_versioning._dynamic_metadata"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 namespaces = false
