@@ -16,24 +16,13 @@ build-backend = "scikit_build_core.build"
 name = "my-package"
 dynamic = ["version"]
 
-[tool.vcs-versioning]
-# normal vcs-versioning options go here, e.g.
-# local_scheme = "no-local-version"
-
 [[tool.dynamic-metadata]]
 provider = "vcs_versioning"
+local_scheme = "no-local-version"  # example
 ```
 
-The provider always populates `version`. Version-scheme settings are read from
-`[tool.vcs-versioning]`. You may also pass options inline in the
-`[[tool.dynamic-metadata]]` table — any key there is forwarded as an override, so
-this is equivalent to the `local_scheme` above:
-
-```toml
-[[tool.dynamic-metadata]]
-provider = "vcs_versioning"
-local_scheme = "no-local-version"
-```
+The provider always populates `version`. You may pass options inline in the
+`[[tool.dynamic-metadata]]` table — any key there is forwarded as an override.
 
 ## ReadTheDocs
 
