@@ -64,16 +64,18 @@ def _git_ls_files_and_dirs(
     toplevel: str, *, timeout: int | None = None
 ) -> tuple[set[str], set[str]]:
     # Use git ls-files with -z for NUL-separated output (safe parsing).
-    # --recurse-submodules lists files inside submodules with prefixed paths.
     # The exclude pathspec filters out files marked with the export-ignore
-    # gitattribute, matching the old git-archive behavior.
+    # gitattribute, matching the git-archive behavior.
     # "." is needed as positive pathspec for the exclude to apply against.
+    # Submodules are intentionally *not* recursed into: git archive never
+    # descended into submodules, and --recurse-submodules would bypass the
+    # parent's export-ignore attribute on the submodule path, wrongly pulling
+    # export-ignore'd submodules into the sdist (see #1469).
     # Uses run_git (--git-dir) to pin to the correct repository.
     res = run_git(
         [
             "ls-files",
             "-z",
-            "--recurse-submodules",
             "--",
             ".",
             ":(exclude,attr:export-ignore)",

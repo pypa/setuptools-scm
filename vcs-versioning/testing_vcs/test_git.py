@@ -384,12 +384,8 @@ def test_git_export_ignore_with_staged_files(
     assert opj(".", "ignore.txt") not in found
 
 
-@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/662")
-def test_git_submodule_files_listed(
-    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    # Create a separate repo to use as submodule
-    sub_src = wd.cwd.parent / "sub_src"
+def _make_submodule_source(sub_src: Path) -> None:
+    """Create a standalone git repo to be used as a submodule source."""
     sub_src.mkdir()
     subprocess.check_call(["git", "init", str(sub_src)])
     subprocess.check_call(
@@ -397,12 +393,18 @@ def test_git_submodule_files_listed(
     )
     subprocess.check_call(["git", "-C", str(sub_src), "config", "user.name", "test"])
     (sub_src / "sub_file.txt").write_text("sub content", encoding="utf-8")
-    (sub_src / ".gitattributes").write_text(
-        "/sub_ignored.txt export-ignore\n", encoding="utf-8"
-    )
-    (sub_src / "sub_ignored.txt").write_text("ignored", encoding="utf-8")
     subprocess.check_call(["git", "-C", str(sub_src), "add", "."])
     subprocess.check_call(["git", "-C", str(sub_src), "commit", "-m", "init sub"])
+
+
+def test_git_submodule_files_not_recursed(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # File discovery mirrors ``git archive``, which never descends into
+    # submodules.  The submodule contents therefore must not appear in the
+    # listing (only the parent's own tracked files are reported).
+    sub_src = wd.cwd.parent / "sub_src"
+    _make_submodule_source(sub_src)
 
     # Add as submodule (allow file:// protocol for local clone)
     wd.write("parent_file.txt", "parent content")
@@ -427,11 +429,50 @@ def test_git_submodule_files_listed(
     # Parent files present
     assert opj(".", "parent_file.txt") in found
     assert opj(".", ".gitmodules") in found
-    # Submodule files listed with correct prefixed paths
-    assert opj(".", "mysub", "sub_file.txt") in found
-    assert opj(".", "mysub", ".gitattributes") in found
-    # export-ignore honored inside submodule
-    assert opj(".", "mysub", "sub_ignored.txt") not in found
+    # Submodule contents are not recursed into (matching git archive)
+    assert opj(".", "mysub", "sub_file.txt") not in found
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/1469")
+def test_git_export_ignore_submodule_excluded(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A submodule placed under a directory marked ``export-ignore`` must be
+    # excluded from file discovery, exactly as ``git archive`` excludes it.
+    # Regression test for #1469: ``--recurse-submodules`` bypassed the
+    # parent's export-ignore attribute and wrongly pulled the submodule's
+    # files into the sdist.
+    sub_src = wd.cwd.parent / "sub_src"
+    _make_submodule_source(sub_src)
+
+    wd.write("parent_file.txt", "parent content")
+    # Mark the whole vendor/ directory as export-ignore.
+    wd.write(".gitattributes", "/vendor/ export-ignore\n")
+    wd("git add parent_file.txt .gitattributes")
+    wd.commit()
+    wd(
+        [
+            "git",
+            "-c",
+            "protocol.file.allow=always",
+            "submodule",
+            "add",
+            str(sub_src),
+            "vendor/mysub",
+        ]
+    )
+    wd.commit()
+
+    monkeypatch.chdir(wd.cwd)
+    found = set(vcs_versioning._file_finders.find_files("."))
+
+    # Parent files still present
+    assert opj(".", "parent_file.txt") in found
+    # Nothing under the export-ignore'd vendor/ directory may be listed,
+    # including files that live inside the submodule.
+    assert opj(".", "vendor", "mysub", "sub_file.txt") not in found
+    vendor_prefix = opj(".", "vendor") + os.sep
+    assert not [f for f in found if f.startswith(vendor_prefix)], sorted(found)
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/728")
