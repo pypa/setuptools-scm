@@ -13,6 +13,8 @@ from vcs_versioning._toml import InvalidTomlError
 from vcs_versioning.overrides import GlobalOverrides
 from vcs_versioning.overrides import ensure_context
 
+from .bdist_wheel import ScmBdistWheelMixin
+from .bdist_wheel import bdist_wheel as scm_bdist_wheel
 from .build_py import ScmVersionFileMixin
 from .build_py import build_py as scm_build_py
 from .egg_info import ScmEggInfoMixin
@@ -92,6 +94,37 @@ def _register_egg_info_command(dist: setuptools.Distribution) -> None:
 
     dist.cmdclass["egg_info"] = wrapped
     log.debug("Wrapped project egg_info with setuptools_scm egg-info mixin")
+
+
+def _register_bdist_wheel_command(dist: setuptools.Distribution) -> None:
+    """Register bdist_wheel that strips SCM JSON from wheel ``.dist-info``.
+
+    Sdists keep ``scm_version.json`` / ``scm_file_list.json`` for fallback
+    discovery; wheels already have ``METADATA`` and ``RECORD``.
+    """
+    if not dist.cmdclass:
+        dist.cmdclass = {}
+
+    existing_bdist_wheel = dist.cmdclass.get("bdist_wheel")
+
+    if existing_bdist_wheel is None:
+        dist.cmdclass["bdist_wheel"] = scm_bdist_wheel
+        log.debug("Registered setuptools_scm bdist_wheel command")
+        return
+
+    project_bdist_wheel = cast("type[setuptools.Command]", existing_bdist_wheel)
+
+    if issubclass(project_bdist_wheel, ScmBdistWheelMixin):
+        return
+
+    wrapped = type(
+        "_SetuptoolsScmWrappedBdistWheel",
+        (ScmBdistWheelMixin, project_bdist_wheel),
+        {},
+    )
+
+    dist.cmdclass["bdist_wheel"] = wrapped
+    log.debug("Wrapped project bdist_wheel with setuptools_scm egg2dist mixin")
 
 
 def _log_hookstart(hook: str, dist: setuptools.Distribution) -> None:
@@ -177,6 +210,7 @@ def version_keyword(
 
     _register_build_py_command(dist)
     _register_egg_info_command(dist)
+    _register_bdist_wheel_command(dist)
 
 
 @ensure_context("SETUPTOOLS_SCM", additional_loggers=_setuptools_scm_logger)
@@ -237,3 +271,4 @@ def _infer_version_impl(
 
     _register_build_py_command(dist)
     _register_egg_info_command(dist)
+    _register_bdist_wheel_command(dist)
