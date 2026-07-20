@@ -13,8 +13,6 @@ from vcs_versioning._toml import InvalidTomlError
 from vcs_versioning.overrides import GlobalOverrides
 from vcs_versioning.overrides import ensure_context
 
-from .bdist_wheel import ScmBdistWheelMixin
-from .bdist_wheel import bdist_wheel as scm_bdist_wheel
 from .build_py import ScmVersionFileMixin
 from .build_py import build_py as scm_build_py
 from .egg_info import ScmEggInfoMixin
@@ -101,7 +99,20 @@ def _register_bdist_wheel_command(dist: setuptools.Distribution) -> None:
 
     Sdists keep ``scm_version.json`` / ``scm_file_list.json`` for fallback
     discovery; wheels already have ``METADATA`` and ``RECORD``.
+
+    Import is lazy so sdist-only environments without the ``wheel`` package
+    still load ``infer_version`` / ``version_keyword``.
     """
+    try:
+        from .bdist_wheel import ScmBdistWheelMixin
+        from .bdist_wheel import bdist_wheel as scm_bdist_wheel
+    except ImportError:
+        log.debug(
+            "bdist_wheel unavailable; skipping SCM wheel metadata strip",
+            exc_info=True,
+        )
+        return
+
     if not dist.cmdclass:
         dist.cmdclass = {}
 

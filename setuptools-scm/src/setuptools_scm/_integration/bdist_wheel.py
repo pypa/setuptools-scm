@@ -18,15 +18,9 @@ _SCM_DIST_INFO_FILES = (SCM_VERSION_FILENAME, SCM_FILE_LIST_FILENAME)
 
 
 def _unlink_scm_metadata(distinfo_path: Path) -> None:
-    """Remove SCM metadata files from a ``.dist-info`` directory if present.
-
-    Mirrors setuptools ``egg2dist``'s ``adios`` for plain files: ``unlink``
-    when the path exists (including symlinks), never ``rmtree``.
-    """
+    """Remove SCM metadata files from a ``.dist-info`` directory if present."""
     for name in _SCM_DIST_INFO_FILES:
-        path = distinfo_path / name
-        if path.exists() or path.is_symlink():
-            path.unlink()
+        (distinfo_path / name).unlink(missing_ok=True)
 
 
 class ScmBdistWheelMixin(_bdist_wheel):
