@@ -1672,6 +1672,82 @@ def test_manifest_in_excludes_scm_tracked_files(
     )
 
 
+@pytest.mark.issue(1473)
+def test_scm_metadata_in_sdist_not_in_wheel(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SCM egg-info JSON is for sdist fallback; wheels must not ship it."""
+    import shutil
+    import zipfile
+
+    from vcs_versioning._scm_metadata import SCM_FILE_LIST_FILENAME
+    from vcs_versioning._scm_metadata import SCM_VERSION_FILENAME
+
+    monkeypatch.chdir(wd.cwd)
+
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "test-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+        """),
+    )
+
+    pkg_dir = wd.cwd / "test_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("")
+
+    wd(wd.add_command)
+    wd.commit()
+    wd("git tag v1.0.0")
+
+    sdist_names = _sdist_names(wd)
+    assert any(SCM_VERSION_FILENAME in n for n in sdist_names), (
+        f"{SCM_VERSION_FILENAME} should be in sdist: {sdist_names}"
+    )
+    assert any(SCM_FILE_LIST_FILENAME in n for n in sdist_names), (
+        f"{SCM_FILE_LIST_FILENAME} should be in sdist: {sdist_names}"
+    )
+
+    dist_dir = wd.cwd / "dist"
+    if dist_dir.exists():
+        shutil.rmtree(dist_dir)
+    for egg_info_dir in wd.cwd.glob("*.egg-info"):
+        shutil.rmtree(egg_info_dir)
+
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert build_result.returncode == 0, (
+        f"wheel build failed:\nstdout: {build_result.stdout}\n"
+        f"stderr: {build_result.stderr}"
+    )
+
+    wheels = list(dist_dir.glob("*.whl"))
+    assert len(wheels) == 1, f"Expected 1 wheel, found {len(wheels)}"
+
+    with zipfile.ZipFile(wheels[0], "r") as whl:
+        names = whl.namelist()
+
+    assert not any(SCM_VERSION_FILENAME in n for n in names), (
+        f"{SCM_VERSION_FILENAME} must not be in wheel: {names}"
+    )
+    assert not any(SCM_FILE_LIST_FILENAME in n for n in names), (
+        f"{SCM_FILE_LIST_FILENAME} must not be in wheel: {names}"
+    )
+
+
 class TestIsInsidePackage:
     """Unit tests for _is_inside_package."""
 
