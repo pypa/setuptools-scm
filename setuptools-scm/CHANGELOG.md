@@ -2,6 +2,13 @@
 
 <!-- towncrier release notes start -->
 
+## 10.2.1 (2026-07-21)
+
+### Fixed
+
+- Omit ``scm_version.json`` and ``scm_file_list.json`` from wheel ``.dist-info``
+  while still including them in sdists for fallback discovery. ([#1473](https://github.com/pypa/setuptools-scm/issues/1473))
+
 ## 10.2.0 (2026-06-24)
 
 ### Added
