@@ -8,6 +8,7 @@ dispatches to ``setuptools.file_finders`` entry points with no context).
 Also writes ``scm_version.json`` and ``scm_file_list.json`` into the
 egg-info directory after ``run()`` creates it, so that sdists carry
 the metadata needed for fallback discovery when no VCS is present.
+Wheels omit these files via the ``bdist_wheel`` egg2dist mixin.
 """
 
 from __future__ import annotations
