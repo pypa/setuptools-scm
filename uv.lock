@@ -1266,7 +1266,7 @@ wheels = [
 
 [[package]]
 name = "mkdocstrings"
-version = "1.0.4"
+version = "1.0.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jinja2", marker = "python_full_version >= '3.10'" },
@@ -1276,9 +1276,9 @@ dependencies = [
     { name = "mkdocs-autorefs", marker = "python_full_version >= '3.10'" },
     { name = "pymdown-extensions", marker = "python_full_version >= '3.10'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1d/5d/f888d4d3eb31359b327bc9b17a212d6ef03fe0b0682fbb3fc2cb849fb12b/mkdocstrings-1.0.4.tar.gz", hash = "sha256:3969a6515b77db65fd097b53c1b7aa4ae840bd71a2ee62a6a3e89503446d7172", size = 100088, upload-time = "2026-04-15T09:16:53.376Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/46/8c/05934c546eb38321e5f24e786b24c7a0dc5f2b35968f6e04dce9cfbb738d/mkdocstrings-1.0.5.tar.gz", hash = "sha256:3a9528223afd6bf459ea85541b600ef3542826bbeb4ab534553f4b3c4e6e5e48", size = 100318, upload-time = "2026-07-10T10:49:10.026Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6e/94/be70f8ee9c45f2f62b39a1f0e9303bc20e138a8f3b8e50ffd89498e177e1/mkdocstrings-1.0.4-py3-none-any.whl", hash = "sha256:63464b4b29053514f32a1dbbf604e52876d5e638111b0c295ab7ed3cac73ca9b", size = 35560, upload-time = "2026-04-15T09:16:51.436Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/82/2a2d44f2c09563d321ab2690835f066267fe000623c90c0caf44e296cbbb/mkdocstrings-1.0.5-py3-none-any.whl", hash = "sha256:150eff6e8c370cc8d2ba4e452ece1275fe83ad34d8cc5884a89a0ed141618c49", size = 35543, upload-time = "2026-07-10T10:49:08.689Z" },
 ]
 
 [package.optional-dependencies]
@@ -2621,7 +2621,7 @@ dev = [
     { name = "mkdocs", marker = "python_full_version >= '3.10'", specifier = "<2" },
     { name = "mkdocs-include-markdown-plugin", marker = "python_full_version >= '3.10'", specifier = "<8" },
     { name = "mkdocs-material", marker = "python_full_version >= '3.10'", specifier = "<10" },
-    { name = "mkdocstrings", extras = ["python"], marker = "python_full_version >= '3.10'", specifier = ">=1.0.4,<2" },
+    { name = "mkdocstrings", extras = ["python"], marker = "python_full_version >= '3.10'", specifier = ">=1.0.5,<2" },
     { name = "pygithub", marker = "sys_platform != 'win32'", specifier = ">=2.0.0" },
     { name = "pygments", marker = "python_full_version >= '3.10'", specifier = "<2.20" },
     { name = "towncrier", specifier = ">=23.11.0" },
@@ -2632,7 +2632,7 @@ docs = [
     { name = "mkdocs", marker = "python_full_version >= '3.10'", specifier = "<2" },
     { name = "mkdocs-include-markdown-plugin", marker = "python_full_version >= '3.10'", specifier = "<8" },
     { name = "mkdocs-material", marker = "python_full_version >= '3.10'", specifier = "<10" },
-    { name = "mkdocstrings", extras = ["python"], marker = "python_full_version >= '3.10'", specifier = ">=1.0.4,<2" },
+    { name = "mkdocstrings", extras = ["python"], marker = "python_full_version >= '3.10'", specifier = ">=1.0.5,<2" },
     { name = "pygments", marker = "python_full_version >= '3.10'", specifier = "<2.20" },
 ]
 release = [

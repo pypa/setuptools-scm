@@ -7,7 +7,7 @@
 build-backend = "setuptools.build_meta"
 requires = [
   "setuptools>=45",
-  "packaging>=20",
+  "packaging>=26.2",
   'typing-extensions>=4.1; python_version < "3.11"',
 ]
 
@@ -38,7 +38,7 @@ dynamic = [
   "version",
 ]
 dependencies = [
-  "packaging>=20",
+  "packaging>=26.2",
   'tomli>=1; python_version < "3.11"',
   'typing-extensions>=4.1; python_version < "3.11"',
 ]
