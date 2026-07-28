@@ -21,7 +21,7 @@ docs = [
   "mkdocs<2; python_version>='3.10'",
   "mkdocs-include-markdown-plugin<8; python_version>='3.10'",
   "mkdocs-material<10; python_version>='3.10'",
-  "mkdocstrings[python]>=1.0.4,<2; python_version>='3.10'",  # 0.29 renamed import to inventories
+  "mkdocstrings[python]>=1.0.5,<2; python_version>='3.10'",  # 0.29 renamed import to inventories
   "pygments<2.20; python_version>='3.10'",
   "griffe-public-wildcard-imports; python_version>='3.10'",
 ]

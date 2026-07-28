@@ -50,10 +50,15 @@ def wd(wd: WorkDir, monkeypatch: pytest.MonkeyPatch, debug_mode: DebugMode) -> W
     [
         ("3.3.1-rc26-0-g9df187b", "3.3.1-rc26", 0, "g9df187b", False),
         ("17.33.0-rc-17-g38c3047c0", "17.33.0-rc", 17, "g38c3047c0", False),
+        ("v1.15.1rc1-37-g9bd1298-dirty", "v1.15.1rc1", 37, "g9bd1298", True),
+        # bare tags containing dashes must not be mistaken for describe output
+        ("llvmorg-23.1.0-rc2", "llvmorg-23.1.0-rc2", 0, None, False),
+        ("llvmorg-23.1.0-rc2-dirty", "llvmorg-23.1.0-rc2", 0, None, True),
+        ("release-1.2.2", "release-1.2.2", 0, None, False),
     ],
 )
 def test_parse_describe_output(
-    given: str, tag: str, number: int, node: str, dirty: bool
+    given: str, tag: str, number: int, node: str | None, dirty: bool
 ) -> None:
     parsed = _git._git_parse_describe(given)
     assert parsed == (tag, number, node, dirty)
@@ -648,6 +653,18 @@ def test_git_archival_to_version(expected: str, from_data: dict[str, str]) -> No
     version = archival_to_version(from_data, config=config)
     assert version is not None
     assert format_version(version) == expected
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/1481")
+def test_git_archival_bare_tag_with_dashes() -> None:
+    config = Configuration(tag_regex=r"^llvmorg-(?P<version>.+)$")
+    version = archival_to_version(
+        {"describe-name": "llvmorg-23.1.0-rc2"}, config=config
+    )
+    assert version is not None
+    assert str(version.tag) == "23.1.0rc2"
+    assert version.distance == 0
+    assert version.node is None
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/727")
