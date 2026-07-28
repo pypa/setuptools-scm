@@ -1769,7 +1769,7 @@ requires-dist = [
     { name = "setuptools" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=1" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.1" },
-    { name = "vcs-versioning", specifier = ">=2.0.0.dev0,<3" },
+    { name = "vcs-versioning", specifier = ">=2.2.2,<3" },
 ]
 provides-extras = ["rich", "simple", "toml"]
 
@@ -1917,7 +1917,7 @@ wheels = [
 
 [[package]]
 name = "vcs-versioning"
-version = "2.2.0"
+version = "2.2.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
@@ -1925,9 +1925,9 @@ dependencies = [
     { name = "typing-extensions", version = "4.13.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "typing-extensions", version = "4.15.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9' and python_full_version < '3.11'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ea/09/6702475a5d382a432201d20b9be733f2981e7b364f4ff03296f534d9f96f/vcs_versioning-2.2.0.tar.gz", hash = "sha256:532dd99dd85e6f17667d5ca9a028b494a6e0d65dbc9d92716f1d0401078be6a0", size = 132140, upload-time = "2026-06-25T05:26:14.268Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/09/95/c95bb74950763a163defcf4cedf6c5edfca1d623fd5031b76516ece85076/vcs_versioning-2.2.2.tar.gz", hash = "sha256:4ac4ded78720cdb4d0291ae58ace87e1e9201912e1023f3029c6cce5c9152cfb", size = 143135, upload-time = "2026-06-29T13:26:06.901Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d9/4c/f638c153a62e566c3e0e43f3998f8f97d4c3daadc984bb540461eaa8edf3/vcs_versioning-2.2.0-py3-none-any.whl", hash = "sha256:69a649bfbbe9f8134e8b15cddc7b27daa00e5eccbcb5128e060a87e94bad8255", size = 108104, upload-time = "2026-06-25T05:26:12.857Z" },
+    { url = "https://files.pythonhosted.org/packages/85/9e/1f06f4ddc3a74ccfe0877490caaf4a5233e65401160afc8cb13207815f5e/vcs_versioning-2.2.2-py3-none-any.whl", hash = "sha256:fe7fb216f8780a5516e7864a9333aacb1b70015b087a9be3918da76ef2760808", size = 108014, upload-time = "2026-06-29T13:26:05.367Z" },
 ]
 
 [[package]]
