@@ -33,6 +33,11 @@ log = logging.getLogger(__name__)
 REF_TAG_RE = re.compile(r"(?<=\btag: )([^,]+)\b")
 DESCRIBE_UNSUPPORTED = "%(describe"
 
+# ``git describe`` appends ``-<distance>-g<abbreviated node>`` to the tag name.
+# Tags may contain dashes themselves, so the suffix has to be matched precisely
+# instead of just splitting on the last two dashes.
+DESCRIBE_SUFFIX_RE = re.compile(r"^(?P<tag>.+)-(?P<distance>\d+)-g(?P<node>[0-9a-f]+)$")
+
 
 # If testing command in shell make sure to quote the match argument like
 # '*[0-9]*' as it will expand before being sent to git if there are any matching
@@ -473,15 +478,15 @@ def _git_parse_describe(
     else:
         dirty = False
 
-    split = describe_output.rsplit("-", 2)
-    if len(split) < 3:  # probably a tagged commit
-        tag = describe_output
-        number = 0
-        node = None
-    else:
-        tag, number_, node = split
-        number = int(number_)
-    return tag, number, node, dirty
+    match = DESCRIBE_SUFFIX_RE.match(describe_output)
+    if match is None:  # probably a tagged commit
+        return describe_output, 0, None, dirty
+    return (
+        match.group("tag"),
+        int(match.group("distance")),
+        "g" + match.group("node"),
+        dirty,
+    )
 
 
 def archival_to_version(
