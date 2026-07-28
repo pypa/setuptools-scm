@@ -317,7 +317,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "packaging", specifier = ">=20" },
+    { name = "packaging", specifier = ">=26.2" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=1" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'", specifier = ">=4.1" },
 ]

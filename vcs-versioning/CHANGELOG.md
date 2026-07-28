@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 2.2.3 (2026-07-28)
+
+### Fixed
+
+- Fix `ValueError` when parsing `.git_archival.txt` of a tagged commit whose tag contains more than one dash (e.g. `llvmorg-23.1.0-rc2`) - the `git describe` suffix is now matched precisely instead of splitting on the last two dashes. ([#1481](https://github.com/pypa/setuptools-scm/issues/1481))
+
 ## 2.2.2 (2026-06-29)
 
 ### Fixed
