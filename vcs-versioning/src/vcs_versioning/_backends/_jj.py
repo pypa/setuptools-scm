@@ -35,6 +35,16 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+ANCESTOR_SCAN_LIMIT = 20
+"""Generations of ancestors examined when looking for the newest real commit.
+
+Revsets filtered by ``empty()`` force jj to diff every candidate commit
+against its parents, so applying such a filter to the full ancestry costs
+O(history) and takes minutes in large repositories (issue #1477).  Empty
+commits only occur near the head in practice -- ``@`` itself, plus the
+occasional ``jj new`` chain -- so a small window suffices.
+"""
+
 
 def run_jj(
     args: Sequence[str | os.PathLike[str]],
@@ -42,17 +52,20 @@ def run_jj(
     *,
     check: bool = False,
     timeout: int | None = None,
+    ignore_working_copy: bool = False,
 ) -> _CompletedProcess:
-    return _run(
-        ["jj", "--no-pager", "--repository", str(repo), *args],
-        cwd=repo,
-        check=check,
-        timeout=timeout,
-    )
+    cmd: list[str | os.PathLike[str]] = ["jj", "--no-pager", "--repository", str(repo)]
+    if ignore_working_copy:
+        cmd.append("--ignore-working-copy")
+    cmd.extend(args)
+    return _run(cmd, cwd=repo, check=check, timeout=timeout)
 
 
 class JjWorkdir(Workdir):
     """Work directory backed by Jujutsu (jj)."""
+
+    _snapshot_taken: bool = False
+    """Whether a command in this process refreshed the working-copy commit."""
 
     def run_jj(
         self,
@@ -60,9 +73,24 @@ class JjWorkdir(Workdir):
         *,
         check: bool = False,
         timeout: int | None = None,
+        needs_snapshot: bool = False,
     ) -> _CompletedProcess:
+        """Run a jj command in this work directory.
+
+        jj snapshots the working copy on every invocation, which scans the
+        whole tree and writes an operation-log entry.  One snapshot per
+        process is enough, so history queries following it pass
+        ``--ignore-working-copy``.  Commands that must observe uncommitted
+        edits set ``needs_snapshot``.
+        """
+        ignore_working_copy = self._snapshot_taken and not needs_snapshot
+        self._snapshot_taken = True
         return run_jj(
-            args, self.path, check=check, timeout=timeout or self._subprocess_timeout
+            args,
+            self.path,
+            check=check,
+            timeout=timeout or self._subprocess_timeout,
+            ignore_working_copy=ignore_working_copy,
         )
 
     @classmethod
@@ -74,7 +102,7 @@ class JjWorkdir(Workdir):
             return None
 
         timeout = config.env.subprocess_timeout if config is not None else None
-        res = run_jj(["root"], wd, timeout=timeout)
+        res = run_jj(["root"], wd, timeout=timeout, ignore_working_copy=True)
         root = res.parse_success(parse=str)
         if root is None:
             return None
@@ -84,7 +112,7 @@ class JjWorkdir(Workdir):
         return result
 
     def is_dirty(self) -> bool:
-        res = self.run_jj(["diff", "--summary"])
+        res = self.run_jj(["diff", "--summary"], needs_snapshot=True)
         return res.parse_success(parse=bool, default=False)
 
     def get_branch(self) -> str | None:
@@ -133,25 +161,41 @@ class JjWorkdir(Workdir):
             error_msg="failed to get jj head date",
         )
 
+    def _count_revset(self, revset: str) -> int:
+        """Count the commits a revset resolves to."""
+        res = self.run_jj(["log", "--no-graph", "-r", revset, "-T", '"x\\n"'])
+        output = res.parse_success(parse=str)
+        if not output:
+            return 0
+        return output.count("\n") + 1
+
     def node(self) -> str | None:
-        res = self.run_jj(
-            [
-                "log",
-                "--no-graph",
-                "-r",
-                "latest(::@ ~ (empty() ~ tags()))",
-                "-T",
-                "commit_id",
-            ],
-        )
-        result = res.parse_success(parse=str)
-        return result if result else None
+        """Return the newest ancestor of ``@`` that is a real commit.
 
-    def _find_latest_tag(self) -> tuple[str | None, str | None]:
-        """Find the latest tagged ancestor of the working copy.
+        This is jj's equivalent of git's ``HEAD``: the working-copy commit
+        ``@`` is skipped while it holds no changes, as are the empty
+        commits a ``jj new`` chain leaves behind.  Merges and tagged
+        commits are kept even when empty -- git counts them too.
 
-        Returns (tag_name, commit_id) or (None, None) if no tags found.
+        Only ``ANCESTOR_SCAN_LIMIT`` generations are examined; the
+        unbounded query remains as a fallback for histories that are
+        empty all the way down.
         """
+        skip = "empty() ~ tags() ~ merges()"
+        revsets = [
+            f"latest(ancestors(@, {ANCESTOR_SCAN_LIMIT}) ~ ({skip}))",
+            f"latest(::@ ~ ({skip}))",
+        ]
+        for revset in revsets:
+            res = self.run_jj(["log", "--no-graph", "-r", revset, "-T", "commit_id"])
+            result = res.parse_success(parse=str)
+            if result:
+                return result
+            log.debug("no non-empty commit found in %s", revset)
+        return None
+
+    def _find_latest_tag(self) -> str | None:
+        """Find the tag of the latest tagged ancestor of the working copy."""
         res = self.run_jj(
             [
                 "log",
@@ -159,93 +203,58 @@ class JjWorkdir(Workdir):
                 "-r",
                 "latest(heads(::@ & tags()))",
                 "-T",
-                'tags.map(|t| t.name()).join(",") ++ "\\n" ++ commit_id',
+                'tags.map(|t| t.name()).join(",")',
             ],
         )
-        output = res.parse_success(parse=str)
-        if not output:
-            return None, None
-
-        lines = output.strip().split("\n")
-        if len(lines) < 2:
-            return None, None
-
-        tag_names = lines[0].strip()
-        commit_id = lines[1].strip()
+        tag_names = res.parse_success(parse=str)
         if not tag_names:
-            return None, None
+            return None
 
         # Take the first tag if multiple point at the same commit
-        tag = tag_names.split(",")[0].strip()
-        return tag, commit_id
+        return tag_names.split(",")[0].strip() or None
 
-    def _compute_distance(self, tag_name: str) -> int:
-        """Count non-empty commits between a tag and the working copy.
+    def _compute_distance(self, tag_name: str, node: str) -> int:
+        """Count the commits between a tag and ``node``.
 
-        In jj's model the working copy ``@`` is a real commit.  If it
-        contains changes it is counted as one commit of distance, which
-        is the semantically correct representation.
+        Mirrors ``git describe --long``: every commit in the range is
+        counted, the tagged commit itself is not.
         """
-        res = self.run_jj(
-            [
-                "log",
-                "--no-graph",
-                "-r",
-                f'"{tag_name}"::@ ~ empty()',
-                "-T",
-                'commit_id ++ "\\n"',
-            ],
-        )
-        output = res.parse_success(parse=str)
-        if not output:
-            return 0
+        return max(0, self._count_revset(f'"{tag_name}"::{node}') - 1)
 
-        # Each non-empty line is a commit; subtract 1 for the tagged commit itself
-        commits = [line for line in output.strip().split("\n") if line.strip()]
-        return max(0, len(commits) - 1)
+    def _count_ancestors(self, node: str) -> int:
+        """Count the ancestors of ``node``, excluding jj's virtual root."""
+        return self._count_revset(f"::{node} ~ root()")
 
     def count_all_nodes(self) -> int:
-        res = self.run_jj(
-            [
-                "log",
-                "--no-graph",
-                "-r",
-                "::@ ~ empty()",
-                "-T",
-                'commit_id ++ "\\n"',
-            ],
-        )
-        output = res.parse_success(parse=str)
-        if not output:
-            return 0
-        return len([line for line in output.strip().split("\n") if line.strip()])
+        node = self.node()
+        return self._count_ancestors(node) if node is not None else 0
 
     def get_scm_version(self) -> ScmVersion | None:
         config = self.config
 
-        tag_name, _tag_commit = self._find_latest_tag()
+        # first command in the process -- refreshes the working-copy commit
+        # so that the emptiness of ``@`` below reflects uncommitted edits
         dirty = self.is_dirty()
 
+        node = self.node()
+        tag_name = self._find_latest_tag()
+
         if tag_name is not None:
-            distance = self._compute_distance(tag_name)
-            node = self.node()
-            if node:
-                node = "j" + node[:12]
+            distance = 0 if node is None else self._compute_distance(tag_name, node)
             version = meta(
                 tag=tag_name,
                 distance=distance,
                 dirty=dirty,
-                node=node,
+                node=None if node is None else "j" + node[:12],
                 config=config,
             )
         else:
             tag = config.version_cls(config.fallback_version or "0.0")
-            node = self.node()
             if node is None:
                 distance = 0
                 dirty = True
             else:
-                distance = self.count_all_nodes()
+                distance = self._count_ancestors(node)
                 node = "j" + node[:12]
             version = meta(
                 tag=tag, distance=distance, dirty=dirty, node=node, config=config
@@ -270,7 +279,7 @@ class JjWorkdir(Workdir):
         return scm_find_files(base, jj_files, jj_dirs)
 
     def is_file_tracked(self, path: Path) -> bool:
-        res = self.run_jj(["file", "list", str(path)])
+        res = self.run_jj(["file", "list", str(path)], needs_snapshot=True)
         output = res.parse_success(parse=str)
         return bool(output)
 
