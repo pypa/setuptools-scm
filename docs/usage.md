@@ -710,9 +710,10 @@ instead of the Git backend.
   (where both `.jj/` and `.git/` exist).
 - **Tags**: Version tags are read via `jj log` with revset expressions.
   Use `jj tag set v1.0.0` to create version tags.
-- **Distance**: The commit distance counts non-empty commits between the latest
-  tag and the working copy. In Jujutsu, the working copy itself is modeled as a
-  commit, so a dirty working copy adds 1 to the distance.
+- **Distance**: The commit distance counts the commits between the latest tag
+  and the head commit, matching `git describe --long`. In Jujutsu, the working
+  copy itself is modeled as a commit; it is the head while it holds changes, so
+  a dirty working copy adds 1 to the distance, and is skipped while empty.
 - **File finder**: Tracked files are listed via `jj file list`.
 
 #### Special considerations
