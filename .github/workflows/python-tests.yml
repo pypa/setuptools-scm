@@ -40,7 +40,7 @@ jobs:
       SETUPTOOLS_SCM_NO_LOCAL: "1"
 
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -109,17 +109,17 @@ jobs:
 
     name: ${{ matrix.os }} - Python ${{ matrix.python_version }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - name: Setup python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         if: matrix.python_version != 'msys2'
         with:
           python-version: ${{ matrix.python_version }}
           architecture: x64
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
       - name: Setup MSYS2
         uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2.32.0
         if: matrix.python_version == 'msys2'
@@ -218,7 +218,7 @@ jobs:
         name: Packages-setuptools-scm
         path: dist
     - name: Publish setuptools-scm to PyPI
-      uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+      uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # v1.14.1
 
   dist_upload_vcs_versioning:
     runs-on: ubuntu-latest
@@ -237,7 +237,7 @@ jobs:
         name: Packages-vcs-versioning
         path: dist
     - name: Publish vcs-versioning to PyPI
-      uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+      uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # v1.14.1
 
   upload-release-assets-setuptools-scm:
     runs-on: ubuntu-latest
@@ -255,7 +255,7 @@ jobs:
         name: Packages-setuptools-scm
         path: dist
     - name: Upload release assets
-      uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
+      uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
       with:
         files: dist/*
         fail_on_unmatched_files: true
@@ -276,7 +276,7 @@ jobs:
         name: Packages-vcs-versioning
         path: dist
     - name: Upload release assets
-      uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
+      uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
       with:
         files: dist/*
         fail_on_unmatched_files: true
@@ -303,6 +303,6 @@ jobs:
         path: dist
     - name: Publish package to PyPI
       continue-on-error: true
-      uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
+      uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # v1.14.1
       with:
         repository-url: https://test.pypi.org/legacy/
