@@ -21,7 +21,7 @@ def _git_toplevel(path: str) -> str | None:
         res = _run(["git", "rev-parse", "HEAD"], cwd=cwd)
         if res.returncode:
             # This catches you being in a git directory, but the
-            # permissions being incorrect.  With modern contanizered
+            # permissions being incorrect.  With modern containerized
             # CI environments you can easily end up in a cloned repo
             # with incorrect permissions and we don't want to silently
             # ignore files.
