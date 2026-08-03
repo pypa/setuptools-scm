@@ -204,9 +204,8 @@ def test_jj_missing_binary_errors(tmp_path: Path) -> None:
 
     with patch(
         "vcs_versioning._backends._discover_vcs.has_command", return_value=False
-    ):
-        with pytest.raises(LookupError, match="jj.*not available"):
-            discover(tmp_path, config=config)
+    ), pytest.raises(LookupError, match="jj.*not available"):
+        discover(tmp_path, config=config)
 
 
 def test_jj_colocated_prefers_jj(wd: WorkDir) -> None:

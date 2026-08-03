@@ -262,7 +262,7 @@ class GlobalOverrides:
             version = get_version(...)
     """
 
-    __slots__ = ("vcs_env", "tool", "dist_name", "_token")
+    __slots__ = ("_token", "dist_name", "tool", "vcs_env")
 
     def __init__(
         self,
@@ -367,7 +367,7 @@ class GlobalOverrides:
         self.vcs_env.configure_logging()
         return self
 
-    def __exit__(self, *exc_info: Any) -> None:
+    def __exit__(self, *exc_info: object) -> None:
         """Exit context: restore previous override state."""
         if self._token is not None:
             _active_overrides.reset(self._token)
@@ -523,7 +523,7 @@ class ensure_context(ContextDecorator):
         )
         return self._context.__enter__()
 
-    def __exit__(self, *exc_info: Any) -> None:
+    def __exit__(self, *exc_info: object) -> None:
         """Exit context: only exit if we created the context."""
         if self._created_context and self._context is not None:
             self._context.__exit__(*exc_info)

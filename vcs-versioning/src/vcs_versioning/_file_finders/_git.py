@@ -119,4 +119,4 @@ def git_archive_find_files(path: _t.PathT = "") -> list[str]:
     return scm_find_files(path, set(), set(), force_all_files=True)
 
 
-__all__ = ["git_find_files", "git_archive_find_files"]
+__all__ = ["git_archive_find_files", "git_find_files"]

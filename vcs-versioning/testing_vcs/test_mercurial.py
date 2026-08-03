@@ -4,7 +4,7 @@ import os
 import warnings
 
 import pytest
-import vcs_versioning._file_finders  # noqa: F401
+import vcs_versioning._file_finders
 from vcs_versioning import Configuration
 from vcs_versioning._backends._hg import archival_to_version, parse
 from vcs_versioning._run_cmd import CommandNotFoundError

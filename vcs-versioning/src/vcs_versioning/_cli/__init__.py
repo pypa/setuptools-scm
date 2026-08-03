@@ -80,7 +80,6 @@ def main(
         return command(opts, version, config)
 
 
-# flake8: noqa: C901
 def command(opts: CliNamespace, version: str, config: Configuration) -> int:
     data: OutputData = {}
 
