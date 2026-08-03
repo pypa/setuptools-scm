@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 # Backward-compat re-export used by vcs-versioning/setup.py
 from ._legacy_parse import (
-    resolved_fallback_root as resolved_fallback_root,  # noqa: F401
+    resolved_fallback_root as resolved_fallback_root,
 )
 from ._overrides import _apply_metadata_overrides, _read_pretended_version_for
 from ._scm_version import ScmVersion

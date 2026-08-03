@@ -14,7 +14,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 # File finder imports (now in vcs_versioning)
-import vcs_versioning._file_finders  # noqa: F401
+import vcs_versioning._file_finders
 import vcs_versioning._file_finders._git
 from vcs_versioning import Configuration
 from vcs_versioning._backends import _git

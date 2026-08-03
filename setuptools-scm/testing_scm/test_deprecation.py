@@ -17,7 +17,7 @@ def test_warn_dynamic_version_full_text() -> None:
         "Setuptools-scm is responsible for setting the version, forcing setuptools to override creates errors."
     )
 
-    with pytest.warns(UserWarning) as warning_info:  # noqa: PT030
+    with pytest.warns(UserWarning) as warning_info:  # ruff: ignore[pytest-warns-too-broad]
         warn_dynamic_version(test_path, "test.section", "test_expression")
 
     assert len(warning_info) == 1
