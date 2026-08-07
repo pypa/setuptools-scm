@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Unified release proposal script for setuptools-scm monorepo."""
 
+from __future__ import annotations
+
 import argparse
 import os
 import subprocess

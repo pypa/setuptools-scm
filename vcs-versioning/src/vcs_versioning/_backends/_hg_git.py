@@ -191,7 +191,7 @@ class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
                 tag = hg_tag
                 break
         else:
-            logging.warning("tag not found hg=%s git=%s", hg_tags, git_tags)
+            log.warning("tag not found hg=%s git=%s", hg_tags, git_tags)
             return _FAKE_GIT_DESCRIBE_ERROR
 
         res = self.run_hg(["log", "-r", f"'{tag}'::.", "-T", "."])
