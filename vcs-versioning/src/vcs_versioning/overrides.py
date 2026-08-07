@@ -20,10 +20,16 @@ from __future__ import annotations
 import contextvars
 import logging
 import os
+import sys
 from collections.abc import Mapping, MutableMapping
 from contextlib import ContextDecorator
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar, overload
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 from packaging.utils import canonicalize_name
 
@@ -262,7 +268,7 @@ class GlobalOverrides:
             version = get_version(...)
     """
 
-    __slots__ = ("vcs_env", "tool", "dist_name", "_token")
+    __slots__ = ("_token", "dist_name", "tool", "vcs_env")
 
     def __init__(
         self,
@@ -361,13 +367,13 @@ class GlobalOverrides:
     # Context manager
     # ------------------------------------------------------------------
 
-    def __enter__(self) -> GlobalOverrides:
+    def __enter__(self) -> Self:
         """Enter context: set this as the active override and configure logging."""
         self._token = _active_overrides.set(self)
         self.vcs_env.configure_logging()
         return self
 
-    def __exit__(self, *exc_info: Any) -> None:
+    def __exit__(self, *exc_info: object) -> None:
         """Exit context: restore previous override state."""
         if self._token is not None:
             _active_overrides.reset(self._token)
@@ -523,7 +529,7 @@ class ensure_context(ContextDecorator):
         )
         return self._context.__enter__()
 
-    def __exit__(self, *exc_info: Any) -> None:
+    def __exit__(self, *exc_info: object) -> None:
         """Exit context: only exit if we created the context."""
         if self._created_context and self._context is not None:
             self._context.__exit__(*exc_info)

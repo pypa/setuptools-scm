@@ -68,4 +68,4 @@ def hg_archive_find_files(path: _t.PathT = "") -> list[str]:
     return scm_find_files(path, set(), set(), force_all_files=True)
 
 
-__all__ = ["hg_find_files", "hg_archive_find_files"]
+__all__ = ["hg_archive_find_files", "hg_find_files"]

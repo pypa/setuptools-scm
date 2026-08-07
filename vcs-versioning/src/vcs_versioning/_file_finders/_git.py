@@ -21,7 +21,7 @@ def _git_toplevel(path: str) -> str | None:
         res = _run(["git", "rev-parse", "HEAD"], cwd=cwd)
         if res.returncode:
             # This catches you being in a git directory, but the
-            # permissions being incorrect.  With modern contanizered
+            # permissions being incorrect.  With modern containerized
             # CI environments you can easily end up in a cloned repo
             # with incorrect permissions and we don't want to silently
             # ignore files.
@@ -119,4 +119,4 @@ def git_archive_find_files(path: _t.PathT = "") -> list[str]:
     return scm_find_files(path, set(), set(), force_all_files=True)
 
 
-__all__ = ["git_find_files", "git_archive_find_files"]
+__all__ = ["git_archive_find_files", "git_find_files"]

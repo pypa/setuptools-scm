@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 def _jj_toplevel(path: str) -> str | None:
     try:
         cwd = os.path.abspath(path or ".")
-        res = _run(["jj", "root", "--no-pager"], cwd=cwd)
+        res = _run(["jj", "root", "--no-pager", "--ignore-working-copy"], cwd=cwd)
         if res.returncode:
             return None
         toplevel = res.stdout.strip()

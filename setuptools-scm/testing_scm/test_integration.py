@@ -169,7 +169,7 @@ minor = {version_tuple[1]}
 patch = {version_tuple[2]}
 commit_hash = '{scm_version.short_node}'
 num_commit = {scm_version.distance}
-"""  # noqa: RUF027
+"""  # ruff: ignore[missing-f-string-syntax]
     # Use write_to with template to create version file
     version = wd.get_version(
         write_to="src/version.py", write_to_template=version_file_content
@@ -242,7 +242,7 @@ def test_pretend_metadata_with_scm_version(
 version = '{version}'
 commit_hash = '{scm_version.short_node}'
 num_commit = {scm_version.distance}
-"""  # noqa: RUF027
+"""  # ruff: ignore[missing-f-string-syntax]
     version = wd.get_version(
         write_to="src/version.py", write_to_template=version_file_content
     )

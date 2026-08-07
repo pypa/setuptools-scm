@@ -16,7 +16,12 @@ create-release-proposal = "vcs_versioning_workspace.create_release_proposal:main
 
 [dependency-groups]
 # PP006 / uv: aggregate groups for local development (members define their own test deps)
-dev = [{ include-group = "docs" }, { include-group = "typing" }, { include-group = "release" }]
+dev = [{ include-group = "docs" }, { include-group = "typing" }, { include-group = "release" }, { include-group = "coverage" }]
+# workspace-wide, so it lives here rather than in a member: coverage is measured
+# across both packages in one `uv run pytest` from the root
+coverage = [
+    "pytest-cov",
+]
 docs = [
   "mkdocs<2; python_version>='3.10'",
   "mkdocs-include-markdown-plugin<8; python_version>='3.10'",
@@ -84,10 +89,26 @@ setuptools-scm = { workspace = true }
 
 [tool.ruff]
 lint.extend-select = ["UP", "I", "B"]
+lint.ignore = [
+    # version inference must degrade gracefully around user-supplied version_cls,
+    # third-party metadata and probing subprocesses - the broad catches are the design
+    "BLE001",
+    "S112",
+    # requires-python is >=3.8, which has no parenthesized context managers, so the
+    # combined form this asks for is either a syntax error or an unreadable long line
+    "SIM117",
+    # __all__ is grouped by category with comments, which is more useful than sorted
+    "RUF022",
+]
 
 [tool.ruff.lint.per-file-ignores]
 "vcs-versioning/setup.py" = ["E402"]
 "setuptools-scm/setup.py" = ["E402"]
+# explicit `from m import x as x` re-exports for API stability
+# (PLC0414 only skips __init__.py; see check_api.py / griffe-public-wildcard-imports)
+"vcs-versioning/src/vcs_versioning/_compat.py" = ["PLC0414"]
+"vcs-versioning/src/vcs_versioning/_get_version_impl.py" = ["PLC0414"]
+"vcs-versioning/src/vcs_versioning/_version_cls.py" = ["PLC0414"]
 
 [tool.repo-review]
 ignore = [

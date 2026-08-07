@@ -14,7 +14,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 # File finder imports (now in vcs_versioning)
-import vcs_versioning._file_finders  # noqa: F401
+import vcs_versioning._file_finders
 import vcs_versioning._file_finders._git
 from vcs_versioning import Configuration
 from vcs_versioning._backends import _git
@@ -504,7 +504,6 @@ def test_non_dotted_tag_no_version_match(wd: WorkDir) -> None:
 
 @pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/381")
 def test_gitdir(monkeypatch: pytest.MonkeyPatch, wd: WorkDir) -> None:
-    """ """
     wd.commit_testfile()
     normal = wd.get_version()
     # git hooks set this and break subsequent setuptools-scm unless we clean

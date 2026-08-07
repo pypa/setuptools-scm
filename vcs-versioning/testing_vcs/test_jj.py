@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -11,7 +12,7 @@ from vcs_versioning import Configuration
 from vcs_versioning._backends import _jj as jj
 from vcs_versioning._backends._discover_vcs import discover
 from vcs_versioning._file_finders._jj import jj_find_files
-from vcs_versioning._run_cmd import CommandNotFoundError
+from vcs_versioning._run_cmd import CommandNotFoundError, CompletedProcess, run
 from vcs_versioning.test_api import DebugMode, WorkDir
 
 
@@ -104,6 +105,65 @@ def test_jj_distance(wd: WorkDir) -> None:
     assert str(version.tag) == "1.0.0"
 
 
+@pytest.mark.issue(1477)
+def test_jj_distance_counts_merges_like_git(wd: WorkDir) -> None:
+    """Merges are empty in jj terms but git counts them -- so do we."""
+    wd.commit_testfile()
+    wd("jj tag set v1.0.0 -r @-")
+    wd.commit_testfile()
+    main = wd("jj log --no-graph -r @- -T commit_id")
+
+    wd("jj new v1.0.0 -m side")
+    wd.write("side.txt", "side")
+    wd.add_and_commit("side")
+    side = wd("jj log --no-graph -r @- -T commit_id")
+
+    wd(f"jj new {main} {side} -m merge")
+    wd("jj commit -m merged")
+
+    version = jj.parse(wd.cwd, Configuration())
+    assert version is not None
+    assert version.distance == int(wd("git rev-list --count v1.0.0..HEAD"))
+    assert version.node == "j" + wd("git rev-parse HEAD")[:12]
+
+
+@pytest.mark.issue(1477)
+def test_jj_avoids_scanning_the_whole_history(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``empty()`` costs one commit diff per candidate -- keep it bounded.
+
+    An unbounded ``empty()`` filter turns version inference into a
+    minutes-long operation on large repositories.
+    """
+    wd.commit_testfile()
+    wd("jj tag set v1.0.0 -r @-")
+    wd.commit_testfile()
+
+    commands: list[list[str]] = []
+
+    def record(cmd: list[str], cwd: Path, **kwargs: Any) -> CompletedProcess:
+        commands.append([str(part) for part in cmd])
+        return run(cmd, cwd, **kwargs)
+
+    monkeypatch.setattr("vcs_versioning._backends._jj._run", record)
+    assert jj.parse(wd.cwd, Configuration()) is not None
+
+    revsets = [
+        cmd[index + 1]
+        for cmd in commands
+        for index, arg in enumerate(cmd)
+        if arg == "-r"
+    ]
+    assert revsets
+    bound = f"ancestors(@, {jj.ANCESTOR_SCAN_LIMIT})"
+    assert all("empty()" not in revset or bound in revset for revset in revsets)
+
+    # the working copy is snapshotted once, the history queries reuse it
+    snapshotting = [cmd for cmd in commands if "--ignore-working-copy" not in cmd]
+    assert len(snapshotting) == 1
+
+
 def test_jj_branch_detection(wd: WorkDir) -> None:
     wd.commit_testfile()
     wd("jj bookmark create test-branch -r @-")
@@ -144,9 +204,8 @@ def test_jj_missing_binary_errors(tmp_path: Path) -> None:
 
     with patch(
         "vcs_versioning._backends._discover_vcs.has_command", return_value=False
-    ):
-        with pytest.raises(LookupError, match="jj.*not available"):
-            discover(tmp_path, config=config)
+    ), pytest.raises(LookupError, match="jj.*not available"):
+        discover(tmp_path, config=config)
 
 
 def test_jj_colocated_prefers_jj(wd: WorkDir) -> None:

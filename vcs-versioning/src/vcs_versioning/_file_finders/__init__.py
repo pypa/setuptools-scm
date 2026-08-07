@@ -167,8 +167,8 @@ def collect_files_and_dirs(
 
 
 __all__ = [
-    "scm_find_files",
-    "is_toplevel_acceptable",
-    "find_files",
     "collect_files_and_dirs",
+    "find_files",
+    "is_toplevel_acceptable",
+    "scm_find_files",
 ]

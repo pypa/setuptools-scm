@@ -16,12 +16,12 @@ if TYPE_CHECKING:
 from ._compat import PathT as PathT  # noqa: PLC0414
 
 __all__ = [
-    "PathT",
     "CMD_TYPE",
+    "GIT_PRE_PARSE",
+    "SCMVERSION",
     "VERSION_SCHEME",
     "VERSION_SCHEMES",
-    "SCMVERSION",
-    "GIT_PRE_PARSE",
+    "PathT",
 ]
 
 if TYPE_CHECKING:

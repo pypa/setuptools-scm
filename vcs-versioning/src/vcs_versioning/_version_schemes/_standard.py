@@ -174,9 +174,8 @@ def guess_next_date_ver(
         # deduct date format if not provided
         if date_fmt is None:
             date_fmt = "%Y.%m.%d" if len(match.group("year")) == 4 else "%y.%m.%d"
-        if prefix := match.group("prefix"):
-            if not date_fmt.startswith(prefix):
-                date_fmt = prefix + date_fmt
+        if (prefix := match.group("prefix")) and not date_fmt.startswith(prefix):
+            date_fmt = prefix + date_fmt
 
     today = version.time.date()
     head_date = node_date or today
