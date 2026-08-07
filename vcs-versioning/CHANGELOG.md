@@ -2,6 +2,24 @@
 
 <!-- towncrier release notes start -->
 
+## 2.2.4 (2026-08-07)
+
+### Fixed
+
+- Speed up jujutsu version inference in large repositories.
+
+  The jj backend filtered whole-ancestry revsets with `empty()`, which makes
+  jj diff every commit in the history and took minutes on large repos.  The
+  scan for the newest real commit is now bounded to the most recent
+  generations, distances are counted without the filter, and the working copy
+  is snapshotted only once per run (later queries pass
+  `--ignore-working-copy`).
+
+  As a side effect distances now match `git describe --long`: merge commits
+  count even though jj considers them empty. ([#1477](https://github.com/pypa/setuptools-scm/issues/1477))
+- Improve reproducibility of scm_file_list.json ([#1488](https://github.com/pypa/setuptools-scm/issues/1488))
+- Route the hg-git tag mismatch warning through the module logger instead of the root logger. ([#1489](https://github.com/pypa/setuptools-scm/issues/1489))
+
 ## 2.2.3 (2026-07-28)
 
 ### Fixed
