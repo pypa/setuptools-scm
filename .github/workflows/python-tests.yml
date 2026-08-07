@@ -85,7 +85,7 @@ jobs:
           env | grep -i PRETEND || echo "(none set)"
 
       - name: Build ${{ matrix.package }}
-        uses: hynek/build-and-inspect-python-package@d44ca7d91762de7a7d5436ddae667c6da6d1c3df # v2.18.0
+        uses: hynek/build-and-inspect-python-package@2abe76da66d0a6a4a227101f9348ee855797cfa5 # v3.0.1
         with:
           path: ${{ matrix.package }}
           upload-name-suffix: -${{ matrix.package }}
@@ -218,7 +218,7 @@ jobs:
         name: Packages-setuptools-scm
         path: dist
     - name: Publish setuptools-scm to PyPI
-      uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # v1.14.1
+      uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
 
   dist_upload_vcs_versioning:
     runs-on: ubuntu-latest
@@ -237,7 +237,7 @@ jobs:
         name: Packages-vcs-versioning
         path: dist
     - name: Publish vcs-versioning to PyPI
-      uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # v1.14.1
+      uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
 
   upload-release-assets-setuptools-scm:
     runs-on: ubuntu-latest
@@ -303,6 +303,6 @@ jobs:
         path: dist
     - name: Publish package to PyPI
       continue-on-error: true
-      uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # v1.14.1
+      uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
       with:
         repository-url: https://test.pypi.org/legacy/
