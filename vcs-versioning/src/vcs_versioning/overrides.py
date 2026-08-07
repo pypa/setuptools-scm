@@ -20,10 +20,16 @@ from __future__ import annotations
 import contextvars
 import logging
 import os
+import sys
 from collections.abc import Mapping, MutableMapping
 from contextlib import ContextDecorator
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar, overload
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 from packaging.utils import canonicalize_name
 
@@ -361,7 +367,7 @@ class GlobalOverrides:
     # Context manager
     # ------------------------------------------------------------------
 
-    def __enter__(self) -> GlobalOverrides:
+    def __enter__(self) -> Self:
         """Enter context: set this as the active override and configure logging."""
         self._token = _active_overrides.set(self)
         self.vcs_env.configure_logging()

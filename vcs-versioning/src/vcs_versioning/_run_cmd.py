@@ -157,6 +157,7 @@ def run(
         timeout = _get_timeout(os.environ)
     res = subprocess.run(
         cmd,
+        check=False,  # handled below via CompletedProcess.check_returncode
         capture_output=True,
         cwd=os.fspath(cwd),
         env=dict(

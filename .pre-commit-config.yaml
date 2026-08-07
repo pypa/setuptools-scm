@@ -13,7 +13,7 @@ repos:
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.16.1
   hooks:
-    # Explicit --config so hooks match `uv run ruff` (astral-sh/ruff#11924).
+    # Explicit --config so each half uses its own settings (astral-sh/ruff#11924).
     # Workspace = everything except setuptools-scm/ (src/, vcs-versioning/, docs/, …).
     # Args order: --config first, then check-only flags (--fix …).
     - id: ruff-check

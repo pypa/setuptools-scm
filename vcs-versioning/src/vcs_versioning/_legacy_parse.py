@@ -80,8 +80,8 @@ def parse_scm_version(config: Configuration) -> ScmVersion | None:
             entrypoint="setuptools_scm.parse_scm",
             root=config.absolute_root,
         )
-    except _run_cmd.CommandNotFoundError as e:
-        log.exception("command %s not found while parsing the scm, using fallbacks", e)
+    except _run_cmd.CommandNotFoundError:
+        log.exception("command not found while parsing the scm, using fallbacks")
         return None
 
 
