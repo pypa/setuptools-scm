@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 2.3.0 (2026-08-08)
+
+### Added
+
+- Add a ``vcs_versioning.dynamic_metadata`` provider for the [dynamic-metadata](https://github.com/scikit-build/dynamic-metadata) system. ([#1465](https://github.com/pypa/setuptools-scm/issues/1465))
+
 ## 2.2.4 (2026-08-07)
 
 ### Fixed
