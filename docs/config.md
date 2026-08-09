@@ -84,7 +84,7 @@ strict = true      # require tags to contain at least one dot
 
     | Value   | Behavior |
     |---------|----------|
-    | unset (`None`) | Current permissive matching (`*[0-9]*`) with a `FutureWarning` advising you to set this explicitly. |
+    | unset (`None`) | Current permissive matching (`*[0-9]*`) with a `FutureWarning` advising you to set this explicitly, unless `scm.git.describe_command` supplies the describe command. |
     | `true` | **Strict** – tags must contain at least one dot (e.g. `*[0-9]*.*[0-9]*`).  Event-like tags such as `2026-event` are rejected. |
     | `false` | **Permissive** – matches any tag containing a digit (`*[0-9]*`), no warning. |
 
@@ -182,8 +182,10 @@ strict = true      # require tags to contain at least one dot
     !!! warning "Overrides tag.prefix / tag.strict"
 
         When `scm.git.describe_command` is explicitly set, `tag.prefix` and
-        `tag.strict` have no effect on the describe match pattern (a warning
-        is emitted).  The explicit command takes full precedence.
+        `tag.strict` have no effect on the describe match pattern. A non-empty
+        `tag.prefix` or `tag.strict = true` emits a warning; the explicit
+        permissive value `tag.strict = false` does not. `tag.prefix` is still
+        stripped from the tag returned by the custom command before parsing.
 
 `scm.git.pre_parse`
 :   A string specifying which git pre-parse function to use before parsing version information.

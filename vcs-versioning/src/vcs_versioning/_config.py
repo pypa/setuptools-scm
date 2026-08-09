@@ -49,6 +49,30 @@ def _is_called_from_dataclasses() -> bool:
         del frame
 
 
+def _warning_stacklevel() -> int:
+    """Point configuration warnings at the first external caller."""
+    import inspect
+
+    frame = inspect.currentframe()
+    try:
+        current_frame = frame
+        stacklevel = 0
+        while current_frame is not None:
+            current_frame = current_frame.f_back
+            if current_frame is None:
+                break
+            stacklevel += 1
+            filename = current_frame.f_code.co_filename
+            if (
+                filename != "<string>"
+                and Path(filename).resolve() != Path(__file__).resolve()
+            ):
+                return stacklevel
+        return 2
+    finally:
+        del frame
+
+
 class _GitDescribeCommandDescriptor:
     """Data descriptor for deprecated git_describe_command field."""
 
@@ -343,21 +367,6 @@ class Configuration:
                     self.tag, regex=_check_tag_regex(tag_regex)
                 )
 
-        # TODO(#1429): re-introduce these warnings with non-conflicting logic
-        if self.tag.strict is None:
-            log.debug(
-                "tag.strict is not set — defaults to False (permissive tag matching)"
-            )
-
-        if (
-            self.tag.prefix or self.tag.strict is not None
-        ) and self.scm.git.describe_command is not None:
-            log.debug(
-                "Both tag.prefix/tag.strict and scm.git.describe_command are set. "
-                "The explicit describe_command takes precedence; tag.prefix and "
-                "tag.strict will have no effect on the git describe match pattern."
-            )
-
         self._resolved_paths = resolve_paths(
             relative_to=self.relative_to,
             root=self.root,
@@ -396,6 +405,29 @@ class Configuration:
                         "'scm.git.describe_command'. Please use only 'scm.git.describe_command'."
                     )
                 self.scm.git.describe_command = git_describe_command
+
+        describe_command_is_set = self.scm.git.describe_command is not None
+
+        if self.tag.strict is None and not describe_command_is_set:
+            warnings.warn(
+                "tag.strict is not set. Currently defaults to False (permissive "
+                "tag matching). In a future major version the default will change "
+                "to True (require tags to contain a dot). "
+                "Set tag.strict = true or tag.strict = false explicitly in your "
+                "[tool.setuptools_scm] / [tool.vcs-versioning] config to silence "
+                "this warning.",
+                FutureWarning,
+                stacklevel=_warning_stacklevel(),
+            )
+
+        if describe_command_is_set and (self.tag.prefix or self.tag.strict is True):
+            warnings.warn(
+                "Both tag.prefix/tag.strict and scm.git.describe_command are set. "
+                "The explicit describe_command takes precedence; tag.prefix and "
+                "tag.strict will have no effect on the git describe match pattern.",
+                UserWarning,
+                stacklevel=_warning_stacklevel(),
+            )
 
     @property
     def absolute_root(self) -> str:
