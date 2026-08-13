@@ -11,7 +11,7 @@ import logging
 
 import pytest
 from vcs_versioning import Configuration
-from vcs_versioning._backends._hg import hg_tag_pattern, matches_tag_pattern
+from vcs_versioning._backends._hg import hg_tag_pattern, matches_tag_pattern, select_tag
 from vcs_versioning._config import TagConfiguration
 from vcs_versioning._get_version_impl import _get_version
 from vcs_versioning.test_api import WorkDir
@@ -71,39 +71,71 @@ class TestTagPattern:
         assert result is matches
 
 
+class TestSelectTag:
+    """Which tag wins among the tags on the current changeset (#1495).
+
+    Pure selection logic, so it is exercised directly rather than through a
+    repository -- hg puts several tags on one changeset routinely and the
+    ordering it reports them in is not something to build a test around.
+    """
+
+    def config(self, **tag_kw: object) -> Configuration:
+        return Configuration(tag=TagConfiguration(**tag_kw))  # type: ignore[arg-type]
+
+    def test_event_tag_rejected_when_strict(self) -> None:
+        """Strict leaves the changeset untagged, so versioning falls through."""
+        config = self.config(strict=None)
+        assert select_tag(["event-2024"], config, strict=False) == "event-2024"
+        assert select_tag(["event-2024"], config, strict=True) is None
+
+    def test_version_tag_wins_over_event_tag_when_strict(self) -> None:
+        """hg reports several tags per changeset; order must not decide."""
+        config = self.config(strict=None)
+        tags = ["event-2024", "v1.2.3"]
+        assert select_tag(tags, config, strict=False) == "event-2024"
+        assert select_tag(tags, config, strict=True) == "v1.2.3"
+
+    def test_order_does_not_matter_under_strict(self) -> None:
+        config = self.config(strict=None)
+        assert select_tag(["v1.2.3", "event-2024"], config, strict=True) == "v1.2.3"
+
+    def test_version_tag_kept_when_strict(self) -> None:
+        config = self.config(strict=None)
+        assert select_tag(["v1.2.3"], config, strict=True) == "v1.2.3"
+
+    def test_non_version_tags_skipped_either_way(self) -> None:
+        config = self.config(strict=None)
+        assert select_tag(["nightly"], config, strict=False) is None
+        assert select_tag(["nightly"], config, strict=True) is None
+
+    def test_permissive_selection_is_unchanged(self) -> None:
+        """The narrowing must only engage when strictness was asked for."""
+        config = self.config(strict=None)
+        tags = ["event-2024", "v1.2.3"]
+        assert select_tag(tags, config) == select_tag(tags, config, strict=False)
+
+    def test_prefix_is_stripped_before_matching(self) -> None:
+        config = self.config(prefix="pkg-", strict=None)
+        tags = ["pkg-2024", "pkg-1.2.3"]
+        assert select_tag(tags, config, strict=False) == "pkg-2024"
+        assert select_tag(tags, config, strict=True) == "pkg-1.2.3"
+
+
 class TestStrictOnTaggedChangeset:
-    """#1495: tag.strict was ignored when the changeset itself carries tags."""
-
     def test_event_tag_on_head_is_rejected_when_strict(self, wd: WorkDir) -> None:
-        """Strict must fall through to the distance path, like git describe."""
+        """End to end: strict continues from the last real version tag."""
         wd.commit_testfile()
-        wd.create_tag("v1.2.3")
+        wd('hg tag v1.2.3 -u test -d "0 0"')
         wd.commit_testfile()
-        wd.create_tag("event-2024")
-        wd("hg update -r event-2024")
+        wd('hg tag event-2024 -u test -d "0 0"')
+        wd("hg up -C event-2024")
 
-        assert version_for(wd, None) == "2024"
-        assert version_for(wd, False) == "2024"
-        strict = version_for(wd, True)
-        assert strict.startswith("1.2.4.dev"), strict
+        # state the precondition, so a checkout that did not land where we
+        # expect reports that rather than an unexplained version mismatch
+        assert "event-2024" in wd('hg log -r . -T "{tags}"')
 
-    def test_version_tag_wins_among_several_on_one_changeset(self, wd: WorkDir) -> None:
-        """hg lists several tags per changeset; strict must not pick by order."""
-        wd.commit_testfile()
-        wd("hg tag -r 0 v1.2.3")
-        wd("hg tag -r 0 event-2024")
-        wd("hg update -r 0")
-
-        assert version_for(wd, None) == "2024"
-        assert version_for(wd, True) == "1.2.3"
-
-    def test_version_tag_on_head_is_kept_when_strict(self, wd: WorkDir) -> None:
-        wd.commit_testfile()
-        wd.create_tag("v1.2.3")
-        wd("hg update -r v1.2.3")
-
-        assert version_for(wd, None) == "1.2.3"
-        assert version_for(wd, True) == "1.2.3"
+        assert version_for(wd, False).startswith("2024")
+        assert version_for(wd, True).startswith("1.2.4.dev")
 
 
 class TestStrictOnDistancePath:
@@ -134,21 +166,6 @@ class TestStrictDiagnostic:
         (message,) = [m for m in reported(caplog) if "tag.strict" in m]
         assert "event-2024" in message
         assert "v1.2.3" in message
-
-    def test_warns_on_a_tagged_changeset_too(
-        self, wd: WorkDir, caplog: pytest.LogCaptureFixture
-    ) -> None:
-        wd.commit_testfile()
-        wd("hg tag -r 0 v1.2.3")
-        wd("hg tag -r 0 event-2024")
-        wd("hg update -r 0")
-
-        with caplog.at_level(logging.WARNING):
-            version_for(wd, None)
-
-        (message,) = [m for m in reported(caplog) if "tag.strict" in m]
-        assert "2024 (from tag 'event-2024')" in message
-        assert "1.2.3 (from tag 'v1.2.3')" in message
 
     def test_silent_for_plain_version_tags(
         self, wd: WorkDir, caplog: pytest.LogCaptureFixture

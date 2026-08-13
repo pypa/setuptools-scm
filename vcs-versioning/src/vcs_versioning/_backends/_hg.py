@@ -60,6 +60,40 @@ def matches_tag_pattern(
     return re.search(hg_tag_pattern(config, strict), tag) is not None
 
 
+def select_tag(
+    tags: list[str], config: Configuration, strict: bool | None = _KEEP
+) -> str | None:
+    """Pick the version tag to use from the tags on the current changeset.
+
+    Pre-filters with tag_regex so non-version tags are silently skipped
+    without emitting warnings from tag_to_version().
+    Strips tag.prefix before matching when configured.
+
+    Under ``tag.strict = true`` a tag that is not version-shaped is
+    rejected outright rather than falling back to a looser match, so a
+    changeset carrying only event-style tags falls through to the distance
+    path -- the same thing ``git describe --match`` does (#1495).
+    """
+    if strict is _KEEP:
+        strict = config.tag.strict
+    tag_prefix = config.tag.prefix
+    for tag_str in tags:
+        check_str = tag_str
+        if tag_prefix and tag_str.startswith(tag_prefix):
+            check_str = tag_str[len(tag_prefix) :]
+        if not config.tag.regex.match(check_str):
+            log.debug("skipping non-version tag %r", tag_str)
+            continue
+        # only narrow when strictness was asked for, so the permissive
+        # path keeps selecting exactly what it always has
+        if strict and not matches_tag_pattern(tag_str, config, strict):
+            log.debug("skipping tag %r: not version-shaped under tag.strict", tag_str)
+            continue
+        if tag_to_version(tag_str, config) is not None:
+            return tag_str
+    return None
+
+
 def _rendered(version: ScmVersion | None, tag: str | None) -> str:
     """Render one side of the ``tag.strict`` comparison for the diagnostic."""
     if version is None:
@@ -165,8 +199,8 @@ class HgWorkdir(Workdir):
         select a different tag, so repositories the change cannot affect are
         never nagged (#1495).
         """
-        permissive_tag = self._select_tag(tags, config, strict=False)
-        strict_tag = self._select_tag(tags, config, strict=True)
+        permissive_tag = select_tag(tags, config, strict=False)
+        strict_tag = select_tag(tags, config, strict=True)
 
         if permissive_tag is not None and permissive_tag == strict_tag:
             # the changeset is tagged with a version-shaped tag either way
@@ -266,46 +300,11 @@ class HgWorkdir(Workdir):
         """
         return [t for t in tags_str.split() if t not in _HG_PSEUDO_TAGS]
 
-    def _select_tag(
-        self, tags: list[str], config: Configuration, strict: bool | None = _KEEP
-    ) -> str | None:
-        """Pick the version tag to use from the tags on the current changeset.
-
-        Pre-filters with tag_regex so non-version tags are silently skipped
-        without emitting warnings from tag_to_version().
-        Strips tag.prefix before matching when configured.
-
-        Under ``tag.strict = true`` a tag that is not version-shaped is
-        rejected outright rather than falling back to a looser match, so a
-        changeset carrying only event-style tags falls through to the distance
-        path -- the same thing ``git describe --match`` does (#1495).
-        """
-        if strict is _KEEP:
-            strict = config.tag.strict
-        tag_prefix = config.tag.prefix
-        for tag_str in tags:
-            check_str = tag_str
-            if tag_prefix and tag_str.startswith(tag_prefix):
-                check_str = tag_str[len(tag_prefix) :]
-            if not config.tag.regex.match(check_str):
-                log.debug("skipping non-version tag %r", tag_str)
-                continue
-            # only narrow when strictness was asked for, so the permissive
-            # path keeps selecting exactly what it always has
-            if strict and not matches_tag_pattern(tag_str, config, strict):
-                log.debug(
-                    "skipping tag %r: not version-shaped under tag.strict", tag_str
-                )
-                continue
-            if tag_to_version(tag_str, config) is not None:
-                return tag_str
-        return None
-
     def _get_version_from_tags(
         self, tags: list[str], config: Configuration
     ) -> Version | None:
         """Try to get a version from the current tags."""
-        tag_str = self._select_tag(tags, config)
+        tag_str = select_tag(tags, config)
         if tag_str is None:
             return None
         return tag_to_version(tag_str, config)
