@@ -343,20 +343,9 @@ class Configuration:
                     self.tag, regex=_check_tag_regex(tag_regex)
                 )
 
-        # TODO(#1429): re-introduce these warnings with non-conflicting logic
-        if self.tag.strict is None:
-            log.debug(
-                "tag.strict is not set — defaults to False (permissive tag matching)"
-            )
-
-        if (
-            self.tag.prefix or self.tag.strict is not None
-        ) and self.scm.git.describe_command is not None:
-            log.debug(
-                "Both tag.prefix/tag.strict and scm.git.describe_command are set. "
-                "The explicit describe_command takes precedence; tag.prefix and "
-                "tag.strict will have no effect on the git describe match pattern."
-            )
+        # tag.strict and describe_command diagnostics deliberately do not live
+        # here: they are only actionable once the SCM has been consulted, so the
+        # git backend reports them when they actually change the version (#1429)
 
         self._resolved_paths = resolve_paths(
             relative_to=self.relative_to,

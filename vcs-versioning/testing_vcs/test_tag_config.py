@@ -61,7 +61,11 @@ class TestDescribeMatchGlob:
 
 class TestTagStrictWarning:
     def test_none_strict_no_warning(self) -> None:
-        """tag.strict=None no longer warns (suppressed per #1422, see #1429)."""
+        """Configuration construction never warns about tag.strict.
+
+        The future-default notice moved to the git backend, which reports it
+        only when it changes the version -- see test_tag_strict_diagnostics.
+        """
         with warnings.catch_warnings():
             warnings.simplefilter("error", FutureWarning)
             Configuration(tag=TagConfiguration(strict=None))
@@ -182,7 +186,12 @@ class TestConfigFromData:
 
 class TestDescribeCommandConflictWarning:
     def test_no_warning_when_prefix_and_describe_command_both_set(self) -> None:
-        """Suppressed per #1422, see #1429 for follow-up."""
+        """tag.prefix keeps working with describe_command, so it never warns.
+
+        The prefix is stripped before version parsing regardless of how the
+        tag was selected; only tag.strict is overridden, and the git backend
+        reports that only when the two actually disagree.
+        """
         from vcs_versioning._config import GitConfiguration, ScmConfiguration
 
         with warnings.catch_warnings():

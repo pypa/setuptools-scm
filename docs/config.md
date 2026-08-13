@@ -84,15 +84,22 @@ strict = true      # require tags to contain at least one dot
 
     | Value   | Behavior |
     |---------|----------|
-    | unset (`None`) | Current permissive matching (`*[0-9]*`) with a `FutureWarning` advising you to set this explicitly. |
+    | unset (`None`) | Current permissive matching (`*[0-9]*`). |
     | `true` | **Strict** – tags must contain at least one dot (e.g. `*[0-9]*.*[0-9]*`).  Event-like tags such as `2026-event` are rejected. |
-    | `false` | **Permissive** – matches any tag containing a digit (`*[0-9]*`), no warning. |
+    | `false` | **Permissive** – matches any tag containing a digit (`*[0-9]*`). |
 
     !!! note "Migration"
 
         In a future major release the default will change from permissive to strict.
         Set `tag.strict = false` now if you rely on the permissive matching, or
         `tag.strict = true` to adopt the stricter behavior early.
+
+        While `tag.strict` is unset, a warning is logged **only** if the future
+        default would actually pick a different tag for your repository, naming
+        both the current and the future version.  Projects the change cannot
+        affect are never nagged.  Silence it with `SETUPTOOLS_SCM_DEBUG=ERROR`
+        if you cannot act on it, for example when building someone else's
+        project from a checkout.
 
     `tag.prefix` and `tag.strict` compose naturally:
 
@@ -179,11 +186,17 @@ strict = true      # require tags to contain at least one dot
 
     Defaults to the value set by [vcs_versioning._backends._git.DEFAULT_DESCRIBE][]
 
-    !!! warning "Overrides tag.prefix / tag.strict"
+    !!! warning "Overrides tag.strict"
 
-        When `scm.git.describe_command` is explicitly set, `tag.prefix` and
-        `tag.strict` have no effect on the describe match pattern (a warning
-        is emitted).  The explicit command takes full precedence.
+        When `scm.git.describe_command` is explicitly set, it supplies its own
+        `--match` pattern, so `tag.strict` has no effect on tag matching.  A
+        warning is emitted only if the two would actually select different
+        tags for your repository.
+
+        `tag.prefix` is *not* overridden: it still strips the prefix from the
+        selected tag before version parsing, so combining it with an explicit
+        `describe_command` is a supported way to bring your own match pattern
+        while keeping prefix stripping.
 
 `scm.git.pre_parse`
 :   A string specifying which git pre-parse function to use before parsing version information.
