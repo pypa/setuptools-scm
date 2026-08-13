@@ -146,6 +146,7 @@ def run(
     trace: bool = True,
     timeout: int | None = None,
     check: bool = False,
+    input: str | None = None,
 ) -> CompletedProcess:
     if isinstance(cmd, str):
         cmd = shlex.split(cmd)
@@ -159,6 +160,7 @@ def run(
         cmd,
         check=False,  # handled below via CompletedProcess.check_returncode
         capture_output=True,
+        input=input,
         cwd=os.fspath(cwd),
         env=dict(
             avoid_pip_isolation(no_git_env(os.environ)),

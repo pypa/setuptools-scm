@@ -782,6 +782,25 @@ would be required when not using `setuptools-scm`.
 2. **SCM Integration**: The file finder queries your SCM (Git/Mercurial) for all tracked files
 3. **Inclusion**: All tracked files are automatically included in the sdist
 
+For Git the listing is based on the index (so freshly `git add`-ed files are
+included) and it follows `export-ignore` just like `git archive` does.
+
+#### Git submodules
+
+The Git file finder descends into submodules and lists their tracked files
+under the submodule path. Inside a submodule the submodule's own
+`.gitattributes` apply.
+
+A submodule is skipped when `export-ignore` excludes it in the parent
+repository - either directly or through one of its parent directories:
+
+```{.bash title=".gitattributes"}
+# no vendored submodule ends up in the sdist
+vendor/ export-ignore
+```
+
+Submodules that are not checked out are skipped as well.
+
 #### Controlling file inclusion
 
 **To exclude unwanted files:**
