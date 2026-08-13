@@ -82,12 +82,14 @@ def run_git(
     *,
     check: bool = False,
     timeout: int | None = None,
+    input: str | None = None,
 ) -> _CompletedProcess:
     return _run(
         ["git", "--git-dir", repo / ".git", *args],
         cwd=repo,
         check=check,
         timeout=timeout,
+        input=input,
     )
 
 
