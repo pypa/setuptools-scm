@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import datetime
 import logging
 import os
@@ -15,11 +16,57 @@ from .._run_cmd import require_command as _require_command
 from .._run_cmd import run as _run
 from .._scm_version import ScmVersion, meta, tag_to_version
 from .._version_cls import Version
-from ._scm_workdir import Workdir, get_latest_file_mtime
+from .._version_schemes import format_version
+from ._scm_workdir import (
+    STRICT_DIAGNOSTIC,
+    Workdir,
+    config_location,
+    get_latest_file_mtime,
+    report_once,
+)
 
 log = logging.getLogger(__name__)
 
 _HG_PSEUDO_TAGS = frozenset({"tip", "qbase", "qtip", "qparent"})
+
+_KEEP: Any = object()
+"""Sentinel for "use the configured value" -- ``None`` is a real strictness."""
+
+
+def hg_tag_pattern(config: Configuration, strict: bool | None = _KEEP) -> str:
+    """Build the Mercurial regex ``latesttag()`` is given from tag config.
+
+    *strict* overrides ``config.tag.strict``, which the diagnostics use to ask
+    what the other setting would have selected.
+    """
+    if strict is _KEEP:
+        strict = config.tag.strict
+    prefix = re.escape(config.tag.prefix) if config.tag.prefix else ""
+    if strict:
+        # Require at least one dot in the version part
+        return rf"{prefix}\d+\.\d+"
+    else:
+        return rf"{prefix}\d+"
+
+
+def matches_tag_pattern(
+    tag: str, config: Configuration, strict: bool | None = _KEEP
+) -> bool:
+    """Whether *tag* satisfies the configured strictness.
+
+    The pattern is the same one ``latesttag()`` is given on the distance path,
+    so both paths agree about which tags count as version tags.
+    """
+    return re.search(hg_tag_pattern(config, strict), tag) is not None
+
+
+def _rendered(version: ScmVersion | None, tag: str | None) -> str:
+    """Render one side of the ``tag.strict`` comparison for the diagnostic."""
+    if version is None:
+        return "no matching tag, falling back to the fallback version"
+    if tag is None:
+        return format_version(version)
+    return f"{format_version(version)} (from tag {tag!r})"
 
 
 def _get_hg_command() -> str:
@@ -95,12 +142,71 @@ class HgWorkdir(Workdir):
         tags = self._parse_tags(tags_str)
 
         # Try to get version from current tags
+        result: ScmVersion | None
         tag_version = self._get_version_from_tags(tags, config)
         if tag_version:
-            return meta(tag_version, dirty=dirty, branch=branch, config=config)
+            result = meta(tag_version, dirty=dirty, branch=branch, config=config)
+        else:
+            # Fall back to distance-based versioning
+            result = self._get_distance_based_version(
+                config, dirty, branch, node, node_date
+            )
 
-        # Fall back to distance-based versioning
-        return self._get_distance_based_version(config, dirty, branch, node, node_date)
+        if config.tag.strict is None:
+            self._report_strict_divergence(config, tags, result)
+        return result
+
+    def _report_strict_divergence(
+        self, config: Configuration, tags: list[str], result: ScmVersion | None
+    ) -> None:
+        """Report the coming ``tag.strict`` default when it changes the version.
+
+        Mirrors the git backend: stay silent unless strict matching would
+        select a different tag, so repositories the change cannot affect are
+        never nagged (#1495).
+        """
+        permissive_tag = self._select_tag(tags, config, strict=False)
+        strict_tag = self._select_tag(tags, config, strict=True)
+
+        if permissive_tag is not None and permissive_tag == strict_tag:
+            # the changeset is tagged with a version-shaped tag either way
+            return
+        if permissive_tag is None and strict_tag is None:
+            # neither takes the exact-tag path, so compare the latest tags
+            permissive_tag = self.get_latest_normalizable_tag(config, strict=False)
+            if permissive_tag is None:
+                return
+            if matches_tag_pattern(permissive_tag, config, strict=True):
+                # the permissive answer is itself version-shaped, and strict
+                # matches a subset, so both paths land on the same tag
+                return
+
+        # whichever side found no tag on this changeset falls through to the
+        # distance path, so name the tag it would count from there
+        if permissive_tag is None:
+            permissive_tag = self.get_latest_normalizable_tag(config, strict=False)
+        if strict_tag is None:
+            strict_tag = self.get_latest_normalizable_tag(config, strict=True)
+
+        strict_config = dataclasses.replace(
+            config, tag=dataclasses.replace(config.tag, strict=True)
+        )
+        strict_result = self.get_meta(strict_config)
+        if (
+            result is not None
+            and strict_result is not None
+            and format_version(result) == format_version(strict_result)
+        ):
+            # different tags, same resulting version -- nothing to act on
+            return
+
+        report_once(
+            f"strict-divergence:{self.path}:{permissive_tag}:{strict_tag}",
+            STRICT_DIAGNOSTIC,
+            _rendered(result, permissive_tag),
+            _rendered(strict_result, strict_tag),
+            config_location(config),
+        )
 
     def _get_node_info(self) -> tuple[str, str, str] | None:
         """Get node, tags, and date information from mercurial log."""
@@ -160,15 +266,22 @@ class HgWorkdir(Workdir):
         """
         return [t for t in tags_str.split() if t not in _HG_PSEUDO_TAGS]
 
-    def _get_version_from_tags(
-        self, tags: list[str], config: Configuration
-    ) -> Version | None:
-        """Try to get a version from the current tags.
+    def _select_tag(
+        self, tags: list[str], config: Configuration, strict: bool | None = _KEEP
+    ) -> str | None:
+        """Pick the version tag to use from the tags on the current changeset.
 
         Pre-filters with tag_regex so non-version tags are silently skipped
         without emitting warnings from tag_to_version().
         Strips tag.prefix before matching when configured.
+
+        Under ``tag.strict = true`` a tag that is not version-shaped is
+        rejected outright rather than falling back to a looser match, so a
+        changeset carrying only event-style tags falls through to the distance
+        path -- the same thing ``git describe --match`` does (#1495).
         """
+        if strict is _KEEP:
+            strict = config.tag.strict
         tag_prefix = config.tag.prefix
         for tag_str in tags:
             check_str = tag_str
@@ -177,10 +290,25 @@ class HgWorkdir(Workdir):
             if not config.tag.regex.match(check_str):
                 log.debug("skipping non-version tag %r", tag_str)
                 continue
-            version = tag_to_version(tag_str, config)
-            if version is not None:
-                return version
+            # only narrow when strictness was asked for, so the permissive
+            # path keeps selecting exactly what it always has
+            if strict and not matches_tag_pattern(tag_str, config, strict):
+                log.debug(
+                    "skipping tag %r: not version-shaped under tag.strict", tag_str
+                )
+                continue
+            if tag_to_version(tag_str, config) is not None:
+                return tag_str
         return None
+
+    def _get_version_from_tags(
+        self, tags: list[str], config: Configuration
+    ) -> Version | None:
+        """Try to get a version from the current tags."""
+        tag_str = self._select_tag(tags, config)
+        if tag_str is None:
+            return None
+        return tag_to_version(tag_str, config)
 
     def _get_distance_based_version(
         self,
@@ -234,20 +362,11 @@ class HgWorkdir(Workdir):
             check=True,
         ).stdout
 
-    def _hg_tag_pattern(self, config: Configuration) -> str:
-        """Build a Mercurial regex pattern from tag configuration."""
-        prefix = re.escape(config.tag.prefix) if config.tag.prefix else ""
-        if config.tag.strict:
-            # Require at least one dot in the version part
-            return rf"{prefix}\d+\.\d+"
-        else:
-            return rf"{prefix}\d+"
-
     def get_latest_normalizable_tag(
-        self, config: Configuration | None = None
+        self, config: Configuration | None = None, strict: bool | None = _KEEP
     ) -> str | None:
         if config is not None:
-            pattern = self._hg_tag_pattern(config)
+            pattern = hg_tag_pattern(config, strict)
         else:
             pattern = r"\."
         result = self.hg_log(

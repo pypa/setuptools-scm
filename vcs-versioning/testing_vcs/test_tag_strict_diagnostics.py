@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import fnmatch
 import logging
-from collections.abc import Iterator, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
@@ -17,14 +17,6 @@ from vcs_versioning._backends import _git
 from vcs_versioning._config import TagConfiguration
 from vcs_versioning._run_cmd import CompletedProcess
 from vcs_versioning._test_utils import WorkDir
-
-
-@pytest.fixture(autouse=True)
-def _reset_reported() -> Iterator[None]:
-    """The once-per-process guard would otherwise leak between tests."""
-    _git._diagnostics_reported.clear()
-    yield
-    _git._diagnostics_reported.clear()
 
 
 @pytest.fixture

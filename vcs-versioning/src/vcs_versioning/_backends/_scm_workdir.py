@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import logging
+import warnings
 from dataclasses import dataclass
 from dataclasses import field as dc_field
 from datetime import date, datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Any, overload
 
 from .._scm_version import ScmVersion
 
@@ -75,6 +76,68 @@ def get_latest_file_mtime(changed_files: list[str], base_path: Path) -> date | N
         return dt.date()
 
     return None
+
+
+# ---------------------------------------------------------------------------
+# Configuration diagnostics shared by the backends
+#
+# These report settings whose effect can only be judged once the SCM has been
+# consulted -- most of all the coming ``tag.strict`` default, which is only
+# worth mentioning when it changes the version at hand (#1429, #1495).
+# ---------------------------------------------------------------------------
+
+_diagnostics_reported: set[str] = set()
+
+
+def report_once(key: str, message: str, *args: object) -> None:
+    """Log a config diagnostic at most once per process.
+
+    Unlike ``warnings.warn`` the logging module does not deduplicate, and a
+    build constructs the configuration more than once (metadata hook plus
+    build hook), so the guard is explicit.
+    """
+    if key in _diagnostics_reported:
+        return
+    _diagnostics_reported.add(key)
+    log.warning(message, *args)
+
+
+def config_location(config: Configuration) -> str:
+    """Where the user should go to change the setting being reported."""
+    return str(config.relative_to or "your pyproject.toml")
+
+
+def version_outcome(config: Configuration, tag: str | None, **meta_kw: Any) -> str:
+    """Render the version *tag* would produce, for a diagnostic message.
+
+    Shows the resulting version string rather than just the tag, since the
+    version is what the user actually cares about.  Falls back to prose when
+    no tag matched or the tag does not parse as a version.  Never raises and
+    never emits warnings of its own: this describes a path *not* taken.
+    """
+    if tag is None:
+        return "no matching tag, falling back to the fallback version"
+
+    from .._scm_version import meta
+    from .._version_schemes import format_version
+
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            version = format_version(meta(tag, config=config, **meta_kw))
+    except (ValueError, TypeError):
+        return f"no usable version -- tag {tag!r} does not parse as a version"
+    return f"{version} (from tag {tag!r})"
+
+
+STRICT_DIAGNOSTIC = (
+    "tag.strict is not set, and the future default changes this"
+    " repository's version:\n"
+    "  now (tag.strict = false):           %s\n"
+    "  future default (tag.strict = true): %s\n"
+    "Set tag.strict explicitly in the [tool.setuptools_scm] table of %s."
+)
+"""Message shared by the backends so their advice reads identically."""
 
 
 @dataclass()

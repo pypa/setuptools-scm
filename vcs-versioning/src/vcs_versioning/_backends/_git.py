@@ -24,8 +24,14 @@ from .._run_cmd import CompletedProcess as _CompletedProcess
 from .._run_cmd import require_command as _require_command
 from .._run_cmd import run as _run
 from .._scm_version import ScmVersion, meta, tag_to_version
-from .._version_schemes import format_version
-from ._scm_workdir import Workdir, get_latest_file_mtime
+from ._scm_workdir import (
+    STRICT_DIAGNOSTIC,
+    Workdir,
+    config_location,
+    get_latest_file_mtime,
+    report_once,
+    version_outcome,
+)
 
 if TYPE_CHECKING:
     from .._protocols import DescribeCapable, GitQueryable
@@ -269,22 +275,6 @@ class GitWorkdir(Workdir):
         return res.returncode == 0
 
 
-_diagnostics_reported: set[str] = set()
-
-
-def _report_once(key: str, message: str, *args: object) -> None:
-    """Log a config diagnostic at most once per process.
-
-    Unlike ``warnings.warn`` the logging module does not deduplicate, and a
-    build constructs the configuration more than once (metadata hook plus
-    build hook), so the guard is explicit.
-    """
-    if key in _diagnostics_reported:
-        return
-    _diagnostics_reported.add(key)
-    log.warning(message, *args)
-
-
 def _describe_tag(output: str) -> str | None:
     """Extract just the tag name from a ``git describe --long`` output."""
     if not output.strip():
@@ -297,33 +287,13 @@ def _strict_match_glob(prefix: str) -> str:
     return f"{prefix}*[0-9]*.*[0-9]*"
 
 
-def _config_location(config: Configuration) -> str:
-    return str(config.relative_to or "your pyproject.toml")
-
-
 def _describe_outcome(output: str, config: Configuration) -> str:
-    """Render what *output* would yield, for use in a diagnostic message.
-
-    Shows the resulting version string rather than just the tag, since the
-    version is what the user actually cares about.  Falls back to prose when
-    no tag matched or the tag does not parse as a version.
-    """
+    """Render what a ``git describe`` *output* would yield as a version."""
     if not output.strip():
-        return "no matching tag, falling back to the fallback version"
+        return version_outcome(config, None)
 
     tag, distance, node, dirty = _git_parse_describe(output.strip())
-    try:
-        # meta() warns before raising on an unparsable tag; this is a
-        # hypothetical, so neither the warning nor the error should escape
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            scm_version = meta(
-                tag=tag, distance=distance, dirty=dirty, node=node, config=config
-            )
-            version = format_version(scm_version)
-    except (ValueError, TypeError):
-        return f"no usable version -- tag {tag!r} does not parse as a version"
-    return f"{version} (from tag {tag!r})"
+    return version_outcome(config, tag, distance=distance, dirty=dirty, node=node)
 
 
 def _warn_if_strict_would_differ(
@@ -348,16 +318,12 @@ def _warn_if_strict_would_differ(
         return
 
     strict = wd.run_git(make_describe_command(strict_glob)[1:])
-    _report_once(
+    report_once(
         f"strict-divergence:{wd.path}:{permissive_tag}:{_describe_tag(strict.stdout)}",
-        "tag.strict is not set, and the future default changes this"
-        " repository's version:\n"
-        "  now (tag.strict = false):           %s\n"
-        "  future default (tag.strict = true): %s\n"
-        "Set tag.strict explicitly in the [tool.setuptools_scm] table of %s.",
+        STRICT_DIAGNOSTIC,
         _describe_outcome(permissive.stdout, config),
         _describe_outcome(strict.stdout, config),
-        _config_location(config),
+        config_location(config),
     )
 
 
@@ -378,7 +344,7 @@ def _warn_if_describe_command_overrides_strict(
     if strict_tag == describe_tag:
         return
 
-    _report_once(
+    report_once(
         f"describe-overrides-strict:{wd.path}:{describe_tag}:{strict_tag}",
         "scm.git.describe_command takes precedence over tag.strict, and they"
         " disagree for this repository:\n"
@@ -389,7 +355,7 @@ def _warn_if_describe_command_overrides_strict(
         _describe_outcome(describe_res.stdout, config),
         str(config.tag.strict).lower(),
         _describe_outcome(strict.stdout, config),
-        _config_location(config),
+        config_location(config),
     )
 
 

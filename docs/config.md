@@ -110,6 +110,19 @@ strict = true      # require tags to contain at least one dot
     | `"hatchling-v"` | `false` / unset | `hatchling-v*[0-9]*` |
     | `"hatchling-v"` | `true` | `hatchling-v*[0-9]*.*[0-9]*` |
 
+    !!! note "Mercurial"
+
+        Mercurial applies the equivalent regex (`\d+` / `\d+\.\d+`, prefixed
+        when `tag.prefix` is set) both when looking for the latest tag and when
+        the checked-out changeset carries tags of its own.  Under
+        `tag.strict = true` a changeset tagged only with event-style names is
+        treated as untagged, so versioning continues from the last real version
+        tag -- the same thing `git describe --match` does.
+
+        Before setuptools-scm 9 the Mercurial backend always required a dot,
+        so for Mercurial projects the coming strict default restores the
+        historical behavior.
+
 `tag.regex: str | Pattern[str]`
 :   A Python regex to extract the version part from a tag *after* the
     `tag.prefix` has been stripped.  The regex needs a single capture group
