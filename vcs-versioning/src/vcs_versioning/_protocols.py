@@ -70,7 +70,20 @@ class ScmWorkdirProtocol(WorkdirProtocol, Protocol):
 # ---------------------------------------------------------------------------
 
 
-class DescribeCapable(Protocol):
+class GitQueryable(Protocol):
+    """Bare git access: enough to run an extra query against a checkout.
+
+    Used by the configuration diagnostics, which re-run ``git describe`` with
+    a different ``--match`` to find out whether a setting changes the version.
+    """
+
+    @property
+    def path(self) -> Path: ...
+
+    def run_git(self, args: Sequence[str]) -> CompletedProcess: ...
+
+
+class DescribeCapable(GitQueryable, Protocol):
     """What version_from_describe() needs to produce a describe result.
 
     Implemented by GitWorkdir (native git describe) and GitWorkdirHgClient
@@ -78,14 +91,9 @@ class DescribeCapable(Protocol):
     """
 
     @property
-    def path(self) -> Path: ...
-
-    @property
     def _subprocess_timeout(self) -> int | None: ...
 
     def default_describe(self) -> CompletedProcess: ...
-
-    def run_git(self, args: Sequence[str]) -> CompletedProcess: ...
 
 
 class WorkdirState(Protocol):

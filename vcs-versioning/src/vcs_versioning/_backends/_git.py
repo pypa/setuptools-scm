@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import fnmatch
 import logging
 import os
 import re
@@ -23,10 +24,11 @@ from .._run_cmd import CompletedProcess as _CompletedProcess
 from .._run_cmd import require_command as _require_command
 from .._run_cmd import run as _run
 from .._scm_version import ScmVersion, meta, tag_to_version
+from .._version_schemes import format_version
 from ._scm_workdir import Workdir, get_latest_file_mtime
 
 if TYPE_CHECKING:
-    from .._protocols import DescribeCapable
+    from .._protocols import DescribeCapable, GitQueryable
     from . import _hg_git as hg_git
 log = logging.getLogger(__name__)
 
@@ -232,7 +234,10 @@ class GitWorkdir(Workdir):
     def default_describe(self) -> _CompletedProcess:
         match_glob = self.config.tag.describe_match_glob()
         cmd = make_describe_command(match_glob)
-        return self.run_git(cmd[1:])
+        res = self.run_git(cmd[1:])
+        if self.config.tag.strict is None:
+            _warn_if_strict_would_differ(self, self.config, res)
+        return res
 
     def get_scm_version(self) -> ScmVersion | None:
         """Obtain version metadata from this git work directory."""
@@ -262,6 +267,130 @@ class GitWorkdir(Workdir):
             ["ls-files", "--error-unmatch", str(path)],
         )
         return res.returncode == 0
+
+
+_diagnostics_reported: set[str] = set()
+
+
+def _report_once(key: str, message: str, *args: object) -> None:
+    """Log a config diagnostic at most once per process.
+
+    Unlike ``warnings.warn`` the logging module does not deduplicate, and a
+    build constructs the configuration more than once (metadata hook plus
+    build hook), so the guard is explicit.
+    """
+    if key in _diagnostics_reported:
+        return
+    _diagnostics_reported.add(key)
+    log.warning(message, *args)
+
+
+def _describe_tag(output: str) -> str | None:
+    """Extract just the tag name from a ``git describe --long`` output."""
+    if not output.strip():
+        return None
+    return _git_parse_describe(output.strip())[0]
+
+
+def _strict_match_glob(prefix: str) -> str:
+    """The ``--match`` glob ``tag.strict = true`` would produce."""
+    return f"{prefix}*[0-9]*.*[0-9]*"
+
+
+def _config_location(config: Configuration) -> str:
+    return str(config.relative_to or "your pyproject.toml")
+
+
+def _describe_outcome(output: str, config: Configuration) -> str:
+    """Render what *output* would yield, for use in a diagnostic message.
+
+    Shows the resulting version string rather than just the tag, since the
+    version is what the user actually cares about.  Falls back to prose when
+    no tag matched or the tag does not parse as a version.
+    """
+    if not output.strip():
+        return "no matching tag, falling back to the fallback version"
+
+    tag, distance, node, dirty = _git_parse_describe(output.strip())
+    try:
+        # meta() warns before raising on an unparsable tag; this is a
+        # hypothetical, so neither the warning nor the error should escape
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            scm_version = meta(
+                tag=tag, distance=distance, dirty=dirty, node=node, config=config
+            )
+            version = format_version(scm_version)
+    except (ValueError, TypeError):
+        return f"no usable version -- tag {tag!r} does not parse as a version"
+    return f"{version} (from tag {tag!r})"
+
+
+def _warn_if_strict_would_differ(
+    wd: GitQueryable, config: Configuration, permissive: _CompletedProcess
+) -> None:
+    """Report the ``tag.strict`` future default only when it changes the answer.
+
+    ``tag.strict`` is unset, so the permissive glob was used.  Stay silent
+    unless the strict glob would pick a different tag, so that projects the
+    future default cannot affect are never nagged.
+    """
+    permissive_tag = _describe_tag(permissive.stdout)
+    strict_glob = _strict_match_glob(config.tag.prefix)
+
+    if permissive_tag is None:
+        # nothing matched the wider glob, so nothing matches the narrower one
+        return
+    if fnmatch.fnmatchcase(permissive_tag, strict_glob):
+        # the strict glob matches a subset of the permissive one, so a
+        # permissive answer that is itself strict-matching is also the
+        # closest strict-matching tag -- no subprocess needed
+        return
+
+    strict = wd.run_git(make_describe_command(strict_glob)[1:])
+    _report_once(
+        f"strict-divergence:{wd.path}:{permissive_tag}:{_describe_tag(strict.stdout)}",
+        "tag.strict is not set, and the future default changes this"
+        " repository's version:\n"
+        "  now (tag.strict = false):           %s\n"
+        "  future default (tag.strict = true): %s\n"
+        "Set tag.strict explicitly in the [tool.setuptools_scm] table of %s.",
+        _describe_outcome(permissive.stdout, config),
+        _describe_outcome(strict.stdout, config),
+        _config_location(config),
+    )
+
+
+def _warn_if_describe_command_overrides_strict(
+    wd: GitQueryable, config: Configuration, describe_res: _CompletedProcess
+) -> None:
+    """Report that ``describe_command`` beat an explicit ``tag.strict``.
+
+    Only fires when the two actually disagree about which tag to use --
+    setting both is harmless as long as they pick the same tag.  ``tag.prefix``
+    is deliberately not mentioned: it still strips the prefix before version
+    parsing, so combining it with ``describe_command`` is legitimate.
+    """
+    strict_glob = _strict_match_glob(config.tag.prefix)
+    strict = wd.run_git(make_describe_command(strict_glob)[1:])
+    strict_tag = _describe_tag(strict.stdout)
+    describe_tag = _describe_tag(describe_res.stdout)
+    if strict_tag == describe_tag:
+        return
+
+    _report_once(
+        f"describe-overrides-strict:{wd.path}:{describe_tag}:{strict_tag}",
+        "scm.git.describe_command takes precedence over tag.strict, and they"
+        " disagree for this repository:\n"
+        "  describe_command gives:      %s\n"
+        "  tag.strict = %s would give: %s\n"
+        "Drop tag.strict, or drop describe_command and let tag.prefix/tag.strict"
+        " build the match pattern, in %s.",
+        _describe_outcome(describe_res.stdout, config),
+        str(config.tag.strict).lower(),
+        _describe_outcome(strict.stdout, config),
+        _config_location(config),
+    )
 
 
 def warn_on_shallow(wd: GitWorkdir) -> None:
@@ -410,6 +539,8 @@ def version_from_describe(
             describe_res = wd.run_git(cmd_args[1:])
         else:
             describe_res = _run(cmd_args, wd.path, timeout=wd._subprocess_timeout)
+        if config.tag.strict is not None:
+            _warn_if_describe_command_overrides_strict(wd, config, describe_res)
     else:
         describe_res = wd.default_describe()
 
