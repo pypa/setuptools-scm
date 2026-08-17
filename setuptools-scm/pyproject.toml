@@ -1,7 +1,7 @@
 [build-system]
-build-backend = "setuptools.build_meta"
+build-backend = "setuptools*"
 requires = [
-  "setuptools>=45",
+  "setuptools>=83.0.0",
   "vcs-versioning>=2.2.2,<3",
   # https://github.com/pypa/setuptools-scm/issues/1222: was <=2.0.2 for #1090 (old pip+toml);
   # pip 21.2+ vendors tomli, so the workaround is no longer needed.
