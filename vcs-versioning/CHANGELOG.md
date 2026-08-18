@@ -2,6 +2,35 @@
 
 <!-- towncrier release notes start -->
 
+## 2.3.0 (2026-08-13)
+
+### Added
+
+- Add a ``vcs_versioning.dynamic_metadata`` provider for the [dynamic-metadata](https://github.com/scikit-build/dynamic-metadata) system. ([#1465](https://github.com/pypa/setuptools-scm/issues/1465))
+
+
+### Fixed
+
+- Make the `tag.strict` and `scm.git.describe_command` diagnostics actionable and non-conflicting.
+
+  The `tag.strict` future-default notice is now reported by the git backend rather than at configuration time, and only when the future default would actually select a different tag for the repository -- the message names both the current and the future version string. Projects the change cannot affect are silent, and setting an explicit `describe_command` no longer triggers it at all, so the two warnings can no longer contradict each other.
+
+  The `describe_command` notice is likewise limited to the case where it and an explicit `tag.strict` really disagree, and no longer claims that `tag.prefix` has no effect -- prefix stripping applies regardless of how the tag was selected.
+
+  Both are logged at warning level instead of raised as warnings, so `SETUPTOOLS_SCM_DEBUG=ERROR` silences them. ([#1429](https://github.com/pypa/setuptools-scm/issues/1429))
+- Honour `export-ignore` on directories and submodules again in the git file finder.
+
+  The switch from `git archive` to `git ls-files --recurse-submodules` lost two parts of the archive semantics: `--recurse-submodules` listed every submodule regardless of `export-ignore`, and the `:(exclude,attr:export-ignore)` pathspec only matches files, so an `export-ignore` on a directory no longer excluded the files below it. Projects that kept vendored submodules in an `export-ignore`d directory suddenly shipped them in their sdists.
+
+  The finder now lists a repository without recursion, checks `export-ignore` for directories via `git check-attr` (which is what `git archive` effectively does when it skips a tree), and only then descends into the submodules that survived. Submodule contents are still listed - with their own `.gitattributes` applied - so `export-ignore` in the parent repository now controls exactly which submodules get packaged. Submodules that are not checked out are skipped instead of failing the listing. ([#1469](https://github.com/pypa/setuptools-scm/issues/1469))
+- Honour `tag.strict` on Mercurial changesets that carry tags of their own, and report the coming strict default for Mercurial repositories.
+
+  `tag.strict` was only applied when looking for the latest tag, so a checked-out changeset tagged `event-2024` still produced version `2024` even with `tag.strict = true`, while git rejected the same tag. Strict matching now applies to the tags on the changeset too: a changeset carrying only event-style tags is treated as untagged and versioning continues from the last real version tag, matching `git describe --match`. When several tags sit on one changeset, the version-shaped one is now selected instead of whichever Mercurial happened to list first.
+
+  The `tag.strict` divergence diagnostic added in #1429 now covers Mercurial as well, naming the current and future version whenever the coming default would change them. Both backends share the message, and the git-only helpers moved to `_backends/_scm_workdir.py`.
+
+  Note that the Mercurial backend required a dot in version tags before setuptools-scm 9, so for Mercurial projects the coming strict default restores the historical behavior. ([#1495](https://github.com/pypa/setuptools-scm/issues/1495))
+
 ## 2.2.4 (2026-08-07)
 
 ### Fixed
