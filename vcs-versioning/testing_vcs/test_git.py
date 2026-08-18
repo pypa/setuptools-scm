@@ -389,30 +389,26 @@ def test_git_export_ignore_with_staged_files(
     assert opj(".", "ignore.txt") not in found
 
 
-@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/662")
-def test_git_submodule_files_listed(
-    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    # Create a separate repo to use as submodule
-    sub_src = wd.cwd.parent / "sub_src"
-    sub_src.mkdir()
-    subprocess.check_call(["git", "init", str(sub_src)])
+def make_submodule_source(path: Path) -> Path:
+    """Create a standalone repo usable as submodule of the ``wd`` fixture."""
+    path.mkdir()
+    subprocess.check_call(["git", "init", str(path)])
     subprocess.check_call(
-        ["git", "-C", str(sub_src), "config", "user.email", "test@example.com"]
+        ["git", "-C", str(path), "config", "user.email", "test@example.com"]
     )
-    subprocess.check_call(["git", "-C", str(sub_src), "config", "user.name", "test"])
-    (sub_src / "sub_file.txt").write_text("sub content", encoding="utf-8")
-    (sub_src / ".gitattributes").write_text(
+    subprocess.check_call(["git", "-C", str(path), "config", "user.name", "test"])
+    (path / "sub_file.txt").write_text("sub content", encoding="utf-8")
+    (path / ".gitattributes").write_text(
         "/sub_ignored.txt export-ignore\n", encoding="utf-8"
     )
-    (sub_src / "sub_ignored.txt").write_text("ignored", encoding="utf-8")
-    subprocess.check_call(["git", "-C", str(sub_src), "add", "."])
-    subprocess.check_call(["git", "-C", str(sub_src), "commit", "-m", "init sub"])
+    (path / "sub_ignored.txt").write_text("ignored", encoding="utf-8")
+    subprocess.check_call(["git", "-C", str(path), "add", "."])
+    subprocess.check_call(["git", "-C", str(path), "commit", "-m", "init sub"])
+    return path
 
-    # Add as submodule (allow file:// protocol for local clone)
-    wd.write("parent_file.txt", "parent content")
-    wd("git add parent_file.txt")
-    wd.commit()
+
+def add_submodule(wd: WorkDir, source: Path, target: str) -> None:
+    """Add *source* as submodule at *target* (allow file:// protocol)."""
     wd(
         [
             "git",
@@ -420,10 +416,22 @@ def test_git_submodule_files_listed(
             "protocol.file.allow=always",
             "submodule",
             "add",
-            str(sub_src),
-            "mysub",
+            str(source),
+            target,
         ]
     )
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/662")
+def test_git_submodule_files_listed(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sub_src = make_submodule_source(wd.cwd.parent / "sub_src")
+
+    wd.write("parent_file.txt", "parent content")
+    wd("git add parent_file.txt")
+    wd.commit()
+    add_submodule(wd, sub_src, "mysub")
     wd.commit()
 
     monkeypatch.chdir(wd.cwd)
@@ -437,6 +445,67 @@ def test_git_submodule_files_listed(
     assert opj(".", "mysub", ".gitattributes") in found
     # export-ignore honored inside submodule
     assert opj(".", "mysub", "sub_ignored.txt") not in found
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/1469")
+@pytest.mark.parametrize("pattern", ["vendor/", "vendor/*", "/vendor/**"])
+def test_git_submodule_below_export_ignored_dir_skipped(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch, pattern: str
+) -> None:
+    """A submodule excluded via export-ignore must not be listed."""
+    sub_src = make_submodule_source(wd.cwd.parent / "sub_src")
+
+    wd.write("parent_file.txt", "parent content")
+    wd.write(".gitattributes", f"{pattern} export-ignore\n")
+    wd("git add parent_file.txt .gitattributes")
+    wd.commit()
+    add_submodule(wd, sub_src, "vendor/mysub")
+    wd.commit()
+
+    monkeypatch.chdir(wd.cwd)
+    found = set(vcs_versioning._file_finders.find_files("."))
+
+    assert opj(".", "parent_file.txt") in found
+    assert not [name for name in found if "mysub" in name]
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/1469")
+def test_git_export_ignore_on_directory_excludes_content(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """export-ignore on a directory drops its whole subtree, as archive does."""
+    wd.write("keep.txt", "keep")
+    wd.write(".gitattributes", "vendor/ export-ignore\n")
+    wd.write("vendor/nested/drop.txt", "drop")
+    wd("git add -A")
+    wd.commit()
+
+    monkeypatch.chdir(wd.cwd)
+    found = set(vcs_versioning._file_finders.find_files("."))
+
+    assert opj(".", "keep.txt") in found
+    assert opj(".", "vendor", "nested", "drop.txt") not in found
+
+
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/1469")
+def test_git_uninitialized_submodule_skipped(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A submodule that is not checked out is skipped without failing."""
+    sub_src = make_submodule_source(wd.cwd.parent / "sub_src")
+
+    wd.write("parent_file.txt", "parent content")
+    wd("git add parent_file.txt")
+    wd.commit()
+    add_submodule(wd, sub_src, "mysub")
+    wd.commit()
+    wd("git submodule deinit -f mysub")
+
+    monkeypatch.chdir(wd.cwd)
+    found = set(vcs_versioning._file_finders.find_files("."))
+
+    assert opj(".", "parent_file.txt") in found
+    assert not [name for name in found if "mysub" in name]
 
 
 @pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/728")

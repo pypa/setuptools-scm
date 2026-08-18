@@ -110,6 +110,20 @@ def debug_mode() -> Iterator[DebugMode]:
         yield debug_mode
 
 
+@pytest.fixture(autouse=True)
+def reset_config_diagnostics() -> Iterator[None]:
+    """Isolate the once-per-process guard on configuration diagnostics.
+
+    The guard is module state, so without this the first test to trigger a
+    diagnostic would silence it for every test after it.
+    """
+    from ._backends._scm_workdir import _diagnostics_reported
+
+    _diagnostics_reported.clear()
+    yield
+    _diagnostics_reported.clear()
+
+
 @pytest.fixture
 def wd(tmp_path: Path) -> WorkDir:
     """Base WorkDir fixture that returns an unconfigured working directory.

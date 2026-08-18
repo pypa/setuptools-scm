@@ -49,6 +49,7 @@ class WorkDir:
 
     def write(self, name: str, content: str | bytes) -> Path:
         path = self.cwd / name
+        path.parent.mkdir(parents=True, exist_ok=True)
         if isinstance(content, bytes):
             path.write_bytes(content)
         else:
