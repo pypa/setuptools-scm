@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 2.3.1 (2026-08-19)
+
+### Fixed
+
+- Fix a `FileNotFoundError` crash in the git file finder when a submodule is tracked in the index but its working tree directory does not exist - such gitlinks are now skipped like not checked out submodules. ([#1500](https://github.com/pypa/setuptools-scm/issues/1500))
+
 ## 2.3.0 (2026-08-13)
 
 ### Added
