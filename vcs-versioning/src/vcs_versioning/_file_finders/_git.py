@@ -84,6 +84,10 @@ def _ls_files_entries(
     ``None`` signals that git refused to list files (no repository yet,
     or a submodule that is not checked out).
     """
+    if not repo.is_dir():
+        # a submodule tracked in the index whose working tree is absent -
+        # running git in it would fail before git could report anything
+        return None
     res = run_git(
         ["ls-files", "-z", "-s", "--", ".", ":(exclude,attr:export-ignore)"],
         repo,
