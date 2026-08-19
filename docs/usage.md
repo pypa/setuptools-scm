@@ -765,14 +765,15 @@ RUN --mount=source=.git,target=.git,type=bind \
 
 !!! warning "Automatic File Inclusion"
 
-    **`setuptools-scm` automatically provides a setuptools file finder by default.** This means that when you install setuptools-scm, it will automatically include **all SCM-tracked files** in your source distributions (sdist) without requiring a `MANIFEST.in` file.
+    **`setuptools-scm` still provides a setuptools file finder by default.** When it is installed, **all SCM-tracked files** are included in source distributions (sdist) without requiring a `MANIFEST.in` file.
 
-    This automatic behavior can be surprising if you're not expecting it. The file finder is active as soon as setuptools-scm is installed in your build environment.
+    That global [file_finders] entry point is **deprecated** for projects that do not configure setuptools-scm (`[tool.setuptools_scm]` in `pyproject.toml`, `setuptools-scm[simple]`, or `use_scm_version` in `setup.py`). Builds of unconfigured projects emit a `DeprecationWarning`. The entry point will be removed in a future major release.
+
+    Configured projects already bypass the entry point and list files from the discovered workdir.
 
 `setuptools-scm` implements a [file_finders] entry point
 which returns all files tracked by your SCM.
-This eliminates the need for a manually constructed `MANIFEST.in` in most cases where this
-would be required when not using `setuptools-scm`.
+This eliminates the need for a manually constructed `MANIFEST.in` in most cases.
 
 [file_finders]: https://setuptools.pypa.io/en/stable/userguide/extension.html
 

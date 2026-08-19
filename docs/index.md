@@ -12,11 +12,14 @@ or [configuring Git archive][git-archive-docs].
 
 !!! warning "Automatic File Inclusion Behavior"
 
-    **Important:** Simply installing `setuptools-scm` as a build dependency will automatically enable its file finder, which includes **all SCM-tracked files** in your source distributions. This happens even if you're not using setuptools-scm for versioning.
+    Installing `setuptools-scm` as a build dependency still registers a setuptools file finder that includes **all SCM-tracked files** in source distributions, even if you are not using it for versioning.
+
+    That global `setuptools.file_finders` entry point is **deprecated** when the project being built does not configure setuptools-scm (`[tool.setuptools_scm]`, `setuptools-scm[simple]`, or `use_scm_version`). It will be removed in a future major release.
 
     - ✅ **Expected**: All Git/Mercurial/Jujutsu tracked files will be included in your sdist
     - ⚠️ **Surprise**: This includes development files, configs, tests, docs, etc.
     - 🛠️ **Control**: Use `MANIFEST.in` to exclude unwanted files
+    - ⚠️ **Unconfigured projects**: a `DeprecationWarning` is emitted; configure setuptools-scm to keep file inclusion through the supported workdir path
 
     See the [File Finder Documentation](usage.md#file-finders-hook-makes-most-of-manifestin-unnecessary) for details.
 
