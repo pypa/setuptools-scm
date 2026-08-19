@@ -140,7 +140,8 @@ def _pyproject_enables_scm(data: PyProjectData) -> bool:
         return True
     if not data.project_present:
         return False
-    if "version" not in data.project.get("dynamic", []):
+    dynamic = data.project.get("dynamic", [])
+    if not isinstance(dynamic, list) or "version" not in dynamic:
         return False
     from .._requirement_cls import Requirement, extract_package_name
 
