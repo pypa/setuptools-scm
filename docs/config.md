@@ -380,11 +380,13 @@ These environment variables control setuptools-scm specific behavior.
 
 !!! warning "Setuptools File Finder Integration"
 
-    `setuptools-scm` automatically registers a setuptools file finder that includes all SCM-tracked files in source distributions. This behavior is **always active** when setuptools-scm is installed, regardless of whether you use it for versioning.
+    `setuptools-scm` still registers a setuptools file finder that includes all SCM-tracked files in source distributions. For projects that configure setuptools-scm, file listing uses the validated workdir API instead of this entry point.
+
+    Using the global `setuptools.file_finders` entry point **without** configuring setuptools-scm is deprecated and will be removed in a future major release. Unconfigured projects that still hit the entry point get a `DeprecationWarning`.
 
 **How it works:**
 
-`setuptools-scm` provides a `setuptools.file_finders` entry point that:
+When setuptools-scm is configured, `ScmEggInfoMixin` lists tracked files from the discovered workdir. The legacy `setuptools.file_finders` entry point remains registered for compatibility:
 
 1. Automatically discovers SCM-managed files (Git, Mercurial, Jujutsu)
 2. Includes them in source distributions (`python -m build --sdist`)
@@ -394,7 +396,7 @@ These environment variables control setuptools-scm specific behavior.
 
 ```toml
 [project.entry-points."setuptools.file_finders"]
-setuptools_scm = "setuptools_scm._file_finders:find_files"
+setuptools_scm = "vcs_versioning._file_finders:find_files"
 ```
 
 **Files included by default:**
@@ -434,9 +436,9 @@ python -m build --sdist
 tar -tzf dist/package-*.tar.gz
 ```
 
-!!! note "Cannot be disabled"
+!!! note "Cannot be disabled today"
 
-    The file finder cannot be disabled through configuration - it's automatically active when setuptools-scm is installed. If you need to disable it completely, you must remove setuptools-scm from your build environment (which also means you can't use it for versioning).
+    The file finder cannot be turned off through configuration while the entry point is still registered. To stop using it, either configure setuptools-scm (so builds use the workdir path) or remove setuptools-scm from the build environment. The unconfigured entry-point path will be removed in a future major release.
 
 ## API Reference
 
