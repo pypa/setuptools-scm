@@ -508,6 +508,26 @@ def test_git_uninitialized_submodule_skipped(
     assert not [name for name in found if "mysub" in name]
 
 
+@pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/1500")
+def test_git_submodule_without_working_tree_skipped(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A gitlink whose directory does not exist at all is skipped, not fatal."""
+    wd.write("parent_file.txt", "parent content")
+    wd("git add parent_file.txt")
+    wd(
+        "git update-index --add --cacheinfo"
+        " 160000,77ef5b8fe4bab2b73f7b234267f0dfb75e96eeee,missing_submodule"
+    )
+    wd.commit()
+
+    monkeypatch.chdir(wd.cwd)
+    found = set(vcs_versioning._file_finders.find_files("."))
+
+    assert opj(".", "parent_file.txt") in found
+    assert not [name for name in found if "missing_submodule" in name]
+
+
 @pytest.mark.issue("https://github.com/pypa/setuptools-scm/issues/728")
 def test_git_branch_names_correct(wd: WorkDir) -> None:
     wd.commit_testfile()
