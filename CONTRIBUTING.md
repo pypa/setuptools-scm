@@ -25,7 +25,7 @@ uv run pytest vcs-versioning/testing_vcs/ -n12
 ## Pytest Configuration
 
 The pytest configuration is duplicated across three `pyproject.toml` files so each
-package can be tested in isolation (from sdists with their own `uv.lock`):
+package can be tested in isolation (from its sdist, standalone):
 
 - Root `pyproject.toml` - used during monorepo development
 - `setuptools-scm/pyproject.toml` - used when testing the sdist standalone
