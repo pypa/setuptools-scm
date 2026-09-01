@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from dataclasses import field as dc_field
 from datetime import date
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from ._integration import data_from_mime
 from ._scm_metadata import read_scm_file_list, read_scm_version_data
@@ -28,6 +28,22 @@ log = logging.getLogger(__name__)
 @dataclass()
 class FallbackWorkdir:
     """Base for work directories without a live VCS checkout."""
+
+    discovery_priority: ClassVar[int] = 100
+    """How much metadata this workdir carries; lower wins.
+
+    Discovery stashes every fallback workdir that matches, then takes the
+    first one that can produce a version.  A sdist can match several at
+    once -- a setuptools built one carries both ``PKG-INFO`` and
+    ``*.egg-info/scm_version.json`` -- and their factories may ship from
+    different distributions, so entry point iteration order must not
+    decide the winner (:issue:`1507`).  Rank by how much the workdir
+    knows instead: tag plus distance plus node plus file list beats a
+    flat preformatted version.
+
+    Third-party workdirs inherit the default and rank after all built-ins
+    unless they set their own.
+    """
 
     path: Path
 
@@ -59,6 +75,10 @@ class FallbackWorkdir:
 @dataclass()
 class MetadataWorkdir(FallbackWorkdir):
     """Reads ``scm_version.json`` / ``scm_file_list.json`` written by a build backend."""
+
+    discovery_priority: ClassVar[int] = (
+        10  # tag, distance, node and a tracked file list
+    )
 
     metadata_dir: Path | None = dc_field(default=None)
 
@@ -113,6 +133,8 @@ class MetadataWorkdir(FallbackWorkdir):
 class ArchivedWorkdir(FallbackWorkdir):
     """Reads ``.git_archival.txt`` or ``.hg_archival.txt``."""
 
+    discovery_priority: ClassVar[int] = 20  # describe output, no file list
+
     archival_path: Path | None = dc_field(default=None)
 
     def __post_init__(self) -> None:
@@ -146,6 +168,8 @@ class ArchivedWorkdir(FallbackWorkdir):
 class PkgInfoWorkdir(FallbackWorkdir):
     """Reads ``PKG-INFO`` for version; file list from ``scm_file_list.json`` if present."""
 
+    discovery_priority: ClassVar[int] = 30  # a flat preformatted version only
+
     def get_scm_version(self) -> ScmVersion | None:
         pkginfo = self.path / "PKG-INFO"
         if not pkginfo.is_file():
@@ -164,6 +188,8 @@ class PkgInfoWorkdir(FallbackWorkdir):
 @dataclass()
 class StaticWorkdir(FallbackWorkdir):
     """Uses ``config.fallback_version`` / ``parentdir_prefix_version``; no file list."""
+
+    discovery_priority: ClassVar[int] = 90  # configured constants, no SCM data at all
 
     def get_scm_version(self) -> ScmVersion | None:
         config = self.config
@@ -194,6 +220,18 @@ def discover_archival(path: Path, *, config: Configuration) -> FallbackWorkdir |
     for name in (".git_archival.txt", ".hg_archival.txt"):
         if (path / name).is_file():
             return ArchivedWorkdir(path=path, archival_path=path)
+    return None
+
+
+def discover_pkginfo(path: Path, *, config: Configuration) -> FallbackWorkdir | None:
+    """Probe *path* for ``PKG-INFO``.
+
+    ``PKG-INFO`` is the standard sdist metadata file written by every
+    build backend, so this factory lives in the core package rather than
+    in the setuptools integration (:issue:`1507`).
+    """
+    if (path / "PKG-INFO").is_file():
+        return PkgInfoWorkdir(path=path)
     return None
 
 
