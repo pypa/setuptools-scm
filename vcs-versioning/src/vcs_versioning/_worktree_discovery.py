@@ -21,39 +21,11 @@ from typing import Protocol, Union
 from ._backends._scm_workdir import ScmWorkdir
 from ._compat import entry_points
 from ._config import Configuration
-from ._fallback_workdir import (
-    ArchivedWorkdir,
-    FallbackWorkdir,
-    MetadataWorkdir,
-    PkgInfoWorkdir,
-    StaticWorkdir,
-)
+from ._fallback_workdir import FallbackWorkdir, StaticWorkdir
 
 log = logging.getLogger(__name__)
 
 AnyWorkdir = Union[ScmWorkdir, FallbackWorkdir]
-
-#: Fallback workdirs in descending order of how much they know.
-#: ``MetadataWorkdir`` carries tag, distance, node and a tracked file
-#: list; ``ArchivedWorkdir`` carries describe output; ``PkgInfoWorkdir``
-#: only a flat preformatted version.  Entry point iteration order follows
-#: the installed distributions, so candidate selection must not depend on
-#: it -- ``pkginfo`` and ``egg-info`` ship from different packages
-#: (:issue:`1507`).  Types not listed sort last.
-_FALLBACK_PRIORITY: tuple[type[FallbackWorkdir], ...] = (
-    MetadataWorkdir,
-    ArchivedWorkdir,
-    PkgInfoWorkdir,
-)
-
-
-def _fallback_rank(workdir: FallbackWorkdir) -> int:
-    kind = type(workdir)
-    return (
-        _FALLBACK_PRIORITY.index(kind)
-        if kind in _FALLBACK_PRIORITY
-        else len(_FALLBACK_PRIORITY)
-    )
 
 
 class DiscoveryFactory(Protocol):
@@ -98,7 +70,7 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
        - ScmWorkdir result: verify project_path, return immediately.
        - FallbackWorkdir result: stash as candidate, keep probing for SCM.
     2. Fallback phase: probe ``project_dir`` (if different from scm root).
-    3. Sort the stashed FallbackWorkdirs by ``_FALLBACK_PRIORITY`` and
+    3. Sort the stashed FallbackWorkdirs by ``discovery_priority`` and
        return the first whose ``get_scm_version()`` is not None.  Trying
        every candidate prevents an unprocessed ``.git_archival.txt`` from
        shadowing a valid ``PKG-INFO`` (see :issue:`1431`); sorting keeps
@@ -183,7 +155,7 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
     # shadow a valid PKG-INFO if we only kept the first candidate.
     # Richest metadata first, so the winner does not depend on entry point
     # iteration order (#1507); stable, so probe order still breaks ties.
-    fallback_candidates.sort(key=_fallback_rank)
+    fallback_candidates.sort(key=lambda w: w.discovery_priority)
     for candidate in fallback_candidates:
         if candidate.get_scm_version() is not None:
             log.info("using fallback workdir %s", type(candidate).__name__)

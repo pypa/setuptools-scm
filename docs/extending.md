@@ -82,6 +82,20 @@ Discovery runs in two phases:
 
 SCM results always take priority over fallback results.
 
+Several fallback factories can match the same directory -- a setuptools
+built sdist carries both a `PKG-INFO` and an `*.egg-info/scm_version.json`.
+Discovery stashes every match and takes the first that yields a version,
+ordered by the workdir's `discovery_priority` (lower wins) rather than by
+entry point order, which follows the installed distributions and is not
+something a factory can control. Rank by how much the workdir knows:
+
+| `discovery_priority` | Workdir | Carries |
+|---|---|---|
+| 10 | `MetadataWorkdir` | tag, distance, node, tracked file list |
+| 20 | `ArchivedWorkdir` | describe output |
+| 30 | `PkgInfoWorkdir` | flat preformatted version |
+| 100 | *default* | third-party workdirs, unless they set their own |
+
 ### Built-in factories
 
 | Entry point | Package | Type |

@@ -12,6 +12,7 @@ from vcs_versioning._backends._scm_workdir import ScmWorkdir
 from vcs_versioning._config import Configuration
 from vcs_versioning._fallback_workdir import (
     ArchivedWorkdir,
+    FallbackWorkdir,
     MetadataWorkdir,
     PkgInfoWorkdir,
     StaticWorkdir,
@@ -21,6 +22,7 @@ from vcs_versioning._scm_metadata import (
     write_scm_file_list,
     write_scm_version_data,
 )
+from vcs_versioning._scm_version import ScmVersion, meta
 from vcs_versioning._worktree_discovery import discover_workdir
 
 
@@ -433,3 +435,20 @@ class TestFallbackCandidatePriority:
         assert version is not None
         assert version.distance == 3
         assert result.list_tracked_files() == ["pkg/__init__.py"]
+
+    @pytest.mark.issue(1507)
+    def test_third_party_workdir_ranks_by_declared_priority(
+        self, tmp_path: Path
+    ) -> None:
+        """discovery_priority is the knob, not entry point order."""
+
+        class PoorWorkdir(FallbackWorkdir):
+            def get_scm_version(self) -> ScmVersion | None:
+                return meta("9.9.9", preformatted=True, config=self.config)
+
+        class RichWorkdir(PoorWorkdir):
+            discovery_priority = 5
+
+        assert PoorWorkdir.discovery_priority == FallbackWorkdir.discovery_priority
+        assert PoorWorkdir.discovery_priority > PkgInfoWorkdir.discovery_priority
+        assert RichWorkdir.discovery_priority < MetadataWorkdir.discovery_priority
