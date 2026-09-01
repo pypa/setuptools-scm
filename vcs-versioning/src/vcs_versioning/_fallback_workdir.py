@@ -197,6 +197,18 @@ def discover_archival(path: Path, *, config: Configuration) -> FallbackWorkdir |
     return None
 
 
+def discover_pkginfo(path: Path, *, config: Configuration) -> FallbackWorkdir | None:
+    """Probe *path* for ``PKG-INFO``.
+
+    ``PKG-INFO`` is the standard sdist metadata file written by every
+    build backend, so this factory lives in the core package rather than
+    in the setuptools integration (:issue:`1507`).
+    """
+    if (path / "PKG-INFO").is_file():
+        return PkgInfoWorkdir(path=path)
+    return None
+
+
 # ------------------------------------------------------------------
 # Archival parsers (thin wrappers around existing logic)
 # ------------------------------------------------------------------

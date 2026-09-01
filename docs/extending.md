@@ -88,7 +88,7 @@ SCM results always take priority over fallback results.
 |---|---|---|
 | `hg-git` | vcs-versioning | SCM (Git + Mercurial) |
 | `archival` | vcs-versioning | Fallback (`.git_archival.txt`) |
-| `pkginfo` | setuptools-scm | Fallback (`PKG-INFO`) |
+| `pkginfo` | vcs-versioning | Fallback (`PKG-INFO`, present in any sdist) |
 | `egg-info` | setuptools-scm | Fallback (`*.egg-info/scm_version.json`; written for sdists, omitted from wheels) |
 
 

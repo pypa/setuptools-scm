@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import subprocess
+from importlib.metadata import EntryPoint
 from pathlib import Path
+from typing import Any
 
 import pytest
 from vcs_versioning._backends._scm_workdir import ScmWorkdir
@@ -11,6 +13,7 @@ from vcs_versioning._config import Configuration
 from vcs_versioning._fallback_workdir import (
     ArchivedWorkdir,
     MetadataWorkdir,
+    PkgInfoWorkdir,
     StaticWorkdir,
 )
 from vcs_versioning._scm_metadata import (
@@ -149,6 +152,16 @@ class TestDiscoverWorkdirFallback:
         assert result is not None
         assert isinstance(result, ArchivedWorkdir)
 
+    def test_discovers_pkginfo(self, tmp_path: Path) -> None:
+        (tmp_path / "PKG-INFO").write_text(
+            "Metadata-Version: 2.1\nName: pkg\nVersion: 3.0.0\n",
+            encoding="utf-8",
+        )
+        config = Configuration(relative_to=str(tmp_path / "pyproject.toml"))
+        result = discover_workdir(config)
+        assert result is not None
+        assert isinstance(result, PkgInfoWorkdir)
+
     def test_scm_preferred_over_fallback(self, tmp_path: Path) -> None:
         """SCM markers should be preferred over fallback markers."""
         _git_init(tmp_path)
@@ -233,6 +246,21 @@ class TestFallbackWorkdirDiscoveryFactories:
         config = Configuration()
         assert discover_archival(tmp_path, config=config) is None
 
+    def test_discover_pkginfo(self, tmp_path: Path) -> None:
+        from vcs_versioning._fallback_workdir import discover_pkginfo
+
+        (tmp_path / "PKG-INFO").write_text("Version: 1.0\n", encoding="utf-8")
+        config = Configuration()
+        result = discover_pkginfo(tmp_path, config=config)
+        assert result is not None
+        assert isinstance(result, PkgInfoWorkdir)
+
+    def test_discover_pkginfo_none(self, tmp_path: Path) -> None:
+        from vcs_versioning._fallback_workdir import discover_pkginfo
+
+        config = Configuration()
+        assert discover_pkginfo(tmp_path, config=config) is None
+
 
 class TestMetadataWorkdir:
     def test_reads_version_from_json(self, tmp_path: Path) -> None:
@@ -284,3 +312,124 @@ class TestMetadataWorkdir:
         wd = MetadataWorkdir(path=tmp_path, metadata_dir=tmp_path, _config=config)
         assert wd.get_scm_version() is None
         assert wd.list_tracked_files() == []
+
+
+class TestFallbackPriority:
+    @pytest.mark.issue(1431)
+    def test_unprocessed_archival_falls_through_to_pkginfo(
+        self, tmp_path: Path
+    ) -> None:
+        """Unprocessed .git_archival.txt must not shadow a valid PKG-INFO.
+
+        PyPI sdists contain both files: a .git_archival.txt with raw
+        ``$Format:...`` placeholders (never substituted because the sdist
+        was built by setuptools, not ``git archive``) and a PKG-INFO with
+        the correct version.  Before the fix, the archival fallback was
+        stashed as the sole candidate and its ``get_scm_version()`` returned
+        None, causing a LookupError.
+        """
+        (tmp_path / ".git_archival.txt").write_text(
+            "node: $Format:%H$\n"
+            "node-date: $Format:%cI$\n"
+            "describe-name: $Format:%(describe:tags=true)$\n"
+            "ref-names: $Format:%D$\n",
+            encoding="utf-8",
+        )
+        (tmp_path / "PKG-INFO").write_text(
+            "Metadata-Version: 2.1\nName: my-pkg\nVersion: 1.2.3\n",
+            encoding="utf-8",
+        )
+        config = Configuration(relative_to=str(tmp_path / "pyproject.toml"))
+        result = discover_workdir(config)
+        assert result is not None
+        assert isinstance(result, PkgInfoWorkdir)
+        version = result.get_scm_version()
+        assert version is not None
+        assert str(version.tag) == "1.2.3"
+
+
+class TestPkgInfoRegisteredByCore:
+    """PKG-INFO fallback must work without setuptools-scm installed (#1507)."""
+
+    @pytest.mark.issue(1507)
+    def test_pkginfo_factory_registered_by_vcs_versioning(self) -> None:
+        """Assert on the distribution metadata, not the merged EP view.
+
+        In the monorepo venv setuptools-scm is installed too, so a plain
+        ``entry_points(group=...)`` lookup cannot tell which package
+        registered the factory -- which is exactly how #1507 escaped the
+        test suite.
+        """
+        from importlib.metadata import distribution
+
+        names = {
+            ep.name
+            for ep in distribution("vcs-versioning").entry_points
+            if ep.group == "vcs_versioning.discover_workdir"
+        }
+        assert "pkginfo" in names
+
+    @pytest.mark.issue(1507)
+    def test_discovery_without_setuptools_scm(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Discovery finds PKG-INFO using only vcs-versioning's own factories."""
+        from vcs_versioning import _compat, _worktree_discovery
+
+        real = _compat.entry_points
+
+        def core_only(*args: Any, **kwargs: Any) -> list[EntryPoint]:
+            return [
+                ep
+                for ep in real(*args, **kwargs)
+                if ep.value.startswith("vcs_versioning")
+            ]
+
+        monkeypatch.setattr(_worktree_discovery, "entry_points", core_only)
+
+        (tmp_path / "PKG-INFO").write_text(
+            "Metadata-Version: 2.1\nName: pkg\nVersion: 3.0.0\n",
+            encoding="utf-8",
+        )
+        config = Configuration(relative_to=str(tmp_path / "pyproject.toml"))
+        result = discover_workdir(config)
+        assert isinstance(result, PkgInfoWorkdir)
+
+
+class TestFallbackCandidatePriority:
+    @pytest.mark.issue(1507)
+    def test_egg_info_metadata_wins_over_pkginfo(self, tmp_path: Path) -> None:
+        """Richer metadata must win regardless of entry point order.
+
+        A setuptools-scm built sdist carries both a root PKG-INFO and
+        ``*.egg-info/scm_version.json``.  The two factories ship from
+        different distributions, so entry point iteration order cannot
+        decide this -- MetadataWorkdir knows distance, node and the
+        tracked file list, PkgInfoWorkdir only a flat version.
+        """
+        (tmp_path / "PKG-INFO").write_text(
+            "Metadata-Version: 2.1\nName: pkg\nVersion: 1.0.0\n",
+            encoding="utf-8",
+        )
+        egg_info = tmp_path / "pkg.egg-info"
+        egg_info.mkdir()
+        write_scm_version_data(
+            egg_info,
+            ScmVersionData(
+                tag="1.0.0",
+                distance=3,
+                node="gdeadbee",
+                dirty=False,
+                branch="main",
+                node_date=None,
+            ),
+        )
+        write_scm_file_list(egg_info, ["pkg/__init__.py"])
+
+        config = Configuration(relative_to=str(tmp_path / "pyproject.toml"))
+        result = discover_workdir(config)
+        assert isinstance(result, MetadataWorkdir)
+        version = result.get_scm_version()
+        assert version is not None
+        assert version.distance == 3
+        assert result.list_tracked_files() == ["pkg/__init__.py"]
