@@ -2,6 +2,13 @@
 
 <!-- towncrier release notes start -->
 
+## 10.2.2 (2026-09-01)
+
+### Miscellaneous
+
+- The `pkginfo` workdir discovery entry point moved to vcs-versioning; `vcs-versioning>=2.3.2` is now required (the workspace pin carries a `.dev0` suffix so in-tree builds resolve, matching the existing convention). `setuptools_scm._integration._discover.discover_pkginfo` remains as a re-export. ([#1507](https://github.com/pypa/setuptools-scm/issues/1507))
+- Stop shipping a per-package `uv.lock` in the sdist. It could not be generated correctly whenever `setuptools-scm` required an unreleased `vcs-versioning`, which broke the release proposal workflow. ([#1509](https://github.com/pypa/setuptools-scm/issues/1509))
+
 ## 10.2.1 (2026-07-21)
 
 ### Fixed

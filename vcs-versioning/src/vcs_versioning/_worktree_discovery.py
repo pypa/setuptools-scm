@@ -70,10 +70,11 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
        - ScmWorkdir result: verify project_path, return immediately.
        - FallbackWorkdir result: stash as candidate, keep probing for SCM.
     2. Fallback phase: probe ``project_dir`` (if different from scm root).
-    3. Try each stashed FallbackWorkdir in discovery order; return the first
-       whose ``get_scm_version()`` is not None.  This prevents an
-       unprocessed ``.git_archival.txt`` from shadowing a valid ``PKG-INFO``
-       (see :issue:`1431`).
+    3. Sort the stashed FallbackWorkdirs by ``discovery_priority`` and
+       return the first whose ``get_scm_version()`` is not None.  Trying
+       every candidate prevents an unprocessed ``.git_archival.txt`` from
+       shadowing a valid ``PKG-INFO`` (see :issue:`1431`); sorting keeps
+       the winner independent of entry point order (see :issue:`1507`).
     4. Try StaticWorkdir from config.fallback_version / parentdir_prefix_version.
     5. Return None.
     """
@@ -152,6 +153,9 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
     # Earlier discovery code stashed all matching fallback workdirs; an
     # unprocessed .git_archival.txt (raw $Format placeholders) would
     # shadow a valid PKG-INFO if we only kept the first candidate.
+    # Richest metadata first, so the winner does not depend on entry point
+    # iteration order (#1507); stable, so probe order still breaks ties.
+    fallback_candidates.sort(key=lambda w: w.discovery_priority)
     for candidate in fallback_candidates:
         if candidate.get_scm_version() is not None:
             log.info("using fallback workdir %s", type(candidate).__name__)

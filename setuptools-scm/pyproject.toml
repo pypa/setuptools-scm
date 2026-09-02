@@ -2,7 +2,7 @@
 build-backend = "setuptools.build_meta"
 requires = [
   "setuptools>=45",
-  "vcs-versioning>=2.2.2,<3",
+  "vcs-versioning>=2.3.2.dev0,<3",
   # https://github.com/pypa/setuptools-scm/issues/1222: was <=2.0.2 for #1090 (old pip+toml);
   # pip 21.2+ vendors tomli, so the workaround is no longer needed.
   'tomli>=1; python_version < "3.11"',
@@ -40,7 +40,7 @@ dynamic = [
 dependencies = [
   # Core VCS functionality - workspace dependency
   # Upper pin: setuptools-scm imports vcs-versioning internals; keep in sync.
-  "vcs-versioning>=2.2.2,<3",
+  "vcs-versioning>=2.3.2.dev0,<3",
   "packaging>=20",
   # https://github.com/pypa/setuptools-scm/issues/1112 - re-pin in a breaking release
   "setuptools", # >= 61",
@@ -101,7 +101,6 @@ setuptools_scm = "vcs_versioning._file_finders:find_files"
 setuptools_scm = "setuptools_scm._integration.setuptools:infer_version"
 
 [project.entry-points."vcs_versioning.discover_workdir"]
-pkginfo = "setuptools_scm._integration._discover:discover_pkginfo"
 egg-info = "setuptools_scm._integration._discover:discover_egg_info_metadata"
 
 [tool.setuptools.packages.find]
@@ -136,6 +135,7 @@ lint.preview = true
 "**/src/setuptools_scm/hg.py" = ["PLC0414"]
 "**/src/setuptools_scm/hg_git.py" = ["PLC0414"]
 "**/src/setuptools_scm/fallbacks.py" = ["PLC0414"]
+"**/src/setuptools_scm/_integration/_discover.py" = ["PLC0414"]
 "**/src/setuptools_scm/_integration/pyproject_reading.py" = ["BLE001", "S112"]
 "**/testing_scm/conftest.py" = ["BLE001", "S110"]
 "**/testing_scm/test_main.py" = ["S102"]

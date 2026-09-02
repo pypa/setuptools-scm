@@ -2,6 +2,19 @@
 
 <!-- towncrier release notes start -->
 
+## 2.3.2 (2026-09-01)
+
+### Fixed
+
+- Register the `pkginfo` workdir discovery factory in vcs-versioning itself. `PKG-INFO` is standard sdist metadata, not a setuptools artifact, but its factory was only registered by setuptools-scm -- so a standalone vcs-versioning install could not infer a version from an sdist. This broke sdist builds for non-setuptools backends, e.g. meson-python calling `python -m vcs_versioning` from `project()`.
+
+  Fallback workdir candidates are now ordered by how much metadata they carry (egg-info, then archival, then `PKG-INFO`) instead of by entry point iteration order, so a setuptools built sdist keeps using its `scm_version.json` now that the two factories ship from different distributions. ([#1507](https://github.com/pypa/setuptools-scm/issues/1507))
+
+
+### Miscellaneous
+
+- Stop shipping a per-package `uv.lock` in the sdist. It could not be generated correctly whenever `setuptools-scm` required an unreleased `vcs-versioning`, which broke the release proposal workflow. ([#1509](https://github.com/pypa/setuptools-scm/issues/1509))
+
 ## 2.3.1 (2026-08-19)
 
 ### Fixed

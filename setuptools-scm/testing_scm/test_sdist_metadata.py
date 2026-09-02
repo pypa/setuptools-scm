@@ -10,7 +10,6 @@ from pathlib import Path
 
 from vcs_versioning._config import Configuration
 from vcs_versioning._fallback_workdir import MetadataWorkdir
-from vcs_versioning._fallback_workdir import PkgInfoWorkdir
 from vcs_versioning._scm_metadata import ScmVersionData
 from vcs_versioning._scm_metadata import read_scm_file_list
 from vcs_versioning._scm_metadata import read_scm_version_data
@@ -84,23 +83,6 @@ class TestEggInfoDiscovery:
 
         files = wd.list_tracked_files()
         assert files == ["mypkg/__init__.py", "mypkg/core.py"]
-
-
-class TestDiscoverPkgInfo:
-    def test_discover_pkginfo(self, tmp_path: Path) -> None:
-        from setuptools_scm._integration._discover import discover_pkginfo
-
-        (tmp_path / "PKG-INFO").write_text("Version: 1.0\n", encoding="utf-8")
-        config = Configuration()
-        result = discover_pkginfo(tmp_path, config=config)
-        assert result is not None
-        assert isinstance(result, PkgInfoWorkdir)
-
-    def test_discover_pkginfo_none(self, tmp_path: Path) -> None:
-        from setuptools_scm._integration._discover import discover_pkginfo
-
-        config = Configuration()
-        assert discover_pkginfo(tmp_path, config=config) is None
 
 
 class TestScmMetadataRoundTrip:
