@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from vcs_versioning._config import Configuration
 from vcs_versioning._fallback_workdir import MetadataWorkdir
 from vcs_versioning._scm_metadata import ScmVersionData
@@ -15,6 +17,7 @@ from vcs_versioning._scm_metadata import read_scm_file_list
 from vcs_versioning._scm_metadata import read_scm_version_data
 from vcs_versioning._scm_metadata import write_scm_file_list
 from vcs_versioning._scm_metadata import write_scm_version_data
+from vcs_versioning._worktree_discovery import discover_workdir
 
 
 class TestEggInfoDiscovery:
@@ -107,3 +110,43 @@ class TestScmMetadataRoundTrip:
         write_scm_file_list(tmp_path, files)
         result = read_scm_file_list(tmp_path)
         assert result == files
+
+
+class TestFallbackCandidatePriority:
+    @pytest.mark.issue(1507)
+    def test_egg_info_metadata_wins_over_pkginfo(self, tmp_path: Path) -> None:
+        """Richer metadata must win regardless of entry point order.
+
+        A setuptools-scm built sdist carries both a root PKG-INFO and
+        ``*.egg-info/scm_version.json``.  The two factories ship from
+        different distributions -- pkginfo from vcs-versioning, egg-info
+        from setuptools-scm -- so entry point iteration order cannot
+        decide this.  The test lives here because it needs the egg-info
+        entry point setuptools-scm registers (#1512).
+        """
+        (tmp_path / "PKG-INFO").write_text(
+            "Metadata-Version: 2.1\nName: pkg\nVersion: 1.0.0\n",
+            encoding="utf-8",
+        )
+        egg_info = tmp_path / "pkg.egg-info"
+        egg_info.mkdir()
+        write_scm_version_data(
+            egg_info,
+            ScmVersionData(
+                tag="1.0.0",
+                distance=3,
+                node="gdeadbee",
+                dirty=False,
+                branch="main",
+                node_date=None,
+            ),
+        )
+        write_scm_file_list(egg_info, ["pkg/__init__.py"])
+
+        config = Configuration(relative_to=str(tmp_path / "pyproject.toml"))
+        result = discover_workdir(config)
+        assert isinstance(result, MetadataWorkdir)
+        version = result.get_scm_version()
+        assert version is not None
+        assert version.distance == 3
+        assert result.list_tracked_files() == ["pkg/__init__.py"]

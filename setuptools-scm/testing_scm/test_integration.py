@@ -726,6 +726,12 @@ def test_integration_function_call_order(
 @pytest.mark.skipif(
     sys.implementation.name == "pypy", reason="xmlsec build fails on PyPy in CI"
 )
+@pytest.mark.xfail(
+    sys.version_info < (3, 9),
+    reason="no lxml wheel for cpython 3.8, so pip builds lxml from source and"
+    " --no-build-isolation leaves it without a build toolchain",
+    run=False,
+)
 def test_xmlsec_download_regression(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

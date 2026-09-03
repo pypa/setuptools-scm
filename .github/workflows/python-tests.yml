@@ -201,6 +201,43 @@ jobs:
         run: uv run --no-sync pytest setuptools-scm/testing_scm/ vcs-versioning/testing_vcs/
         timeout-minutes: 25
 
+  test-standalone-vcs-versioning:
+    name: vcs-versioning testsuite without setuptools-scm
+    needs: [package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Setup python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      - name: Download vcs-versioning packages
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: Packages-vcs-versioning
+          path: dist
+      - name: Create environment with vcs-versioning only
+        run: |
+          uv venv .venv-standalone
+          uv pip install --python .venv-standalone \
+            dist/vcs_versioning-*.whl pytest pytest-timeout pytest-xdist
+      - name: Assert setuptools-scm is absent
+        run: |
+          if ./.venv-standalone/bin/python -c "import setuptools_scm" 2>/dev/null; then
+            echo "setuptools-scm must not be installed for this check"
+            exit 1
+          fi
+      - name: Run the vcs-versioning testsuite
+        working-directory: vcs-versioning
+        run: ../.venv-standalone/bin/python -m pytest -n auto
+        timeout-minutes: 15
+
   dist_upload_setuptools_scm:
     runs-on: ubuntu-latest
     if: |
