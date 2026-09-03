@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 10.2.3 (2026-09-03)
+
+### Miscellaneous
+
+- Do not run the xmlsec download regression test on Python 3.8, where no lxml wheel exists and `--no-build-isolation` leaves pip without a build toolchain for the lxml sdist. ([#1516](https://github.com/pypa/setuptools-scm/issues/1516))
+
 ## 10.2.2 (2026-09-01)
 
 ### Miscellaneous
