@@ -18,6 +18,7 @@ from vcs_versioning._fallback_workdir import (
     StaticWorkdir,
 )
 from vcs_versioning._scm_metadata import (
+    SCM_VERSION_FILENAME,
     ScmVersionData,
     write_scm_file_list,
     write_scm_version_data,
@@ -398,9 +399,32 @@ class TestPkgInfoRegisteredByCore:
         assert isinstance(result, PkgInfoWorkdir)
 
 
+def _egg_info_metadata_factory(
+    path: Path, *, config: Configuration
+) -> MetadataWorkdir | None:
+    """Stand-in for the egg-info factory setuptools-scm registers.
+
+    Egg-info is a setuptools artifact, so the real factory and its entry
+    point live in setuptools-scm.  This testsuite must pass without
+    setuptools-scm installed (#1512), so the priority test supplies the
+    factory itself instead of relying on that entry point.
+    """
+    for candidate in path.iterdir() if path.is_dir() else []:
+        if (
+            candidate.is_dir()
+            and candidate.name.endswith(".egg-info")
+            and (candidate / SCM_VERSION_FILENAME).is_file()
+        ):
+            return MetadataWorkdir(path=path, metadata_dir=candidate)
+    return None
+
+
 class TestFallbackCandidatePriority:
     @pytest.mark.issue(1507)
-    def test_egg_info_metadata_wins_over_pkginfo(self, tmp_path: Path) -> None:
+    @pytest.mark.issue(1512)
+    def test_egg_info_metadata_wins_over_pkginfo(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Richer metadata must win regardless of entry point order.
 
         A setuptools-scm built sdist carries both a root PKG-INFO and
@@ -409,6 +433,15 @@ class TestFallbackCandidatePriority:
         decide this -- MetadataWorkdir knows distance, node and the
         tracked file list, PkgInfoWorkdir only a flat version.
         """
+        from vcs_versioning import _worktree_discovery
+
+        registered = _worktree_discovery._load_discovery_factories()
+        monkeypatch.setattr(
+            _worktree_discovery,
+            "_load_discovery_factories",
+            lambda: [*registered, ("egg-info", _egg_info_metadata_factory)],
+        )
+
         (tmp_path / "PKG-INFO").write_text(
             "Metadata-Version: 2.1\nName: pkg\nVersion: 1.0.0\n",
             encoding="utf-8",
