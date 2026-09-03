@@ -18,7 +18,6 @@ from vcs_versioning._fallback_workdir import (
     StaticWorkdir,
 )
 from vcs_versioning._scm_metadata import (
-    SCM_VERSION_FILENAME,
     ScmVersionData,
     write_scm_file_list,
     write_scm_version_data,
@@ -399,32 +398,9 @@ class TestPkgInfoRegisteredByCore:
         assert isinstance(result, PkgInfoWorkdir)
 
 
-def _egg_info_metadata_factory(
-    path: Path, *, config: Configuration
-) -> MetadataWorkdir | None:
-    """Stand-in for the egg-info factory setuptools-scm registers.
-
-    Egg-info is a setuptools artifact, so the real factory and its entry
-    point live in setuptools-scm.  This testsuite must pass without
-    setuptools-scm installed (#1512), so the priority test supplies the
-    factory itself instead of relying on that entry point.
-    """
-    for candidate in path.iterdir() if path.is_dir() else []:
-        if (
-            candidate.is_dir()
-            and candidate.name.endswith(".egg-info")
-            and (candidate / SCM_VERSION_FILENAME).is_file()
-        ):
-            return MetadataWorkdir(path=path, metadata_dir=candidate)
-    return None
-
-
 class TestFallbackCandidatePriority:
     @pytest.mark.issue(1507)
-    @pytest.mark.issue(1512)
-    def test_egg_info_metadata_wins_over_pkginfo(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_metadata_outranks_pkginfo(self) -> None:
         """Richer metadata must win regardless of entry point order.
 
         A setuptools-scm built sdist carries both a root PKG-INFO and
@@ -432,42 +408,12 @@ class TestFallbackCandidatePriority:
         different distributions, so entry point iteration order cannot
         decide this -- MetadataWorkdir knows distance, node and the
         tracked file list, PkgInfoWorkdir only a flat version.
+
+        The egg-info factory itself lives in setuptools-scm, so the
+        end to end check lives in its test suite (#1512); what core owns
+        is the ranking the sort is driven by.
         """
-        from vcs_versioning import _worktree_discovery
-
-        registered = _worktree_discovery._load_discovery_factories()
-        monkeypatch.setattr(
-            _worktree_discovery,
-            "_load_discovery_factories",
-            lambda: [*registered, ("egg-info", _egg_info_metadata_factory)],
-        )
-
-        (tmp_path / "PKG-INFO").write_text(
-            "Metadata-Version: 2.1\nName: pkg\nVersion: 1.0.0\n",
-            encoding="utf-8",
-        )
-        egg_info = tmp_path / "pkg.egg-info"
-        egg_info.mkdir()
-        write_scm_version_data(
-            egg_info,
-            ScmVersionData(
-                tag="1.0.0",
-                distance=3,
-                node="gdeadbee",
-                dirty=False,
-                branch="main",
-                node_date=None,
-            ),
-        )
-        write_scm_file_list(egg_info, ["pkg/__init__.py"])
-
-        config = Configuration(relative_to=str(tmp_path / "pyproject.toml"))
-        result = discover_workdir(config)
-        assert isinstance(result, MetadataWorkdir)
-        version = result.get_scm_version()
-        assert version is not None
-        assert version.distance == 3
-        assert result.list_tracked_files() == ["pkg/__init__.py"]
+        assert MetadataWorkdir.discovery_priority < PkgInfoWorkdir.discovery_priority
 
     @pytest.mark.issue(1507)
     def test_third_party_workdir_ranks_by_declared_priority(
