@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 2.3.4 (2026-09-03)
+
+### Fixed
+
+- Ensure the vcs-versioning testsuite passes without setuptools-scm installed; the egg-info vs PKG-INFO discovery priority test moved to the setuptools-scm testsuite, which owns the egg-info entry point it needs. ([#1512](https://github.com/pypa/setuptools-scm/issues/1512))
+
 ## 2.3.3 (2026-09-03)
 
 ### Fixed
