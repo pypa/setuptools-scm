@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 2.3.3 (2026-09-03)
+
+### Fixed
+
+- The `semver-pep440` and `semver-pep440-release-branch` version schemes now keep the PEP 440 epoch of the tag they are derived from, instead of emitting a version that sorts below it. ([#1513](https://github.com/pypa/setuptools-scm/issues/1513))
+
 ## 2.3.2 (2026-09-01)
 
 ### Fixed
