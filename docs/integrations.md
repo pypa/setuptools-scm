@@ -345,6 +345,7 @@ However, the environment variable approach is preferred for CI/CD as it allows d
 
 ```python
 import re
+
 dist_name = "my-awesome.package"
 normalized = re.sub(r"[-_.]+", "-", dist_name)
 env_var_name = normalized.replace("-", "_").upper()

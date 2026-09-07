@@ -94,6 +94,7 @@ from setuptools_scm import ScmVersion
 
 def my_version_scheme(version: ScmVersion) -> str:
     from setuptools_scm.version import guess_next_version
+
     return version.format_next_version(guess_next_version, "{guessed}b{distance}")
 
 

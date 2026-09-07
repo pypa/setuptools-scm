@@ -112,6 +112,7 @@ from setuptools_scm import ScmVersion
 
 def my_version_scheme(version: ScmVersion) -> str:
     from setuptools_scm.version import guess_next_version
+
     return version.format_next_version(guess_next_version, "{guessed}b{distance}")
 
 
@@ -258,6 +259,7 @@ runtime is:
 
 ```python
 from setuptools_scm import get_version
+
 version = get_version()
 ```
 
@@ -269,7 +271,8 @@ than the project's root, you can use:
 
 ```python
 from setuptools_scm import get_version
-version = get_version(root='..', relative_to=__file__)
+
+version = get_version(root="..", relative_to=__file__)
 ```
 
 For legacy configurations or when working with extracted archives (like PyPI tarballs),
@@ -279,8 +282,9 @@ version from the installed package:
 
 ```python
 from setuptools_scm import get_version
+
 # For legacy Sphinx conf.py that needs to work both in development and from archives
-version = get_version(root='..', fallback_root='..', relative_to=__file__)
+version = get_version(root="..", fallback_root="..", relative_to=__file__)
 ```
 
 The `fallback_root` parameter specifies the directory to use when the SCM metadata
@@ -293,9 +297,10 @@ The recommended approach for Sphinx configurations is to use the installed packa
 
 ```python
 from importlib.metadata import version as get_version
+
 release: str = get_version("package-name")
 # for example take major/minor
-version: str = ".".join(release.split('.')[:2])
+version: str = ".".join(release.split(".")[:2])
 ```
 
 The underlying reason is that services like *Read the Docs* sometimes change
@@ -310,9 +315,10 @@ prevents using needless volatile data there.
 
     ```python
     from setuptools_scm import get_version
+
     # Legacy approach - use fallback_root for archive compatibility
-    release = get_version(root='..', fallback_root='..', relative_to=__file__)
-    version = ".".join(release.split('.')[:2])
+    release = get_version(root="..", fallback_root="..", relative_to=__file__)
+    version = ".".join(release.split(".")[:2])
     ```
 
     However, it's strongly recommended to migrate to the `importlib.metadata` approach above.
