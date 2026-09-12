@@ -12,7 +12,6 @@ else:
 
 from .. import _types as _t
 from .._compat import norm_real
-from .._entrypoints import entry_points
 
 log = logging.getLogger("vcs_versioning.file_finder")
 
@@ -125,17 +124,32 @@ def is_toplevel_acceptable(
     return toplevel not in ignore_vcs_roots
 
 
+_FILE_FINDER_GROUPS = (
+    "setuptools_scm.files_command",
+    "setuptools_scm.files_command_fallback",
+)
+
+
 def find_files(path: _t.PathT = "") -> list[str]:
-    """Discover files using registered file finder entry points."""
-    eps = [
-        *entry_points(group="setuptools_scm.files_command"),
-        *entry_points(group="setuptools_scm.files_command_fallback"),
-    ]
-    for ep in eps:
-        command: Callable[[_t.PathT], list[str]] = ep.load()
-        res: list[str] = command(path)
-        if res:
-            return res
+    """Discover files using registered file finder entry points.
+
+    Backends are selected by the marker their entry point is named for
+    (``.git``, ``.hg``, ``.jj``, ...), so only plausible finders are
+    loaded and only their VCS commands run.
+    """
+    from .._discover import iter_marker_entrypoints
+
+    # absolute: ``Path(".").parents`` is empty, so a relative root would
+    # never reach the marker of an enclosing checkout
+    root = os.path.abspath(os.fspath(path) or ".")
+
+    for group in _FILE_FINDER_GROUPS:
+        for ep, wd in iter_marker_entrypoints(root, group):
+            log.debug("file finder %s selected by marker in %s", ep.name, wd)
+            command: Callable[[_t.PathT], list[str]] = ep.load()
+            res: list[str] = command(path)
+            if res:
+                return res
 
     return []
 
