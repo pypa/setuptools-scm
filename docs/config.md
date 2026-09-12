@@ -225,6 +225,79 @@ strict = true      # require tags to contain at least one dot
 
     Note: This setting is overridden by any explicit `pre_parse` parameter passed to the git parse function.
 
+`scm.git.distance_scope`
+:   Restrict the distance count to the commits that touch this project, for
+    projects living in a subdirectory of a monorepo.
+
+    - `false` (default): count every commit since the tag, as `git describe` does.
+    - `true`: count only commits touching the project directory.
+    - a list of paths: count commits touching the project directory **or** any
+      of the listed directories.  Paths are relative to the VCS root, not to
+      the project.
+
+    ```toml
+    [tool.setuptools_scm.scm.git]
+    distance_scope = true
+    ```
+
+    Use the list form for directories the project actually depends on -- shared
+    libraries, generated code, build tooling.  Without them, a change to a
+    dependency does not move the project's version even though it changes what
+    gets built:
+
+    ```toml
+    [tool.setuptools_scm.scm.git]
+    distance_scope = ["shared/common", "tooling"]
+    ```
+
+    Requires the project to live below the VCS root; scoping to the root itself
+    would be a no-op and is rejected.  Not available for Mercurial, Jujutsu, or
+    hg-git checkouts.
+
+    !!! warning "set `tag.prefix` when projects are tagged separately"
+
+        `git describe` picks the topologically nearest tag, which in a
+        monorepo tagged `pkg-a-v1.2`, `pkg-b-v3.0` may well belong to a
+        *different* project -- and the distance would then be counted from
+        that project's release.  A warning is emitted when the reachable tags
+        span several namespaces.  Repositories on a single release train
+        (`v1.2`, `v1.3` for everything) need no prefix.
+
+    !!! warning "shallow clones are rejected"
+
+        A scoped count walks history looking for commits that touch the paths,
+        so a truncated history does not merely shorten the answer -- it can
+        miss every relevant commit and report `0`, which reads as an exact tag.
+        This is an error regardless of `scm.git.pre_parse`.
+
+    !!! note "git archives carry a repository-wide distance"
+
+        `git archive` records its describe output through `%(describe)`, which
+        takes no pathspec, so an archive of a non-tag commit carries a count
+        that is an upper bound on the scoped one -- the version comes out too
+        high, and a warning says so.  An archive of a *tag* has distance `0`
+        and is exact either way, so release tarballs are unaffected.  Build
+        from an sdist, which carries the already-computed version.
+
+`scm.git.distance_count`
+:   How commits are counted once `scm.git.distance_scope` restricts them.
+    Ignored when `distance_scope` is not set.
+
+    - `"full-history"` (default): every commit whose content at the scoped
+      paths differs from a parent.  Counts work done on merged feature
+      branches, so the numbers can get large in merge-heavy repositories.
+    - `"first-parent"`: the same, restricted to the first-parent chain, so a
+      merged feature branch counts once no matter how many commits it held.
+      Counts on topic branches are not comparable to mainline's and can
+      *decrease* when the branch is merged, so use this only if you release
+      from mainline.
+
+    Both are set predicates over the commits reachable from `HEAD` but not from
+    the tag, so neither can make the distance shrink as mainline history
+    advances.  Git's own default history simplification (what plain
+    `git log -- path` shows) is deliberately not offered: it follows only one
+    parent at a merge, which *can* make the distance shrink.
+
 `git_describe_command` (deprecated)
 :   **Deprecated since 8.4.0**: Use `scm.git.describe_command` instead.
 

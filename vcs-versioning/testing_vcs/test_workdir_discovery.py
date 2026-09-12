@@ -431,3 +431,86 @@ class TestFallbackCandidatePriority:
         assert PoorWorkdir.discovery_priority == FallbackWorkdir.discovery_priority
         assert PoorWorkdir.discovery_priority > PkgInfoWorkdir.discovery_priority
         assert RichWorkdir.discovery_priority < MetadataWorkdir.discovery_priority
+
+
+class TestNearestFallbackWins:
+    """A monorepo root must not shadow a project's own metadata (#1522)."""
+
+    @staticmethod
+    def archival(describe_name: str) -> str:
+        return (
+            "node: 1111111111111111111111111111111111111111\n"
+            "node-date: 2024-01-01T00:00:00+00:00\n"
+            f"describe-name: {describe_name}\n"
+            "ref-names: HEAD -> main\n"
+        )
+
+    @pytest.fixture
+    def monorepo(self, tmp_path: Path) -> Path:
+        """An exported monorepo carrying an archival at both levels."""
+        project = tmp_path / "packages" / "pkg-a"
+        project.mkdir(parents=True)
+        (tmp_path / ".git_archival.txt").write_text(
+            self.archival("v9.9.9-42-g1111111"), encoding="utf-8"
+        )
+        (project / ".git_archival.txt").write_text(
+            self.archival("v1.0.0-3-g1111111"), encoding="utf-8"
+        )
+        (project / "pyproject.toml").write_text("[project]\n", encoding="utf-8")
+        return tmp_path
+
+    @pytest.mark.issue(1522)
+    def test_project_archival_beats_the_root_one(self, monorepo: Path) -> None:
+        config = Configuration(
+            relative_to=str(monorepo / "packages" / "pkg-a" / "pyproject.toml"),
+            root="../..",
+        )
+        result = discover_workdir(config)
+
+        assert result is not None
+        assert result.path == monorepo / "packages" / "pkg-a"
+        version = result.get_scm_version()
+        assert version is not None
+        assert str(version.tag) == "1.0.0"
+        assert version.distance == 3
+
+    @pytest.mark.issue(1522)
+    def test_root_archival_still_used_when_the_project_has_none(
+        self, monorepo: Path
+    ) -> None:
+        """Depth only breaks ties; it must not hide the root metadata."""
+        (monorepo / "packages" / "pkg-a" / ".git_archival.txt").unlink()
+        config = Configuration(
+            relative_to=str(monorepo / "packages" / "pkg-a" / "pyproject.toml"),
+            root="../..",
+        )
+        result = discover_workdir(config)
+
+        assert result is not None
+        version = result.get_scm_version()
+        assert version is not None
+        assert str(version.tag) == "9.9.9"
+
+    @pytest.mark.issue(1522)
+    def test_priority_still_outranks_depth(self, monorepo: Path) -> None:
+        """A richer fallback at the root beats a poorer one at the project.
+
+        Depth is only the tie-break; how much a workdir knows decides first
+        (#1507), so a root PKG-INFO must not win over a project archival --
+        and a root archival must still beat a project PKG-INFO.
+        """
+        project = monorepo / "packages" / "pkg-a"
+        (project / ".git_archival.txt").unlink()
+        (project / "PKG-INFO").write_text(
+            "Metadata-Version: 2.1\nName: pkg-a\nVersion: 5.5.5\n", encoding="utf-8"
+        )
+        config = Configuration(
+            relative_to=str(project / "pyproject.toml"), root="../.."
+        )
+        result = discover_workdir(config)
+
+        assert result is not None
+        version = result.get_scm_version()
+        assert version is not None
+        # The root archival (priority 20) outranks the project PKG-INFO (30).
+        assert str(version.tag) == "9.9.9"

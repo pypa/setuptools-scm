@@ -96,6 +96,32 @@ class DescribeCapable(GitQueryable, Protocol):
     def default_describe(self) -> CompletedProcess: ...
 
 
+class DistanceScopeCapable(DescribeCapable, Protocol):
+    """What path-restricted distance counting needs on top of describe.
+
+    Only the git backend implements this usefully.  ``GitWorkdirHgClient``
+    inherits the methods from ``GitWorkdir`` but emulates describe through
+    mercurial, so it sets ``supports_distance_scope`` to ``False`` and the
+    scope resolution refuses rather than counting zero commits (:issue:`1056`).
+    """
+
+    @property
+    def supports_distance_scope(self) -> bool: ...
+
+    @property
+    def project_path(self) -> str: ...
+
+    def count_nodes_in_scope(self, paths: Sequence[str], since: str | None) -> int: ...
+
+    def is_dirty_in_scope(self, paths: Sequence[str]) -> bool: ...
+
+    def tag_namespaces(self, match_glob: str) -> set[str]: ...
+
+    def is_shallow(self) -> bool: ...
+
+    def head_is_exact_tag(self) -> bool: ...
+
+
 class WorkdirState(Protocol):
     """Post-describe enrichment: what _git_parse_inner reads after describe.
 
