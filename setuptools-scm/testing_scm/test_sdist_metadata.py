@@ -8,14 +8,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from vcs_versioning._config import Configuration
 from vcs_versioning._fallback_workdir import MetadataWorkdir
-from vcs_versioning._fallback_workdir import PkgInfoWorkdir
 from vcs_versioning._scm_metadata import ScmVersionData
 from vcs_versioning._scm_metadata import read_scm_file_list
 from vcs_versioning._scm_metadata import read_scm_version_data
 from vcs_versioning._scm_metadata import write_scm_file_list
 from vcs_versioning._scm_metadata import write_scm_version_data
+from vcs_versioning._worktree_discovery import discover_workdir
 
 
 class TestEggInfoDiscovery:
@@ -86,23 +88,6 @@ class TestEggInfoDiscovery:
         assert files == ["mypkg/__init__.py", "mypkg/core.py"]
 
 
-class TestDiscoverPkgInfo:
-    def test_discover_pkginfo(self, tmp_path: Path) -> None:
-        from setuptools_scm._integration._discover import discover_pkginfo
-
-        (tmp_path / "PKG-INFO").write_text("Version: 1.0\n", encoding="utf-8")
-        config = Configuration()
-        result = discover_pkginfo(tmp_path, config=config)
-        assert result is not None
-        assert isinstance(result, PkgInfoWorkdir)
-
-    def test_discover_pkginfo_none(self, tmp_path: Path) -> None:
-        from setuptools_scm._integration._discover import discover_pkginfo
-
-        config = Configuration()
-        assert discover_pkginfo(tmp_path, config=config) is None
-
-
 class TestScmMetadataRoundTrip:
     def test_write_and_read_version_data(self, tmp_path: Path) -> None:
         data = ScmVersionData(
@@ -125,3 +110,52 @@ class TestScmMetadataRoundTrip:
         write_scm_file_list(tmp_path, files)
         result = read_scm_file_list(tmp_path)
         assert result == files
+
+
+class TestFallbackCandidatePriority:
+    @pytest.mark.issue(1507)
+    def test_egg_info_metadata_wins_over_pkginfo(self, tmp_path: Path) -> None:
+        """Richer metadata must win regardless of entry point order.
+
+        A setuptools-scm built sdist carries both a root PKG-INFO and
+        ``*.egg-info/scm_version.json``.  The two factories ship from
+        different distributions -- pkginfo from vcs-versioning, egg-info
+        from setuptools-scm -- so entry point iteration order cannot
+        decide this.  The test lives here because it needs the egg-info
+        entry point setuptools-scm registers (#1512).
+        """
+        (tmp_path / "PKG-INFO").write_text(
+            "Metadata-Version: 2.1\nName: pkg\nVersion: 1.0.0\n",
+            encoding="utf-8",
+        )
+        egg_info = tmp_path / "pkg.egg-info"
+        egg_info.mkdir()
+        write_scm_version_data(
+            egg_info,
+            ScmVersionData(
+                tag="1.0.0",
+                distance=3,
+                node="gdeadbee",
+                dirty=False,
+                branch="main",
+                node_date=None,
+            ),
+        )
+        write_scm_file_list(egg_info, ["pkg/__init__.py"])
+
+        config = Configuration(relative_to=str(tmp_path / "pyproject.toml"))
+        result = discover_workdir(config)
+        assert isinstance(result, MetadataWorkdir)
+        version = result.get_scm_version()
+        assert version is not None
+        assert version.distance == 3
+        assert result.list_tracked_files() == ["pkg/__init__.py"]
+
+
+@pytest.mark.issue(1212)
+def test_scm_search_failed_predicate() -> None:
+    """Only a known-failed SCM search suppresses the legacy file finders."""
+    from setuptools_scm._integration.egg_info import _scm_search_failed
+
+    # inference never ran -- nothing is known, finders must still probe
+    assert _scm_search_failed(None) is False

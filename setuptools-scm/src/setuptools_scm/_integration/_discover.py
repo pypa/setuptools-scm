@@ -1,6 +1,11 @@
 """Setuptools-scm discovery factories for the vcs_versioning.discover_workdir group.
 
 Provides egg-info based fallback discovery for setuptools builds.
+
+``PKG-INFO`` discovery moved to :mod:`vcs_versioning._fallback_workdir` --
+it is standard sdist metadata, not a setuptools artifact (:issue:`1507`).
+``discover_pkginfo`` stays re-exported here so entry points recorded by an
+older install keep resolving.
 """
 
 from __future__ import annotations
@@ -11,20 +16,10 @@ from pathlib import Path
 
 from vcs_versioning._config import Configuration
 from vcs_versioning._fallback_workdir import MetadataWorkdir
-from vcs_versioning._fallback_workdir import PkgInfoWorkdir
+from vcs_versioning._fallback_workdir import discover_pkginfo as discover_pkginfo
 from vcs_versioning._scm_metadata import SCM_VERSION_FILENAME
 
 log = logging.getLogger(__name__)
-
-
-def discover_pkginfo(path: Path, *, config: Configuration) -> PkgInfoWorkdir | None:
-    """Probe *path* for ``PKG-INFO`` (a setuptools sdist artifact).
-
-    Returns a ``PkgInfoWorkdir`` if found, ``None`` otherwise.
-    """
-    if (path / "PKG-INFO").is_file():
-        return PkgInfoWorkdir(path=path)
-    return None
 
 
 def discover_egg_info_metadata(

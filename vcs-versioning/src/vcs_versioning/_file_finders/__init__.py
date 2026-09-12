@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import logging
 import os
 import sys
-import warnings
-from collections.abc import Callable, Iterable, Mapping
-from pathlib import Path
+from collections.abc import Callable, Iterable, Iterator, Mapping
 
 if sys.version_info >= (3, 10):
     from typing import TypeGuard
@@ -14,9 +14,6 @@ else:
 
 from .. import _types as _t
 from .._compat import norm_real
-from .._entrypoints import entry_points
-from .._pyproject_reading import PyProjectData, read_pyproject
-from .._toml import InvalidTomlError
 
 log = logging.getLogger("vcs_versioning.file_finder")
 
@@ -129,105 +126,58 @@ def is_toplevel_acceptable(
     return toplevel not in ignore_vcs_roots
 
 
-def _pyproject_enables_scm(data: PyProjectData) -> bool:
-    """Return True if *data* matches setuptools-scm's ``should_infer`` rules.
+_FILE_FINDER_GROUPS = (
+    "setuptools_scm.files_command",
+    "setuptools_scm.files_command_fallback",
+)
 
-    Infer when an explicit ``[tool.setuptools_scm]`` / ``[tool.vcs-versioning]``
-    section is present, or when ``setuptools-scm[simple]`` is in
-    ``build-system.requires`` with ``version`` in ``project.dynamic``.
+_scm_search_failed: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "vcs_versioning_scm_search_failed", default=False
+)
+
+
+@contextlib.contextmanager
+def scm_search_known_failed() -> Iterator[None]:
+    """Mark that workdir discovery already ran and found no SCM.
+
+    Integrators that discover a workdir themselves (the setuptools
+    ``egg_info`` mixin) enter this around any code that may dispatch to
+    ``setuptools.file_finders``, so :func:`find_files` skips re-probing
+    every backend for a repository inference already proved absent.
     """
-    if data.section_present:
-        return True
-    if not data.project_present:
-        return False
-    dynamic = data.project.get("dynamic", [])
-    if not isinstance(dynamic, list) or "version" not in dynamic:
-        return False
-    from .._requirement_cls import Requirement, extract_package_name
-
-    for requirement_string in data.build_requires:
-        try:
-            requirement = Requirement(requirement_string)
-            if (
-                extract_package_name(requirement_string) == "setuptools-scm"
-                and "simple" in requirement.extras
-            ):
-                return True
-        except Exception:
-            continue
-    return False
-
-
-def _project_configures_scm(path: _t.PathT) -> bool:
-    """Return True if the project at *path* configures setuptools-scm."""
-    root = Path(os.fspath(path) or ".").resolve()
-    if not root.is_dir():
-        root = root.parent
-
-    pyproject = root / "pyproject.toml"
-    if pyproject.is_file():
-        try:
-            data = read_pyproject(pyproject)
-        except (OSError, InvalidTomlError):
-            pass
-        else:
-            if _pyproject_enables_scm(data):
-                return True
-
-    setup_py = root / "setup.py"
-    if setup_py.is_file():
-        try:
-            return "use_scm_version" in setup_py.read_text(encoding="utf-8")
-        except OSError:
-            return False
-    return False
-
-
-def _warn_if_file_finder_unconfigured(path: _t.PathT) -> None:
-    """Warn when the file-finder entry point runs without setuptools-scm config.
-
-    Library callers (and tests) that pass a bare VCS tree with no project
-    metadata are left alone; setuptools always has ``pyproject.toml`` or
-    ``setup.py`` when it invokes this entry point.
-    """
-    root = Path(os.fspath(path) or ".").resolve()
-    if not root.is_dir():
-        root = root.parent
-    if not (root / "pyproject.toml").is_file() and not (root / "setup.py").is_file():
-        return
-    if _project_configures_scm(path):
-        return
-    warnings.warn(
-        "The setuptools.file_finders entry point is deprecated and will be "
-        "removed in a future major release. Configure setuptools-scm via "
-        "[tool.setuptools_scm] in pyproject.toml or use_scm_version in "
-        "setup.py; file inclusion will then use the workdir API instead.",
-        DeprecationWarning,
-        stacklevel=3,
-    )
+    token = _scm_search_failed.set(True)
+    try:
+        yield
+    finally:
+        _scm_search_failed.reset(token)
 
 
 def find_files(path: _t.PathT = "") -> list[str]:
     """Discover files using registered file finder entry points.
 
-    Invoking this via the ``setuptools.file_finders`` entry point without
-    configuring setuptools-scm is deprecated and will be removed in a
-    future major release.
+    Backends are selected by the marker their entry point is named for
+    (``.git``, ``.hg``, ``.jj``, ...), so only plausible finders are
+    loaded and only their VCS commands run.
     """
-    eps = [
-        *entry_points(group="setuptools_scm.files_command"),
-        *entry_points(group="setuptools_scm.files_command_fallback"),
-    ]
-    result: list[str] = []
-    for ep in eps:
-        command: Callable[[_t.PathT], list[str]] = ep.load()
-        res: list[str] = command(path)
-        if res:
-            result = res
-            break
+    if _scm_search_failed.get():
+        log.debug("scm search already failed, skipping file finders")
+        return []
 
-    _warn_if_file_finder_unconfigured(path)
-    return result
+    from .._discover import iter_marker_entrypoints
+
+    # absolute: ``Path(".").parents`` is empty, so a relative root would
+    # never reach the marker of an enclosing checkout
+    root = os.path.abspath(os.fspath(path) or ".")
+
+    for group in _FILE_FINDER_GROUPS:
+        for ep, wd in iter_marker_entrypoints(root, group):
+            log.debug("file finder %s selected by marker in %s", ep.name, wd)
+            command: Callable[[_t.PathT], list[str]] = ep.load()
+            res: list[str] = command(path)
+            if res:
+                return res
+
+    return []
 
 
 def collect_files_and_dirs(
@@ -261,4 +211,5 @@ __all__ = [
     "find_files",
     "is_toplevel_acceptable",
     "scm_find_files",
+    "scm_search_known_failed",
 ]

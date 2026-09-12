@@ -40,11 +40,14 @@ def guess_next_dev_version(version: ScmVersion) -> str:
 def guess_next_simple_semver(
     version: ScmVersion, retain: int, increment: bool = True
 ) -> str:
+    # ``Version.release`` excludes the epoch, so it has to be put back or the
+    # guessed version sorts below the tag it was derived from.
+    epoch = f"{version.tag.epoch}!" if version.tag.epoch else ""
     if increment and getattr(version.tag, "dev", None) == 0:
         parts = list(version.tag.release)
         while len(parts) < SEMVER_LEN:
             parts.append(0)
-        return ".".join(str(i) for i in parts)
+        return epoch + ".".join(str(i) for i in parts)
     parts = list(version.tag.release[:retain])
     while len(parts) < retain:
         parts.append(0)
@@ -52,7 +55,7 @@ def guess_next_simple_semver(
         parts[-1] += 1
     while len(parts) < SEMVER_LEN:
         parts.append(0)
-    return ".".join(str(i) for i in parts)
+    return epoch + ".".join(str(i) for i in parts)
 
 
 def simplified_semver_version(version: ScmVersion) -> str:

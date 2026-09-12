@@ -75,6 +75,16 @@ c_non_normalize = Configuration(version_cls=NonNormalizedVersion)
             "3.0.0.dev1",
             id="dev0_anchor_single_commit",
         ),
+        pytest.param(
+            meta("1!2.0.0", distance=2, branch="default", config=c),
+            "1!2.0.1.dev2",
+            id="epoch_default_branch",
+        ),
+        pytest.param(
+            meta("1!2.0.0", distance=2, branch="feature/fun", config=c),
+            "1!2.1.0.dev2",
+            id="epoch_feature_branch",
+        ),
     ],
 )
 def test_next_semver(version: ScmVersion, expected_next: str) -> None:
@@ -127,6 +137,11 @@ def test_next_semver(version: ScmVersion, expected_next: str) -> None:
             meta("2.0.dev0", distance=5, branch="release-2.0", config=c),
             "2.0.dev5",
             id="dev0_anchor_release_branch",
+        ),
+        pytest.param(
+            meta("1!2.0.0", distance=2, branch="master", config=c),
+            "1!2.1.0.dev2",
+            id="epoch_development_branch",
         ),
     ],
 )

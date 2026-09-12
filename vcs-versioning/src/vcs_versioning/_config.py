@@ -112,6 +112,13 @@ def _get_default_git_pre_parse() -> _git.GitPreParse:
     return _git.GitPreParse.WARN_ON_SHALLOW
 
 
+def _get_default_git_distance_count() -> _git.GitDistanceCount:
+    """Get the default git distance_count enum value"""
+    from ._backends import _git
+
+    return _git.GitDistanceCount.FULL_HISTORY
+
+
 class ParseFunction(Protocol):
     def __call__(
         self, root: _t.PathT, *, config: Configuration
@@ -126,6 +133,31 @@ class GitConfiguration:
         default_factory=lambda: _get_default_git_pre_parse()
     )
     describe_command: _t.CMD_TYPE | None = None
+
+    distance_scope: bool | list[str] = False
+    """Restrict the distance count to commits touching the project (:issue:`1056`).
+
+    - ``False`` (default): count every commit since the tag, as before.
+    - ``True``: count only commits touching ``project_path``.
+    - list of paths: count commits touching ``project_path`` **or** any of
+      the listed directories, each relative to the VCS root.
+
+    ``[]`` is equivalent to ``True``.
+    """
+
+    distance_count: _git.GitDistanceCount = dataclasses.field(
+        default_factory=lambda: _get_default_git_distance_count()
+    )
+    """How path-restricted commits are counted; only used with ``distance_scope``."""
+
+    @property
+    def scope_paths(self) -> list[str] | None:
+        """``distance_scope`` normalised to extra paths, or ``None`` when off."""
+        if self.distance_scope is False:
+            return None
+        if self.distance_scope is True:
+            return []
+        return list(self.distance_scope)
 
     @classmethod
     def from_data(cls, data: dict[str, Any]) -> GitConfiguration:
@@ -145,7 +177,45 @@ class GitConfiguration:
                     f"Valid options are: {', '.join(valid_options)}"
                 ) from e
 
+        if "distance_count" in git_data and isinstance(git_data["distance_count"], str):
+            from ._backends import _git
+
+            try:
+                git_data["distance_count"] = _git.GitDistanceCount(
+                    git_data["distance_count"]
+                )
+            except ValueError as e:
+                valid_options = [option.value for option in _git.GitDistanceCount]
+                raise ValueError(
+                    f"Invalid git distance_count '{git_data['distance_count']}'. "
+                    f"Valid options are: {', '.join(valid_options)}"
+                ) from e
+
+        if "distance_scope" in git_data:
+            git_data["distance_scope"] = _check_distance_scope(
+                git_data["distance_scope"]
+            )
+
         return cls(**git_data)
+
+
+def _check_distance_scope(value: object) -> bool | list[str]:
+    """Validate ``scm.git.distance_scope`` from user configuration."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (list, tuple)) and all(isinstance(p, str) for p in value):
+        paths = [str(p) for p in value]
+        for path in paths:
+            if os.path.isabs(path) or path.startswith("/"):
+                raise ValueError(
+                    f"scm.git.distance_scope entry {path!r} must be relative to"
+                    " the VCS root, not absolute."
+                )
+        return paths
+    raise ValueError(
+        "scm.git.distance_scope must be a boolean or a list of paths relative"
+        f" to the VCS root, got {value!r}."
+    )
 
 
 @dataclasses.dataclass

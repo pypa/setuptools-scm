@@ -14,7 +14,7 @@ from enum import Enum
 from os.path import samefile
 from pathlib import Path
 from subprocess import CalledProcessError
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from .. import _discover as discover
 from .. import _types as _t
@@ -34,7 +34,7 @@ from ._scm_workdir import (
 )
 
 if TYPE_CHECKING:
-    from .._protocols import DescribeCapable, GitQueryable
+    from .._protocols import DistanceScopeCapable, GitQueryable
     from . import _hg_git as hg_git
 log = logging.getLogger(__name__)
 
@@ -67,6 +67,29 @@ def make_describe_command(match: str) -> list[str]:
 DEFAULT_DESCRIBE = make_describe_command("*[0-9]*")
 
 
+class GitDistanceCount(Enum):
+    """How commits are counted when ``scm.git.distance_scope`` restricts them.
+
+    Both policies are set predicates over the commits reachable from ``HEAD``
+    but not from the tag, so the count never decreases as history advances --
+    the property a version number depends on.  Git's default history
+    simplification is deliberately not offered: it is a traversal rule rather
+    than a predicate and can make the distance *shrink* across a merge.
+    """
+
+    FULL_HISTORY = "full-history"
+    """Every commit whose content at the scoped paths differs from a parent."""
+
+    FIRST_PARENT = "first-parent"
+    """The same, restricted to the first-parent chain (mainline changes only)."""
+
+
+_DISTANCE_COUNT_FLAGS: dict[GitDistanceCount, str] = {
+    GitDistanceCount.FULL_HISTORY: "--full-history",
+    GitDistanceCount.FIRST_PARENT: "--first-parent",
+}
+
+
 class GitPreParse(Enum):
     """Available git pre-parse functions"""
 
@@ -95,6 +118,14 @@ def run_git(
 
 class GitWorkdir(Workdir):
     """experimental, may change at any time"""
+
+    supports_distance_scope: ClassVar[bool] = True
+    """Whether ``scm.git.distance_scope`` can be honoured for this workdir.
+
+    ``GitWorkdirHgClient`` inherits from this class but emulates ``describe``
+    through mercurial and has no usable ``run_git``, so it must opt out rather
+    than silently count zero commits.
+    """
 
     def run_git(
         self,
@@ -238,6 +269,46 @@ class GitWorkdir(Workdir):
     def count_all_nodes(self) -> int:
         res = self.run_git(["rev-list", "HEAD"])
         return res.stdout.count("\n") + 1
+
+    def count_nodes_in_scope(self, paths: Sequence[str], since: str | None) -> int:
+        """Count commits touching *paths*, optionally only after *since*.
+
+        *since* is the raw tag name as ``git describe`` reported it, so it is
+        passed to ``rev-list`` verbatim.  ``None`` counts from the root.
+        """
+        flag = _DISTANCE_COUNT_FLAGS[self.config.scm.git.distance_count]
+        revs = f"{since}..HEAD" if since is not None else "HEAD"
+        res = self.run_git(["rev-list", "--count", flag, revs, "--", *paths])
+        return res.parse_success(parse=int, default=0, error_msg="scoped rev-list")
+
+    def is_dirty_in_scope(self, paths: Sequence[str]) -> bool:
+        return self.run_git(
+            ["status", "--porcelain", "--untracked-files=no", "--", *paths],
+        ).parse_success(
+            parse=bool,
+            default=False,
+        )
+
+    def tag_namespaces(self, match_glob: str) -> set[str]:
+        """Leading namespaces of the tags reachable from HEAD matching *glob*.
+
+        ``pkg-a/v1.2`` and ``pkg-b/v3.0`` yield ``{"pkg-a/", "pkg-b/"}``; a
+        repository tagged ``v1.2``, ``v1.3`` yields ``{""}``.  Used to detect
+        per-project tagging schemes where an unfiltered ``git describe`` would
+        pick a *sibling* project's tag.
+        """
+        res = self.run_git(["tag", "--merged", "HEAD", "--list", match_glob])
+        prefix = self.config.tag.prefix
+        namespaces = set()
+        for line in res.stdout.splitlines():
+            tag = line.strip()
+            if not tag:
+                continue
+            if prefix and tag.startswith(prefix):
+                tag = tag[len(prefix) :]
+            match = re.search(r"\d", tag)
+            namespaces.add(tag[: match.start()] if match else tag)
+        return namespaces
 
     def default_describe(self) -> _CompletedProcess:
         match_glob = self.config.tag.describe_match_glob()
@@ -490,8 +561,112 @@ def parse(
         return None
 
 
+SCOPE_NAMESPACE_DIAGNOSTIC = (
+    "scm.git.distance_scope is enabled, but the tags reachable from HEAD span"
+    " several project namespaces (%s).\n"
+    "git describe picks the topologically nearest tag, which may well belong to"
+    " a *different* project, and the distance would then be counted from that"
+    " project's release.\n"
+    "Set tag.prefix (or scm.git.describe_command) so only this project's tags"
+    " are considered, in %s."
+)
+
+
+def resolve_scope_paths(
+    wd: DistanceScopeCapable, config: Configuration
+) -> list[str] | None:
+    """Paths the distance count is restricted to, or ``None`` when disabled.
+
+    The project's own directory always participates; ``distance_scope`` may add
+    further directories (shared libraries, tooling) whose commits should also
+    move this project's version.
+    """
+    extra = config.scm.git.scope_paths
+    if extra is None:
+        return None
+
+    if not wd.supports_distance_scope:
+        raise ValueError(
+            "scm.git.distance_scope is not supported for"
+            f" {type(wd).__name__} at {wd.path}; it is a git-only feature."
+        )
+
+    project_path = wd.project_path
+    if not project_path:
+        raise ValueError(
+            "scm.git.distance_scope is set, but the project directory is the VCS"
+            f" root ({wd.path}), so restricting the count to it would be a no-op."
+            " Set root/relative_to so the project is below the VCS root, or drop"
+            " distance_scope."
+        )
+    return [project_path, *extra]
+
+
+def _warn_if_tags_span_namespaces(
+    wd: DistanceScopeCapable, config: Configuration
+) -> None:
+    """Report per-project tags that ``git describe`` may cross (:issue:`1056`).
+
+    Counting a distance from a sibling project's tag is silently wrong, and the
+    only cheap signal is that the reachable tags carry more than one namespace.
+    A single namespace -- one global release train, or tag.prefix already
+    narrowing to this project -- stays quiet.
+    """
+    namespaces = wd.tag_namespaces(config.tag.describe_match_glob())
+    if len(namespaces) < 2:
+        return
+    report_once(
+        f"scope-tag-namespaces:{wd.path}:{sorted(namespaces)}",
+        SCOPE_NAMESPACE_DIAGNOSTIC,
+        ", ".join(repr(ns) for ns in sorted(namespaces)),
+        config_location(config),
+    )
+
+
+def apply_distance_scope(
+    wd: DistanceScopeCapable,
+    config: Configuration,
+    tag: str,
+    distance: int,
+    dirty: bool,
+) -> tuple[int, bool]:
+    """Recount *distance* and *dirty* over the configured scope paths.
+
+    *tag* is the raw ref name as ``git describe`` reported it -- ``meta()`` has
+    not parsed it yet, which is why this runs here and not on the finished
+    ``ScmVersion``.
+    """
+    paths = resolve_scope_paths(wd, config)
+    if paths is None:
+        return distance, dirty
+
+    _warn_if_tags_span_namespaces(wd, config)
+    scoped = wd.count_nodes_in_scope(paths, since=tag)
+    log.debug("distance %s -> %s scoped to %s", distance, scoped, paths)
+    return scoped, wd.is_dirty_in_scope(paths)
+
+
+def _fail_on_shallow_scope(wd: DistanceScopeCapable, config: Configuration) -> None:
+    """A shallow clone cannot answer a path-restricted count.
+
+    ``warn_on_shallow`` is enough for a repository-wide distance, which merely
+    ends up too small.  A scoped count walks history looking for commits that
+    touch the paths, so a truncated history does not just shorten the answer --
+    it can miss every relevant commit and report zero, which reads as an exact
+    tag.
+    """
+    if config.scm.git.scope_paths is None:
+        return
+    if wd.is_shallow() and not wd.head_is_exact_tag():
+        raise ValueError(
+            f"{wd.path} is shallow and scm.git.distance_scope is enabled;"
+            ' the path-restricted distance would be wrong. Correct with "git'
+            ' fetch --unshallow", or drop distance_scope.'
+        )
+
+
 def version_from_describe(
-    wd: DescribeCapable,
+    wd: DistanceScopeCapable,
     config: Configuration,
     describe_command: _t.CMD_TYPE | None,
 ) -> ScmVersion | None:
@@ -514,6 +689,7 @@ def version_from_describe(
 
     def parse_describe(output: str) -> ScmVersion:
         tag, distance, node, dirty = _git_parse_describe(output)
+        distance, dirty = apply_distance_scope(wd, config, tag, distance, dirty)
         return meta(tag=tag, distance=distance, dirty=dirty, node=node, config=config)
 
     return describe_res.parse_success(parse=parse_describe)
@@ -526,6 +702,9 @@ def _git_parse_inner(
     describe_command: _t.CMD_TYPE | None = None,
 ) -> ScmVersion:
     # wd satisfies both DescribeCapable and WorkdirState protocols.
+    # The scope guard runs first: it is a hard error, and warn_on_shallow would
+    # otherwise report the same shallow clone as a mere warning.
+    _fail_on_shallow_scope(wd, config)
     if pre_parse:
         pre_parse(wd)
 
@@ -539,9 +718,15 @@ def _git_parse_inner(
             distance = 0
             dirty = True
         else:
-            distance = wd.count_all_nodes()
+            scope_paths = resolve_scope_paths(wd, config)
+            if scope_paths is None:
+                distance = wd.count_all_nodes()
+                dirty = wd.is_dirty()
+            else:
+                # No tag at all, so count this project's whole history.
+                distance = wd.count_nodes_in_scope(scope_paths, since=None)
+                dirty = wd.is_dirty_in_scope(scope_paths)
             node = "g" + node
-            dirty = wd.is_dirty()
         version = meta(
             tag=tag, distance=distance, dirty=dirty, node=node, config=config
         )
@@ -600,6 +785,7 @@ def archival_to_version(
         log.debug("describe-name is empty (no tags in repo), falling through")
     else:
         tag, number, node, _ = _git_parse_describe(archival_describe)
+        number = _archival_distance(number, config)
         return meta(
             tag,
             config=config,
@@ -621,6 +807,37 @@ def archival_to_version(
         return None
     else:
         return meta("0.0", node=node, config=config)
+
+
+ARCHIVAL_SCOPE_DIAGNOSTIC = (
+    "scm.git.distance_scope is enabled, but this build reads its version from a"
+    " git archive, whose describe output git can only record for the whole"
+    " repository -- ``%%(describe)`` takes no pathspec.\n"
+    "The distance %s is therefore an upper bound on the %d commit(s) that"
+    " actually touched this project, and the version comes out too high.\n"
+    "Build from an sdist (which carries the already-computed version) or from a"
+    " checkout for an exact number."
+)
+
+
+def _archival_distance(number: int, config: Configuration) -> int:
+    """Report that an archive's distance overshoots the scoped one (:issue:`1056`).
+
+    An archive of a *tag* has distance 0, and a scoped count of a zero-commit
+    range is also 0 -- the common release-tarball case is exact and stays
+    silent.  Beyond that the recorded count is repository-wide and can only be
+    too large, never too small, so the value is still usable; it just is not
+    the number the configuration asked for.
+    """
+    if number == 0 or config.scm.git.scope_paths is None:
+        return number
+    report_once(
+        f"archival-scope-overshoot:{number}",
+        ARCHIVAL_SCOPE_DIAGNOSTIC,
+        number,
+        number,
+    )
+    return number
 
 
 def parse_archival(root: _t.PathT, config: Configuration) -> ScmVersion | None:
