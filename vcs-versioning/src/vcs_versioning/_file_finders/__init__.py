@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import logging
 import os
 import sys
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 
 if sys.version_info >= (3, 10):
     from typing import TypeGuard
@@ -129,6 +131,26 @@ _FILE_FINDER_GROUPS = (
     "setuptools_scm.files_command_fallback",
 )
 
+_scm_search_failed: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "vcs_versioning_scm_search_failed", default=False
+)
+
+
+@contextlib.contextmanager
+def scm_search_known_failed() -> Iterator[None]:
+    """Mark that workdir discovery already ran and found no SCM.
+
+    Integrators that discover a workdir themselves (the setuptools
+    ``egg_info`` mixin) enter this around any code that may dispatch to
+    ``setuptools.file_finders``, so :func:`find_files` skips re-probing
+    every backend for a repository inference already proved absent.
+    """
+    token = _scm_search_failed.set(True)
+    try:
+        yield
+    finally:
+        _scm_search_failed.reset(token)
+
 
 def find_files(path: _t.PathT = "") -> list[str]:
     """Discover files using registered file finder entry points.
@@ -137,6 +159,10 @@ def find_files(path: _t.PathT = "") -> list[str]:
     (``.git``, ``.hg``, ``.jj``, ...), so only plausible finders are
     loaded and only their VCS commands run.
     """
+    if _scm_search_failed.get():
+        log.debug("scm search already failed, skipping file finders")
+        return []
+
     from .._discover import iter_marker_entrypoints
 
     # absolute: ``Path(".").parents`` is empty, so a relative root would
@@ -185,4 +211,5 @@ __all__ = [
     "find_files",
     "is_toplevel_acceptable",
     "scm_find_files",
+    "scm_search_known_failed",
 ]

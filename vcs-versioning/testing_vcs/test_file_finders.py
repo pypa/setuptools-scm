@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from pathlib import Path
 
 import pytest
-from vcs_versioning._file_finders import find_files
+from vcs_versioning._file_finders import find_files, scm_search_known_failed
 from vcs_versioning.test_api import WorkDir
 
 
@@ -306,6 +306,18 @@ def test_no_vcs_markers_spawns_no_subprocess(
 
     assert find_files() == []
     assert spawned == []
+
+
+@pytest.mark.issue(1212)
+def test_scm_search_known_failed_skips_finders(inwd: WorkDir) -> None:
+    """The suppression signal short-circuits even a working checkout."""
+    assert set(find_files()) == _sep({"file1", "adir/filea", "bdir/fileb"})
+
+    with scm_search_known_failed():
+        assert find_files() == []
+
+    # the signal is scoped, not sticky
+    assert set(find_files()) == _sep({"file1", "adir/filea", "bdir/fileb"})
 
 
 @pytest.mark.issue(1212)
