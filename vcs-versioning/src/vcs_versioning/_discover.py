@@ -45,6 +45,30 @@ def match_entrypoint(root: _t.PathT, name: str) -> bool:
 _BLOCKED_EP_TARGETS = {"setuptools_scm_git_archive:parse"}
 
 
+def iter_marker_entrypoints(
+    root: _t.PathT, entrypoint: str, *, search_parents: bool = True
+) -> Iterator[tuple[EntryPoint, Path]]:
+    """Yield ``(entry_point, directory)`` for markers present under *root*.
+
+    Entry-point names in the discovery groups are VCS markers (``.git``,
+    ``.hg``, ``.jj``, ``.git_archival.txt``), so a plain ``os.path.exists``
+    answers "is this backend even plausible here" without loading the
+    plugin or spawning its VCS command.
+
+    Config-free counterpart of :func:`iter_matching_entrypoints`, usable
+    from the ``setuptools.file_finders`` hook which gets only a path.
+    """
+    log.debug("looking for ep %s in %s", entrypoint, root)
+
+    for wd in walk_potential_roots(root, search_parents):
+        for ep in _entrypoints.entry_points(group=entrypoint):
+            if ep.value in _BLOCKED_EP_TARGETS:
+                continue
+            if match_entrypoint(wd, ep.name):
+                log.debug("found ep %s in %s", ep, wd)
+                yield ep, wd
+
+
 def iter_matching_entrypoints(
     root: _t.PathT, entrypoint: str, config: Configuration
 ) -> Iterable[EntryPoint]:
@@ -56,13 +80,8 @@ def iter_matching_entrypoints(
         read ``search_parent_directories``, write found parent to ``parent``.
     """
 
-    log.debug("looking for ep %s in %s", entrypoint, root)
-
-    for wd in walk_potential_roots(root, config.search_parent_directories):
-        for ep in _entrypoints.entry_points(group=entrypoint):
-            if ep.value in _BLOCKED_EP_TARGETS:
-                continue
-            if match_entrypoint(wd, ep.name):
-                log.debug("found ep %s in %s", ep, wd)
-                config.parent = wd
-                yield ep
+    for ep, wd in iter_marker_entrypoints(
+        root, entrypoint, search_parents=config.search_parent_directories
+    ):
+        config.parent = wd
+        yield ep

@@ -62,6 +62,9 @@ def _git_toplevel(path: str) -> str | None:
     except OSError:
         # git command not found, probably
         return None
+    except subprocess.TimeoutExpired:
+        log.warning("git rev-parse timed out - pretending this is not a git repo")
+        return None
 
 
 def _ancestors(name: str) -> Iterator[str]:
