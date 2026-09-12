@@ -32,6 +32,9 @@ def _jj_toplevel(path: str) -> str | None:
         return None
     except OSError:
         return None
+    except subprocess.TimeoutExpired:
+        log.warning("jj root timed out - pretending this is not a jj repo")
+        return None
 
 
 def _jj_ls_files_and_dirs(

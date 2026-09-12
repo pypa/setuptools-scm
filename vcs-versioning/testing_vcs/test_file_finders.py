@@ -306,3 +306,17 @@ def test_no_vcs_markers_spawns_no_subprocess(
 
     assert find_files() == []
     assert spawned == []
+
+
+@pytest.mark.issue(1212)
+def test_finder_survives_timeout(
+    inwd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A VCS command that times out degrades to "no files", not a traceback."""
+    import subprocess
+
+    def timing_out(cmd: list[str], **kw: object) -> None:
+        raise subprocess.TimeoutExpired(cmd, 1)
+
+    monkeypatch.setattr(subprocess, "run", timing_out)
+    assert find_files() == []

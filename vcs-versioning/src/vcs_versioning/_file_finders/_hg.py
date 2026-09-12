@@ -26,6 +26,9 @@ def _hg_toplevel(path: str) -> str | None:
     except OSError:
         # hg command not found, probably
         return None
+    except subprocess.TimeoutExpired:
+        log.warning("hg root timed out - pretending this is not a mercurial repo")
+        return None
 
 
 def _hg_ls_files_and_dirs(
