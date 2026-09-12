@@ -35,8 +35,9 @@ _setuptools_scm_logger = logging.getLogger("setuptools_scm")
 _DEPRECATION_MESSAGE = (
     "The setuptools.file_finders entry point is deprecated and will be "
     "removed in a future major release. Configure setuptools-scm via "
-    "[tool.setuptools_scm] in pyproject.toml or use_scm_version in "
-    "setup.py; file inclusion will then use the workdir API instead."
+    "[tool.setuptools_scm] in pyproject.toml, setuptools-scm[simple] in "
+    "build-system.requires, or use_scm_version in setup.py; file inclusion "
+    "will then use the workdir API instead."
 )
 
 

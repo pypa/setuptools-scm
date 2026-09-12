@@ -108,3 +108,31 @@ def test_configured_build_does_not_warn(
     wd.create_tag("v1.0")
 
     assert _DEPRECATION not in _build_sdist(wd.cwd)
+
+
+@pytest.mark.issue(1407)
+def test_simple_extra_build_does_not_warn(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """setuptools-scm[simple] configures inference, so it must stay quiet.
+
+    The deprecation message offers it as a remedy, so pin that it is one.
+    """
+    wd.setup_git(monkeypatch)
+    wd.cwd.joinpath("pyproject.toml").write_text(
+        dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm[simple]"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "simple-pkg"
+            dynamic = ["version"]
+        """),
+        encoding="utf-8",
+    )
+    wd.cwd.joinpath("mod.py").touch()
+    wd.add_and_commit()
+    wd.create_tag("v1.0")
+
+    assert _DEPRECATION not in _build_sdist(wd.cwd)
