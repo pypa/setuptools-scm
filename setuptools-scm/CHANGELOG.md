@@ -2,6 +2,19 @@
 
 <!-- towncrier release notes start -->
 
+## 10.3.0 (2026-09-12)
+
+### Deprecated
+
+- Emit a ``DeprecationWarning`` when the ``setuptools.file_finders`` entry point is invoked for a project that does not configure setuptools-scm. The entry point will be removed in a future major release. ([#1407](https://github.com/pypa/setuptools-scm/issues/1407))
+
+
+### Fixed
+
+- Run the `setuptools.file_finders` hook inside a setuptools-scm override context. It previously resolved settings under the `VCS_VERSIONING` prefix only, so documented variables such as `SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT` and `SETUPTOOLS_SCM_HG_COMMAND` were ignored when finding files.
+
+  When version inference has already run and found no SCM checkout, the `egg_info` mixin now tells the file finders so, rather than letting `walk_revctrl()` re-probe every backend for a repository known to be absent. ([#1212](https://github.com/pypa/setuptools-scm/issues/1212))
+
 ## 10.2.3 (2026-09-03)
 
 ### Miscellaneous

@@ -150,3 +150,12 @@ class TestFallbackCandidatePriority:
         assert version is not None
         assert version.distance == 3
         assert result.list_tracked_files() == ["pkg/__init__.py"]
+
+
+@pytest.mark.issue(1212)
+def test_scm_search_failed_predicate() -> None:
+    """Only a known-failed SCM search suppresses the legacy file finders."""
+    from setuptools_scm._integration.egg_info import _scm_search_failed
+
+    # inference never ran -- nothing is known, finders must still probe
+    assert _scm_search_failed(None) is False

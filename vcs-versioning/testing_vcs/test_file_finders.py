@@ -3,9 +3,10 @@ from __future__ import annotations
 import os
 import sys
 from collections.abc import Iterable
+from pathlib import Path
 
 import pytest
-from vcs_versioning._file_finders import find_files
+from vcs_versioning._file_finders import find_files, scm_search_known_failed
 from vcs_versioning.test_api import WorkDir
 
 
@@ -280,3 +281,54 @@ def test_file_finder_ignores_git_dir_env(
 
     # File finding should still work correctly
     assert set(find_files()) == expected_files
+
+
+@pytest.mark.issue(1212)
+def test_no_vcs_markers_spawns_no_subprocess(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A tree with no VCS marker must not probe any VCS command.
+
+    ``find_files`` is registered unconditionally by setuptools-scm, so an
+    unpacked sdist used to run ``hg root`` (and ``git rev-parse``) purely
+    to be told there is no repository -- which broke builds whenever
+    ``hg`` on PATH was slow enough to hit the subprocess timeout.
+    """
+    spawned: list[list[str]] = []
+
+    def fake_run(cmd: list[str], cwd: object, **kw: object) -> None:
+        spawned.append(cmd)
+        raise AssertionError(f"unexpected subprocess: {cmd}")
+
+    monkeypatch.setattr("vcs_versioning._run_cmd.run", fake_run)
+    (tmp_path / "some_file.py").touch()
+    monkeypatch.chdir(tmp_path)
+
+    assert find_files() == []
+    assert spawned == []
+
+
+@pytest.mark.issue(1212)
+def test_scm_search_known_failed_skips_finders(inwd: WorkDir) -> None:
+    """The suppression signal short-circuits even a working checkout."""
+    assert set(find_files()) == _sep({"file1", "adir/filea", "bdir/fileb"})
+
+    with scm_search_known_failed():
+        assert find_files() == []
+
+    # the signal is scoped, not sticky
+    assert set(find_files()) == _sep({"file1", "adir/filea", "bdir/fileb"})
+
+
+@pytest.mark.issue(1212)
+def test_finder_survives_timeout(
+    inwd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A VCS command that times out degrades to "no files", not a traceback."""
+    import subprocess
+
+    def timing_out(cmd: list[str], **kw: object) -> None:
+        raise subprocess.TimeoutExpired(cmd, 1)
+
+    monkeypatch.setattr(subprocess, "run", timing_out)
+    assert find_files() == []

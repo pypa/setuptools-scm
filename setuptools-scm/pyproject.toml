@@ -95,7 +95,7 @@ setuptools-scm = "vcs_versioning._cli:main"
 setuptools_scm = "vcs_versioning._cli:main"
 
 [project.entry-points."setuptools.file_finders"]
-setuptools_scm = "vcs_versioning._file_finders:find_files"
+setuptools_scm = "setuptools_scm._integration.file_finders:find_files"
 
 [project.entry-points."setuptools.finalize_distribution_options"]
 setuptools_scm = "setuptools_scm._integration.setuptools:infer_version"

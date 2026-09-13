@@ -5,6 +5,7 @@ import os
 from contextlib import suppress
 from datetime import date
 from pathlib import Path
+from typing import ClassVar
 
 from .. import _config as _config_mod
 from .. import _types as _t
@@ -24,6 +25,10 @@ _FAKE_GIT_DESCRIBE_ERROR = _CompletedProcess(
 
 
 class GitWorkdirHgClient(GitWorkdir, HgWorkdir):
+    # describe is emulated through mercurial, and run_git would point at a
+    # .git directory that does not exist here -- see resolve_scope_paths.
+    supports_distance_scope: ClassVar[bool] = False
+
     @classmethod
     def from_potential_worktree(
         cls, wd: _t.PathT, config: _config_mod.Configuration | None = None

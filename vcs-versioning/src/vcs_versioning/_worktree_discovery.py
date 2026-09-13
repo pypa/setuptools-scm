@@ -34,6 +34,16 @@ class DiscoveryFactory(Protocol):
     ) -> ScmWorkdir | FallbackWorkdir | None: ...
 
 
+def _depth(path: Path) -> int:
+    """How deep a probed directory sits, for ranking equally rich candidates.
+
+    Probed directories lie on one ancestor chain -- the project directory, the
+    SCM root, and its parents -- so the deepest is the one closest to the
+    project, and its metadata is the metadata that describes the project.
+    """
+    return len(path.parts)
+
+
 def _verify_project_path(workdir: ScmWorkdir, config: Configuration) -> bool:
     """Check that the discovered project_path matches the configured one."""
     if config.project_path is None:
@@ -70,11 +80,14 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
        - ScmWorkdir result: verify project_path, return immediately.
        - FallbackWorkdir result: stash as candidate, keep probing for SCM.
     2. Fallback phase: probe ``project_dir`` (if different from scm root).
-    3. Sort the stashed FallbackWorkdirs by ``discovery_priority`` and
-       return the first whose ``get_scm_version()`` is not None.  Trying
-       every candidate prevents an unprocessed ``.git_archival.txt`` from
-       shadowing a valid ``PKG-INFO`` (see :issue:`1431`); sorting keeps
-       the winner independent of entry point order (see :issue:`1507`).
+    3. Sort the stashed FallbackWorkdirs by ``discovery_priority``, then by
+       depth (nearest to the project first), and return the first whose
+       ``get_scm_version()`` is not None.  Trying every candidate prevents
+       an unprocessed ``.git_archival.txt`` from shadowing a valid
+       ``PKG-INFO`` (see :issue:`1431`); sorting by priority keeps the
+       winner independent of entry point order (see :issue:`1507`); sorting
+       by depth keeps a monorepo's root metadata from shadowing a project's
+       own (see :issue:`1522`).
     4. Try StaticWorkdir from config.fallback_version / parentdir_prefix_version.
     5. Return None.
     """
@@ -154,8 +167,9 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
     # unprocessed .git_archival.txt (raw $Format placeholders) would
     # shadow a valid PKG-INFO if we only kept the first candidate.
     # Richest metadata first, so the winner does not depend on entry point
-    # iteration order (#1507); stable, so probe order still breaks ties.
-    fallback_candidates.sort(key=lambda w: w.discovery_priority)
+    # iteration order (#1507); then nearest to the project, so a monorepo's
+    # root metadata does not shadow a project's own (#1522).
+    fallback_candidates.sort(key=lambda w: (w.discovery_priority, -_depth(w.path)))
     for candidate in fallback_candidates:
         if candidate.get_scm_version() is not None:
             log.info("using fallback workdir %s", type(candidate).__name__)

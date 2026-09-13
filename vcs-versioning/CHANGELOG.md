@@ -2,6 +2,20 @@
 
 <!-- towncrier release notes start -->
 
+## 2.4.0 (2026-09-12)
+
+### Added
+
+- Add `scm.git.distance_scope` and `scm.git.distance_count`, restricting the distance count to the commits that touch a monorepo project (and optionally further shared directories) instead of every commit in the repository. Counting uses `--full-history` by default, or `--first-parent`; git's default history simplification is not offered because it can make the distance shrink across a merge. Git only. ([#1056](https://github.com/pypa/setuptools-scm/issues/1056))
+
+
+### Fixed
+
+- Select file finders by the VCS marker their entry point is named for (`.git`, `.hg`, `.jj`) instead of running every backend's command in turn. A tree with no VCS marker -- an unpacked sdist, say -- now spawns no subprocess at all, so a slow `hg` on `PATH` can no longer fail an unrelated build.
+
+  The finders also survive a subprocess timeout: `subprocess.TimeoutExpired` was uncaught and aborted the build, and is now treated like any other failed probe. ([#1212](https://github.com/pypa/setuptools-scm/issues/1212))
+- Prefer the fallback metadata nearest the project directory. A `.git_archival.txt` or `PKG-INFO` at the VCS root no longer shadows a monorepo project's own, which silently produced the root project's version. ([#1522](https://github.com/pypa/setuptools-scm/issues/1522))
+
 ## 2.3.4 (2026-09-03)
 
 ### Fixed
