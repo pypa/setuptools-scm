@@ -128,6 +128,7 @@ env = {}
 overrides.export(env)
 # env now contains: {"TOOL_DEBUG": "20", "TOOL_SUBPROCESS_TIMEOUT": "40", ...}
 
+
 # Export via pytest monkeypatch
 def test_subprocess(monkeypatch):
     overrides = GlobalOverrides.from_active(debug=logging.DEBUG)
@@ -255,18 +256,19 @@ For structured configuration, use `read_toml()` with TypedDict schemas:
 from typing import TypedDict
 from vcs_versioning.overrides import EnvReader
 
+
 class MyConfigSchema(TypedDict, total=False):
     """Schema for configuration validation."""
+
     local_scheme: str
     version_scheme: str
     timeout: int
     enabled: bool
 
+
 reader = EnvReader(
     tools_names=("MY_TOOL", "VCS_VERSIONING"),
-    env={
-        "MY_TOOL_CONFIG": '{local_scheme = "no-local-version", timeout = 120}'
-    }
+    env={"MY_TOOL_CONFIG": '{local_scheme = "no-local-version", timeout = 120}'},
 )
 
 # Parse TOML with schema validation
@@ -294,7 +296,7 @@ If you use a slightly different normalization, you'll get a warning:
 reader = EnvReader(
     tools_names=("TOOL",),
     env={"TOOL_VAR_FOR_MY-PACKAGE": "value"},  # Using dashes
-    dist_name="my-package"
+    dist_name="my-package",
 )
 
 value = reader.read("VAR")
@@ -311,7 +313,7 @@ If you have a typo in the distribution name suffix, you'll get suggestions:
 reader = EnvReader(
     tools_names=("TOOL",),
     env={"TOOL_VAR_FOR_MY_PACKGE": "value"},  # Typo: PACKAGE
-    dist_name="my-package"
+    dist_name="my-package",
 )
 
 value = reader.read("VAR")
@@ -329,9 +331,7 @@ from vcs_versioning._overrides import PretendMetadataDict
 from vcs_versioning.overrides import EnvReader
 
 reader = EnvReader(
-    tools_names=("MY_TOOL", "VCS_VERSIONING"),
-    env=os.environ,
-    dist_name="my-package"
+    tools_names=("MY_TOOL", "VCS_VERSIONING"), env=os.environ, dist_name="my-package"
 )
 
 # Read TOML metadata
@@ -346,9 +346,7 @@ from vcs_versioning._overrides import ConfigOverridesDict
 from vcs_versioning.overrides import EnvReader
 
 reader = EnvReader(
-    tools_names=("MY_TOOL", "VCS_VERSIONING"),
-    env=os.environ,
-    dist_name="my-package"
+    tools_names=("MY_TOOL", "VCS_VERSIONING"), env=os.environ, dist_name="my-package"
 )
 
 # Read config overrides
@@ -360,9 +358,7 @@ overrides = reader.read_toml("OVERRIDES", schema=ConfigOverridesDict)
 
 ```python
 reader = EnvReader(
-    tools_names=("MY_TOOL", "VCS_VERSIONING"),
-    env=os.environ,
-    dist_name="my-package"
+    tools_names=("MY_TOOL", "VCS_VERSIONING"), env=os.environ, dist_name="my-package"
 )
 
 # Efficient: reuse reader for multiple variables
@@ -410,7 +406,7 @@ with GlobalOverrides.from_env("MY_TOOL"):
     reader = EnvReader(
         tools_names=("MY_TOOL", "VCS_VERSIONING"),
         env=os.environ,
-        dist_name="my-package"
+        dist_name="my-package",
     )
 
     custom_config = reader.read_toml("CUSTOM_CONFIG", schema=MySchema)
@@ -619,6 +615,7 @@ def main():
         # All operations here have access to overrides
         build_project()
 
+
 # ❌ Bad - repeated context application
 def build_project():
     with GlobalOverrides.from_env("HATCH_VCS"):
@@ -648,6 +645,7 @@ def test_custom_prefix():
     with GlobalOverrides.from_env("MYTOOL", env={"MYTOOL_DEBUG": "1"}):
         ...
 
+
 def test_fallback_prefix():
     with GlobalOverrides.from_env("MYTOOL", env={"VCS_VERSIONING_DEBUG": "1"}):
         ...
@@ -672,9 +670,11 @@ The override system uses `contextvars.ContextVar` for thread-local storage, maki
 import concurrent.futures
 from vcs_versioning.overrides import GlobalOverrides
 
+
 def build_package(tool_prefix: str) -> str:
     with GlobalOverrides.from_env(tool_prefix):
         return get_version()
+
 
 # Each thread has its own override context
 with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -693,17 +693,21 @@ If you're migrating code that directly reads environment variables:
 # Before
 import os
 
+
 def my_function():
     debug = os.environ.get("SETUPTOOLS_SCM_DEBUG")
     timeout = int(os.environ.get("SETUPTOOLS_SCM_SUBPROCESS_TIMEOUT", "40"))
     # ...
 
+
 # After
 from vcs_versioning.overrides import GlobalOverrides
+
 
 def main():
     with GlobalOverrides.from_env("MYTOOL"):
         my_function()  # Now uses override context automatically
+
 
 def my_function():
     # No changes needed! Internal vcs-versioning code uses the context
@@ -751,11 +755,11 @@ from vcs_versioning import (
 )
 from vcs_versioning.overrides import GlobalOverrides
 
+
 def get_version_for_my_tool(pyproject_path="pyproject.toml", dist_name=None):
     """Complete integrator workflow."""
     # 1. Setup global overrides context (handles env vars, logging, etc.)
     with GlobalOverrides.from_env("MY_TOOL", dist_name=dist_name):
-
         # 2. Load pyproject data
         pyproject = PyProjectData.from_file(pyproject_path)
 
@@ -866,7 +870,6 @@ class HatchVCSVersion:
         """Get version from VCS."""
         # Setup global context with HATCH_VCS prefix
         with GlobalOverrides.from_env("HATCH_VCS", dist_name=self.config["dist-name"]):
-
             # Load pyproject data
             pyproject_path = Path(self.root) / "pyproject.toml"
             pyproject = PyProjectData.from_file(pyproject_path)
