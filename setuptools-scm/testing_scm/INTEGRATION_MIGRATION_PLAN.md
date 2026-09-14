@@ -10,7 +10,9 @@ from vcs_versioning._version_inference import infer_version_string
 
 version = infer_version_string(
     dist_name="pkg",
-    pyproject_data=PyProjectData.for_testing(project_present=True, section_present=True, project_name="pkg"),
+    pyproject_data=PyProjectData.for_testing(
+        project_present=True, section_present=True, project_name="pkg"
+    ),
     overrides={"fallback_version": "1.2.3"},
 )
 ```
