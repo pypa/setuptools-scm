@@ -1436,6 +1436,59 @@ class _ForeignCommand:
     """
 
 
+_PYPROJECT_CONFIGURED = PyProjectData.for_testing(
+    tool_name="setuptools_scm",
+    is_required=True,
+    section_present=True,
+    project_present=True,
+)
+_PYPROJECT_UNCONFIGURED = PyProjectData.for_testing(
+    tool_name="setuptools_scm",
+    is_required=True,
+    section_present=False,
+    project_present=True,
+)
+
+
+@pytest.mark.issue(1529)
+@pytest.mark.filterwarnings("ignore:version of .* already set:UserWarning")
+@pytest.mark.parametrize(
+    ("pyproject_data", "current_version", "expect_registered"),
+    [
+        pytest.param(_PYPROJECT_UNCONFIGURED, None, False, id="not-configured"),
+        pytest.param(_PYPROJECT_CONFIGURED, "1.0.0", False, id="version-already-set"),
+        pytest.param(_PYPROJECT_CONFIGURED, None, True, id="configured"),
+    ],
+)
+def test_commands_registered_only_when_inference_produced_data(
+    pyproject_data: PyProjectData,
+    current_version: str | None,
+    expect_registered: bool,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Only touch the project's ``cmdclass`` when the mixins have data to act on.
+
+    Without ``VersionInferenceData`` on the distribution every mixin is a
+    no-op, so wrapping the project's commands can only cost -- it is how
+    setuptools-scm reached into builds of projects that never configured it.
+    """
+    monkeypatch.setenv(PRETEND_KEY, "1.2.3")
+    monkeypatch.setenv("SETUPTOOLS_SCM_WRITE_TO_SOURCE", "0")
+
+    dist = create_clean_distribution("cmdclass-gate-pkg")
+    dist.metadata.version = current_version
+    dist.cmdclass = {"build_py": _DistutilsBuildPy}
+
+    setuptools_integration.infer_version(dist, _given_pyproject_data=pyproject_data)
+
+    if expect_registered:
+        assert set(dist.cmdclass) == {"build_py", "egg_info", "bdist_wheel"}
+        assert dist.cmdclass["build_py"] is not _DistutilsBuildPy
+        assert issubclass(dist.cmdclass["build_py"], _DistutilsBuildPy)
+    else:
+        assert dist.cmdclass == {"build_py": _DistutilsBuildPy}
+
+
 @pytest.mark.issue(1529)
 @pytest.mark.parametrize(
     ("register_name", "command_name", "mixin_name", "project_command"),
