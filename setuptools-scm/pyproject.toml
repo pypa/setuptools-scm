@@ -2,7 +2,7 @@
 build-backend = "setuptools.build_meta"
 requires = [
   "setuptools>=45",
-  "vcs-versioning>=2.3.2.dev0,<3",
+  "vcs-versioning>=2.4.0.dev0,<3",
   # https://github.com/pypa/setuptools-scm/issues/1222: was <=2.0.2 for #1090 (old pip+toml);
   # pip 21.2+ vendors tomli, so the workaround is no longer needed.
   'tomli>=1; python_version < "3.11"',
@@ -38,9 +38,12 @@ dynamic = [
   "version",
 ]
 dependencies = [
-  # Core VCS functionality - workspace dependency
-  # Upper pin: setuptools-scm imports vcs-versioning internals; keep in sync.
-  "vcs-versioning>=2.3.2.dev0,<3",
+  # Core VCS functionality - workspace dependency.
+  # setuptools-scm imports vcs-versioning's private modules, so both bounds are
+  # real compatibility claims: raise the lower bound in the same change that
+  # starts using a newly added internal, here and in build-system.requires.
+  # CI enforces it -- see vcs_versioning_workspace.check_dependency_floor.
+  "vcs-versioning>=2.4.0.dev0,<3",
   "packaging>=20",
   # https://github.com/pypa/setuptools-scm/issues/1112 - re-pin in a breaking release
   "setuptools", # >= 61",
