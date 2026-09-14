@@ -23,6 +23,7 @@ from .setup_cfg import SetuptoolsBasicData
 from .setup_cfg import extract_from_legacy
 from .version_inference import GetVersionInferenceConfig
 from .version_inference import get_version_inference_config
+from .version_inference import VersionInferenceNoOp
 
 log = logging.getLogger(__name__)
 _setuptools_scm_logger = logging.getLogger("setuptools_scm")
@@ -279,6 +280,9 @@ def _infer_version_impl(
         pyproject_data=pyproject_data,
     )
     result.apply(dist)
+
+    if isinstance(result, VersionInferenceNoOp):
+        return   # ← don't wrap commands if version inference is not needed
 
     _register_build_py_command(dist)
     _register_egg_info_command(dist)
