@@ -14,14 +14,14 @@ jobs:
   # Forks: run on pull_request only (validation). Intentionally skip fork pushes; do not act on fork release branches/PRs.
   setuptools-scm:
     if: github.repository == 'pypa/setuptools-scm' || github.event_name == 'pull_request'
-    uses: ./.github/workflows/reusable-towncrier-release.yml
+    uses: $/.github/workflows/reusable-towncrier-release.yml
     with:
       project_name: setuptools-scm
       project_directory: setuptools-scm
 
   vcs-versioning:
     if: github.repository == 'pypa/setuptools-scm' || github.event_name == 'pull_request'
-    uses: ./.github/workflows/reusable-towncrier-release.yml
+    uses: $/.github/workflows/reusable-towncrier-release.yml
     with:
       project_name: vcs-versioning
       project_directory: vcs-versioning
@@ -68,7 +68,9 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # this job pushes the release branch, so it needs the checkout
+      # credentials that persist-credentials: false would drop
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 # zizmor: ignore[artipacked]
         with:
           fetch-depth: 0
 
@@ -139,11 +141,14 @@ jobs:
           echo "release_branch=release/${SOURCE_BRANCH}" >> "$GITHUB_OUTPUT"
 
       - name: Create release branch and push
+        env:
+          RELEASE_BRANCH: ${{ steps.meta.outputs.release_branch }}
+          RELEASES: ${{ steps.meta.outputs.releases }}
         run: |
-          git checkout -B "${{ steps.meta.outputs.release_branch }}"
+          git checkout -B "$RELEASE_BRANCH"
           git add -A
-          git commit -m "Prepare release: ${{ steps.meta.outputs.releases }}" || echo "No changes to commit"
-          git push origin "${{ steps.meta.outputs.release_branch }}" --force
+          git commit -m "Prepare release: $RELEASES" || echo "No changes to commit"
+          git push origin "$RELEASE_BRANCH" --force
 
       - name: Create or update PR
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0

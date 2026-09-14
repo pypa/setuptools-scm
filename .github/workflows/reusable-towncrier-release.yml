@@ -29,6 +29,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -45,41 +46,46 @@ jobs:
       - name: Check for fragments
         id: check
         working-directory: ${{ inputs.project_directory }}
+        env:
+          PROJECT_NAME: ${{ inputs.project_name }}
         run: |
           if [ ! -d "changelog.d" ]; then
-            echo "has_fragments=false" >> $GITHUB_OUTPUT
-            echo "No changelog.d directory for ${{ inputs.project_name }}, skipping"
+            echo "has_fragments=false" >> "$GITHUB_OUTPUT"
+            echo "No changelog.d directory for $PROJECT_NAME, skipping"
             exit 0
           fi
 
           FRAGMENT_COUNT=$(find changelog.d -type f -name "*.*.md" ! -name "template.md" ! -name "README.md" 2>/dev/null | wc -l)
 
           if [ "$FRAGMENT_COUNT" -eq 0 ]; then
-            echo "has_fragments=false" >> $GITHUB_OUTPUT
-            echo "No changelog fragments for ${{ inputs.project_name }}, skipping"
+            echo "has_fragments=false" >> "$GITHUB_OUTPUT"
+            echo "No changelog fragments for $PROJECT_NAME, skipping"
             exit 0
           fi
 
-          echo "has_fragments=true" >> $GITHUB_OUTPUT
-          echo "Found $FRAGMENT_COUNT fragment(s) for ${{ inputs.project_name }}"
+          echo "has_fragments=true" >> "$GITHUB_OUTPUT"
+          echo "Found $FRAGMENT_COUNT fragment(s) for $PROJECT_NAME"
 
       - name: Determine version
         if: steps.check.outputs.has_fragments == 'true'
         id: version
+        env:
+          PROJECT_NAME: ${{ inputs.project_name }}
+          PROJECT_DIRECTORY: ${{ inputs.project_directory }}
         run: |
           # Version scheme is read from the project's pyproject.toml config
           NEXT_VERSION=$(uv run python -m vcs_versioning \
-            -c ${{ inputs.project_directory }}/pyproject.toml \
+            -c "$PROJECT_DIRECTORY/pyproject.toml" \
             --strip-dev 2>&1 | grep -oP '^\d+\.\d+\.\d+' || echo "")
 
           if [ -z "$NEXT_VERSION" ]; then
-            echo "ERROR: Failed to determine version for ${{ inputs.project_name }}"
+            echo "ERROR: Failed to determine version for $PROJECT_NAME"
             echo "Version scheme did not return a valid version"
             exit 1
           fi
 
-          echo "version=$NEXT_VERSION" >> $GITHUB_OUTPUT
-          echo "Determined version: $NEXT_VERSION for ${{ inputs.project_name }}"
+          echo "version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Determined version: $NEXT_VERSION for $PROJECT_NAME"
 
   build-changelog:
     needs: determine-version
@@ -89,6 +95,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -104,9 +111,12 @@ jobs:
 
       - name: Run towncrier
         working-directory: ${{ inputs.project_directory }}
+        env:
+          PROJECT_NAME: ${{ inputs.project_name }}
+          NEXT_VERSION: ${{ needs.determine-version.outputs.version }}
         run: |
-          if ! uv run towncrier build --version "${{ needs.determine-version.outputs.version }}" --yes; then
-            echo "ERROR: towncrier build failed for ${{ inputs.project_name }}"
+          if ! uv run towncrier build --version "$NEXT_VERSION" --yes; then
+            echo "ERROR: towncrier build failed for $PROJECT_NAME"
             exit 1
           fi
 

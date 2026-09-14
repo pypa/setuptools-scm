@@ -15,6 +15,7 @@ from vcs_versioning.overrides import ensure_context
 
 from .build_py import ScmVersionFileMixin
 from .build_py import build_py as scm_build_py
+from .build_py import get_version_inference_data
 from .egg_info import ScmEggInfoMixin
 from .egg_info import egg_info as scm_egg_info
 from .pyproject_reading import PyProjectData
@@ -138,6 +139,19 @@ def _register_bdist_wheel_command(dist: setuptools.Distribution) -> None:
     log.debug("Wrapped project bdist_wheel with setuptools_scm egg2dist mixin")
 
 
+def _register_scm_commands(dist: setuptools.Distribution) -> None:
+    """Register the build commands that consume version inference data.
+
+    Call only once :func:`get_version_inference_data` reports data on
+    ``dist``: without it every mixin is inert, and wrapping a project's
+    ``cmdclass`` for no benefit is how setuptools-scm reached into builds
+    that never asked for it (#1529).
+    """
+    _register_build_py_command(dist)
+    _register_egg_info_command(dist)
+    _register_bdist_wheel_command(dist)
+
+
 def _log_hookstart(hook: str, dist: setuptools.Distribution) -> None:
     log.debug(
         "%s %s %s %r",
@@ -219,9 +233,14 @@ def version_keyword(
         )
         result.apply(dist)
 
-    _register_build_py_command(dist)
-    _register_egg_info_command(dist)
-    _register_bdist_wheel_command(dist)
+    if get_version_inference_data(dist) is None:
+        log.debug(
+            "no version inference data on the distribution, "
+            "leaving the project cmdclass untouched"
+        )
+        return
+
+    _register_scm_commands(dist)
 
 
 @ensure_context("SETUPTOOLS_SCM", additional_loggers=_setuptools_scm_logger)
@@ -280,6 +299,11 @@ def _infer_version_impl(
     )
     result.apply(dist)
 
-    _register_build_py_command(dist)
-    _register_egg_info_command(dist)
-    _register_bdist_wheel_command(dist)
+    if get_version_inference_data(dist) is None:
+        log.debug(
+            "no version inference data on the distribution, "
+            "leaving the project cmdclass untouched"
+        )
+        return
+
+    _register_scm_commands(dist)

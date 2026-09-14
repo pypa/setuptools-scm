@@ -30,6 +30,12 @@ from .build_py import get_version_inference_data
 if TYPE_CHECKING:
     from .build_py import VersionInferenceData
 
+    # Typing-only base -- see ``ScmEggInfoMixin`` for why the mixin has no
+    # runtime base class.
+    _MixinBase = _egg_info
+else:
+    _MixinBase = object
+
 log = logging.getLogger(__name__)
 
 
@@ -105,8 +111,12 @@ def _get_tracked_files(data: VersionInferenceData | None) -> list[str] | None:
     return None
 
 
-class ScmEggInfoMixin(_egg_info):
+class ScmEggInfoMixin(_MixinBase):
     """Mixin for the ``egg_info`` command.
+
+    Like :class:`~._integration.build_py.ScmVersionFileMixin` this has no
+    runtime base class, so wrapping a project's own ``egg_info`` never
+    reorders that project's MRO (#1529).
 
     * ``find_sources()`` -- uses the workdir from ``VersionInferenceData``
       to supply tracked files to ``manifest_maker`` without going through
