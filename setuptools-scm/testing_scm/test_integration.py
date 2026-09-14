@@ -8,6 +8,7 @@ import subprocess
 import sys
 import textwrap
 
+from distutils.command.build_py import build_py as _distutils_build_py
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import Any
@@ -1416,6 +1417,163 @@ def test_custom_build_py_still_writes_version_file(
         assert "custom_build_py_pkg/_version.py" in names, (
             f"Expected version file in wheel, got: {names}"
         )
+
+
+class _DistutilsBuildPy(_distutils_build_py):
+    """Stand-in for the common ``from distutils.command.build_py import build_py``.
+
+    Disjoint from ``setuptools.command.build_py.build_py``, which is what makes
+    the wrapped MRO order observable.
+    """
+
+
+class _ForeignCommand:
+    """Stand-in for a command from a hierarchy setuptools-scm knows nothing about.
+
+    ``egg_info`` and ``bdist_wheel`` have the same exposure -- projects do
+    register a ``bdist_wheel`` derived from the standalone ``wheel`` package
+    rather than setuptools' vendored copy.
+    """
+
+
+@pytest.mark.issue(1529)
+@pytest.mark.parametrize(
+    ("register_name", "command_name", "mixin_name", "project_command"),
+    [
+        pytest.param(
+            "_register_build_py_command",
+            "build_py",
+            "ScmVersionFileMixin",
+            _DistutilsBuildPy,
+            id="build_py",
+        ),
+        pytest.param(
+            "_register_egg_info_command",
+            "egg_info",
+            "ScmEggInfoMixin",
+            _ForeignCommand,
+            id="egg_info",
+        ),
+        pytest.param(
+            "_register_bdist_wheel_command",
+            "bdist_wheel",
+            "ScmBdistWheelMixin",
+            _ForeignCommand,
+            id="bdist_wheel",
+        ),
+    ],
+)
+def test_command_wrapping_preserves_project_mro(
+    register_name: str,
+    command_name: str,
+    mixin_name: str,
+    project_command: type,
+) -> None:
+    """Wrapping must not insert setuptools' own command into the project's MRO.
+
+    The mixins carry no runtime base class, so the wrapped class linearises
+    to exactly ``(wrapped, mixin, *project_command.__mro__)``.  Inheriting
+    from setuptools' command instead would place it ahead of a project class
+    built on a disjoint hierarchy -- e.g. ``distutils.command.build_py`` --
+    and swallow that class's ``run()``.
+    """
+    import setuptools
+
+    from setuptools_scm._integration import bdist_wheel as bdist_wheel_module
+    from setuptools_scm._integration import build_py as build_py_module
+    from setuptools_scm._integration import egg_info as egg_info_module
+
+    mixin = next(
+        getattr(module, mixin_name)
+        for module in (build_py_module, egg_info_module, bdist_wheel_module)
+        if hasattr(module, mixin_name)
+    )
+
+    dist = setuptools.Distribution()
+    dist.cmdclass = {command_name: project_command}
+    getattr(setuptools_integration, register_name)(dist)
+
+    wrapped = dist.cmdclass[command_name]
+    assert wrapped is not project_command
+    assert wrapped.__mro__ == (wrapped, mixin, *project_command.__mro__)
+
+
+@pytest.mark.issue(1529)
+def test_distutils_based_build_py_still_runs(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A project ``build_py`` derived from distutils keeps control of ``run()``.
+
+    Wrapping used to put ``setuptools.build_py`` ahead of such a class, and
+    ``setuptools.build_py.run()`` does not delegate any further -- so the
+    project's ``run()`` never executed.
+    """
+    monkeypatch.chdir(wd.cwd)
+
+    wd.write(
+        "pyproject.toml",
+        textwrap.dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "distutils-build-py-pkg"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            version_file = "distutils_build_py_pkg/_version.py"
+        """),
+    )
+
+    wd.write(
+        "setup.py",
+        textwrap.dedent("""\
+            from distutils.command.build_py import build_py as _build_py
+            from pathlib import Path
+
+            from setuptools import setup
+
+
+            class ProjectBuildPy(_build_py):
+                def run(self):
+                    Path("distutils_build_py_ran.txt").write_text("ran")
+                    super().run()
+
+
+            setup(
+                packages=["distutils_build_py_pkg"],
+                cmdclass={"build_py": ProjectBuildPy},
+            )
+        """),
+    )
+
+    pkg_dir = wd.cwd / "distutils_build_py_pkg"
+    pkg_dir.mkdir()
+    (pkg_dir / "__init__.py").write_text("")
+
+    wd.commit_testfile()
+    wd("git tag v1.2.3")
+
+    build_result = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--no-isolation"],
+        cwd=wd.cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert build_result.returncode == 0, (
+        f"Build failed:\nstdout: {build_result.stdout}\nstderr: {build_result.stderr}"
+    )
+    assert (wd.cwd / "distutils_build_py_ran.txt").exists(), (
+        "project build_py.run() was skipped by the wrapped MRO"
+    )
+
+    import zipfile
+
+    (wheel,) = (wd.cwd / "dist").glob("*.whl")
+    with zipfile.ZipFile(wheel) as whl:
+        assert "distutils_build_py_pkg/_version.py" in whl.namelist()
 
 
 @pytest.mark.issue(1298)
