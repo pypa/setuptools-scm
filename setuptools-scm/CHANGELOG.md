@@ -2,6 +2,16 @@
 
 <!-- towncrier release notes start -->
 
+## 10.3.1 (2026-09-14)
+
+### Fixed
+
+- Require ``vcs-versioning>=2.4.0``. setuptools-scm 10.3.0 declared ``>=2.3.2`` but
+  imports ``vcs_versioning._file_finders.scm_search_known_failed``, which vcs-versioning
+  only gained in 2.4.0, so installing it alongside an older vcs-versioning failed with
+  ``ImportError``. CI now installs setuptools-scm against the oldest vcs-versioning its
+  metadata permits, so the lower bound can no longer go stale unnoticed. ([#1528](https://github.com/pypa/setuptools-scm/issues/1528))
+
 ## 10.3.0 (2026-09-12)
 
 ### Deprecated
