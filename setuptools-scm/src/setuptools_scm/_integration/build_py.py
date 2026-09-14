@@ -23,6 +23,13 @@ if TYPE_CHECKING:
     from vcs_versioning._backends._scm_workdir import ScmWorkdir
     from vcs_versioning._fallback_workdir import FallbackWorkdir
 
+    # Typing-only base for the mixin: it supplies the command attributes and
+    # the ``super()`` targets the mixin uses, without placing setuptools'
+    # ``build_py`` in the runtime MRO.  See ``ScmVersionFileMixin``.
+    _MixinBase = _build_py
+else:
+    _MixinBase = object
+
 log = logging.getLogger(__name__)
 
 
@@ -186,11 +193,18 @@ def set_version_inference_data(dist: Distribution, data: VersionInferenceData) -
     cast(_DistWithScm, dist)._setuptools_scm_version_inference_data = data
 
 
-class ScmVersionFileMixin(_build_py):
+class ScmVersionFileMixin(_MixinBase):
     """Mixin that writes version files to build_lib and registers them as outputs.
 
     Place at the front of the MRO so its methods run first, then delegate
     to the next class via super(). Works with any build_py implementation.
+
+    The mixin has **no runtime base class**.  Inheriting from setuptools'
+    ``build_py`` here would inject it into the MRO of every wrapped project
+    command, ahead of the project's own class whenever that class derives
+    from ``distutils.command.build_py`` instead.  ``super().run()`` would
+    then reach ``setuptools.build_py.run()`` -- which does not delegate
+    further -- and the project's ``run()`` would never execute (#1529).
 
     For editable installs (strict mode), version files are registered in
     get_outputs() so setuptools copies them to the persistent auxiliary
