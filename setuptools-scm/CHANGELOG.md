@@ -2,6 +2,31 @@
 
 <!-- towncrier release notes start -->
 
+## 10.3.2 (2026-09-14)
+
+### Fixed
+
+- Stop the command mixins from reordering a project's own ``build_py``, ``egg_info``
+  or ``bdist_wheel`` MRO. ``ScmVersionFileMixin`` and friends inherited from the
+  corresponding setuptools command, so wrapping a project class built on a disjoint
+  hierarchy -- ``distutils.command.build_py``, or the standalone ``wheel`` package's
+  ``bdist_wheel`` -- placed setuptools' command *ahead* of the project's class.
+  ``setuptools.build_py.run()`` does not delegate any further, so the project's
+  ``run()`` was silently skipped, surfacing as
+  ``error: package directory '...' does not exist``. The mixins now carry no runtime
+  base class and linearise to ``(wrapped, mixin, *project_command.__mro__)``. ([#1531](https://github.com/pypa/setuptools-scm/issues/1531))
+- Leave a project's ``cmdclass`` alone when setuptools-scm is installed but not
+  actually inferring a version. ``build_py``, ``egg_info`` and ``bdist_wheel`` are
+  now registered only once version inference has stored data on the distribution --
+  the precondition for any of the mixins doing something. Previously every project
+  with a ``pyproject.toml`` had its commands wrapped, including projects with no
+  ``[tool.setuptools_scm]`` section at all.
+
+  Note for projects that *used* to configure setuptools-scm and no longer do: a
+  ``scm_version.json`` left behind in a stale ``*.egg-info`` directory is no longer
+  stripped from built wheels, because the ``bdist_wheel`` mixin that strips it is no
+  longer registered either. Remove the stale ``*.egg-info`` directory. ([#1533](https://github.com/pypa/setuptools-scm/issues/1533))
+
 ## 10.3.1 (2026-09-14)
 
 ### Fixed
