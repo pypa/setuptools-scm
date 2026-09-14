@@ -4,6 +4,10 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # don't pick up a release the moment it lands -- a compromised one is
+    # usually yanked well inside a week
+    cooldown:
+      default-days: 7
     groups:
       github-actions:
         patterns:
@@ -12,6 +16,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 7
     groups:
       uv:
         patterns:

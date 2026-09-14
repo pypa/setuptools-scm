@@ -65,6 +65,11 @@ repos:
     hooks:
       - id: sp-repo-review
 
+-   repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: v1.26.1
+    hooks:
+    -   id: zizmor
+
 -   repo: https://github.com/codespell-project/codespell
     rev: v2.4.3
     hooks:

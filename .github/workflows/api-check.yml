@@ -25,6 +25,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -41,11 +42,11 @@ jobs:
           LATEST_TAG=$(git describe --tags --abbrev=0 --match 'setuptools-scm-v*' origin/main 2>/dev/null || echo "")
           if [ -z "$LATEST_TAG" ]; then
             echo "No tags found on origin/main, skipping API check"
-            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "skip=true" >> "$GITHUB_OUTPUT"
           else
             echo "Latest release tag: $LATEST_TAG"
-            echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
-            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "tag=$LATEST_TAG" >> "$GITHUB_OUTPUT"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Install dependencies
@@ -54,7 +55,9 @@ jobs:
 
       - name: Check API stability against latest release
         if: steps.latest-tag.outputs.skip != 'true'
+        env:
+          LATEST_TAG: ${{ steps.latest-tag.outputs.tag }}
         run: |
-          echo "Comparing current code against tag: ${{ steps.latest-tag.outputs.tag }}"
+          echo "Comparing current code against tag: $LATEST_TAG"
           # Use local check_api.py script which includes griffe-public-wildcard-imports extension
-          uv run --no-sync python setuptools-scm/check_api.py --against ${{ steps.latest-tag.outputs.tag }}
+          uv run --no-sync python setuptools-scm/check_api.py --against "$LATEST_TAG"
