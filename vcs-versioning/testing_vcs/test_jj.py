@@ -215,7 +215,7 @@ def test_jj_missing_binary_error_names_a_usable_env_var(tmp_path: Path) -> None:
 
     (tmp_path / ".jj").mkdir()
     env = VcsEnvironment.from_env("SETUPTOOLS_SCM", env={})
-    config = env.build_config(root=tmp_path)
+    config = Configuration(root=tmp_path, _env=env)
 
     with patch(
         "vcs_versioning._backends._discover_vcs.has_command", return_value=False
