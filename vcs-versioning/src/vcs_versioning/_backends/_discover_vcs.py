@@ -37,9 +37,7 @@ def discover(path: Path, *, config: Configuration) -> ScmWorkdir | None:
 
     if has_jj and not config.env.disable_jj:
         if not has_command("jj", args=["version"], warn=False):
-            disable_vars = " or ".join(
-                f"{tool}_DISABLE_JJ=1" for tool in config.env.tool_names
-            )
+            disable_vars = config.env.make_reader().describe("DISABLE_JJ", "1")
             raise LookupError(
                 f"Jujutsu (jj) repository detected at {path} but the 'jj' "
                 "command is not available. Install jj "
