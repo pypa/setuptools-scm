@@ -262,3 +262,48 @@ class TestReadNamedEnvEnhanced:
 
         # Should still try dist-specific lookup but fall back to generic
         assert result == "generic"
+
+
+class TestCandidateNames:
+    """candidate_names must stay in lockstep with what read() honours."""
+
+    @pytest.mark.parametrize("dist_name", [None, "my-package", "My.Pkg"])
+    def test_every_candidate_is_read(self, dist_name: str | None) -> None:
+        reader = EnvReader(
+            tools_names=("SETUPTOOLS_SCM", "VCS_VERSIONING"),
+            env={},
+            dist_name=dist_name,
+        )
+        candidates = reader.candidate_names("TEST")
+        assert candidates
+
+        for candidate in candidates:
+            probe = EnvReader(
+                tools_names=reader.tools_names,
+                env={candidate: "found"},
+                dist_name=dist_name,
+            )
+            assert probe.read("TEST") == "found", candidate
+
+    def test_order_is_dist_specific_then_generic(self) -> None:
+        reader = EnvReader(
+            tools_names=("HATCH_VCS", "VCS_VERSIONING"),
+            env={},
+            dist_name="my-package",
+        )
+        assert reader.candidate_names("PRETEND_VERSION") == (
+            "HATCH_VCS_PRETEND_VERSION_FOR_MY_PACKAGE",
+            "VCS_VERSIONING_PRETEND_VERSION_FOR_MY_PACKAGE",
+            "HATCH_VCS_PRETEND_VERSION",
+            "VCS_VERSIONING_PRETEND_VERSION",
+        )
+
+    def test_describe_renders_advice(self) -> None:
+        reader = EnvReader(tools_names=("SETUPTOOLS_SCM", "VCS_VERSIONING"), env={})
+
+        assert reader.describe("DISABLE_JJ", "1") == (
+            "SETUPTOOLS_SCM_DISABLE_JJ=1 or VCS_VERSIONING_DISABLE_JJ=1"
+        )
+        assert reader.describe("DISABLE_JJ") == (
+            "SETUPTOOLS_SCM_DISABLE_JJ or VCS_VERSIONING_DISABLE_JJ"
+        )
