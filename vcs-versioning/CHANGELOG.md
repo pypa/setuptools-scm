@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 2.4.1 (2026-09-15)
+
+### Fixed
+
+- The error raised when a `.jj/` directory is found but `jj` is not installed now names the environment variables that actually disable jj discovery (`SETUPTOOLS_SCM_DISABLE_JJ=1` / `VCS_VERSIONING_DISABLE_JJ=1`) instead of an unprefixed `DISABLE_JJ=1`, which was never read. ([#1537](https://github.com/pypa/setuptools-scm/issues/1537))
+
 ## 2.4.0 (2026-09-12)
 
 ### Added
