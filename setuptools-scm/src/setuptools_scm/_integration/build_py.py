@@ -10,8 +10,11 @@ from __future__ import annotations
 import logging
 
 from dataclasses import dataclass
+from enum import Enum
+from functools import cached_property
 from pathlib import Path
 from typing import TYPE_CHECKING
+from typing import Final
 from typing import cast
 
 from setuptools.command.build_py import build_py as _build_py
@@ -148,6 +151,21 @@ def _transform_version_file_path(
     return version_file
 
 
+class _NotDiscovered(Enum):
+    """Sentinel type for "discovery has not run yet"."""
+
+    token = 0
+
+
+NOT_DISCOVERED: Final = _NotDiscovered.token
+"""Marks a :class:`VersionInferenceData` whose workdir is still unknown.
+
+Distinct from ``None``, which means discovery ran and found no checkout.
+Collapsing the two is what let a pretended version drop every tracked file
+from the built artifacts (#1540).
+"""
+
+
 @dataclass(frozen=True)
 class VersionInferenceData:
     """Data from version inference stored on the distribution.
@@ -165,9 +183,31 @@ class VersionInferenceData:
     scm_version: ScmVersion | None
     """The ScmVersion object (may be None if from fallback/pretend)."""
 
-    workdir: ScmWorkdir | FallbackWorkdir | None = None
-    """The discovered workdir, if any.  Carried here so the egg_info mixin
-    can write metadata files and provide file-finder data without a ContextVar."""
+    _workdir: ScmWorkdir | FallbackWorkdir | _NotDiscovered | None = NOT_DISCOVERED
+    """Backing store for :attr:`workdir`.
+
+    Inference passes the workdir it discovered on its way to a version, or
+    :data:`NOT_DISCOVERED` when it short-circuited and never looked.
+    """
+
+    @cached_property
+    def workdir(self) -> ScmWorkdir | FallbackWorkdir | None:
+        """The project's workdir, discovered on first use.
+
+        Most builds only ever want a version, so inference does not discover
+        a workdir it does not need -- a pretended version answers without
+        touching the SCM at all.  Only the consumers that need a *file list*
+        ask for this, and discovery runs then, once.
+
+        The laziness has to be invisible from the outside.  Handing out
+        ``None`` for "nobody looked yet" reads as "there is no checkout
+        here", and the egg_info mixin acts on that by suppressing the file
+        finders, which silently empties the sdist and the wheel (#1540).
+        """
+        if isinstance(self._workdir, _NotDiscovered):
+            log.debug("discovering workdir on demand for file listing")
+            return self.config.discover_workdir()
+        return self._workdir
 
 
 class _DistWithScm:

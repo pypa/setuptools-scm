@@ -77,21 +77,28 @@ def _normalize_tracked_files(files: list[str]) -> list[str]:
 
 
 def _scm_search_failed(data: VersionInferenceData | None) -> bool:
-    """Whether inference already ran and turned up no SCM workdir.
+    """Whether the SCM search ran and turned up no workdir.
 
     ``data is None`` means inference never ran (setuptools-scm is merely
     installed), so nothing is known and the finders must still probe.
-    A :class:`FallbackWorkdir` means discovery fell back to archival or
-    PKG-INFO metadata -- the SCM search itself failed.
+
+    Otherwise reading ``data.workdir`` is what settles the question, and it
+    runs discovery now if inference short-circuited past it -- asking is the
+    only honest answer to "did the search fail", and this is the moment a
+    file list is actually wanted.  ``None`` then means no checkout, and a
+    :class:`FallbackWorkdir` means discovery landed on archival or PKG-INFO
+    metadata, so the SCM search itself failed.
     """
     if data is None:
         return False
-    if data.workdir is None:
+
+    workdir = data.workdir
+    if workdir is None:
         return True
 
     from vcs_versioning._fallback_workdir import FallbackWorkdir
 
-    return isinstance(data.workdir, FallbackWorkdir)
+    return isinstance(workdir, FallbackWorkdir)
 
 
 def _get_tracked_files(data: VersionInferenceData | None) -> list[str] | None:
@@ -156,12 +163,18 @@ class ScmEggInfoMixin(_MixinBase):
         super().run()
 
     def _write_scm_metadata(self) -> None:
-        """Write ``scm_version.json`` and ``scm_file_list.json`` into egg-info."""
+        """Write ``scm_version.json`` and ``scm_file_list.json`` into egg-info.
+
+        The two files answer different questions and are written
+        independently.  ``scm_version.json`` records what the SCM said about
+        the version, so a preformatted version -- a pretended one -- must not
+        be written there and passed off as SCM truth.  ``scm_file_list.json``
+        records which files the checkout tracks, which a pretended version
+        says nothing about, so it is written whenever a workdir can list
+        them (#1540).
+        """
         data = get_version_inference_data(self.distribution)
         if data is None:
-            return
-        scm_version = data.scm_version
-        if scm_version is None or scm_version.preformatted:
             return
 
         try:
@@ -171,18 +184,14 @@ class ScmEggInfoMixin(_MixinBase):
 
             egg_info_dir = Path(self.egg_info)
 
-            version_data = scm_version_data_from_scm_version(scm_version)
-            write_scm_version_data(egg_info_dir, version_data)
+            scm_version = data.scm_version
+            if scm_version is not None and not scm_version.preformatted:
+                version_data = scm_version_data_from_scm_version(scm_version)
+                write_scm_version_data(egg_info_dir, version_data)
 
-            if data.workdir is not None:
-                try:
-                    files = data.workdir.list_tracked_files(data.workdir.project_root)
-                    if files:
-                        write_scm_file_list(
-                            egg_info_dir, _normalize_tracked_files(files)
-                        )
-                except NotImplementedError:
-                    log.debug("workdir does not support list_tracked_files")
+            tracked = _get_tracked_files(data)
+            if tracked:
+                write_scm_file_list(egg_info_dir, tracked)
 
         except Exception:
             log.debug("failed to write SCM metadata to egg-info", exc_info=True)
