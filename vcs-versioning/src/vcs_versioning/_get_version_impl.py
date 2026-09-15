@@ -210,11 +210,15 @@ def _find_scm_in_parents(config: Configuration) -> Path | None:
     return None
 
 
-def _version_missing(
-    config: Configuration, *, tool: str = "SETUPTOOLS_SCM"
-) -> NoReturn:
+def _version_missing(config: Configuration) -> NoReturn:
+    from ._overrides import describe_env_vars, env_var_name
+
+    tool_names = config.env.tool_names
+    tool = tool_names[0]
+    # SETUPTOOLS_SCM -> setuptools-scm, VCS_VERSIONING -> vcs-versioning
+    tool_label = tool.lower().replace("_", "-")
     base_error = (
-        f"setuptools-scm was unable to detect version for {config.absolute_root}.\n\n"
+        f"{tool_label} was unable to detect version for {config.absolute_root}.\n\n"
     )
 
     # If relative_to is not set, check for SCM repositories in parent directories
@@ -225,10 +229,9 @@ def _version_missing(
     if scm_parent is not None:
         if tool == "SETUPTOOLS_SCM":
             api_example = "setuptools_scm.get_version(relative_to=__file__)"
-            tool_section = "[tool.setuptools_scm]"
         else:
             api_example = "vcs_versioning.get_version(relative_to=__file__)"
-            tool_section = "[tool.vcs-versioning]"
+        tool_section = f"[tool.{config.env.pyproject_tool_names()[0]}]"
 
         error_msg = (
             base_error
@@ -246,6 +249,17 @@ def _version_missing(
             "For more information, see: https://setuptools-scm.readthedocs.io/en/latest/config/"
         )
     else:
+        if config.dist_name is None:
+            # No dist name to normalize -- show the placeholder the docs use.
+            pretend_names = [
+                f"{env_var_name(t, 'PRETEND_VERSION')}_FOR_${{NORMALIZED_DIST_NAME}}"
+                for t in tool_names
+            ]
+        else:
+            pretend_names = [
+                env_var_name(t, "PRETEND_VERSION", config.dist_name) for t in tool_names
+            ]
+        pretend_vars = describe_env_vars(pretend_names)
         error_msg = (
             base_error
             + "Make sure you're either building from a fully intact git repository "
@@ -255,8 +269,8 @@ def _version_missing(
             "For example, if you're using pip, instead of "
             "https://github.com/user/proj/archive/master.zip "
             "use git+https://github.com/user/proj.git#egg=proj\n\n"
-            "Alternatively, set the version with the environment variable "
-            "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME} as described "
+            "Alternatively, set the version in the environment with "
+            f"{pretend_vars}, as described "
             "in https://setuptools-scm.readthedocs.io/en/latest/config/"
         )
 

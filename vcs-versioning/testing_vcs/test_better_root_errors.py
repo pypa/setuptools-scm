@@ -8,13 +8,18 @@ in a parent directory.
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 import pytest
 from vcs_versioning import Configuration
+from vcs_versioning._environment import VcsEnvironment
 from vcs_versioning._get_version_impl import (
     _find_scm_in_parents,
     _version_missing,
     get_version,
 )
+from vcs_versioning._overrides import _read_pretended_version_for
 from vcs_versioning.test_api import WorkDir
 
 # No longer need to import setup functions - using WorkDir methods directly
@@ -182,3 +187,53 @@ def test_integration_better_error_from_nested_directory(
     # Should suggest helpful solutions
     assert f"repository was found in a parent directory: {wd.cwd}" in error_message
     assert "search_parent_directories = true" in error_message
+
+
+def _suggested_pretend_vars(message: str) -> list[str]:
+    return re.findall(
+        r"\b([A-Z][A-Z_]*PRETEND_VERSION(?:_FOR_\S+?)?)(?=[,\s])", message
+    )
+
+
+@pytest.mark.parametrize("tool", ["SETUPTOOLS_SCM", "HATCH_VCS"])
+def test_version_missing_suggests_usable_pretend_vars(
+    tmp_path: Path, tool: str
+) -> None:
+    """Every env var the "no version found" error names must actually be read."""
+    env = VcsEnvironment.from_env(tool, env={})
+    config = Configuration(root=tmp_path, dist_name="My-Pkg.Name", _env=env)
+
+    with pytest.raises(LookupError) as exc_info:
+        _version_missing(config)
+
+    message = str(exc_info.value)
+    assert tool.lower().replace("_", "-") in message
+
+    suggested = _suggested_pretend_vars(message)
+    assert suggested, f"error suggests no env var: {message}"
+    for name in suggested:
+        pretended = _read_pretended_version_for(config, env={name: "1.2.3"})
+        assert pretended is not None, f"{name} is suggested but not read"
+        assert str(pretended.tag) == "1.2.3"
+
+
+def test_version_missing_placeholder_names_are_usable(tmp_path: Path) -> None:
+    """Without a dist name the message shows a placeholder that resolves correctly.
+
+    Uses a bare vcs-versioning environment, where only ``VCS_VERSIONING_*``
+    is read -- the case that used to be told to set ``SETUPTOOLS_SCM_*``.
+    """
+    env = VcsEnvironment.from_env(env={})
+    config = Configuration(root=tmp_path, _env=env)
+
+    with pytest.raises(LookupError) as exc_info:
+        _version_missing(config)
+
+    suggested = _suggested_pretend_vars(str(exc_info.value))
+    assert suggested
+    named_config = Configuration(root=tmp_path, dist_name="my-pkg", _env=env)
+    for template in suggested:
+        assert template.endswith("_FOR_${NORMALIZED_DIST_NAME}")
+        name = template.replace("${NORMALIZED_DIST_NAME}", "MY_PKG")
+        pretended = _read_pretended_version_for(named_config, env={name: "1.2.3"})
+        assert pretended is not None, f"{name} is suggested but not read"
