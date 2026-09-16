@@ -186,3 +186,50 @@ def discover_workdir(config: Configuration) -> AnyWorkdir | None:
         return static
 
     return None
+
+
+def discover_file_workdir(config: Configuration) -> ScmWorkdir | None:
+    """Find the checkout the project *sits in*, for listing files only.
+
+    :func:`discover_workdir` answers which checkout defines the version, and
+    ``root`` / ``search_parent_directories`` deliberately scope that.  Which
+    files the project ships is a different question: a ``pyproject.toml`` in
+    a subdirectory of a checkout still ships that checkout's files, even
+    though it told versioning not to look up there (:issue:`1540`).
+
+    Parents are therefore always searched, and only live SCM checkouts
+    qualify -- fallback metadata is the version workdir's job.
+
+    ``project_path`` is deliberately not verified.  It is measured from the
+    declared ``root``, while a workdir measures it from the real checkout;
+    this function only runs when those are different directories, so the two
+    disagree by construction and comparing them says nothing.
+    """
+    from ._compat import norm_real
+    from ._file_finders import is_toplevel_acceptable
+
+    factories = _load_discovery_factories()
+    project_dir = config._resolved_paths.project_dir
+    start = config._resolved_paths.scm_probe_root
+
+    for current in [start, *start.parents]:
+        # norm_real because IGNORE_VCS_ROOTS is matched normcased and
+        # symlink-resolved, the way the file finders pass their toplevel
+        if not is_toplevel_acceptable(norm_real(current)):
+            continue
+        for ep_name, factory in factories:
+            try:
+                result = factory(current, config=config)
+            except Exception:
+                log.debug("factory %s raised at %s", ep_name, current, exc_info=True)
+                continue
+            if isinstance(result, ScmWorkdir):
+                result.project_root = project_dir
+                result._config = config
+                log.info(
+                    "listing files from the enclosing checkout %s (factory=%s)",
+                    current,
+                    ep_name,
+                )
+                return result
+    return None
