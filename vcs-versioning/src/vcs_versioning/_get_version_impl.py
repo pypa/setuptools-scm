@@ -210,11 +210,22 @@ def _find_scm_in_parents(config: Configuration) -> Path | None:
     return None
 
 
-def _version_missing(
-    config: Configuration, *, tool: str = "SETUPTOOLS_SCM"
-) -> NoReturn:
+#: Env-var prefixes whose integration exposes a ``get_version()`` of its own.
+_API_MODULES = {
+    "SETUPTOOLS_SCM": "setuptools_scm",
+    "VCS_VERSIONING": "vcs_versioning",
+}
+
+
+def _version_missing(config: Configuration) -> NoReturn:
+    from ._overrides import describe_env_vars, env_var_name
+
+    tool_names = config.env.tool_names
+    tool = tool_names[0]
+    # SETUPTOOLS_SCM -> setuptools-scm, VCS_VERSIONING -> vcs-versioning
+    tool_label = tool.lower().replace("_", "-")
     base_error = (
-        f"setuptools-scm was unable to detect version for {config.absolute_root}.\n\n"
+        f"{tool_label} was unable to detect version for {config.absolute_root}.\n\n"
     )
 
     # If relative_to is not set, check for SCM repositories in parent directories
@@ -223,29 +234,57 @@ def _version_missing(
         scm_parent = _find_scm_in_parents(config)
 
     if scm_parent is not None:
-        if tool == "SETUPTOOLS_SCM":
-            api_example = "setuptools_scm.get_version(relative_to=__file__)"
-            tool_section = "[tool.setuptools_scm]"
-        else:
-            api_example = "vcs_versioning.get_version(relative_to=__file__)"
-            tool_section = "[tool.vcs-versioning]"
+        tool_section = f"[tool.{config.env.pyproject_tool_names()[0]}]"
+        options = []
 
+        # Only the integrations shipped here have a get_version() to pass
+        # relative_to to; a third-party integrator configures via pyproject.
+        api_module = _API_MODULES.get(tool)
+        if api_module is not None:
+            options.append(
+                "Use the 'relative_to' parameter to specify the file as reference:\n"
+                f"   {api_module}.get_version(relative_to=__file__)"
+            )
+        options.append(
+            "Enable parent directory search in your configuration:\n"
+            f"   {tool_section}\n"
+            "   search_parent_directories = true"
+        )
+        options.append(
+            f"Change your working directory to the repository root: {scm_parent}"
+        )
+        options.append(
+            "Set the root explicitly in your configuration:\n"
+            f"   {tool_section}\n"
+            f'   root = "{scm_parent}"'
+        )
+
+        numbered = "\n\n".join(
+            f"{number}. {option}" for number, option in enumerate(options, 1)
+        )
         error_msg = (
             base_error
             + f"However, a repository was found in a parent directory: {scm_parent}\n\n"
             f"To fix this, you have a few options:\n\n"
-            f"1. Use the 'relative_to' parameter to specify the file as reference:\n"
-            f"   {api_example}\n\n"
-            f"2. Enable parent directory search in your configuration:\n"
-            f"   {tool_section}\n"
-            f"   search_parent_directories = true\n\n"
-            f"3. Change your working directory to the repository root: {scm_parent}\n\n"
-            f"4. Set the root explicitly in your configuration:\n"
-            f"   {tool_section}\n"
-            f'   root = "{scm_parent}"\n\n'
+            f"{numbered}\n\n"
             "For more information, see: https://setuptools-scm.readthedocs.io/en/latest/config/"
         )
     else:
+        if config.dist_name is None:
+            # Without a dist name only the generic variables can match -- the
+            # per-distribution form has nothing to normalize against.
+            reader = config.env.make_reader()
+            pretend_vars = describe_env_vars(reader.candidate_names("PRETEND_VERSION"))
+            dist_note = (
+                "\n\nNo distribution name is known here, so the per-distribution "
+                f"{env_var_name(tool, 'PRETEND_VERSION')}_FOR_<DIST> form cannot "
+                "match; pass a dist name to use it."
+            )
+        else:
+            pretend_vars = describe_env_vars(
+                env_var_name(t, "PRETEND_VERSION", config.dist_name) for t in tool_names
+            )
+            dist_note = ""
         error_msg = (
             base_error
             + "Make sure you're either building from a fully intact git repository "
@@ -255,9 +294,9 @@ def _version_missing(
             "For example, if you're using pip, instead of "
             "https://github.com/user/proj/archive/master.zip "
             "use git+https://github.com/user/proj.git#egg=proj\n\n"
-            "Alternatively, set the version with the environment variable "
-            "SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME} as described "
-            "in https://setuptools-scm.readthedocs.io/en/latest/config/"
+            "Alternatively, set the version in the environment with "
+            f"{pretend_vars}, as described "
+            "in https://setuptools-scm.readthedocs.io/en/latest/config/" + dist_note
         )
 
     raise LookupError(error_msg)

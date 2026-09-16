@@ -37,11 +37,12 @@ def discover(path: Path, *, config: Configuration) -> ScmWorkdir | None:
 
     if has_jj and not config.env.disable_jj:
         if not has_command("jj", args=["version"], warn=False):
+            disable_vars = config.env.make_reader().describe("DISABLE_JJ", "1")
             raise LookupError(
                 f"Jujutsu (jj) repository detected at {path} but the 'jj' "
                 "command is not available. Install jj "
-                "(https://jj-vcs.dev/docs/install), set the DISABLE_JJ=1 "
-                "environment variable to fall back to git, or remove the "
+                f"(https://jj-vcs.dev/docs/install), set {disable_vars} "
+                "in the environment to fall back to git, or remove the "
                 ".jj directory if this is not a jj-managed workspace."
             )
         log.debug("jujutsu detected at %s", path)

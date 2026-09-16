@@ -23,7 +23,11 @@ if TYPE_CHECKING:
     from vcs_versioning import _config
     from vcs_versioning._environment import VcsEnvironment
     from vcs_versioning._scm_version import ScmVersion
+    from vcs_versioning._worktree_discovery import AnyWorkdir
 
+    from .build_py import _NotDiscovered
+
+from .build_py import NOT_DISCOVERED
 from .build_py import VersionInferenceData
 from .build_py import set_version_inference_data
 from .pyproject_reading import should_infer
@@ -107,9 +111,19 @@ def infer_version_with_config(
         dist_name=dist_name, pyproject_data=pyproject_data, **(overrides or {})
     )
 
-    workdir = None
+    workdir: AnyWorkdir | _NotDiscovered | None = NOT_DISCOVERED
     scm_version: ScmVersion | None = None
 
+    # A pretended version still short-circuits discovery.  Most builds only
+    # ever want a version, and discovering a checkout nobody asks about
+    # costs SCM subprocesses for nothing.
+    #
+    # What the short-circuit must not do is leave "never looked"
+    # indistinguishable from "looked and found no checkout".  The egg_info
+    # mixin acts on the latter by suppressing the file finders, so the two
+    # collapsing is what silently emptied sdists and wheels (#1540).  The
+    # marker travels on ``VersionInferenceData``, which discovers on demand
+    # if a consumer does turn out to need the file list.
     pretended = _read_pretended_version_for(config)
     if pretended is not None:
         scm_version = pretended
@@ -122,7 +136,7 @@ def infer_version_with_config(
             scm_version = parse_scm_version(config) or parse_fallback_version(config)
 
     if scm_version is None:
-        _version_missing(config, tool=env.tool_names[0])
+        _version_missing(config)
 
     scm_version = _apply_metadata_overrides(scm_version, config)
     assert scm_version is not None
@@ -142,7 +156,7 @@ def infer_version_with_config(
         version=version_string,
         config=config,
         scm_version=scm_version,
-        workdir=workdir,
+        _workdir=workdir,
     )
 
 

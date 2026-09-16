@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -206,6 +207,26 @@ def test_jj_missing_binary_errors(tmp_path: Path) -> None:
         "vcs_versioning._backends._discover_vcs.has_command", return_value=False
     ), pytest.raises(LookupError, match="jj.*not available"):
         discover(tmp_path, config=config)
+
+
+def test_jj_missing_binary_error_names_a_usable_env_var(tmp_path: Path) -> None:
+    """Every env var the error suggests must actually disable jj discovery."""
+    from vcs_versioning._environment import VcsEnvironment
+
+    (tmp_path / ".jj").mkdir()
+    env = VcsEnvironment.from_env("SETUPTOOLS_SCM", env={})
+    config = Configuration(root=tmp_path, _env=env)
+
+    with patch(
+        "vcs_versioning._backends._discover_vcs.has_command", return_value=False
+    ), pytest.raises(LookupError) as exc_info:
+        discover(tmp_path, config=config)
+
+    suggested = re.findall(r"\b([A-Z][A-Z_]*DISABLE_JJ)=1", str(exc_info.value))
+    assert suggested, f"error suggests no env var: {exc_info.value}"
+    for name in suggested:
+        env = VcsEnvironment.from_env("SETUPTOOLS_SCM", env={name: "1"})
+        assert env.disable_jj, f"{name} is suggested but not read"
 
 
 def test_jj_colocated_prefers_jj(wd: WorkDir) -> None:

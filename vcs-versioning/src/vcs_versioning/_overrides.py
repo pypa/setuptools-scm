@@ -9,7 +9,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 import os
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from datetime import date, datetime
 from difflib import get_close_matches
 from re import Pattern
@@ -76,6 +76,38 @@ PRETEND_KEY = "SETUPTOOLS_SCM_PRETEND_VERSION"
 PRETEND_KEY_NAMED = PRETEND_KEY + "_FOR_{name}"
 PRETEND_METADATA_KEY = "SETUPTOOLS_SCM_PRETEND_METADATA"
 PRETEND_METADATA_KEY_NAMED = PRETEND_METADATA_KEY + "_FOR_{name}"
+
+
+def dist_env_suffix(dist_name: str) -> str:
+    """Env-var name component for *dist_name* (``my-pkg`` -> ``MY_PKG``)."""
+    return canonicalize_name(dist_name).replace("-", "_").upper()
+
+
+def env_var_name(tool: str, name: str, dist_name: str | None = None) -> str:
+    """Full env-var name for setting *name* under the *tool* prefix.
+
+    With *dist_name* the distribution-specific variant is built instead::
+
+        env_var_name("SETUPTOOLS_SCM", "PRETEND_VERSION", "my-pkg")
+        # -> SETUPTOOLS_SCM_PRETEND_VERSION_FOR_MY_PKG
+
+    This is the single place that knows how the names are spelled; every
+    lookup and every error message naming a variable goes through it, so a
+    message cannot suggest a name the lookup would not honour.
+    """
+    if dist_name is None:
+        return f"{tool}_{name}"
+    return f"{tool}_{name}_FOR_{dist_env_suffix(dist_name)}"
+
+
+def describe_env_vars(names: Iterable[str], value: str | None = None) -> str:
+    """Render env-var *names* as advice for an error message.
+
+    With *value* the assignment is shown (``"A=1 or B=1"``), without it just
+    the names (``"A or B"``).
+    """
+    suffix = "" if value is None else f"={value}"
+    return " or ".join(f"{name}{suffix}" for name in names)
 
 
 def _search_env_vars_with_prefix(

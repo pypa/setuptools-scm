@@ -36,6 +36,9 @@ from packaging.utils import canonicalize_name
 from ._overrides import (
     _find_close_env_var_matches,
     _search_env_vars_with_prefix,
+    describe_env_vars,
+    dist_env_suffix,
+    env_var_name,
 )
 from ._toml import load_toml_or_inline_map
 
@@ -94,6 +97,28 @@ class EnvReader:
         self.env = env
         self.dist_name = dist_name
 
+    def candidate_names(self, name: str) -> tuple[str, ...]:
+        """Every env var :meth:`read` would consult for *name*, in lookup order.
+
+        Distribution-specific variants come first when ``dist_name`` is set,
+        then the generic ones, one per tool prefix.
+        """
+        generic = tuple(env_var_name(tool, name) for tool in self.tools_names)
+        if self.dist_name is None:
+            return generic
+        specific = tuple(
+            env_var_name(tool, name, self.dist_name) for tool in self.tools_names
+        )
+        return specific + generic
+
+    def describe(self, name: str, value: str | None = None) -> str:
+        """Render :meth:`candidate_names` as advice for an error message.
+
+        ``describe("DISABLE_JJ", "1")`` gives
+        ``"SETUPTOOLS_SCM_DISABLE_JJ=1 or VCS_VERSIONING_DISABLE_JJ=1"``.
+        """
+        return describe_env_vars(self.candidate_names(name), value)
+
     @overload
     def read(self, name: str, *, split: str) -> list[str]: ...
 
@@ -128,46 +153,31 @@ class EnvReader:
             - If split is None and value found: str value
             - If split is None and not found: default value
         """
-        # If dist_name is provided, try dist-specific variants first
         found_value: str | None = None
-        if self.dist_name is not None:
-            canonical_dist_name = canonicalize_name(self.dist_name)
-            env_var_dist_name = canonical_dist_name.replace("-", "_").upper()
-
-            # Try each tool's dist-specific variant
-            for tool in self.tools_names:
-                expected_env_var = f"{tool}_{name}_FOR_{env_var_dist_name}"
-                val = self.env.get(expected_env_var)
-                if val is not None:
-                    found_value = val
-                    break
-
-        # Try generic versions for each tool
-        if found_value is None:
-            for tool in self.tools_names:
-                val = self.env.get(f"{tool}_{name}")
-                if val is not None:
-                    found_value = val
-                    break
+        for candidate in self.candidate_names(name):
+            val = self.env.get(candidate)
+            if val is not None:
+                found_value = val
+                break
 
         # Not found - if dist_name is provided, check for common mistakes
         if found_value is None and self.dist_name is not None:
             canonical_dist_name = canonicalize_name(self.dist_name)
-            env_var_dist_name = canonical_dist_name.replace("-", "_").upper()
+            env_var_dist_name = dist_env_suffix(self.dist_name)
 
             # Try each tool prefix for fuzzy matching
             for tool in self.tools_names:
-                expected_env_var = f"{tool}_{name}_FOR_{env_var_dist_name}"
-                prefix = f"{tool}_{name}_FOR_"
+                expected_env_var = env_var_name(tool, name, self.dist_name)
+                prefix = f"{env_var_name(tool, name)}_FOR_"
 
                 # Search for alternative normalizations
                 matches = _search_env_vars_with_prefix(prefix, self.dist_name, self.env)
                 if matches:
-                    env_var_name, value = matches[0]
+                    found_var, value = matches[0]
                     log.warning(
                         "Found environment variable '%s' for dist name '%s', "
                         "but expected '%s'. Consider using the standard normalized name.",
-                        env_var_name,
+                        found_var,
                         self.dist_name,
                         expected_env_var,
                     )
@@ -176,7 +186,7 @@ class EnvReader:
                         log.warning(
                             "Multiple alternative environment variables found: %s. Using '%s'.",
                             other_vars,
-                            env_var_name,
+                            found_var,
                         )
                     found_value = value
                     break

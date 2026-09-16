@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import sys
 from collections.abc import Iterable
@@ -318,6 +319,51 @@ def test_scm_search_known_failed_skips_finders(inwd: WorkDir) -> None:
 
     # the signal is scoped, not sticky
     assert set(find_files()) == _sep({"file1", "adir/filea", "bdir/fileb"})
+
+
+@pytest.mark.issue(1540)
+def test_suppressed_search_warns_when_marker_is_present(
+    inwd: WorkDir, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Suppression on top of a live checkout is the #1540 signature.
+
+    An integrator says the SCM search failed while the marker sits right
+    there.  Every tracked file then vanishes from the artifact, so the
+    contradiction has to be audible rather than a debug line.
+    """
+    with caplog.at_level(logging.WARNING, logger="vcs_versioning.file_finder"):
+        with scm_search_known_failed():
+            assert find_files() == []
+
+    assert [r for r in caplog.records if "file discovery is suppressed" in r.message]
+
+
+@pytest.mark.issue(1540)
+def test_suppressed_search_is_quiet_without_marker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """A tree with no checkout is the case the suppression is *for*."""
+    monkeypatch.chdir(tmp_path)
+
+    with caplog.at_level(logging.WARNING, logger="vcs_versioning.file_finder"):
+        with scm_search_known_failed():
+            assert find_files() == []
+
+    assert caplog.records == []
+
+
+@pytest.mark.issue(1540)
+def test_suppressed_search_respects_ignored_roots(
+    inwd: WorkDir, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """An explicitly ignored root is not a contradiction worth reporting."""
+    monkeypatch.setenv("VCS_VERSIONING_IGNORE_VCS_ROOTS", str(inwd.cwd))
+
+    with caplog.at_level(logging.WARNING, logger="vcs_versioning.file_finder"):
+        with scm_search_known_failed():
+            assert find_files() == []
+
+    assert caplog.records == []
 
 
 @pytest.mark.issue(1212)
