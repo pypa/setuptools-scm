@@ -2,6 +2,43 @@
 
 <!-- towncrier release notes start -->
 
+## 2.4.1 (2026-09-16)
+
+### Fixed
+
+- The error raised when a `.jj/` directory is found but `jj` is not installed now names the environment variables that actually disable jj discovery (`SETUPTOOLS_SCM_DISABLE_JJ=1` / `VCS_VERSIONING_DISABLE_JJ=1`) instead of an unprefixed `DISABLE_JJ=1`, which was never read. ([#1537](https://github.com/pypa/setuptools-scm/issues/1537))
+- The "unable to detect version" error now names the environment variables the
+  running integration actually reads. It previously suggested
+  `SETUPTOOLS_SCM_PRETEND_VERSION_FOR_${NORMALIZED_DIST_NAME}` unconditionally,
+  which is not read by `vcs-versioning` on its own (or by any other integrator),
+  and it named setuptools-scm as the failing tool regardless of which one ran.
+
+  When the distribution name is known the suggested variable is spelled out in
+  full. When it is not, the generic variables are suggested instead, with a note
+  that the per-distribution `..._FOR_<DIST>` form needs a dist name to match --
+  the previous message offered a `${NORMALIZED_DIST_NAME}` template that could
+  never be filled in. ([#1539](https://github.com/pypa/setuptools-scm/issues/1539))
+- Warn when file discovery is suppressed while a VCS marker sits in the
+  project directory. `scm_search_known_failed()` means an integrator already
+  looked and found no checkout, so a `.git`, `.hg` or `.jj` right there
+  contradicts it and the artifact is about to lose every tracked file. That
+  combination was the signature of the pretend-version regression and stayed
+  invisible for three releases. Parent directories are not searched, since an
+  unpacked sdist inside an unrelated checkout is the case the suppression
+  exists for, and roots listed in `IGNORE_VCS_ROOTS` are skipped. ([#1540](https://github.com/pypa/setuptools-scm/issues/1540))
+
+
+### Miscellaneous
+
+- Environment variable names are now built in one place (`env_var_name` /
+  `EnvReader.candidate_names`), shared by the lookup in `EnvReader.read` and by
+  every error message that suggests a variable, so a message cannot name a
+  variable the lookup would not honour.
+
+  The "repository found in a parent directory" error no longer offers a
+  `get_version(relative_to=...)` call to integrators that do not ship one; the
+  remaining options are renumbered instead. ([#1539](https://github.com/pypa/setuptools-scm/issues/1539))
+
 ## 2.4.0 (2026-09-12)
 
 ### Added
