@@ -2,6 +2,30 @@
 
 <!-- towncrier release notes start -->
 
+## 10.3.3 (2026-09-16)
+
+### Fixed
+
+- Keep file discovery working when the version is pretended.
+  `SETUPTOOLS_SCM_PRETEND_VERSION` and its scoped `_FOR_<DIST>` form made
+  version inference return before discovering a workdir, and the `egg_info`
+  mixin read the absent workdir as "searched, found no checkout" -- the signal
+  it acts on by suppressing the `setuptools.file_finders` chain. Every
+  SCM-tracked file that setuptools' own package discovery does not find was
+  then dropped from the sdist and the wheel, silently, since the build
+  succeeded and the version was correct.
+
+  A pretended version still skips discovery, because most builds only want a
+  version and probing for a checkout nobody asks about costs subprocesses for
+  nothing. What no longer happens is passing that off as an answer: "nobody
+  looked yet" is now distinct from "looked and found nothing", and the workdir
+  is discovered on demand the first time a consumer needs a file list.
+
+  `scm_file_list.json` is now written to the egg-info for pretended builds as
+  well. It describes which files the checkout tracks, which a pretended
+  version says nothing about. `scm_version.json` stays absent there, because
+  a pretended version must not be recorded as what the SCM said. ([#1540](https://github.com/pypa/setuptools-scm/issues/1540))
+
 ## 10.3.2 (2026-09-14)
 
 ### Fixed
