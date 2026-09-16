@@ -8,13 +8,18 @@ in a parent directory.
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 import pytest
 from vcs_versioning import Configuration
+from vcs_versioning._environment import VcsEnvironment
 from vcs_versioning._get_version_impl import (
     _find_scm_in_parents,
     _version_missing,
     get_version,
 )
+from vcs_versioning._overrides import _read_pretended_version_for
 from vcs_versioning.test_api import WorkDir
 
 # No longer need to import setup functions - using WorkDir methods directly
@@ -182,3 +187,103 @@ def test_integration_better_error_from_nested_directory(
     # Should suggest helpful solutions
     assert f"repository was found in a parent directory: {wd.cwd}" in error_message
     assert "search_parent_directories = true" in error_message
+
+
+def _suggested_pretend_vars(message: str) -> list[str]:
+    """Env var names the message offers -- ``_FOR_<DIST>`` is a placeholder, not one."""
+    return re.findall(
+        r"\b([A-Z][A-Z_]*PRETEND_VERSION(?:_FOR_[A-Z0-9_]+)?)(?=[,\s])", message
+    )
+
+
+@pytest.mark.parametrize("tool", ["SETUPTOOLS_SCM", "HATCH_VCS"])
+def test_version_missing_suggests_usable_pretend_vars(
+    tmp_path: Path, tool: str
+) -> None:
+    """Every env var the "no version found" error names must actually be read."""
+    env = VcsEnvironment.from_env(tool, env={})
+    config = Configuration(root=tmp_path, dist_name="My-Pkg.Name", _env=env)
+
+    with pytest.raises(LookupError) as exc_info:
+        _version_missing(config)
+
+    message = str(exc_info.value)
+    assert tool.lower().replace("_", "-") in message
+
+    suggested = _suggested_pretend_vars(message)
+    assert suggested, f"error suggests no env var: {message}"
+    for name in suggested:
+        pretended = _read_pretended_version_for(config, env={name: "1.2.3"})
+        assert pretended is not None, f"{name} is suggested but not read"
+        assert str(pretended.tag) == "1.2.3"
+
+
+@pytest.mark.parametrize("tools", [("SETUPTOOLS_SCM",), ()])
+def test_version_missing_without_dist_name_offers_only_generic_vars(
+    tmp_path: Path, tools: tuple[str, ...]
+) -> None:
+    """Without a dist name the per-distribution form cannot match -- say so."""
+    env = VcsEnvironment.from_env(*tools, env={})
+    config = Configuration(root=tmp_path, _env=env)
+
+    with pytest.raises(LookupError) as exc_info:
+        _version_missing(config)
+
+    message = str(exc_info.value)
+    suggested = _suggested_pretend_vars(message)
+    assert suggested == list(env.make_reader().candidate_names("PRETEND_VERSION"))
+
+    for name in suggested:
+        assert "_FOR_" not in name
+        pretended = _read_pretended_version_for(config, env={name: "1.2.3"})
+        assert pretended is not None, f"{name} is suggested but not read"
+
+    assert "No distribution name is known here" in message
+    assert f"{env.tool_names[0]}_PRETEND_VERSION_FOR_<DIST>" in message
+
+
+@pytest.mark.parametrize(
+    ("tools", "api_example"),
+    [
+        (("SETUPTOOLS_SCM",), "setuptools_scm.get_version(relative_to=__file__)"),
+        ((), "vcs_versioning.get_version(relative_to=__file__)"),
+    ],
+)
+def test_version_missing_offers_the_api_of_the_running_tool(
+    wd: WorkDir, tools: tuple[str, ...], api_example: str
+) -> None:
+    """Known integrations get their own get_version() offered as option 1."""
+    wd.setup_git()
+    subdir = wd.cwd / "subproject" / "nested"
+    subdir.mkdir(parents=True)
+
+    env = VcsEnvironment.from_env(*tools, env={})
+    config = Configuration(root=str(subdir), relative_to=None, _env=env)
+
+    with pytest.raises(LookupError) as exc_info:
+        _version_missing(config)
+
+    message = str(exc_info.value)
+    assert "1. Use the 'relative_to' parameter" in message
+    assert api_example in message
+    assert "4. Set the root explicitly" in message
+
+
+def test_version_missing_omits_api_example_for_third_party_tools(wd: WorkDir) -> None:
+    """A third-party integrator has no get_version() here -- don't invent one."""
+    wd.setup_git()
+    subdir = wd.cwd / "subproject" / "nested"
+    subdir.mkdir(parents=True)
+
+    env = VcsEnvironment.from_env("HATCH_VCS", env={})
+    config = Configuration(root=str(subdir), relative_to=None, _env=env)
+
+    with pytest.raises(LookupError) as exc_info:
+        _version_missing(config)
+
+    message = str(exc_info.value)
+    assert "get_version(relative_to=__file__)" not in message
+    assert "relative_to" not in message
+    # the remaining options are renumbered rather than starting at 2
+    assert "1. Enable parent directory search" in message
+    assert "3. Set the root explicitly" in message
