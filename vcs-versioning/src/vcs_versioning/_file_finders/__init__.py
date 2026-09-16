@@ -152,6 +152,39 @@ def scm_search_known_failed() -> Iterator[None]:
         _scm_search_failed.reset(token)
 
 
+def _warn_on_suppressed_search_with_marker(root: str) -> None:
+    """Warn when a suppressed search sits on top of a VCS marker.
+
+    ``scm_search_known_failed()`` means an integrator already looked and
+    found no checkout.  A marker in *root* itself contradicts that:
+    something stopped discovery from using a checkout that is plainly
+    there -- the VCS command missing from ``PATH``, a repository without
+    commits, a root pointing elsewhere.  The artifact then quietly loses
+    every tracked file, which is how :issue:`1540` stayed invisible
+    through three releases, so say it out loud.
+
+    Parents are deliberately not searched.  An unpacked sdist sitting
+    inside an unrelated checkout is the case :issue:`1212` suppresses on
+    purpose, and warning about it would be noise.
+    """
+    from .._discover import iter_marker_entrypoints
+
+    ignored = _read_ignore_vcs_roots()
+    for ep, wd in iter_marker_entrypoints(
+        root, _FILE_FINDER_GROUPS[0], search_parents=False
+    ):
+        if os.path.normcase(str(wd)) in ignored:
+            continue
+        log.warning(
+            "file discovery is suppressed because version inference found no"
+            " SCM checkout, but %s exists in %s -- the built distribution may"
+            " be missing files tracked by that checkout",
+            ep.name,
+            wd,
+        )
+        return
+
+
 def find_files(path: _t.PathT = "") -> list[str]:
     """Discover files using registered file finder entry points.
 
@@ -159,15 +192,16 @@ def find_files(path: _t.PathT = "") -> list[str]:
     (``.git``, ``.hg``, ``.jj``, ...), so only plausible finders are
     loaded and only their VCS commands run.
     """
-    if _scm_search_failed.get():
-        log.debug("scm search already failed, skipping file finders")
-        return []
-
     from .._discover import iter_marker_entrypoints
 
     # absolute: ``Path(".").parents`` is empty, so a relative root would
     # never reach the marker of an enclosing checkout
     root = os.path.abspath(os.fspath(path) or ".")
+
+    if _scm_search_failed.get():
+        log.debug("scm search already failed, skipping file finders")
+        _warn_on_suppressed_search_with_marker(root)
+        return []
 
     for group in _FILE_FINDER_GROUPS:
         for ep, wd in iter_marker_entrypoints(root, group):

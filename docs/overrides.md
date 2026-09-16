@@ -26,7 +26,7 @@ When building a `Configuration`, settings are merged in this priority order
 
 Once configuration is built, the version is resolved in this order:
 
-1. **Pretend version** -- `TOOL_PRETEND_VERSION` / `_FOR_DIST` short-circuits everything
+1. **Pretend version** -- `TOOL_PRETEND_VERSION` / `_FOR_DIST` short-circuits the rest of the version pipeline
 2. **Workdir discovery** -- `discover_workdir(config)` tries:
     - `config.parse` callback (legacy, deprecated) -- highest priority within discovery
     - Registered `vcs_versioning.discover_workdir` entry-point factories (git, hg, etc.)
@@ -62,6 +62,17 @@ as the override source for the version number unparsed string.
     more of ".-\_" being replaced by a single "\_", and the name being upper-cased.
 
     This will take precedence over the generic ``SETUPTOOLS_SCM_PRETEND_VERSION`` or ``VCS_VERSIONING_PRETEND_VERSION``.
+
+!!! note "A pretend version sets the version, and nothing else"
+
+    It does not change which files end up in your sdist or wheel.  A
+    pretended version says what to call the release; it says nothing about
+    what the checkout tracks.
+
+    Setting it does skip workdir discovery, so asking only for a version
+    stays free of any SCM call.  A build that needs a file list -- an sdist
+    or a wheel -- discovers the workdir at that point and lists files from
+    it as usual.
 
 ### Pretend Metadata
 
