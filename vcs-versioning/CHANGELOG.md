@@ -2,6 +2,16 @@
 
 <!-- towncrier release notes start -->
 
+## 2.5.0 (2026-09-17)
+
+### Added
+
+- Add `discover_file_workdir()`, which finds the checkout a project sits in for
+  the purpose of listing files. `discover_workdir()` answers which checkout
+  defines the version, scoped by `root` and `search_parent_directories`; which
+  files a project ships is a separate question, and a project in a subdirectory
+  of a checkout still ships that checkout's files. ([#1543](https://github.com/pypa/setuptools-scm/issues/1543))
+
 ## 2.4.1 (2026-09-16)
 
 ### Fixed

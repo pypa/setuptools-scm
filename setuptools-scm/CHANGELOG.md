@@ -2,6 +2,25 @@
 
 <!-- towncrier release notes start -->
 
+## 10.3.4 (2026-09-17)
+
+### Fixed
+
+- Ship the tracked files of projects whose `pyproject.toml` sits in a subdirectory
+  of the checkout. `root` defaults to the project directory, so version inference
+  correctly finds no SCM there and answers from `SETUPTOOLS_SCM_PRETEND_VERSION`
+  or `fallback_version` -- but that says nothing about which files git tracks, and
+  the sdist and wheel came out with none of them. This was the 10.3.0 regression
+  fixed in 10.3.3, surviving in the subdirectory layout.
+
+  File discovery now follows the checkout the project sits in, independently of
+  the `root` that scopes versioning, and records `scm_file_list.json` in the
+  egg-info as a root-level project already did. ([#1543](https://github.com/pypa/setuptools-scm/issues/1543))
+- Require `vcs-versioning>=2.5.0`. The subdirectory file-discovery fix (#1543) imports
+  `discover_file_workdir`, which no earlier release has, while the declared floor still
+  named 2.4.0 -- an install against a published vcs-versioning raised `ImportError`
+  during the build. ([#1546](https://github.com/pypa/setuptools-scm/issues/1546))
+
 ## 10.3.3 (2026-09-16)
 
 ### Fixed
