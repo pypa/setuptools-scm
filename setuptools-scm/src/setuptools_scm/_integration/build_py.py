@@ -209,6 +209,19 @@ class VersionInferenceData:
             return self.config.discover_workdir()
         return self._workdir
 
+    @cached_property
+    def file_workdir(self) -> ScmWorkdir | None:
+        """The checkout containing the project, for listing files.
+
+        :attr:`workdir` answers to ``root``, so a project whose
+        ``pyproject.toml`` sits in a subdirectory of a checkout finds no SCM
+        there and would ship none of its tracked files (#1540).  The file
+        list follows the checkout the project sits in instead.
+        """
+        from vcs_versioning._worktree_discovery import discover_file_workdir
+
+        return discover_file_workdir(self.config)
+
 
 class _DistWithScm:
     """Typing helper for Distribution with setuptools-scm attributes.
