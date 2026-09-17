@@ -8,8 +8,19 @@ shipped that way -- it imports ``vcs_versioning._file_finders.scm_search_known_f
 added in vcs-versioning 2.4.0, while declaring ``>=2.3.2.dev0``.
 
 This check installs the built wheel, forces vcs-versioning down to the oldest
-published release the wheel's metadata permits, and imports every
-``setuptools_scm`` submodule.
+published release the wheel's metadata permits, imports every ``setuptools_scm``
+submodule, and then runs the setuptools-scm testsuite against it.
+
+Importing is not enough.  A private name reached from inside a function body --
+the deferred imports the integration hooks are full of -- is invisible to an
+import probe and only fails once setuptools actually builds something.  The
+testsuite runs the hooks, so it sees those.
+
+The testsuite is the checkout's, not the wheel's: it imports
+``vcs_versioning.test_api`` from the pinned floor release, so a test helper added
+to the core after the floor fails here too.  That is noise for the floor claim
+proper, and the cheapest reading of it is the same as a real failure -- the floor
+is behind what this tree needs.
 """
 
 from __future__ import annotations
@@ -28,6 +39,15 @@ from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 
 CORE = "vcs-versioning"
+
+# What the setuptools-scm testsuite needs beyond the wheel itself, mirroring the
+# package's ``test`` dependency group.  Installed before the core is pinned, so
+# nothing here can drag it back up.
+TEST_REQUIREMENTS = ("pytest", "pytest-timeout", "pytest-xdist", "rich", "build", "pip")
+
+# Run from the workspace root, the way the other jobs run pytest: the suite picks
+# up ambient repository state when run from anywhere else.
+DEFAULT_TESTS = "setuptools-scm/testing_scm"
 
 # Imports every submodule so that a missing private name fails here rather than
 # in a user's build.  Printed names are the failures, one per line.
@@ -92,7 +112,17 @@ def run(*command: str | Path) -> subprocess.CompletedProcess[str]:
     )
 
 
-def check(wheel: Path, python_version: str) -> int:
+def raise_the_floor(floor: Version) -> None:
+    """The one fix for every failure this check reports."""
+    print(
+        f"\nsetuptools-scm uses {CORE} newer than {floor}: raise the lower bound"
+        " in setuptools-scm/pyproject.toml, in both build-system.requires and"
+        " project.dependencies.",
+        file=sys.stderr,
+    )
+
+
+def check(wheel: Path, python_version: str, tests: str) -> int:
     specifier = core_specifier(wheel)
     floor = oldest_permitted(specifier)
     if floor is None:
@@ -109,7 +139,17 @@ def check(wheel: Path, python_version: str) -> int:
             ("create venv", ("uv", "venv", "-q", venv, "--python", python_version)),
             (
                 "install wheel",
-                ("uv", "pip", "install", "-q", "-p", venv, wheel, "setuptools"),
+                (
+                    "uv",
+                    "pip",
+                    "install",
+                    "-q",
+                    "-p",
+                    venv,
+                    wheel,
+                    "setuptools",
+                    *TEST_REQUIREMENTS,
+                ),
             ),
             # --no-deps so the wheel's own floor cannot pull the core back up.
             (
@@ -132,25 +172,37 @@ def check(wheel: Path, python_version: str) -> int:
                 print(f"failed to {label}:\n{result.stderr}", file=sys.stderr)
                 return 1
 
-        probe = run(venv / "bin" / "python", "-c", _IMPORT_PROBE)
+        python = venv / "bin" / "python"
+        probe = run(python, "-c", _IMPORT_PROBE)
         failures = [line for line in probe.stdout.splitlines() if line.strip()]
+        if failures:
+            print(
+                f"\nsetuptools-scm does not import against {CORE} {floor},"
+                f" its own declared floor:\n",
+                file=sys.stderr,
+            )
+            for failure in failures:
+                print(f"  {failure}", file=sys.stderr)
+            raise_the_floor(floor)
+            return 1
 
-    if failures:
+        print(f"ok: setuptools-scm imports cleanly against {CORE} {floor}")
+
+        # Output is not captured: a failing test is read from the CI log.
+        tests_failed = subprocess.run(
+            [str(python), "-m", "pytest", "-n", "auto", tests], check=False
+        ).returncode
+
+    if tests_failed:
         print(
-            f"\nsetuptools-scm does not import against {CORE} {floor},"
-            f" its own declared floor:\n",
+            f"\nthe setuptools-scm testsuite fails against {CORE} {floor},"
+            " its own declared floor.",
             file=sys.stderr,
         )
-        for failure in failures:
-            print(f"  {failure}", file=sys.stderr)
-        print(
-            f"\nRaise the {CORE} lower bound in setuptools-scm/pyproject.toml"
-            " (both build-system.requires and project.dependencies).",
-            file=sys.stderr,
-        )
+        raise_the_floor(floor)
         return 1
 
-    print(f"ok: setuptools-scm imports cleanly against {CORE} {floor}")
+    print(f"ok: the setuptools-scm testsuite passes against {CORE} {floor}")
     return 0
 
 
@@ -164,6 +216,11 @@ def main() -> int:
     parser.add_argument(
         "--python", default="3.12", help="python version for the probe venv"
     )
+    parser.add_argument(
+        "--tests",
+        default=DEFAULT_TESTS,
+        help="testsuite to run, relative to the workspace root",
+    )
     args = parser.parse_args()
 
     wheel: Path = args.wheel
@@ -173,7 +230,7 @@ def main() -> int:
             raise SystemExit(f"no setuptools-scm wheel in {wheel}")
         wheel = candidates[0]
 
-    return check(wheel, args.python)
+    return check(wheel, args.python, args.tests)
 
 
 if __name__ == "__main__":
