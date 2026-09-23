@@ -269,6 +269,18 @@ def test_version_missing_offers_the_api_of_the_running_tool(
     assert "4. Set the root explicitly" in message
 
 
+@pytest.mark.issue(1550)
+def test_version_missing_accepts_tool_from_older_setuptools_scm(
+    tmp_path: Path,
+) -> None:
+    """setuptools-scm 10.1.0-10.2.3 pass tool= and accept any vcs-versioning<3."""
+    env = VcsEnvironment.from_env("SETUPTOOLS_SCM", env={})
+    config = Configuration(root=tmp_path, dist_name="demo-pkg", _env=env)
+
+    with pytest.raises(LookupError, match="setuptools-scm was unable to detect"):
+        _version_missing(config, tool=env.tool_names[0])
+
+
 def test_version_missing_omits_api_example_for_third_party_tools(wd: WorkDir) -> None:
     """A third-party integrator has no get_version() here -- don't invent one."""
     wd.setup_git()
