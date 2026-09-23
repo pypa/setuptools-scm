@@ -390,23 +390,30 @@ jobs:
       issues: write
     steps:
     - name: Open or update the release failure issue
-      env:
-        GH_TOKEN: ${{ github.token }}
-        GH_REPO: ${{ github.repository }}
-        TAG: ${{ github.ref_name }}
-        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
-      run: |
-        title="Release $TAG did not publish"
-        body="The release run for \`$TAG\` failed: $RUN_URL
-
-        The package is not on PyPI unless its \`dist_upload_*\` job succeeded, and its GitHub release stays a draft until it is. If the failure is a flaky test, re-running the failed jobs of that run completes the release."
-        existing=$(gh issue list --state open --search "in:title \"$title\"" --json number,title \
-          --jq "map(select(.title == \"$title\")) | .[0].number // empty")
-        if [ -n "$existing" ]; then
-          gh issue comment "$existing" --body "Failed again: $RUN_URL"
-        else
-          gh issue create --title "$title" --body "$body"
-        fi
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}/attempts/${process.env.GITHUB_RUN_ATTEMPT}`;
+          const title = `Release ${process.env.GITHUB_REF_NAME} did not publish`;
+          const open = await github.paginate(github.rest.issues.listForRepo, {
+            owner, repo, state: 'open', per_page: 100
+          });
+          const existing = open.find(i => !i.pull_request && i.title === title);
+          if (existing) {
+            await github.rest.issues.createComment({
+              owner, repo, issue_number: existing.number, body: `Failed again: ${runUrl}`
+            });
+            core.notice(`Commented on #${existing.number}`);
+          } else {
+            const body = [
+              `The release run for \`${process.env.GITHUB_REF_NAME}\` failed: ${runUrl}`,
+              '',
+              'The package is not on PyPI unless its `dist_upload_*` job succeeded, and its GitHub release stays a draft until it is. If the failure is a flaky test, re-running the failed jobs of that run completes the release.',
+            ].join('\n');
+            const { data: issue } = await github.rest.issues.create({ owner, repo, title, body });
+            core.notice(`Opened #${issue.number}`);
+          }
 
   test-pypi-upload:
     runs-on: ubuntu-latest

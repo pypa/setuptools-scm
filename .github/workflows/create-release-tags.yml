@@ -168,21 +168,27 @@ jobs:
       issues: write
     steps:
       - name: Open or update the release failure issue
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
-        run: |
-          title="Release from #$PR_NUMBER did not start"
-          body="Creating the tags and draft releases for #$PR_NUMBER ($PR_TITLE) failed: $RUN_URL
-
-          The run log shows which tags and draft releases were created and which release runs were dispatched before the failure. A re-run fails on a tag that already exists; delete those tags and their draft releases first."
-          existing=$(gh issue list --state open --search "in:title \"$title\"" --json number,title \
-            --jq "map(select(.title == \"$title\")) | .[0].number // empty")
-          if [ -n "$existing" ]; then
-            gh issue comment "$existing" --body "Failed again: $RUN_URL"
-          else
-            gh issue create --title "$title" --body "$body"
-          fi
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}/attempts/${process.env.GITHUB_RUN_ATTEMPT}`;
+            const title = `Release from #${context.payload.pull_request.number} did not start`;
+            const open = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', per_page: 100
+            });
+            const existing = open.find(i => !i.pull_request && i.title === title);
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: existing.number, body: `Failed again: ${runUrl}`
+              });
+              core.notice(`Commented on #${existing.number}`);
+            } else {
+              const body = [
+                `Creating the tags and draft releases for #${context.payload.pull_request.number} (${context.payload.pull_request.title}) failed: ${runUrl}`,
+                '',
+                'The run log shows which tags and draft releases were created and which release runs were dispatched before the failure. A re-run fails on a tag that already exists; delete those tags and their draft releases first.',
+              ].join('\n');
+              const { data: issue } = await github.rest.issues.create({ owner, repo, title, body });
+              core.notice(`Opened #${issue.number}`);
+            }
