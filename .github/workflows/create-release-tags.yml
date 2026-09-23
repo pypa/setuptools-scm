@@ -86,10 +86,13 @@ jobs:
               }
             }
 
-            // Helper to create tag and release via a single API call.
-            // createRelease with target_commitish automatically creates a
-            // lightweight tag if it doesn't already exist, avoiding the
-            // dangling tag object problem from separate createTag+createRef calls.
+            // The release is created as a draft and published by python-tests.yml
+            // only after the PyPI upload succeeded. Releases are immutable once
+            // published, so assets can only be attached while it is a draft, and
+            // a draft left behind marks a release that never reached PyPI.
+            // A draft does not create its tag, so the tag is pushed first: the
+            // dispatch below needs it as a ref. createRef on the commit makes a
+            // lightweight tag, unlike createTag, which leaves a dangling tag object.
             async function createTagAndRelease(packageName, packageDir, tagPrefix) {
               const version = extractVersion(prTitle, packageName);
               if (!version) {
@@ -99,21 +102,25 @@ jobs:
               const tagName = `${tagPrefix}-v${version}`;
               const changelog = await extractChangelog(packageDir, version);
 
-              console.log(`Creating release ${tagName} at ${mergeCommitSha}`);
+              console.log(`Creating tag ${tagName} at ${mergeCommitSha}`);
+              await github.rest.git.createRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `refs/tags/${tagName}`,
+                sha: mergeCommitSha
+              });
 
               const { data: release } = await github.rest.repos.createRelease({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 tag_name: tagName,
-                target_commitish: mergeCommitSha,
                 name: `${packageName} v${version}`,
                 body: changelog,
-                draft: false,
-                prerelease: false,
-                make_latest: 'legacy'
+                draft: true,
+                prerelease: false
               });
 
-              console.log(`Release created: ${release.html_url}`);
+              console.log(`Draft release created: ${release.html_url}`);
               tagsCreated.push(tagName);
               return { tagName, version };
             }
@@ -143,7 +150,7 @@ jobs:
               });
             }
 
-            const summary = `## Tags Created\n\n${tagsCreated.map(t => `- \`${t}\``).join('\n')}\n\nPyPI upload dispatched via workflow_dispatch for each tag.`;
+            const summary = `## Tags Created\n\n${tagsCreated.map(t => `- \`${t}\``).join('\n')}\n\nPyPI upload dispatched via workflow_dispatch for each tag. Each GitHub release stays a draft until its package is on PyPI; a failed run opens an issue.`;
             await core.summary.addRaw(summary).write();
 
             console.log(`\nDone! Created tags: ${tagsCreated.join(', ')}`);

@@ -318,13 +318,15 @@ jobs:
     - name: Publish vcs-versioning to PyPI
       uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
 
-  upload-release-assets-setuptools-scm:
+  publish-github-release-setuptools-scm:
+    # create-release-tags.yml leaves the release as a draft: a published release
+    # is immutable and takes no assets. Publishing it only after the PyPI upload
+    # makes a leftover draft mean "never reached PyPI".
     runs-on: ubuntu-latest
     if: |
       github.repository == 'pypa/setuptools-scm' &&
-      ((github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'setuptools-scm-v')) ||
-      (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/setuptools-scm-v')))
-    needs: [test]
+      github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/setuptools-scm-v')
+    needs: [dist_upload_setuptools_scm]
     permissions:
       contents: write
     steps:
@@ -333,21 +335,24 @@ jobs:
       with:
         name: Packages-setuptools-scm
         path: dist
-    - name: Upload release assets
-      # zizmor: ignore[superfluous-actions] `gh release upload` would work, but
-      # this action already handles the glob and the empty-match failure mode
-      uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
-      with:
-        files: dist/*
-        fail_on_unmatched_files: true
+    - name: Attach packages and publish the draft release
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+        TAG: ${{ github.ref_name }}
+      run: |
+        gh release upload "$TAG" dist/*
+        gh release edit "$TAG" --draft=false
 
-  upload-release-assets-vcs-versioning:
+  publish-github-release-vcs-versioning:
+    # create-release-tags.yml leaves the release as a draft: a published release
+    # is immutable and takes no assets. Publishing it only after the PyPI upload
+    # makes a leftover draft mean "never reached PyPI".
     runs-on: ubuntu-latest
     if: |
       github.repository == 'pypa/setuptools-scm' &&
-      ((github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'vcs-versioning-v')) ||
-      (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/vcs-versioning-v')))
-    needs: [test]
+      github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/vcs-versioning-v')
+    needs: [dist_upload_vcs_versioning]
     permissions:
       contents: write
     steps:
@@ -356,13 +361,52 @@ jobs:
       with:
         name: Packages-vcs-versioning
         path: dist
-    - name: Upload release assets
-      # zizmor: ignore[superfluous-actions] `gh release upload` would work, but
-      # this action already handles the glob and the empty-match failure mode
-      uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
-      with:
-        files: dist/*
-        fail_on_unmatched_files: true
+    - name: Attach packages and publish the draft release
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+        TAG: ${{ github.ref_name }}
+      run: |
+        gh release upload "$TAG" dist/*
+        gh release edit "$TAG" --draft=false
+
+  release-failed:
+    # A failed test job skips the PyPI upload without anything else going red
+    # that anyone watches; 10.3.3 sat tagged but unpublished for a week (#1549).
+    runs-on: ubuntu-latest
+    if: |
+      (failure() || cancelled()) &&
+      github.repository == 'pypa/setuptools-scm' &&
+      github.event_name != 'pull_request' &&
+      (startsWith(github.ref, 'refs/tags/setuptools-scm-v') || startsWith(github.ref, 'refs/tags/vcs-versioning-v'))
+    needs:
+    - test-dependency-floor
+    - test-standalone-vcs-versioning
+    - dist_upload_setuptools_scm
+    - dist_upload_vcs_versioning
+    - publish-github-release-setuptools-scm
+    - publish-github-release-vcs-versioning
+    permissions:
+      issues: write
+    steps:
+    - name: Open or update the release failure issue
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+        TAG: ${{ github.ref_name }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
+      run: |
+        title="Release $TAG did not publish"
+        body="The release run for \`$TAG\` failed: $RUN_URL
+
+        The package is not on PyPI unless its \`dist_upload_*\` job succeeded, and its GitHub release stays a draft until it is. If the failure is a flaky test, re-running the failed jobs of that run completes the release."
+        existing=$(gh issue list --state open --search "in:title \"$title\"" --json number,title \
+          --jq "map(select(.title == \"$title\")) | .[0].number // empty")
+        if [ -n "$existing" ]; then
+          gh issue comment "$existing" --body "Failed again: $RUN_URL"
+        else
+          gh issue create --title "$title" --body "$body"
+        fi
 
   test-pypi-upload:
     runs-on: ubuntu-latest

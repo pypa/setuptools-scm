@@ -26,10 +26,12 @@ Tests: `vcs-versioning/testing_vcs/test_version_scheme_towncrier.py`
 Manual trigger, runs towncrier, creates labeled PR
 
 **Tag Creation** (`.github/workflows/create-release-tags.yml`):
-On PR merge, creates tags from PR title, triggers PyPI upload
+On PR merge, creates tags and draft releases from PR title, triggers PyPI upload
 
 **Modified Upload** (`.github/workflows/python-tests.yml`):
-Split per-project upload jobs filtered by tag prefix
+Split per-project upload jobs filtered by tag prefix. After the PyPI upload, the
+packages are attached to the draft release and it is published. A failed release
+run opens a `Release <tag> did not publish` issue.
 
 ## Usage
 
