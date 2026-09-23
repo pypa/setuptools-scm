@@ -336,13 +336,44 @@ jobs:
         name: Packages-setuptools-scm
         path: dist
     - name: Attach packages and publish the draft release
-      env:
-        GH_TOKEN: ${{ github.token }}
-        GH_REPO: ${{ github.repository }}
-        TAG: ${{ github.ref_name }}
-      run: |
-        gh release upload "$TAG" dist/*
-        gh release edit "$TAG" --draft=false
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      with:
+        script: |
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const { owner, repo } = context.repo;
+          const tag = process.env.GITHUB_REF_NAME;
+          // getReleaseByTag does not return drafts
+          const [release] = await github.paginate(
+            github.rest.repos.listReleases, { owner, repo, per_page: 100 },
+            (response, done) => {
+              const match = response.data.filter(r => r.tag_name === tag);
+              if (match.length) done();
+              return match;
+            },
+          );
+          if (!release) {
+            throw new Error(`No release for ${tag}; create-release-tags.yml creates it as a draft`);
+          }
+          if (!release.draft) {
+            throw new Error(`Release ${tag} is already published and immutable; assets can only be attached to a draft`);
+          }
+          // a re-run after a partial upload must not fail on the assets already attached
+          const attached = new Set(release.assets.map(a => a.name));
+          for (const name of fs.readdirSync('dist')) {
+            if (attached.has(name)) {
+              core.info(`${name} already attached`);
+              continue;
+            }
+            const data = fs.readFileSync(path.join('dist', name));
+            await github.rest.repos.uploadReleaseAsset({
+              owner, repo, release_id: release.id, name, data,
+              headers: { 'content-type': 'application/octet-stream', 'content-length': data.length },
+            });
+            core.info(`Attached ${name}`);
+          }
+          await github.rest.repos.updateRelease({ owner, repo, release_id: release.id, draft: false });
+          core.notice(`Published ${release.html_url}`);
 
   publish-github-release-vcs-versioning:
     # create-release-tags.yml leaves the release as a draft: a published release
@@ -362,13 +393,44 @@ jobs:
         name: Packages-vcs-versioning
         path: dist
     - name: Attach packages and publish the draft release
-      env:
-        GH_TOKEN: ${{ github.token }}
-        GH_REPO: ${{ github.repository }}
-        TAG: ${{ github.ref_name }}
-      run: |
-        gh release upload "$TAG" dist/*
-        gh release edit "$TAG" --draft=false
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      with:
+        script: |
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const { owner, repo } = context.repo;
+          const tag = process.env.GITHUB_REF_NAME;
+          // getReleaseByTag does not return drafts
+          const [release] = await github.paginate(
+            github.rest.repos.listReleases, { owner, repo, per_page: 100 },
+            (response, done) => {
+              const match = response.data.filter(r => r.tag_name === tag);
+              if (match.length) done();
+              return match;
+            },
+          );
+          if (!release) {
+            throw new Error(`No release for ${tag}; create-release-tags.yml creates it as a draft`);
+          }
+          if (!release.draft) {
+            throw new Error(`Release ${tag} is already published and immutable; assets can only be attached to a draft`);
+          }
+          // a re-run after a partial upload must not fail on the assets already attached
+          const attached = new Set(release.assets.map(a => a.name));
+          for (const name of fs.readdirSync('dist')) {
+            if (attached.has(name)) {
+              core.info(`${name} already attached`);
+              continue;
+            }
+            const data = fs.readFileSync(path.join('dist', name));
+            await github.rest.repos.uploadReleaseAsset({
+              owner, repo, release_id: release.id, name, data,
+              headers: { 'content-type': 'application/octet-stream', 'content-length': data.length },
+            });
+            core.info(`Attached ${name}`);
+          }
+          await github.rest.repos.updateRelease({ owner, repo, release_id: release.id, draft: false });
+          core.notice(`Published ${release.html_url}`);
 
   release-failed:
     # A failed test job skips the PyPI upload without anything else going red
