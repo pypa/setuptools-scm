@@ -2,6 +2,26 @@
 
 <!-- towncrier release notes start -->
 
+## 2.5.0 (2026-09-23)
+
+### Added
+
+- Add `discover_file_workdir()`, which finds the checkout a project sits in for
+  the purpose of listing files. `discover_workdir()` answers which checkout
+  defines the version, scoped by `root` and `search_parent_directories`; which
+  files a project ships is a separate question, and a project in a subdirectory
+  of a checkout still ships that checkout's files. ([#1543](https://github.com/pypa/setuptools-scm/issues/1543))
+
+
+### Fixed
+
+- Accept the `tool` keyword in `_version_missing()` again. setuptools-scm 10.1.0
+  through 10.2.3 pass it and allow any `vcs-versioning<3`; since 2.4.1 removed it,
+  a build without a detectable version failed with
+  `TypeError: _version_missing() got an unexpected keyword argument 'tool'`
+  instead of the `LookupError` that says how to set a version. The keyword is
+  ignored; the tool is taken from the configuration's environment. ([#1550](https://github.com/pypa/setuptools-scm/issues/1550))
+
 ## 2.4.1 (2026-09-16)
 
 ### Fixed
