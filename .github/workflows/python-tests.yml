@@ -232,11 +232,13 @@ jobs:
       # Every other job resolves the newest vcs-versioning, so a stale lower
       # bound stays green until a user hits it. setuptools-scm imports
       # vcs-versioning's private modules, so the bound is a real claim: install
-      # the wheel against the oldest vcs-versioning its metadata permits and
-      # import every submodule.
-      - name: Import setuptools-scm against the oldest permitted vcs-versioning
+      # the wheel against the oldest vcs-versioning its metadata permits, import
+      # every submodule, and run the testsuite. Importing alone misses the
+      # private names the integration hooks reach for inside function bodies.
+      - name: Test setuptools-scm against the oldest permitted vcs-versioning
         run: uv run --no-project --with packaging python
           src/vcs_versioning_workspace/check_dependency_floor.py dist
+        timeout-minutes: 20
 
   test-standalone-vcs-versioning:
     name: vcs-versioning testsuite without setuptools-scm
