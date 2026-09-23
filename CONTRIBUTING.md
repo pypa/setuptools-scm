@@ -147,6 +147,8 @@ When you merge the PR to `main`:
 - If a release run fails, it opens an issue titled
   `Release <tag> did not publish`; re-running the failed jobs of that run
   completes the release
+- If creating the tags fails, it opens an issue titled
+  `Release from #<PR> did not start`
 
 ## Workflow Architecture
 
