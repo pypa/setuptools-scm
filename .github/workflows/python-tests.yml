@@ -318,13 +318,15 @@ jobs:
     - name: Publish vcs-versioning to PyPI
       uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
 
-  upload-release-assets-setuptools-scm:
+  publish-github-release-setuptools-scm:
+    # create-release-tags.yml leaves the release as a draft: a published release
+    # is immutable and takes no assets. Publishing it only after the PyPI upload
+    # makes a leftover draft mean "never reached PyPI".
     runs-on: ubuntu-latest
     if: |
       github.repository == 'pypa/setuptools-scm' &&
-      ((github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'setuptools-scm-v')) ||
-      (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/setuptools-scm-v')))
-    needs: [test]
+      github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/setuptools-scm-v')
+    needs: [dist_upload_setuptools_scm]
     permissions:
       contents: write
     steps:
@@ -333,21 +335,55 @@ jobs:
       with:
         name: Packages-setuptools-scm
         path: dist
-    - name: Upload release assets
-      # zizmor: ignore[superfluous-actions] `gh release upload` would work, but
-      # this action already handles the glob and the empty-match failure mode
-      uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+    - name: Attach packages and publish the draft release
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
       with:
-        files: dist/*
-        fail_on_unmatched_files: true
+        script: |
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const { owner, repo } = context.repo;
+          const tag = process.env.GITHUB_REF_NAME;
+          // getReleaseByTag does not return drafts
+          const [release] = await github.paginate(
+            github.rest.repos.listReleases, { owner, repo, per_page: 100 },
+            (response, done) => {
+              const match = response.data.filter(r => r.tag_name === tag);
+              if (match.length) done();
+              return match;
+            },
+          );
+          if (!release) {
+            throw new Error(`No release for ${tag}; create-release-tags.yml creates it as a draft`);
+          }
+          if (!release.draft) {
+            throw new Error(`Release ${tag} is already published and immutable; assets can only be attached to a draft`);
+          }
+          // a re-run after a partial upload must not fail on the assets already attached
+          const attached = new Set(release.assets.map(a => a.name));
+          for (const name of fs.readdirSync('dist')) {
+            if (attached.has(name)) {
+              core.info(`${name} already attached`);
+              continue;
+            }
+            const data = fs.readFileSync(path.join('dist', name));
+            await github.rest.repos.uploadReleaseAsset({
+              owner, repo, release_id: release.id, name, data,
+              headers: { 'content-type': 'application/octet-stream', 'content-length': data.length },
+            });
+            core.info(`Attached ${name}`);
+          }
+          await github.rest.repos.updateRelease({ owner, repo, release_id: release.id, draft: false });
+          core.notice(`Published ${release.html_url}`);
 
-  upload-release-assets-vcs-versioning:
+  publish-github-release-vcs-versioning:
+    # create-release-tags.yml leaves the release as a draft: a published release
+    # is immutable and takes no assets. Publishing it only after the PyPI upload
+    # makes a leftover draft mean "never reached PyPI".
     runs-on: ubuntu-latest
     if: |
       github.repository == 'pypa/setuptools-scm' &&
-      ((github.event_name == 'release' && github.event.action == 'published' && startsWith(github.event.release.tag_name, 'vcs-versioning-v')) ||
-      (github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/vcs-versioning-v')))
-    needs: [test]
+      github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/vcs-versioning-v')
+    needs: [dist_upload_vcs_versioning]
     permissions:
       contents: write
     steps:
@@ -356,13 +392,90 @@ jobs:
       with:
         name: Packages-vcs-versioning
         path: dist
-    - name: Upload release assets
-      # zizmor: ignore[superfluous-actions] `gh release upload` would work, but
-      # this action already handles the glob and the empty-match failure mode
-      uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+    - name: Attach packages and publish the draft release
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
       with:
-        files: dist/*
-        fail_on_unmatched_files: true
+        script: |
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const { owner, repo } = context.repo;
+          const tag = process.env.GITHUB_REF_NAME;
+          // getReleaseByTag does not return drafts
+          const [release] = await github.paginate(
+            github.rest.repos.listReleases, { owner, repo, per_page: 100 },
+            (response, done) => {
+              const match = response.data.filter(r => r.tag_name === tag);
+              if (match.length) done();
+              return match;
+            },
+          );
+          if (!release) {
+            throw new Error(`No release for ${tag}; create-release-tags.yml creates it as a draft`);
+          }
+          if (!release.draft) {
+            throw new Error(`Release ${tag} is already published and immutable; assets can only be attached to a draft`);
+          }
+          // a re-run after a partial upload must not fail on the assets already attached
+          const attached = new Set(release.assets.map(a => a.name));
+          for (const name of fs.readdirSync('dist')) {
+            if (attached.has(name)) {
+              core.info(`${name} already attached`);
+              continue;
+            }
+            const data = fs.readFileSync(path.join('dist', name));
+            await github.rest.repos.uploadReleaseAsset({
+              owner, repo, release_id: release.id, name, data,
+              headers: { 'content-type': 'application/octet-stream', 'content-length': data.length },
+            });
+            core.info(`Attached ${name}`);
+          }
+          await github.rest.repos.updateRelease({ owner, repo, release_id: release.id, draft: false });
+          core.notice(`Published ${release.html_url}`);
+
+  release-failed:
+    # A failed test job skips the PyPI upload without anything else going red
+    # that anyone watches; 10.3.3 sat tagged but unpublished for a week (#1549).
+    runs-on: ubuntu-latest
+    if: |
+      (failure() || cancelled()) &&
+      github.repository == 'pypa/setuptools-scm' &&
+      github.event_name != 'pull_request' &&
+      (startsWith(github.ref, 'refs/tags/setuptools-scm-v') || startsWith(github.ref, 'refs/tags/vcs-versioning-v'))
+    needs:
+    - test-dependency-floor
+    - test-standalone-vcs-versioning
+    - dist_upload_setuptools_scm
+    - dist_upload_vcs_versioning
+    - publish-github-release-setuptools-scm
+    - publish-github-release-vcs-versioning
+    permissions:
+      issues: write
+    steps:
+    - name: Open or update the release failure issue
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}/attempts/${process.env.GITHUB_RUN_ATTEMPT}`;
+          const title = `Release ${process.env.GITHUB_REF_NAME} did not publish`;
+          const open = await github.paginate(github.rest.issues.listForRepo, {
+            owner, repo, state: 'open', per_page: 100
+          });
+          const existing = open.find(i => !i.pull_request && i.title === title);
+          if (existing) {
+            await github.rest.issues.createComment({
+              owner, repo, issue_number: existing.number, body: `Failed again: ${runUrl}`
+            });
+            core.notice(`Commented on #${existing.number}`);
+          } else {
+            const body = [
+              `The release run for \`${process.env.GITHUB_REF_NAME}\` failed: ${runUrl}`,
+              '',
+              'The package is not on PyPI unless its `dist_upload_*` job succeeded, and its GitHub release stays a draft until it is. If the failure is a flaky test, re-running the failed jobs of that run completes the release.',
+            ].join('\n');
+            const { data: issue } = await github.rest.issues.create({ owner, repo, title, body });
+            core.notice(`Opened #${issue.number}`);
+          }
 
   test-pypi-upload:
     runs-on: ubuntu-latest

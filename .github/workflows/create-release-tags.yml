@@ -6,9 +6,7 @@ on:
     branches:
       - main
 
-permissions:
-  contents: write
-  actions: write
+permissions: {}
 
 jobs:
   create-tags:
@@ -19,6 +17,9 @@ jobs:
       (contains(github.event.pull_request.labels.*.name, 'release:setuptools-scm') ||
        contains(github.event.pull_request.labels.*.name, 'release:vcs-versioning'))
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     steps:
       - name: Create tags and releases
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -86,10 +87,13 @@ jobs:
               }
             }
 
-            // Helper to create tag and release via a single API call.
-            // createRelease with target_commitish automatically creates a
-            // lightweight tag if it doesn't already exist, avoiding the
-            // dangling tag object problem from separate createTag+createRef calls.
+            // The release is created as a draft and published by python-tests.yml
+            // only after the PyPI upload succeeded. Releases are immutable once
+            // published, so assets can only be attached while it is a draft, and
+            // a draft left behind marks a release that never reached PyPI.
+            // A draft does not create its tag, so the tag is pushed first: the
+            // dispatch below needs it as a ref. createRef on the commit makes a
+            // lightweight tag, unlike createTag, which leaves a dangling tag object.
             async function createTagAndRelease(packageName, packageDir, tagPrefix) {
               const version = extractVersion(prTitle, packageName);
               if (!version) {
@@ -99,21 +103,25 @@ jobs:
               const tagName = `${tagPrefix}-v${version}`;
               const changelog = await extractChangelog(packageDir, version);
 
-              console.log(`Creating release ${tagName} at ${mergeCommitSha}`);
+              console.log(`Creating tag ${tagName} at ${mergeCommitSha}`);
+              await github.rest.git.createRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `refs/tags/${tagName}`,
+                sha: mergeCommitSha
+              });
 
               const { data: release } = await github.rest.repos.createRelease({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 tag_name: tagName,
-                target_commitish: mergeCommitSha,
                 name: `${packageName} v${version}`,
                 body: changelog,
-                draft: false,
-                prerelease: false,
-                make_latest: 'legacy'
+                draft: true,
+                prerelease: false
               });
 
-              console.log(`Release created: ${release.html_url}`);
+              console.log(`Draft release created: ${release.html_url}`);
               tagsCreated.push(tagName);
               return { tagName, version };
             }
@@ -143,7 +151,44 @@ jobs:
               });
             }
 
-            const summary = `## Tags Created\n\n${tagsCreated.map(t => `- \`${t}\``).join('\n')}\n\nPyPI upload dispatched via workflow_dispatch for each tag.`;
+            const summary = `## Tags Created\n\n${tagsCreated.map(t => `- \`${t}\``).join('\n')}\n\nPyPI upload dispatched via workflow_dispatch for each tag. Each GitHub release stays a draft until its package is on PyPI; a failed run opens an issue.`;
             await core.summary.addRaw(summary).write();
 
             console.log(`\nDone! Created tags: ${tagsCreated.join(', ')}`);
+
+  release-failed:
+    # python-tests.yml reports failures of the release runs it is dispatched for;
+    # a failure here means those runs never started, so report it the same way.
+    needs: [create-tags]
+    if: |
+      (failure() || cancelled()) &&
+      github.repository == 'pypa/setuptools-scm'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update the release failure issue
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}/attempts/${process.env.GITHUB_RUN_ATTEMPT}`;
+            const title = `Release from #${context.payload.pull_request.number} did not start`;
+            const open = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', per_page: 100
+            });
+            const existing = open.find(i => !i.pull_request && i.title === title);
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: existing.number, body: `Failed again: ${runUrl}`
+              });
+              core.notice(`Commented on #${existing.number}`);
+            } else {
+              const body = [
+                `Creating the tags and draft releases for #${context.payload.pull_request.number} (${context.payload.pull_request.title}) failed: ${runUrl}`,
+                '',
+                'The run log shows which tags and draft releases were created and which release runs were dispatched before the failure. A re-run fails on a tag that already exists; delete those tags and their draft releases first.',
+              ].join('\n');
+              const { data: issue } = await github.rest.issues.create({ owner, repo, title, body });
+              core.notice(`Opened #${issue.number}`);
+            }
