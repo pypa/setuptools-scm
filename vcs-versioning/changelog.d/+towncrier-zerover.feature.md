@@ -1,0 +1,1 @@
+Add the `towncrier-fragments-zerover` version scheme: like `towncrier-fragments`, but while the last tag is `0.x`, `breaking` and `removal` fragments bump the minor version and only a `major` fragment proposes `1.0.0`.
