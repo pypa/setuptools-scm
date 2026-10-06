@@ -8,6 +8,10 @@ to changelog.d/) to determine the appropriate version bump:
 - Patch bump: if only 'bugfix', 'doc', or 'misc' fragments are present
 
 Falls back to guess-next-dev if no fragments are found.
+
+The towncrier-fragments-zerover variant follows SemVer item 4 for 0.x
+projects: while the last tag's major is 0, 'breaking' and 'removal'
+fragments bump the minor version, and only a 'major' fragment proposes 1.0.0.
 """
 
 from __future__ import annotations
@@ -141,6 +145,13 @@ def _get_changelog_root(version: ScmVersion) -> Path:
         return Path(version.config.absolute_root)
 
 
+def _tag_major(version: ScmVersion) -> int:
+    from .. import _modify_version
+
+    tag_version = _modify_version.strip_local(str(version.tag))
+    return int(tag_version.split(".")[0].lstrip("v"))  # Handle 'v' prefix
+
+
 def _guess_next_major(version: ScmVersion) -> str:
     """Guess next major version (X+1.0.0) from current tag."""
     from .. import _modify_version
@@ -153,6 +164,34 @@ def _guess_next_major(version: ScmVersion) -> str:
     # Fallback to bump_dev
     bumped = _modify_version._bump_dev(tag_version)
     return bumped if bumped is not None else f"{tag_version}.dev0"
+
+
+def _fragments_for(version: ScmVersion) -> dict[str, list[str]]:
+    root = _get_changelog_root(version)
+    log.debug("Analyzing fragments in %s", root)
+    changelog_dir = _resolve_fragment_directory(root)
+    return _find_fragments(root, changelog_dir=changelog_dir)
+
+
+def _format_bump(version: ScmVersion, bump_type: str | None) -> str:
+    if bump_type is None:
+        log.debug("No fragments found, falling back to guess-next-dev")
+        return guess_next_dev_version(version)
+
+    log.info("Determined version bump type from fragments: %s", bump_type)
+
+    if bump_type == "major":
+        return version.format_next_version(_guess_next_major)
+
+    elif bump_type == "minor":
+        return version.format_next_version(
+            guess_next_simple_semver, retain=SEMVER_MINOR
+        )
+
+    else:  # patch
+        return version.format_next_version(
+            guess_next_simple_semver, retain=SEMVER_PATCH
+        )
 
 
 def version_from_fragments(version: ScmVersion) -> str:
@@ -170,33 +209,22 @@ def version_from_fragments(version: ScmVersion) -> str:
     if version.exact:
         return version.format_with("{tag}")
 
-    root = _get_changelog_root(version)
-    log.debug("Analyzing fragments in %s", root)
+    return _format_bump(version, _determine_bump_type(_fragments_for(version)))
 
-    # Find and analyze fragments
-    changelog_dir = _resolve_fragment_directory(root)
-    fragments = _find_fragments(root, changelog_dir=changelog_dir)
+
+def version_from_fragments_zerover(version: ScmVersion) -> str:
+    """Like towncrier-fragments, but 0.x stays 0.x until a 'major' fragment.
+
+    Registered as the towncrier-fragments-zerover version scheme.
+    """
+    if version.exact:
+        return version.format_with("{tag}")
+
+    fragments = _fragments_for(version)
     bump_type = _determine_bump_type(fragments)
-
-    if bump_type is None:
-        log.debug("No fragments found, falling back to guess-next-dev")
-        return guess_next_dev_version(version)
-
-    log.info("Determined version bump type from fragments: %s", bump_type)
-
-    # Determine the next version based on bump type
-    if bump_type == "major":
-        return version.format_next_version(_guess_next_major)
-
-    elif bump_type == "minor":
-        return version.format_next_version(
-            guess_next_simple_semver, retain=SEMVER_MINOR
-        )
-
-    else:  # patch
-        return version.format_next_version(
-            guess_next_simple_semver, retain=SEMVER_PATCH
-        )
+    if bump_type == "major" and not fragments["major"] and _tag_major(version) == 0:
+        bump_type = "minor"
+    return _format_bump(version, bump_type)
 
 
 def get_release_version(version: ScmVersion) -> str | None:

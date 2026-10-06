@@ -207,6 +207,30 @@ representing the version.
 
     - Tag `1.0.0` on development branch → version `1.1.0.devN`
 
+`towncrier-fragments`
+:   Guesses the upcoming release from the [towncrier](https://towncrier.readthedocs.io/)
+    fragments waiting in the fragment directory (`[tool.towncrier] directory`,
+    default `changelog.d/`), then appends `.devN`.
+    `major`, `breaking` and `removal` fragments bump the major segment,
+    `feature` and `deprecation` the minor segment, `bugfix`, `doc` and `misc`
+    the micro segment. Without fragments it behaves like `guess-next-dev`.
+
+    **Examples:**
+
+    - Tag `0.4.2` with a `removal` fragment → version `1.0.0.devN`
+    - Tag `2.3.1` with a `feature` fragment → version `2.4.0.devN`
+
+`towncrier-fragments-zerover`
+:   The same as `towncrier-fragments`, except while the last tag's major segment is `0`:
+    `breaking` and `removal` fragments then bump the minor segment, as SemVer allows
+    for initial development, and only a `major` fragment proposes `1.0.0`.
+
+    **Examples:**
+
+    - Tag `0.4.2` with a `removal` fragment → version `0.5.0.devN`
+    - Tag `0.4.2` with a `major` fragment → version `1.0.0.devN`
+    - Tag `2.3.1` with a `removal` fragment → version `3.0.0.devN`
+
 ### `setuptools_scm.local_scheme`
 
 Configures how the local part of a version is rendered given a
