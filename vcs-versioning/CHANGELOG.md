@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 2.6.0 (2026-10-06)
+
+### Added
+
+- Add the `towncrier-fragments-zerover` version scheme: like `towncrier-fragments`, but while the last tag is `0.x`, `breaking` and `removal` fragments bump the minor version and only a `major` fragment proposes `1.0.0`. ([#1556](https://github.com/pypa/setuptools-scm/issues/1556))
+
 ## 2.5.0 (2026-09-23)
 
 ### Added
