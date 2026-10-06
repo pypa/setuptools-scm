@@ -55,6 +55,44 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
+  # On push without fragments: a release PR still open for this branch proposes
+  # a release whose fragments are gone, typically one opened by a run that lost
+  # a race with the merge of the previous release PR (#1558). Close it.
+  close-stale-release-pr:
+    needs: [setuptools-scm, vcs-versioning]
+    if: |
+      github.repository == 'pypa/setuptools-scm' &&
+      github.event_name == 'push' &&
+      needs.setuptools-scm.outputs.has_fragments != 'true' &&
+      needs.vcs-versioning.outputs.has_fragments != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Close release PRs without fragments
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const sourceBranch = context.ref.replace('refs/heads/', '');
+            // an older run must not close the PR a newer commit's run just opened
+            const { data: ref } = await github.rest.git.getRef({ owner, repo, ref: `heads/${sourceBranch}` });
+            if (ref.object.sha !== context.sha) {
+              core.notice(`${sourceBranch} moved on to ${ref.object.sha}; leaving release PRs to that run`);
+              return;
+            }
+            const { data: pulls } = await github.rest.pulls.list({
+              owner, repo, state: 'open', base: 'main', head: `${owner}:release/${sourceBranch}`
+            });
+            for (const pr of pulls) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: pr.number,
+                body: `${sourceBranch} at ${context.sha} has no changelog fragments left, so there is nothing to release; closing.`
+              });
+              await github.rest.pulls.update({ owner, repo, pull_number: pr.number, state: 'closed' });
+              core.notice(`Closed #${pr.number}`);
+            }
+
   # On push: download built changelogs, commit to release branch, create/update PR
   create-release-pr:
     needs: [setuptools-scm, vcs-versioning]
@@ -141,16 +179,28 @@ jobs:
           echo "release_branch=release/${SOURCE_BRANCH}" >> "$GITHUB_OUTPUT"
 
       - name: Create release branch and push
+        id: push
         env:
           RELEASE_BRANCH: ${{ steps.meta.outputs.release_branch }}
           RELEASES: ${{ steps.meta.outputs.releases }}
+          SOURCE_BRANCH: ${{ github.ref_name }}
         run: |
+          # A run for a commit that is no longer the branch head must not push:
+          # the release PR it would update may have been merged meanwhile, and
+          # it then opens a duplicate of an already released version (#1558).
+          head=$(git ls-remote origin "refs/heads/$SOURCE_BRANCH" | cut -f1)
+          if [ "$head" != "$GITHUB_SHA" ]; then
+            echo "::notice::$SOURCE_BRANCH moved on to $head; the run for that commit proposes the release"
+            echo "superseded=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           git checkout -B "$RELEASE_BRANCH"
           git add -A
           git commit -m "Prepare release: $RELEASES" || echo "No changes to commit"
           git push origin "$RELEASE_BRANCH" --force
 
       - name: Create or update PR
+        if: steps.push.outputs.superseded != 'true'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           RELEASE_BRANCH: ${{ steps.meta.outputs.release_branch }}
@@ -222,6 +272,7 @@ jobs:
             }
 
       - name: Write summary
+        if: steps.push.outputs.superseded != 'true'
         env:
           RELEASES: ${{ steps.meta.outputs.releases }}
         run: |
