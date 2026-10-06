@@ -271,7 +271,7 @@ def _version_missing(config: Configuration, *, tool: str | None = None) -> NoRet
             + f"However, a repository was found in a parent directory: {scm_parent}\n\n"
             f"To fix this, you have a few options:\n\n"
             f"{numbered}\n\n"
-            "For more information, see: https://setuptools-scm.readthedocs.io/en/latest/config/"
+            "For more information, see: https://setuptools-scm.readthedocs.io/latest/config/"
         )
     else:
         if config.dist_name is None:
@@ -300,7 +300,7 @@ def _version_missing(config: Configuration, *, tool: str | None = None) -> NoRet
             "use git+https://github.com/user/proj.git#egg=proj\n\n"
             "Alternatively, set the version in the environment with "
             f"{pretend_vars}, as described "
-            "in https://setuptools-scm.readthedocs.io/en/latest/config/" + dist_note
+            "in https://setuptools-scm.readthedocs.io/latest/config/" + dist_note
         )
 
     raise LookupError(error_msg)

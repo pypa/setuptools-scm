@@ -51,7 +51,7 @@ class LegacyParseWorkdir(ScmWorkdir):
         warnings.warn(
             "config.parse is deprecated. Migrate to the "
             "vcs_versioning.discover_workdir entry-point group. "
-            "See https://setuptools-scm.readthedocs.io/en/latest/extending/",
+            "See https://setuptools-scm.readthedocs.io/latest/extending/",
             DeprecationWarning,
             stacklevel=2,
         )
