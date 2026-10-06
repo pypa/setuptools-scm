@@ -141,14 +141,17 @@ When you merge the PR to `main`:
   - `vcs-versioning-v0.2.0`
 - Draft GitHub releases are created with changelog excerpts
 - The workflow dispatches the PyPI upload run for each tag
-- Only the package(s) matching the tag prefix are uploaded to PyPI
+- Only the package(s) matching the tag prefix are uploaded to PyPI, and only
+  after every test job passed and the built files carry the tag's version
 - After a successful upload, the wheel and sdist are attached to the draft
   release and it is published; a release still in draft never reached PyPI
 - If a release run fails, it opens an issue titled
   `Release <tag> did not publish`; re-running the failed jobs of that run
-  completes the release
+  completes the release and closes the issue
 - If creating the tags fails, it opens an issue titled
-  `Release from #<PR> did not start`
+  `Release from #<PR> did not start`; re-running that run reuses the tags and
+  drafts that exist, dispatches the release runs that never started, and
+  closes the issue
 
 ## Workflow Architecture
 

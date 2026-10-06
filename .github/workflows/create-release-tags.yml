@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: write
       actions: write
+      issues: write
     steps:
       - name: Create tags and releases
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -94,6 +95,60 @@ jobs:
             // A draft does not create its tag, so the tag is pushed first: the
             // dispatch below needs it as a ref. createRef on the commit makes a
             // lightweight tag, unlike createTag, which leaves a dangling tag object.
+            // Every step reuses what an earlier attempt already created, so
+            // re-running this workflow after a partial failure fills the gaps
+            // instead of failing on the first tag that exists.
+            async function ensureTag(tagName) {
+              try {
+                await github.rest.git.createRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `refs/tags/${tagName}`,
+                  sha: mergeCommitSha
+                });
+                console.log(`Created tag ${tagName} at ${mergeCommitSha}`);
+              } catch (error) {
+                if (error.status !== 422) throw error;
+                const { data: ref } = await github.rest.git.getRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${tagName}`
+                });
+                if (ref.object.sha !== mergeCommitSha) {
+                  throw new Error(`Tag ${tagName} exists at ${ref.object.sha}, not at the merge commit ${mergeCommitSha}`);
+                }
+                console.log(`Tag ${tagName} already exists at ${mergeCommitSha}`);
+              }
+            }
+
+            async function ensureDraftRelease(packageName, packageDir, version, tagName) {
+              // getReleaseByTag does not return drafts
+              const [existing] = await github.paginate(
+                github.rest.repos.listReleases,
+                { owner: context.repo.owner, repo: context.repo.repo, per_page: 100 },
+                (response, done) => {
+                  const match = response.data.filter(r => r.tag_name === tagName);
+                  if (match.length) done();
+                  return match;
+                },
+              );
+              if (existing) {
+                console.log(`Release for ${tagName} already exists (draft: ${existing.draft}): ${existing.html_url}`);
+                return existing;
+              }
+              const { data: release } = await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: tagName,
+                name: `${packageName} v${version}`,
+                body: await extractChangelog(packageDir, version),
+                draft: true,
+                prerelease: false
+              });
+              console.log(`Draft release created: ${release.html_url}`);
+              return release;
+            }
+
             async function createTagAndRelease(packageName, packageDir, tagPrefix) {
               const version = extractVersion(prTitle, packageName);
               if (!version) {
@@ -101,29 +156,13 @@ jobs:
               }
 
               const tagName = `${tagPrefix}-v${version}`;
-              const changelog = await extractChangelog(packageDir, version);
-
-              console.log(`Creating tag ${tagName} at ${mergeCommitSha}`);
-              await github.rest.git.createRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: `refs/tags/${tagName}`,
-                sha: mergeCommitSha
-              });
-
-              const { data: release } = await github.rest.repos.createRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag_name: tagName,
-                name: `${packageName} v${version}`,
-                body: changelog,
-                draft: true,
-                prerelease: false
-              });
-
-              console.log(`Draft release created: ${release.html_url}`);
+              await ensureTag(tagName);
+              const release = await ensureDraftRelease(packageName, packageDir, version, tagName);
+              if (!release.draft) {
+                console.log(`${tagName} is already published; nothing to dispatch`);
+                return;
+              }
               tagsCreated.push(tagName);
-              return { tagName, version };
             }
 
             // Process setuptools-scm
@@ -141,7 +180,23 @@ jobs:
             // Dispatch python-tests.yml for each tag to trigger PyPI upload.
             // Tags created by GITHUB_TOKEN don't trigger push-based workflows,
             // but workflow_dispatch events dispatched by GITHUB_TOKEN DO.
+            // A second dispatch for a tag would land in the same concurrency
+            // group and cancel a release run that may be mid-upload, so a tag
+            // that already has a release run is left to that run.
+            const dispatched = [];
             for (const tagName of tagsCreated) {
+              const { data: runs } = await github.rest.actions.listWorkflowRuns({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'python-tests.yml',
+                event: 'workflow_dispatch',
+                branch: tagName,
+                per_page: 1
+              });
+              if (runs.total_count > 0) {
+                core.warning(`${tagName} already has a release run, ${runs.workflow_runs[0].html_url}; re-run its failed jobs instead`);
+                continue;
+              }
               console.log(`Dispatching python-tests.yml for ${tagName}`);
               await github.rest.actions.createWorkflowDispatch({
                 owner: context.repo.owner,
@@ -149,12 +204,28 @@ jobs:
                 workflow_id: 'python-tests.yml',
                 ref: tagName
               });
+              dispatched.push(tagName);
             }
 
-            const summary = `## Tags Created\n\n${tagsCreated.map(t => `- \`${t}\``).join('\n')}\n\nPyPI upload dispatched via workflow_dispatch for each tag. Each GitHub release stays a draft until its package is on PyPI; a failed run opens an issue.`;
+            const summary = `## Release runs dispatched\n\n${dispatched.map(t => `- \`${t}\``).join('\n') || 'none'}\n\nEach GitHub release stays a draft until its package is on PyPI; a failed run opens an issue.`;
             await core.summary.addRaw(summary).write();
 
-            console.log(`\nDone! Created tags: ${tagsCreated.join(', ')}`);
+            // a re-run that gets the release going resolves the issue release-failed opened
+            const failureTitle = `Release from #${pr.number} did not start`;
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner, repo: context.repo.repo, state: 'open', per_page: 100
+            });
+            for (const issue of openIssues.filter(i => !i.pull_request && i.title === failureTitle)) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number,
+                body: `Release runs dispatched: ${dispatched.join(', ') || 'none needed'}`
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number: issue.number,
+                state: 'closed', state_reason: 'completed'
+              });
+              core.notice(`Closed #${issue.number}`);
+            }
 
   release-failed:
     # python-tests.yml reports failures of the release runs it is dispatched for;
@@ -187,7 +258,7 @@ jobs:
               const body = [
                 `Creating the tags and draft releases for #${context.payload.pull_request.number} (${context.payload.pull_request.title}) failed: ${runUrl}`,
                 '',
-                'The run log shows which tags and draft releases were created and which release runs were dispatched before the failure. A re-run fails on a tag that already exists; delete those tags and their draft releases first.',
+                'The run log shows which tags and draft releases were created and which release runs were dispatched before the failure. Re-running this run reuses what exists, creates what is missing, dispatches the release runs that never started, and closes this issue.',
               ].join('\n');
               const { data: issue } = await github.rest.issues.create({ owner, repo, title, body });
               core.notice(`Opened #${issue.number}`);

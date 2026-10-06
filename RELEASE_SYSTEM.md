@@ -27,12 +27,14 @@ Manual trigger, runs towncrier, creates labeled PR
 
 **Tag Creation** (`.github/workflows/create-release-tags.yml`):
 On PR merge, creates tags and draft releases from PR title, triggers PyPI upload.
-A failure opens a `Release from #<PR> did not start` issue.
+A failure opens a `Release from #<PR> did not start` issue; a re-run reuses what
+exists and closes it.
 
 **Modified Upload** (`.github/workflows/python-tests.yml`):
-Split per-project upload jobs filtered by tag prefix. After the PyPI upload, the
+Split per-project upload jobs filtered by tag prefix, gated on all test jobs and
+on the built files carrying the tag's version. After the PyPI upload, the
 packages are attached to the draft release and it is published. A failed release
-run opens a `Release <tag> did not publish` issue.
+run opens a `Release <tag> did not publish` issue; publishing closes it.
 
 ## Usage
 
