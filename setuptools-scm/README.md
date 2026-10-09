@@ -1,6 +1,6 @@
 # setuptools-scm
 [![github ci](https://github.com/pypa/setuptools-scm/actions/workflows/python-tests.yml/badge.svg)](https://github.com/pypa/setuptools-scm/actions/workflows/python-tests.yml)
-[![Documentation Status](https://readthedocs.org/projects/setuptools-scm/badge/?version=latest)](https://setuptools-scm.readthedocs.io/en/latest/?badge=latest)
+[![Documentation Status](https://readthedocs.org/projects/setuptools-scm/badge/?version=latest)](https://setuptools-scm.readthedocs.io/latest/?badge=latest)
 [![tidelift](https://tidelift.com/badges/package/pypi/setuptools-scm) ](https://tidelift.com/subscription/pkg/pypi-setuptools-scm?utm_source=pypi-setuptools-scm&utm_medium=readme)
 
 ## about
@@ -94,7 +94,7 @@ For further configuration see the [documentation].
 
 [setuptools-scm]: https://github.com/pypa/setuptools-scm
 [documentation]: https://setuptools-scm.readthedocs.io/
-[git-archive-docs]: https://setuptools-scm.readthedocs.io/en/stable/usage/#builtin-mechanisms-for-obtaining-version-numbers
+[git-archive-docs]: https://setuptools-scm.readthedocs.io/stable/usage/#builtin-mechanisms-for-obtaining-version-numbers
 
 
 ## Interaction with Enterprise Distributions

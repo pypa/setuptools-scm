@@ -45,10 +45,12 @@ PYPROJECT = dedent("""\
 """)
 
 
-def _write_project(wd: WorkDir, extra_config: str = "") -> None:
-    wd.write("pyproject.toml", PYPROJECT % extra_config)
-    wd.write("demo_pkg/__init__.py", "")
-    wd.write(TRACKED_DATA, "payload\n")
+def _write_project(wd: WorkDir, extra_config: str = "", prefix: str = "") -> Path:
+    """Write the project, optionally in a subdirectory, and return its dir."""
+    wd.write(f"{prefix}pyproject.toml", PYPROJECT % extra_config)
+    wd.write(f"{prefix}demo_pkg/__init__.py", "")
+    wd.write(f"{prefix}{TRACKED_DATA}", "payload\n")
+    return wd.cwd / prefix if prefix else wd.cwd
 
 
 def _build(cwd: Path) -> tuple[set[str], set[str]]:
@@ -207,3 +209,53 @@ def test_pretend_version_defers_discovery_until_files_are_wanted(
 
     assert data.workdir is not None
     assert calls == 1, "the answer is memoized"
+
+
+@pytest.mark.issue(1540)
+@pytest.mark.parametrize(
+    ("extra_config", "pretend"),
+    [("", True), ('fallback_version = "0.0.1"', False)],
+    ids=["pretend", "fallback-version"],
+)
+def test_subdirectory_project_ships_its_tracked_files(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch, extra_config: str, pretend: bool
+) -> None:
+    """A project below the checkout root still ships the checkout's files.
+
+    ``root`` defaults to the project directory, which is not the checkout
+    root here, so version inference legitimately finds no SCM and answers
+    from the pretended or fallback version.  That says nothing about which
+    files git tracks, and before this the artifacts came out empty.
+    """
+    wd.setup_git(monkeypatch)
+    project = _write_project(wd, extra_config, prefix="sub/")
+    wd.add_and_commit()
+    wd.create_tag("v1.0.0")
+    if pretend:
+        monkeypatch.setenv("SETUPTOOLS_SCM_PRETEND_VERSION", "9.9.9")
+
+    sdist, wheel = _build(project)
+
+    assert TRACKED_DATA in sdist
+    assert TRACKED_DATA in wheel
+
+
+@pytest.mark.issue(1540)
+def test_subdirectory_project_writes_the_file_list(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Listing through the enclosing checkout still records the file list.
+
+    A subdirectory project that reached its files through the deprecated
+    entry point shipped an sdist with no ``scm_file_list.json``, so a
+    rebuild from that sdist had nothing to fall back on.
+    """
+    wd.setup_git(monkeypatch)
+    project = _write_project(wd, prefix="sub/")
+    wd.add_and_commit()
+    wd.create_tag("v1.0.0")
+    monkeypatch.setenv("SETUPTOOLS_SCM_PRETEND_VERSION", "9.9.9")
+
+    sdist, _ = _build(project)
+
+    assert "demo_pkg.egg-info/scm_file_list.json" in sdist

@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 from vcs_versioning import _config
+from vcs_versioning._entrypoints import _get_ep
 from vcs_versioning._scm_version import ScmVersion
 from vcs_versioning._version_cls import Version
 from vcs_versioning._version_schemes._towncrier import (
@@ -13,6 +14,7 @@ from vcs_versioning._version_schemes._towncrier import (
     _find_fragments,
     _resolve_fragment_directory,
     version_from_fragments,
+    version_from_fragments_zerover,
 )
 
 
@@ -577,3 +579,66 @@ def test_version_from_fragments_custom_directory(tmp_path: Path) -> None:
     )
     result = version_from_fragments(version)
     assert result.startswith("1.1.0.dev3")
+
+
+ZEROVER_CASES = [
+    # fragments, tag, expected next version
+    (["major"], "0.4.2", "1.0.0"),
+    (["breaking"], "0.4.2", "0.5.0"),
+    (["removal"], "0.4.2", "0.5.0"),
+    (["feature"], "0.4.2", "0.5.0"),
+    (["deprecation"], "0.4.2", "0.5.0"),
+    (["bugfix"], "0.4.2", "0.4.3"),
+    (["doc"], "0.4.2", "0.4.3"),
+    (["misc"], "0.4.2", "0.4.3"),
+    (["major", "removal"], "0.4.2", "1.0.0"),
+    (["major"], "2.3.1", "3.0.0"),
+    (["breaking"], "2.3.1", "3.0.0"),
+    (["removal"], "2.3.1", "3.0.0"),
+    (["feature"], "2.3.1", "2.4.0"),
+    (["deprecation"], "2.3.1", "2.4.0"),
+    (["bugfix"], "2.3.1", "2.3.2"),
+    (["doc"], "2.3.1", "2.3.2"),
+    (["misc"], "2.3.1", "2.3.2"),
+]
+
+
+@pytest.mark.parametrize(("fragment_types", "tag", "expected"), ZEROVER_CASES)
+def test_zerover_next_version(
+    changelog_dir: Path,
+    config: _config.Configuration,
+    fragment_types: list[str],
+    tag: str,
+    expected: str,
+) -> None:
+    for number, fragment_type in enumerate(fragment_types, start=1):
+        (changelog_dir / f"{number}.{fragment_type}.md").write_text("change")
+
+    version = ScmVersion(
+        tag=Version(tag), distance=5, node="abc123", dirty=False, config=config
+    )
+    assert version_from_fragments_zerover(version) == f"{expected}.dev5"
+
+
+def test_zerover_without_fragments_falls_back_to_guess_next_dev(
+    changelog_dir: Path, config: _config.Configuration
+) -> None:
+    version = ScmVersion(
+        tag=Version("0.4.2"), distance=5, node="abc123", dirty=False, config=config
+    )
+    assert version_from_fragments_zerover(version) == "0.4.3.dev5"
+
+
+def test_zerover_exact_tag_is_the_tag(
+    changelog_dir: Path, config: _config.Configuration
+) -> None:
+    (changelog_dir / "1.removal.md").write_text("Remove API")
+    version = ScmVersion(
+        tag=Version("0.4.2"), distance=0, node="abc123", dirty=False, config=config
+    )
+    assert version_from_fragments_zerover(version) == "0.4.2"
+
+
+def test_zerover_is_registered_as_version_scheme() -> None:
+    scheme = _get_ep("setuptools_scm.version_scheme", "towncrier-fragments-zerover")
+    assert scheme is version_from_fragments_zerover

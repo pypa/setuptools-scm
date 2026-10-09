@@ -23,7 +23,10 @@ from vcs_versioning._scm_metadata import (
     write_scm_version_data,
 )
 from vcs_versioning._scm_version import ScmVersion, meta
-from vcs_versioning._worktree_discovery import discover_workdir
+from vcs_versioning._worktree_discovery import (
+    discover_file_workdir,
+    discover_workdir,
+)
 
 
 def _git_init(path: Path) -> None:
@@ -514,3 +517,94 @@ class TestNearestFallbackWins:
         assert version is not None
         # The root archival (priority 20) outranks the project PKG-INFO (30).
         assert str(version.tag) == "9.9.9"
+
+
+class TestDiscoverFileWorkdir:
+    """The checkout a project sits in, for listing files (:issue:`1540`)."""
+
+    @staticmethod
+    def _subproject(tmp_path: Path, extra: str = "") -> Configuration:
+        _git_init(tmp_path)
+        project = tmp_path / "sub"
+        project.mkdir()
+        pyproject = project / "pyproject.toml"
+        pyproject.write_text("[project]\n", encoding="utf-8")
+        subprocess.run(
+            ["git", "add", "."], cwd=tmp_path, check=True, capture_output=True
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "sub"],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+        )
+        return Configuration(relative_to=str(pyproject))
+
+    def test_finds_the_enclosing_checkout(self, tmp_path: Path) -> None:
+        """``root`` defaults to the project dir, which is not the checkout root."""
+        config = self._subproject(tmp_path)
+        assert discover_workdir(config) is None
+
+        result = discover_file_workdir(config)
+
+        assert isinstance(result, ScmWorkdir)
+        assert result.path == tmp_path.resolve()
+
+    def test_scopes_the_listing_to_the_project(self, tmp_path: Path) -> None:
+        """A monorepo sibling's files are not this project's files."""
+        config = self._subproject(tmp_path)
+        other = tmp_path / "other"
+        other.mkdir()
+        (other / "theirs.txt").write_text("x", encoding="utf-8")
+        subprocess.run(
+            ["git", "add", "."], cwd=tmp_path, check=True, capture_output=True
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "other"],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+        )
+
+        result = discover_file_workdir(config)
+        assert result is not None
+        listed = result.list_tracked_files(result.project_root)
+
+        assert [Path(f).name for f in listed] == ["pyproject.toml"]
+
+    def test_returns_none_without_a_checkout(self, tmp_path: Path) -> None:
+        pyproject = tmp_path / "pyproject.toml"
+        pyproject.write_text("[project]\n", encoding="utf-8")
+        config = Configuration(relative_to=str(pyproject))
+
+        assert discover_file_workdir(config) is None
+
+    def test_honors_ignored_vcs_roots(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The escape hatch for a project vendored inside a foreign checkout."""
+        config = self._subproject(tmp_path)
+        monkeypatch.setenv("VCS_VERSIONING_IGNORE_VCS_ROOTS", str(tmp_path.resolve()))
+
+        assert discover_file_workdir(config) is None
+
+    def test_does_not_verify_project_path(self, tmp_path: Path) -> None:
+        """The two project_paths are measured from different directories.
+
+        ``config.project_path`` is relative to the declared ``root``, the
+        workdir's to the real checkout, and this function only runs when
+        those differ -- so they mismatch by construction and refusing on
+        that would discard a correct file list.
+        """
+        _git_init(tmp_path)
+        project = tmp_path / "a" / "b"
+        project.mkdir(parents=True)
+        pyproject = project / "pyproject.toml"
+        pyproject.write_text("[project]\n", encoding="utf-8")
+        config = Configuration(relative_to=str(pyproject), root="..")
+        assert config.project_path == "b"
+
+        result = discover_file_workdir(config)
+
+        assert result is not None
+        assert result.project_path == "a/b"

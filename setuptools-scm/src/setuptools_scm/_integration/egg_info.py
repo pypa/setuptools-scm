@@ -28,6 +28,9 @@ from vcs_versioning._file_finders import scm_search_known_failed
 from .build_py import get_version_inference_data
 
 if TYPE_CHECKING:
+    from vcs_versioning._backends._scm_workdir import ScmWorkdir
+    from vcs_versioning._fallback_workdir import FallbackWorkdir
+
     from .build_py import VersionInferenceData
 
     # Typing-only base -- see ``ScmEggInfoMixin`` for why the mixin has no
@@ -101,21 +104,37 @@ def _scm_search_failed(data: VersionInferenceData | None) -> bool:
     return isinstance(workdir, FallbackWorkdir)
 
 
-def _get_tracked_files(data: VersionInferenceData | None) -> list[str] | None:
-    """Extract tracked files from the workdir, or ``None`` to fall back.
+def _list_tracked(workdir: ScmWorkdir | FallbackWorkdir) -> list[str] | None:
+    """Tracked files as CWD-relative paths, or ``None`` when unanswerable.
 
-    Paths are converted to be relative to the current working directory
-    because setuptools' filelist rejects absolute paths.
+    Paths are converted because setuptools' filelist rejects absolute ones.
     """
-    if data is None or data.workdir is None:
-        return None
     try:
-        files = data.workdir.list_tracked_files(data.workdir.project_root)
-        if files:
-            return _normalize_tracked_files(files)
+        files = workdir.list_tracked_files(workdir.project_root)
     except NotImplementedError:
         log.debug("workdir does not support list_tracked_files, using walk_revctrl")
-    return None
+        return None
+    return _normalize_tracked_files(files) if files else None
+
+
+def _get_tracked_files(data: VersionInferenceData | None) -> list[str] | None:
+    """Extract tracked files from a workdir, or ``None`` to fall back.
+
+    The version workdir answers first.  When it cannot -- a project whose
+    ``root`` is not the checkout root, where version inference finds no SCM
+    at all -- the enclosing checkout answers instead, because the file list
+    follows the checkout the project sits in rather than the root it
+    declared for versioning (#1540).
+    """
+    if data is None:
+        return None
+
+    if data.workdir is not None:
+        tracked = _list_tracked(data.workdir)
+        if tracked is not None:
+            return tracked
+
+    return _list_tracked(data.file_workdir) if data.file_workdir is not None else None
 
 
 class ScmEggInfoMixin(_MixinBase):

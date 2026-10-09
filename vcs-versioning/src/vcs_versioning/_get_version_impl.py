@@ -217,7 +217,11 @@ _API_MODULES = {
 }
 
 
-def _version_missing(config: Configuration) -> NoReturn:
+def _version_missing(config: Configuration, *, tool: str | None = None) -> NoReturn:
+    # `tool` is ignored and must stay accepted: setuptools-scm 10.1.0 through
+    # 10.2.3 pass tool=config.env.tool_names[0] and allow any vcs-versioning<3,
+    # so dropping it turned their "no version found" error into a TypeError
+    # (#1550). The tool now comes from config.env.
     from ._overrides import describe_env_vars, env_var_name
 
     tool_names = config.env.tool_names
@@ -267,7 +271,7 @@ def _version_missing(config: Configuration) -> NoReturn:
             + f"However, a repository was found in a parent directory: {scm_parent}\n\n"
             f"To fix this, you have a few options:\n\n"
             f"{numbered}\n\n"
-            "For more information, see: https://setuptools-scm.readthedocs.io/en/latest/config/"
+            "For more information, see: https://setuptools-scm.readthedocs.io/latest/config/"
         )
     else:
         if config.dist_name is None:
@@ -296,7 +300,7 @@ def _version_missing(config: Configuration) -> NoReturn:
             "use git+https://github.com/user/proj.git#egg=proj\n\n"
             "Alternatively, set the version in the environment with "
             f"{pretend_vars}, as described "
-            "in https://setuptools-scm.readthedocs.io/en/latest/config/" + dist_note
+            "in https://setuptools-scm.readthedocs.io/latest/config/" + dist_note
         )
 
     raise LookupError(error_msg)
