@@ -79,6 +79,12 @@ strict = true      # require tags to contain at least one dot
     | `"hatchling-v"` | `hatchling-v1.0.0` | `1.0.0` |
     | `"py-v"` | `py-v2.3.1` | `2.3.1` |
 
+    !!! note "Two tags, one version"
+
+        `v1.0` and `1.0` both give version `1.0`.  If they point at different
+        commits, both builds are labelled `1.0` and nothing warns.  Give each
+        release one tag, and do not reuse a version under another spelling.
+
 `tag.strict: bool | None = None`
 :   Controls how strictly tags must look like version numbers.
 
