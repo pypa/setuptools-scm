@@ -5,7 +5,7 @@ from __future__ import annotations
 import contextlib
 import warnings
 
-from collections.abc import Iterator
+from collections.abc import Generator
 
 from vcs_versioning import _config
 from vcs_versioning._backends import _scm_workdir
@@ -14,7 +14,7 @@ from vcs_versioning._backends import _scm_workdir
 @contextlib.contextmanager
 def _bind_config(
     workdir: _scm_workdir.ScmWorkdir, config: _config.Configuration | None
-) -> Iterator[None]:
+) -> Generator[None, None, None]:
     """Temporarily bind *config* to *workdir*, ensuring ``env`` is available.
 
     When *config* is ``None`` this is a no-op, so callers don't need a guard.
