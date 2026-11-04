@@ -5,7 +5,7 @@ import contextvars
 import logging
 import os
 import sys
-from collections.abc import Callable, Iterable, Iterator, Mapping
+from collections.abc import Callable, Generator, Iterable, Mapping
 
 if sys.version_info >= (3, 10):
     from typing import TypeGuard
@@ -137,7 +137,7 @@ _scm_search_failed: contextvars.ContextVar[bool] = contextvars.ContextVar(
 
 
 @contextlib.contextmanager
-def scm_search_known_failed() -> Iterator[None]:
+def scm_search_known_failed() -> Generator[None, None, None]:
     """Mark that workdir discovery already ran and found no SCM.
 
     Integrators that discover a workdir themselves (the setuptools

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
-from collections.abc import Iterator
+from collections.abc import Generator
 
 
 def make_default_handler() -> logging.Handler:
@@ -72,7 +72,7 @@ log = logging.getLogger("vcs_versioning")
 
 
 @contextlib.contextmanager
-def defer_to_pytest() -> Iterator[None]:
+def defer_to_pytest() -> Generator[None, None, None]:
     """Configure all SCM loggers to propagate to pytest's log capture."""
     loggers = _get_all_scm_loggers()
     old_states = []
@@ -96,7 +96,9 @@ def defer_to_pytest() -> Iterator[None]:
 
 
 @contextlib.contextmanager
-def enable_debug(handler: logging.Handler | None = None) -> Iterator[None]:
+def enable_debug(
+    handler: logging.Handler | None = None,
+) -> Generator[None, None, None]:
     """Enable debug logging for all SCM loggers."""
     global _default_handler
     if handler is None:
