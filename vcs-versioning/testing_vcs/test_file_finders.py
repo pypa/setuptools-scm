@@ -378,3 +378,59 @@ def test_finder_survives_timeout(
 
     monkeypatch.setattr(subprocess, "run", timing_out)
     assert find_files() == []
+
+
+@pytest.mark.issue(1404)
+@pytest.mark.parametrize(("marker", "tool"), [(".git", "Git"), (".hg", "Mercurial")])
+@pytest.mark.parametrize("omit_filename", [False, True])
+def test_file_discovery_reports_missing_vcs_command(
+    marker: str,
+    tool: str,
+    omit_filename: bool,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    root = tmp_path / "checkout"
+    subdir = root / "src"
+    subdir.mkdir(parents=True)
+    marker_path = root / marker
+    if marker == ".git":
+        # Linked Git worktrees store a file at this location.
+        marker_path.write_text("gitdir: ../metadata\n", encoding="utf-8")
+    else:
+        marker_path.mkdir()
+    empty_path = tmp_path / "bin"
+    empty_path.mkdir()
+    monkeypatch.setenv("PATH", str(empty_path))
+    monkeypatch.chdir(tmp_path)
+    caplog.set_level(logging.WARNING)
+
+    if omit_filename:
+        # CreateProcess can report a missing command without a filename.
+        def missing(*args: object, **kwargs: object) -> None:
+            raise FileNotFoundError
+
+        if marker == ".git":
+            monkeypatch.setattr("vcs_versioning._file_finders._git._run", missing)
+        else:
+            monkeypatch.setattr("vcs_versioning._file_finders._hg.run_hg", missing)
+
+    assert find_files(subdir) == []
+    assert len(caplog.records) == 1
+    message = caplog.records[0].getMessage()
+    assert marker in message
+    assert f"the {tool} executable was not found" in message
+
+    caplog.clear()
+    assert find_files(tmp_path) == []
+    assert not caplog.records
+
+    (tmp_path / marker).mkdir()
+    assert find_files(subdir) == []
+    assert caplog.messages == [message]
+
+    caplog.clear()
+    monkeypatch.setenv("VCS_VERSIONING_IGNORE_VCS_ROOTS", str(root))
+    assert find_files(subdir) == []
+    assert not caplog.records

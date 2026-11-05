@@ -792,6 +792,9 @@ This eliminates the need for a manually constructed `MANIFEST.in` in most cases.
 For Git the listing is based on the index (so freshly `git add`-ed files are
 included) and it follows `export-ignore` just like `git archive` does.
 
+When a checkout is present but the Git or Mercurial executable is missing, file discovery logs a warning.
+Install the corresponding tool and make it available on `PATH` to include its tracked files.
+
 #### Git submodules
 
 The Git file finder descends into submodules and lists their tracked files
