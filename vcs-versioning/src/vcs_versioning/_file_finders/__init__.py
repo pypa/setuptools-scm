@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 from collections.abc import Callable, Generator, Iterable, Mapping
+from importlib.metadata import EntryPoint
 
 if sys.version_info >= (3, 10):
     from typing import TypeGuard
@@ -126,6 +127,25 @@ def is_toplevel_acceptable(
     return toplevel not in ignore_vcs_roots
 
 
+def _warn_on_missing_vcs_command(path: _t.PathT, marker: str, tool: str) -> None:
+    from .._discover import match_entrypoint, walk_potential_roots
+
+    if not os.path.isdir(path or "."):
+        return
+
+    for root in walk_potential_roots(norm_real(path or ".")):
+        if match_entrypoint(root, marker):
+            if is_toplevel_acceptable(str(root)):
+                log.warning(
+                    "cannot list tracked files for %s in %s because the %s"
+                    " executable was not found",
+                    marker,
+                    root,
+                    tool,
+                )
+            return
+
+
 _FILE_FINDER_GROUPS = (
     "setuptools_scm.files_command",
     "setuptools_scm.files_command_fallback",
@@ -203,8 +223,13 @@ def find_files(path: _t.PathT = "") -> list[str]:
         _warn_on_suppressed_search_with_marker(root)
         return []
 
+    attempted: set[EntryPoint] = set()
     for group in _FILE_FINDER_GROUPS:
         for ep, wd in iter_marker_entrypoints(root, group):
+            # The finder receives the same input path for every enclosing marker.
+            if ep in attempted:
+                continue
+            attempted.add(ep)
             log.debug("file finder %s selected by marker in %s", ep.name, wd)
             command: Callable[[_t.PathT], list[str]] = ep.load()
             res: list[str] = command(path)

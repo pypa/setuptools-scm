@@ -11,7 +11,12 @@ from .._backends._git import run_git
 from .._compat import norm_real, strip_path_suffix
 from .._integration import data_from_mime
 from .._run_cmd import run as _run
-from . import collect_files_and_dirs, is_toplevel_acceptable, scm_find_files
+from . import (
+    _warn_on_missing_vcs_command,
+    collect_files_and_dirs,
+    is_toplevel_acceptable,
+    scm_find_files,
+)
 
 log = logging.getLogger(__name__)
 
@@ -59,8 +64,10 @@ def _git_toplevel(path: str) -> str | None:
     except subprocess.CalledProcessError:
         # git returned error, we are not in a git repo
         return None
+    except FileNotFoundError:
+        _warn_on_missing_vcs_command(path, ".git", "Git")
+        return None
     except OSError:
-        # git command not found, probably
         return None
     except subprocess.TimeoutExpired:
         log.warning("git rev-parse timed out - pretending this is not a git repo")
