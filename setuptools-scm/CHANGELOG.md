@@ -2,6 +2,18 @@
 
 <!-- towncrier release notes start -->
 
+## 10.3.5 (2026-11-11)
+
+### Fixed
+
+- Require vcs-versioning 2.6.1, which parses a `tag` given in `SETUPTOOLS_SCM_PRETEND_METADATA` instead of crashing with `AttributeError: 'str' object has no attribute 'public'`. ([#1572](https://github.com/pypa/setuptools-scm/issues/1572))
+
+
+### Documentation
+
+- Point the README documentation links at the URLs Read the Docs serves now, without the `/en/` language prefix. ([#1547](https://github.com/pypa/setuptools-scm/issues/1547))
+- Document that two tags giving the same version (`v1.0` and `1.0`) on different commits build the same version without a warning. ([#1568](https://github.com/pypa/setuptools-scm/issues/1568))
+
 ## 10.3.4 (2026-09-23)
 
 ### Fixed
