@@ -2,6 +2,18 @@
 
 <!-- towncrier release notes start -->
 
+## 2.6.1 (2026-11-11)
+
+### Fixed
+
+- Parse a `tag` given in `PRETEND_METADATA` into a version, so overriding the base version no longer crashes formatting with `AttributeError: 'str' object has no attribute 'public'`. ([#1572](https://github.com/pypa/setuptools-scm/issues/1572))
+
+
+### Documentation
+
+- Point the documentation links in error messages at the URLs Read the Docs serves now, without the `/en/` language prefix. ([#1547](https://github.com/pypa/setuptools-scm/issues/1547))
+- Document that two tags giving the same version (`v1.0` and `1.0`) on different commits build the same version without a warning. ([#1568](https://github.com/pypa/setuptools-scm/issues/1568))
+
 ## 2.6.0 (2026-10-06)
 
 ### Added
