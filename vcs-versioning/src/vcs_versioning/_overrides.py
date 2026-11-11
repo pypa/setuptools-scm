@@ -19,7 +19,7 @@ from packaging.utils import canonicalize_name
 
 from . import _config
 from . import _types as _t
-from ._scm_version import ScmVersion, meta
+from ._scm_version import ScmVersion, _parse_tag, meta
 from ._version_cls import Version as _Version
 
 log = logging.getLogger(__name__)
@@ -250,8 +250,7 @@ def _apply_metadata_overrides(
     except TypeError:
         field_types = None
 
-    # Apply each override individually using dataclasses.replace
-    result = scm_version
+    changes: dict[str, Any] = {}
 
     for field, value in metadata_overrides.items():
         if field not in valid_fields:
@@ -283,7 +282,21 @@ def _apply_metadata_overrides(
                         f"got {type(value).__name__}: {value!r}"
                     )
 
-        result = dataclasses.replace(result, **{field: value})  # type: ignore[arg-type]
+        changes[field] = value
+
+    if "tag" in changes:
+        # ScmVersion.tag must be a parsed version: the version schemes call
+        # .public / .release on it, so a raw string from TOML breaks them.
+        preformatted = changes.get("preformatted", scm_version.preformatted)
+        tag = _parse_tag(changes["tag"], preformatted, config)
+        if tag is None:
+            raise ValueError(
+                f"PRETEND_METADATA tag {changes['tag']!r} is not a valid version"
+                f" for tag_regex {config.tag.regex.pattern!r}"
+            )
+        changes["tag"] = tag
+
+    result = dataclasses.replace(scm_version, **changes)
 
     # Ensure config is preserved (should not be overridden)
     assert result.config is config, "Config must be preserved during metadata overrides"

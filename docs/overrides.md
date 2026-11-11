@@ -98,9 +98,20 @@ The following ScmVersion fields can be overridden:
 - `node_date` (date): The date of the commit (TOML date format: `2024-01-15`)
 - `time` (datetime): The version timestamp (TOML datetime format)
 - `preformatted` (bool): Whether the version string is preformatted
-- `tag`: The version tag (can be string or version object)
+- `tag` (str): The version tag, parsed with `tag_regex` like a tag read from the SCM
 
 #### Examples
+
+Provide the base version, keeping distance, node and dirty state from the
+repository; no git tag is needed:
+```bash
+export SETUPTOOLS_SCM_PRETEND_METADATA_FOR_MY_PACKAGE='{tag="1.34.0"}'
+# -> 1.34.1.dev3+g3d3f884d6 with the default version scheme
+```
+
+The distance still comes from the repository: in a repository without tags it
+counts all commits, otherwise the commits since the most recent tag.
+Override `distance` as well to pin it.
 
 Override commit hash and distance:
 ```bash
