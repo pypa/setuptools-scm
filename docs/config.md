@@ -74,15 +74,16 @@ strict = true      # require tags to contain at least one dot
 
     | `tag.prefix` value | Tags matched | Extracted version |
     |--------------------|-------------|-------------------|
-    | `""` (default)     | `v1.0.0`, `1.0.0`, `2026-event` | `v1.0.0`, `1.0.0` |
+    | `""` (default)     | `v1.0.0`, `1.0.0`, `2026-event` | `1.0.0` |
     | `"v"` | `v1.0.0`, `V1.0.0` | `1.0.0` |
     | `"hatchling-v"` | `hatchling-v1.0.0` | `1.0.0` |
     | `"py-v"` | `py-v2.3.1` | `2.3.1` |
 
     !!! note "Two tags, one version"
 
-        `v1.0` and `1.0` both give version `1.0`.  If they point at different
-        commits, both builds are labelled `1.0` and nothing warns.  Give each
+        With the default prefix, `v1.0`, `1.0` and `pkg-v1.0` all give `1.0`.
+        If two of them point at different commits, both builds are labelled
+        `1.0` and nothing warns.  Give each
         release one tag, and do not reuse a version under another spelling.
 
 `tag.strict: bool | None = None`
