@@ -381,7 +381,9 @@ def test_finder_survives_timeout(
 
 
 @pytest.mark.issue(1404)
-@pytest.mark.parametrize(("marker", "tool"), [(".git", "Git"), (".hg", "Mercurial")])
+@pytest.mark.parametrize(
+    ("marker", "tool"), [(".git", "Git"), (".hg", "Mercurial"), (".jj", "Jujutsu")]
+)
 @pytest.mark.parametrize("omit_filename", [False, True])
 def test_file_discovery_reports_missing_vcs_command(
     marker: str,
@@ -413,8 +415,10 @@ def test_file_discovery_reports_missing_vcs_command(
 
         if marker == ".git":
             monkeypatch.setattr("vcs_versioning._file_finders._git._run", missing)
-        else:
+        elif marker == ".hg":
             monkeypatch.setattr("vcs_versioning._file_finders._hg.run_hg", missing)
+        else:
+            monkeypatch.setattr("vcs_versioning._file_finders._jj._run", missing)
 
     assert find_files(subdir) == []
     assert len(caplog.records) == 1
