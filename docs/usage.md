@@ -792,6 +792,15 @@ This eliminates the need for a manually constructed `MANIFEST.in` in most cases.
 For Git the listing is based on the index (so freshly `git add`-ed files are
 included) and it follows `export-ignore` just like `git archive` does.
 
+When file discovery reaches a checkout but the Git, Mercurial, or Jujutsu executable is missing,
+it logs a warning.
+Install the corresponding tool and make it available on `PATH` to include its tracked files.
+
+If version inference has already failed to find an SCM checkout, file discovery skips
+the finder commands. When SCM metadata exists at the project root, this instead logs
+the existing "file discovery is suppressed" warning, which indicates that tracked files
+may be missing from the distribution.
+
 #### Git submodules
 
 The Git file finder descends into submodules and lists their tracked files

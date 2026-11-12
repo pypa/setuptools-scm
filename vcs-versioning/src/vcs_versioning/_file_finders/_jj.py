@@ -13,7 +13,12 @@ import subprocess
 from .. import _types as _t
 from .._compat import norm_real
 from .._run_cmd import run as _run
-from . import collect_files_and_dirs, is_toplevel_acceptable, scm_find_files
+from . import (
+    _warn_on_missing_vcs_command,
+    collect_files_and_dirs,
+    is_toplevel_acceptable,
+    scm_find_files,
+)
 
 log = logging.getLogger(__name__)
 
@@ -29,6 +34,9 @@ def _jj_toplevel(path: str) -> str | None:
             return None
         return norm_real(toplevel)
     except subprocess.CalledProcessError:
+        return None
+    except FileNotFoundError:
+        _warn_on_missing_vcs_command(path, ".jj", "Jujutsu")
         return None
     except OSError:
         return None

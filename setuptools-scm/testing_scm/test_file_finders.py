@@ -13,6 +13,7 @@ so via ``scm_search_known_failed()``.
 
 from __future__ import annotations
 
+import subprocess
 import sys
 import warnings
 
@@ -23,7 +24,6 @@ import pytest
 
 from setuptools_scm._integration.file_finders import find_files
 from vcs_versioning._file_finders import scm_search_known_failed
-from vcs_versioning._run_cmd import run
 from vcs_versioning.test_api import WorkDir
 
 _DEPRECATION = "setuptools.file_finders"
@@ -58,7 +58,14 @@ def _build_sdist(cwd: Path) -> str:
             print("WARNING:", w.message)
     """)
     (cwd / "dist").mkdir(exist_ok=True)
-    return run([sys.executable, "-c", code], cwd).stdout
+    return subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        check=True,
+    ).stdout
 
 
 @pytest.mark.issue(1407)
@@ -108,6 +115,40 @@ def test_configured_build_does_not_warn(
     wd.create_tag("v1.0")
 
     assert _DEPRECATION not in _build_sdist(wd.cwd)
+
+
+@pytest.mark.issue(1404)
+def test_configured_build_missing_git_warns_about_suppressed_search(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    wd.setup_git(monkeypatch)
+    wd.cwd.joinpath("pyproject.toml").write_text(
+        dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "missing-git"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            fallback_version = "0.0"
+        """),
+        encoding="utf-8",
+    )
+    wd.cwd.joinpath("mod.py").touch()
+    wd.cwd.joinpath("README.md").touch()
+    wd.add_and_commit()
+    empty_path = wd.cwd / "empty-path"
+    empty_path.mkdir()
+    monkeypatch.setenv("PATH", str(empty_path))
+
+    output = _build_sdist(wd.cwd)
+
+    assert output.count("file discovery is suppressed") == 1
+    assert "the Git executable was not found" not in output
+    assert len(list(wd.cwd.joinpath("dist").glob("*.tar.gz"))) == 1
 
 
 @pytest.mark.issue(1407)
