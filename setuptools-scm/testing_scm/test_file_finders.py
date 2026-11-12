@@ -13,6 +13,7 @@ so via ``scm_search_known_failed()``.
 
 from __future__ import annotations
 
+import subprocess
 import sys
 import warnings
 
@@ -23,7 +24,6 @@ import pytest
 
 from setuptools_scm._integration.file_finders import find_files
 from vcs_versioning._file_finders import scm_search_known_failed
-from vcs_versioning._run_cmd import run
 from vcs_versioning.test_api import WorkDir
 
 _DEPRECATION = "setuptools.file_finders"
@@ -58,8 +58,14 @@ def _build_sdist(cwd: Path) -> str:
             print("WARNING:", w.message)
     """)
     (cwd / "dist").mkdir(exist_ok=True)
-    result = run([sys.executable, "-c", code], cwd)
-    return result.stdout + result.stderr
+    return subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        check=True,
+    ).stdout
 
 
 @pytest.mark.issue(1407)
