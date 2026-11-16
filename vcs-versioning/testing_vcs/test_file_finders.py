@@ -483,6 +483,7 @@ def test_colocated_checkout_uses_available_finder_without_warning(
     if missing_tool == "git":
         monkeypatch.setattr("vcs_versioning._file_finders._git._run", missing)
     caplog.set_level(logging.WARNING, logger="vcs_versioning.file_finder")
+    caplog.clear()
 
     assert set(find_files(str(wd.cwd / "src"))) == {str(wd.cwd / "src" / "a.py")}
     assert caplog.messages == []
