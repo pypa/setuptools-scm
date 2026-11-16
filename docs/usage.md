@@ -793,7 +793,8 @@ For Git the listing is based on the index (so freshly `git add`-ed files are
 included) and it follows `export-ignore` just like `git archive` does.
 
 When file discovery reaches a checkout but the Git, Mercurial, or Jujutsu executable is missing,
-it logs a warning.
+it logs a warning only if no other finder returns tracked files. A colocated Git/Jujutsu
+checkout stays quiet when either available tool can list its files.
 Install the corresponding tool and make it available on `PATH` to include its tracked files.
 
 If version inference has already failed to find an SCM checkout, file discovery skips

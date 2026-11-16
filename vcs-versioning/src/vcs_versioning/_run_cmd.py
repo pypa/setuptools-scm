@@ -147,6 +147,7 @@ def run(
     timeout: int | None = None,
     check: bool = False,
     input: str | None = None,
+    merge_stderr: bool = False,
 ) -> CompletedProcess:
     if isinstance(cmd, str):
         cmd = shlex.split(cmd)
@@ -159,7 +160,8 @@ def run(
     res = subprocess.run(
         cmd,
         check=False,  # handled below via CompletedProcess.check_returncode
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT if merge_stderr else subprocess.PIPE,
         input=input,
         cwd=os.fspath(cwd),
         env=dict(

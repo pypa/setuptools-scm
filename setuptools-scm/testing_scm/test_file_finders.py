@@ -13,7 +13,6 @@ so via ``scm_search_known_failed()``.
 
 from __future__ import annotations
 
-import subprocess
 import sys
 import warnings
 
@@ -24,6 +23,7 @@ import pytest
 
 from setuptools_scm._integration.file_finders import find_files
 from vcs_versioning._file_finders import scm_search_known_failed
+from vcs_versioning._run_cmd import run
 from vcs_versioning.test_api import WorkDir
 
 _DEPRECATION = "setuptools.file_finders"
@@ -58,14 +58,32 @@ def _build_sdist(cwd: Path) -> str:
             print("WARNING:", w.message)
     """)
     (cwd / "dist").mkdir(exist_ok=True)
-    return subprocess.run(
+    result = run(
         [sys.executable, "-c", code],
         cwd=cwd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        check=True,
-    ).stdout
+        merge_stderr=True,
+    )
+    assert result.returncode == 0, result.stdout
+    return result.stdout
+
+
+def test_failed_sdist_exposes_combined_output(tmp_path: Path) -> None:
+    (tmp_path / "setup.py").write_text(
+        dedent("""\
+            import os
+            os.write(1, b"before failure\\n")
+            os.write(2, b"diagnostic on stderr\\n")
+            os.write(1, b"after diagnostic\\n")
+            raise SystemExit(7)
+        """),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(AssertionError) as error:
+        _build_sdist(tmp_path)
+
+    lines = [line.strip() for line in str(error.value).splitlines()]
+    assert lines[:3] == ["before failure", "diagnostic on stderr", "after diagnostic"]
 
 
 @pytest.mark.issue(1407)

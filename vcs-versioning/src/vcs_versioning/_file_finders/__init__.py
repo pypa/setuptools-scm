@@ -127,6 +127,16 @@ def is_toplevel_acceptable(
     return toplevel not in ignore_vcs_roots
 
 
+def _log_missing_vcs_command(marker: str, root: str, tool: str) -> None:
+    log.warning(
+        "cannot list tracked files for %s in %s because the %s"
+        " executable was not found",
+        marker,
+        root,
+        tool,
+    )
+
+
 def _warn_on_missing_vcs_command(path: _t.PathT, marker: str, tool: str) -> None:
     from .._discover import match_entrypoint, walk_potential_roots
 
@@ -136,13 +146,12 @@ def _warn_on_missing_vcs_command(path: _t.PathT, marker: str, tool: str) -> None
     for root in walk_potential_roots(norm_real(path or ".")):
         if match_entrypoint(root, marker):
             if is_toplevel_acceptable(str(root)):
-                log.warning(
-                    "cannot list tracked files for %s in %s because the %s"
-                    " executable was not found",
-                    marker,
-                    root,
-                    tool,
-                )
+                command = (marker, str(root), tool)
+                pending = _missing_vcs_commands.get()
+                if pending is None:
+                    _log_missing_vcs_command(*command)
+                elif command not in pending:
+                    pending.append(command)
             return
 
 
@@ -153,6 +162,9 @@ _FILE_FINDER_GROUPS = (
 
 _scm_search_failed: contextvars.ContextVar[bool] = contextvars.ContextVar(
     "vcs_versioning_scm_search_failed", default=False
+)
+_missing_vcs_commands: contextvars.ContextVar[list[tuple[str, str, str]] | None] = (
+    contextvars.ContextVar("vcs_versioning_missing_commands", default=None)
 )
 
 
@@ -223,18 +235,26 @@ def find_files(path: _t.PathT = "") -> list[str]:
         _warn_on_suppressed_search_with_marker(root)
         return []
 
-    attempted: set[EntryPoint] = set()
-    for group in _FILE_FINDER_GROUPS:
-        for ep, wd in iter_marker_entrypoints(root, group):
-            # The finder receives the same input path for every enclosing marker.
-            if ep in attempted:
-                continue
-            attempted.add(ep)
-            log.debug("file finder %s selected by marker in %s", ep.name, wd)
-            command: Callable[[_t.PathT], list[str]] = ep.load()
-            res: list[str] = command(path)
-            if res:
-                return res
+    pending: list[tuple[str, str, str]] = []
+    token = _missing_vcs_commands.set(pending)
+    try:
+        attempted: set[EntryPoint] = set()
+        for group in _FILE_FINDER_GROUPS:
+            for ep, wd in iter_marker_entrypoints(root, group):
+                # The finder receives the same input path for every enclosing marker.
+                if ep in attempted:
+                    continue
+                attempted.add(ep)
+                log.debug("file finder %s selected by marker in %s", ep.name, wd)
+                command: Callable[[_t.PathT], list[str]] = ep.load()
+                res: list[str] = command(path)
+                if res:
+                    return res
+    finally:
+        _missing_vcs_commands.reset(token)
+
+    for command_info in pending:
+        _log_missing_vcs_command(*command_info)
 
     return []
 
