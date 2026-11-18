@@ -58,7 +58,32 @@ def _build_sdist(cwd: Path) -> str:
             print("WARNING:", w.message)
     """)
     (cwd / "dist").mkdir(exist_ok=True)
-    return run([sys.executable, "-c", code], cwd).stdout
+    result = run(
+        [sys.executable, "-c", code],
+        cwd=cwd,
+        merge_stderr=True,
+    )
+    assert result.returncode == 0, result.stdout
+    return result.stdout
+
+
+def test_failed_sdist_exposes_combined_output(tmp_path: Path) -> None:
+    (tmp_path / "setup.py").write_text(
+        dedent("""\
+            import os
+            os.write(1, b"before failure\\n")
+            os.write(2, b"diagnostic on stderr\\n")
+            os.write(1, b"after diagnostic\\n")
+            raise SystemExit(7)
+        """),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(AssertionError) as error:
+        _build_sdist(tmp_path)
+
+    lines = [line.strip() for line in str(error.value).splitlines()]
+    assert lines[:3] == ["before failure", "diagnostic on stderr", "after diagnostic"]
 
 
 @pytest.mark.issue(1407)
@@ -108,6 +133,40 @@ def test_configured_build_does_not_warn(
     wd.create_tag("v1.0")
 
     assert _DEPRECATION not in _build_sdist(wd.cwd)
+
+
+@pytest.mark.issue(1404)
+def test_configured_build_missing_git_warns_about_suppressed_search(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    wd.setup_git(monkeypatch)
+    wd.cwd.joinpath("pyproject.toml").write_text(
+        dedent("""\
+            [build-system]
+            requires = ["setuptools>=61", "setuptools-scm"]
+            build-backend = "setuptools.build_meta"
+
+            [project]
+            name = "missing-git"
+            dynamic = ["version"]
+
+            [tool.setuptools_scm]
+            fallback_version = "0.0"
+        """),
+        encoding="utf-8",
+    )
+    wd.cwd.joinpath("mod.py").touch()
+    wd.cwd.joinpath("README.md").touch()
+    wd.add_and_commit()
+    empty_path = wd.cwd / "empty-path"
+    empty_path.mkdir()
+    monkeypatch.setenv("PATH", str(empty_path))
+
+    output = _build_sdist(wd.cwd)
+
+    assert output.count("file discovery is suppressed") == 1
+    assert "the Git executable was not found" not in output
+    assert len(list(wd.cwd.joinpath("dist").glob("*.tar.gz"))) == 1
 
 
 @pytest.mark.issue(1407)

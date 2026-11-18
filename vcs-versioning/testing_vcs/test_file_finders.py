@@ -3,11 +3,14 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
+from importlib.metadata import EntryPoint
 from pathlib import Path
 
 import pytest
+from vcs_versioning import _discover, _types
 from vcs_versioning._file_finders import find_files, scm_search_known_failed
+from vcs_versioning._run_cmd import CompletedProcess
 from vcs_versioning.test_api import WorkDir
 
 
@@ -378,3 +381,133 @@ def test_finder_survives_timeout(
 
     monkeypatch.setattr(subprocess, "run", timing_out)
     assert find_files() == []
+
+
+@pytest.mark.issue(1404)
+@pytest.mark.parametrize(
+    ("marker", "tool"), [(".git", "Git"), (".hg", "Mercurial"), (".jj", "Jujutsu")]
+)
+@pytest.mark.parametrize("omit_filename", [False, True])
+def test_file_discovery_reports_missing_vcs_command(
+    marker: str,
+    tool: str,
+    omit_filename: bool,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    root = tmp_path / "checkout"
+    subdir = root / "src"
+    subdir.mkdir(parents=True)
+    marker_path = root / marker
+    if marker == ".git":
+        # Linked Git worktrees store a file at this location.
+        marker_path.write_text("gitdir: ../metadata\n", encoding="utf-8")
+    else:
+        marker_path.mkdir()
+    empty_path = tmp_path / "bin"
+    empty_path.mkdir()
+    monkeypatch.setenv("PATH", str(empty_path))
+    monkeypatch.chdir(tmp_path)
+    caplog.set_level(logging.WARNING)
+
+    if omit_filename:
+        # CreateProcess can report a missing command without a filename.
+        def missing(*args: object, **kwargs: object) -> None:
+            raise FileNotFoundError
+
+        if marker == ".git":
+            monkeypatch.setattr("vcs_versioning._file_finders._git._run", missing)
+        elif marker == ".hg":
+            monkeypatch.setattr("vcs_versioning._file_finders._hg.run_hg", missing)
+        else:
+            monkeypatch.setattr("vcs_versioning._file_finders._jj._run", missing)
+
+    assert find_files(subdir) == []
+    assert len(caplog.records) == 1
+    message = caplog.records[0].getMessage()
+    assert marker in message
+    assert f"the {tool} executable was not found" in message
+
+    caplog.clear()
+    assert find_files(tmp_path) == []
+    assert not caplog.records
+
+    (tmp_path / marker).mkdir()
+    assert find_files(subdir) == []
+    assert caplog.messages == [message]
+
+    caplog.clear()
+    monkeypatch.setenv("VCS_VERSIONING_IGNORE_VCS_ROOTS", str(root))
+    assert find_files(subdir) == []
+    assert not caplog.records
+
+
+@pytest.mark.issue(1404)
+@pytest.mark.parametrize("missing_tool", ["git", "jj"])
+@pytest.mark.parametrize("reverse", [False, True])
+def test_colocated_checkout_uses_available_finder_without_warning(
+    wd: WorkDir,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    missing_tool: str,
+    reverse: bool,
+) -> None:
+    wd.setup_git(monkeypatch)
+    (wd.cwd / ".jj").mkdir()
+    (wd.cwd / "src").mkdir()
+    (wd.cwd / "src" / "a.py").touch()
+    wd.add_and_commit()
+    original = _discover.iter_marker_entrypoints
+
+    def ordered(
+        root: _types.PathT, entrypoint: str, *, search_parents: bool = True
+    ) -> Iterator[tuple[EntryPoint, Path]]:
+        yield from sorted(
+            original(root, entrypoint, search_parents=search_parents),
+            key=lambda item: item[0].name,
+            reverse=reverse,
+        )
+
+    def jj(cmd: list[str], cwd: str, **kwargs: object) -> CompletedProcess:
+        if missing_tool == "jj":
+            raise FileNotFoundError
+        output = str(wd.cwd) if cmd[1] == "root" else "src/a.py\n"
+        return CompletedProcess(cmd, 0, output, "")
+
+    def missing(*args: object, **kwargs: object) -> None:
+        raise FileNotFoundError
+
+    monkeypatch.setattr(_discover, "iter_marker_entrypoints", ordered)
+    monkeypatch.setattr("vcs_versioning._file_finders._jj._run", jj)
+    if missing_tool == "git":
+        monkeypatch.setattr("vcs_versioning._file_finders._git._run", missing)
+    caplog.set_level(logging.WARNING, logger="vcs_versioning.file_finder")
+    caplog.clear()
+
+    assert set(find_files(str(wd.cwd / "src"))) == {str(wd.cwd / "src" / "a.py")}
+    assert caplog.messages == []
+
+    # A later direct backend call must not inherit the completed search's collector.
+    if missing_tool == "git":
+        from vcs_versioning._file_finders._git import git_find_files as finder
+    else:
+        from vcs_versioning._file_finders._jj import jj_find_files as finder
+    assert finder(str(wd.cwd / "src")) == []
+    assert len(caplog.records) == 1
+
+
+@pytest.mark.issue(1404)
+def test_colocated_checkout_reports_both_missing_commands(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    (tmp_path / ".git").mkdir()
+    (tmp_path / ".jj").mkdir()
+    empty_path = tmp_path / "bin"
+    empty_path.mkdir()
+    monkeypatch.setenv("PATH", str(empty_path))
+    caplog.set_level(logging.WARNING, logger="vcs_versioning.file_finder")
+
+    assert find_files(tmp_path) == []
+    assert len(caplog.records) == 2
+    assert all("executable was not found" in message for message in caplog.messages)

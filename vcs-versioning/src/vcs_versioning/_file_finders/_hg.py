@@ -8,7 +8,12 @@ from .. import _types as _t
 from .._backends._hg import run_hg
 from .._compat import norm_real
 from .._integration import data_from_mime
-from . import collect_files_and_dirs, is_toplevel_acceptable, scm_find_files
+from . import (
+    _warn_on_missing_vcs_command,
+    collect_files_and_dirs,
+    is_toplevel_acceptable,
+    scm_find_files,
+)
 
 log = logging.getLogger(__name__)
 
@@ -23,8 +28,10 @@ def _hg_toplevel(path: str) -> str | None:
     except subprocess.CalledProcessError:
         # hg returned error, we are not in a mercurial repo
         return None
+    except FileNotFoundError:
+        _warn_on_missing_vcs_command(path, ".hg", "Mercurial")
+        return None
     except OSError:
-        # hg command not found, probably
         return None
     except subprocess.TimeoutExpired:
         log.warning("hg root timed out - pretending this is not a mercurial repo")
