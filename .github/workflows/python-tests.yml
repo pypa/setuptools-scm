@@ -101,9 +101,19 @@ jobs:
       matrix:
         python_version: [ '3.8', '3.9', '3.10', '3.11', '3.12', '3.13', 'pypy-3.11' ]
         os: [windows-latest, ubuntu-latest] #, macos-latest]
+        # setup-python has no 3.8/3.9 builds for Ubuntu 26.04 (ubuntu-latest)
+        exclude:
+        - os: ubuntu-latest
+          python_version: '3.8'
+        - os: ubuntu-latest
+          python_version: '3.9'
         include:
         - os: windows-latest
           python_version: 'msys2'
+        - os: ubuntu-24.04
+          python_version: '3.8'
+        - os: ubuntu-24.04
+          python_version: '3.9'
     env:
       # Enable tracemalloc to debug gc errors with popen objects (especially on Windows)
       PYTHONTRACEMALLOC: "1"
