@@ -253,6 +253,44 @@ num_commit = {scm_version.distance}
     assert "num_commit = 7" in content
 
 
+@pytest.mark.issue(1572)
+@pytest.mark.parametrize("tag", ["v3.3.0a1", "3.3.0a1"])
+def test_pretend_metadata_tag_is_parsed_into_a_version(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch, tag: str
+) -> None:
+    from vcs_versioning._overrides import PRETEND_METADATA_KEY
+
+    wd("git init")
+    wd("git config user.name test")
+    wd("git config user.email test@example.com")
+    wd.commit_testfile()
+    commit = wd("git rev-parse HEAD")
+
+    monkeypatch.setenv(PRETEND_METADATA_KEY, f'{{tag="{tag}", distance=7}}')
+
+    public, local = wd.get_version().split("+")
+    assert public == "3.3.0a2.dev7"
+    assert local.startswith("g")
+    assert commit.startswith(local[1:])
+
+
+@pytest.mark.issue(1572)
+def test_pretend_metadata_invalid_tag_names_the_tag(
+    wd: WorkDir, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from vcs_versioning._overrides import PRETEND_METADATA_KEY
+
+    wd("git init")
+    wd("git config user.name test")
+    wd("git config user.email test@example.com")
+    wd.commit_testfile()
+    monkeypatch.setenv(PRETEND_METADATA_KEY, '{tag="not-a-version"}')
+
+    rejected = pytest.raises(ValueError, match="'not-a-version' is not a valid version")
+    with pytest.warns(UserWarning, match="no version found"), rejected:
+        wd.get_version()
+
+
 def test_pretend_metadata_type_conversion(
     monkeypatch: pytest.MonkeyPatch, wd: WorkDir
 ) -> None:

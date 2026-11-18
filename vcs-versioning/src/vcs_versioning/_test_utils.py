@@ -70,10 +70,17 @@ class WorkDir:
 
     def commit(self, reason: str | None = None, signed: bool = False) -> None:
         reason = self._reason(reason)
-        self(
-            self.commit_command if not signed else self.signed_commit_command,
-            reason=reason,
+        if not signed:
+            self(self.commit_command, reason=reason)
+            return
+        # a failed gpg signature leaves no commit behind, and the test then
+        # fails far away on a missing HEAD instead of on gpg's error
+        from vcs_versioning._run_cmd import run
+
+        res = run(
+            self.signed_commit_command.format(reason=reason), cwd=self.cwd, timeout=10
         )
+        assert not res.returncode, f"signed commit failed:\n{res.stderr}"
 
     def commit_testfile(self, reason: str | None = None, signed: bool = False) -> None:
         reason = self._reason(reason)
