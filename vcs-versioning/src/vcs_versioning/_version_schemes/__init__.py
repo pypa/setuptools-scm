@@ -112,14 +112,14 @@ def format_version(version: ScmVersion) -> str:
 
     main_version = _entrypoints._call_version_scheme(
         version_for_scheme,
-        "setuptools_scm.version_scheme",
+        "vcs_versioning.version_scheme",
         version.config.version_scheme,
     )
     log.debug("version %s", main_version)
     assert main_version is not None
 
     local_version = _entrypoints._call_version_scheme(
-        version, "setuptools_scm.local_scheme", version.config.local_scheme, "+unknown"
+        version, "vcs_versioning.local_scheme", version.config.local_scheme, "+unknown"
     )
     log.debug("local_version %s", local_version)
 

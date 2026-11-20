@@ -1,7 +1,7 @@
 """Legacy parse entry-point dispatch and ``config.parse`` workdir wrapper.
 
-These helpers invoke the old ``setuptools_scm.parse_scm`` /
-``setuptools_scm.parse_scm_fallback`` entry-point groups.  They exist
+These helpers invoke the parse_scm and parse_scm_fallback entry-point groups,
+including their legacy setuptools_scm aliases. They exist
 only to support third-party plugins that have not yet migrated to the
 ``vcs_versioning.discover_workdir`` entry-point group.
 
@@ -73,11 +73,11 @@ def resolved_fallback_root(config: Configuration) -> str:
 
 
 def parse_scm_version(config: Configuration) -> ScmVersion | None:
-    """Dispatch to ``setuptools_scm.parse_scm`` entry points."""
+    """Dispatch to ``vcs_versioning.parse_scm`` entry points."""
     try:
         return _entrypoints.version_from_entrypoint(
             config,
-            entrypoint="setuptools_scm.parse_scm",
+            entrypoint="vcs_versioning.parse_scm",
             root=config.absolute_root,
         )
     except _run_cmd.CommandNotFoundError:
@@ -86,20 +86,18 @@ def parse_scm_version(config: Configuration) -> ScmVersion | None:
 
 
 def parse_fallback_version(config: Configuration) -> ScmVersion | None:
-    """Dispatch to ``setuptools_scm.parse_scm_fallback`` entry points."""
+    """Dispatch to ``vcs_versioning.parse_scm_fallback`` entry points."""
     return _entrypoints.version_from_entrypoint(
         config,
-        entrypoint="setuptools_scm.parse_scm_fallback",
+        entrypoint="vcs_versioning.parse_scm_fallback",
         root=resolved_fallback_root(config),
     )
 
 
 def has_legacy_parse_eps() -> bool:
     """True when third-party plugins still register old parse EP groups."""
-    from ._entrypoints import entry_points as _eps
-
-    for group in ("setuptools_scm.parse_scm", "setuptools_scm.parse_scm_fallback"):
-        for ep in _eps(group=group):
+    for group in ("vcs_versioning.parse_scm", "vcs_versioning.parse_scm_fallback"):
+        for ep in _entrypoints.iter_entry_points(group):
             if not ep.value.startswith("vcs_versioning."):
                 return True
     return False

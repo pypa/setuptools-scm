@@ -63,6 +63,37 @@ hg-git = "vcs_versioning._backends._discover_vcs:discover"
 archival = "vcs_versioning._fallback_workdir:discover_archival"
 pkginfo = "vcs_versioning._fallback_workdir:discover_pkginfo"
 
+[project.entry-points."vcs_versioning.files_command"]
+".jj" = "vcs_versioning._file_finders._jj:jj_find_files"
+".git" = "vcs_versioning._file_finders._git:git_find_files"
+".hg" = "vcs_versioning._file_finders._hg:hg_find_files"
+
+[project.entry-points."vcs_versioning.files_command_fallback"]
+".git_archival.txt" = "vcs_versioning._file_finders._git:git_archive_find_files"
+".hg_archival.txt" = "vcs_versioning._file_finders._hg:hg_archive_find_files"
+
+[project.entry-points."vcs_versioning.local_scheme"]
+dirty-tag = "vcs_versioning._version_schemes:get_local_dirty_tag"
+"fail-on-uncommitted-changes" = "vcs_versioning._version_schemes:get_local_fail_on_uncommitted_changes"
+no-local-version = "vcs_versioning._version_schemes:get_no_local_node"
+no-local-version-strict = "vcs_versioning._version_schemes:get_no_local_node_strict"
+node-and-date = "vcs_versioning._version_schemes:get_local_node_and_date"
+node-and-timestamp = "vcs_versioning._version_schemes:get_local_node_and_timestamp"
+
+[project.entry-points."vcs_versioning.version_scheme"]
+"calver-by-date" = "vcs_versioning._version_schemes:calver_by_date"
+"guess-next-dev" = "vcs_versioning._version_schemes:guess_next_dev_version"
+"no-guess-dev" = "vcs_versioning._version_schemes:no_guess_dev_version"
+"only-version" = "vcs_versioning._version_schemes:only_version"
+"post-release" = "vcs_versioning._version_schemes:postrelease_version"
+"python-simplified-semver" = "vcs_versioning._version_schemes._standard:_deprecated_simplified_semver_version"
+"release-branch-semver" = "vcs_versioning._version_schemes._standard:_deprecated_release_branch_semver_version"
+"semver-pep440" = "vcs_versioning._version_schemes:simplified_semver_version"
+"semver-pep440-release-branch" = "vcs_versioning._version_schemes:release_branch_semver_version"
+"towncrier-fragments" = "vcs_versioning._version_schemes._towncrier:version_from_fragments"
+"towncrier-fragments-zerover" = "vcs_versioning._version_schemes._towncrier:version_from_fragments_zerover"
+
+# Keep these registrations discoverable to consumers of the legacy groups.
 [project.entry-points."setuptools_scm.files_command"]
 ".jj" = "vcs_versioning._file_finders._jj:jj_find_files"
 ".git" = "vcs_versioning._file_finders._git:git_find_files"

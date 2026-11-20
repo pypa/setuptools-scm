@@ -31,7 +31,7 @@ Once configuration is built, the version is resolved in this order:
     - `config.parse` callback (legacy, deprecated) -- highest priority within discovery
     - Registered `vcs_versioning.discover_workdir` entry-point factories (git, hg, etc.)
     - Fallback workdirs (archival files, PKG-INFO, static fallback)
-3. **Legacy parse entry points** -- `setuptools_scm.parse_scm` / `parse_scm_fallback` (third-party only)
+3. **Legacy parse entry points** -- `vcs_versioning.parse_scm` / `vcs_versioning.parse_scm_fallback` (third-party only)
 4. **Metadata overrides** -- `TOOL_PRETEND_METADATA` / `_FOR_DIST` applied on top of resolved version
 5. **Format** -- `version_scheme` + `local_scheme` produce the final version string
 

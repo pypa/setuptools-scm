@@ -41,12 +41,12 @@ Callables or other Python objects must be passed in `setup.py` (via the `use_scm
 
 `version_scheme : str | Callable[[ScmVersion], str]`
 : Configures how the version number is constructed; either an entrypoint name or a callable.
-  See [Version number construction](extending.md#setuptools_scmversion_scheme) for predefined implementations.
+  See [Version number construction](extending.md#vcs_versioningversion_scheme) for predefined implementations.
 
 `local_scheme : str | Callable[[ScmVersion], str]`
 : Configures how the local component of the version (the optional part after the `+`) is constructed;
   either an entrypoint name or a callable.
-  See [Version number construction](extending.md#setuptools_scmlocal_scheme) for predefined implementations.
+  See [Version number construction](extending.md#vcs_versioninglocal_scheme) for predefined implementations.
 
 ## Tag Matching Configuration
 

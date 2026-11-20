@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Iterator
+import warnings
+from collections.abc import Callable, Iterable, Iterator
 from importlib import metadata as im
+from importlib.metadata import EntryPoint
 from typing import TYPE_CHECKING, Any, cast
 
 from ._compat import entry_points
@@ -19,6 +21,52 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+# These are the six plugin groups shared with older setuptools-scm releases.
+_ALIASED_GROUPS = {
+    "files_command",
+    "files_command_fallback",
+    "version_scheme",
+    "local_scheme",
+    "parse_scm",
+    "parse_scm_fallback",
+}
+
+
+def iter_entry_points(group: str, *, name: str | None = None) -> Iterator[EntryPoint]:
+    def registered(group_name: str) -> Iterable[EntryPoint]:
+        if name is None:
+            return entry_points(group=group_name)
+        return entry_points(group=group_name, name=name)
+
+    prefix, _, hook = group.partition(".")
+    if (
+        prefix not in {"vcs_versioning", "setuptools_scm"}
+        or hook not in _ALIASED_GROUPS
+    ):
+        yield from registered(group)
+        return
+
+    canonical: set[tuple[str, str]] = set()
+    for ep in registered(f"vcs_versioning.{hook}"):
+        canonical.add((ep.name, ep.value))
+        yield ep
+    for ep in registered(f"setuptools_scm.{hook}"):
+        if (ep.name, ep.value) not in canonical:
+            yield ep
+
+
+def load_entry_point(ep: EntryPoint) -> Any:
+    prefix, _, hook = ep.group.partition(".")
+    if prefix == "setuptools_scm" and hook in _ALIASED_GROUPS:
+        warnings.warn(
+            f"The {ep.group!r} entry-point group is deprecated. "
+            f"Register {ep.name!r} under 'vcs_versioning.{hook}' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+    return ep.load()
+
+
 def version_from_entrypoint(
     config: Configuration, *, entrypoint: str, root: _t.PathT
 ) -> ScmVersion | None:
@@ -26,7 +74,7 @@ def version_from_entrypoint(
 
     log.debug("version_from_ep %s in %s", entrypoint, root)
     for ep in iter_matching_entrypoints(root, entrypoint, config):
-        fn: ParseFunction = ep.load()
+        fn: ParseFunction = load_entry_point(ep)
         maybe_version: ScmVersion | None = fn(root, config=config)
         log.debug("%s found %r", ep, maybe_version)
         if maybe_version is not None:
@@ -35,16 +83,14 @@ def version_from_entrypoint(
 
 
 def _get_ep(group: str, name: str) -> Any | None:
-    for ep in entry_points(group=group, name=name):
+    for ep in iter_entry_points(group, name=name):
         log.debug("ep found: %s", ep.name)
-        return ep.load()
+        return load_entry_point(ep)
     return None
 
 
 def _get_from_object_reference_str(path: str, group: str) -> Any | None:
     # todo: remove for importlib native spelling
-    from importlib.metadata import EntryPoint  # hack
-
     ep = EntryPoint(path, path, group)
     try:
         return ep.load()

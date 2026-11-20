@@ -4,25 +4,33 @@
 
 [entry-point]: https://packaging.python.org/en/latest/specifications/entry-points/
 
+Plugin distributions can register their version schemes, file finders, and parsers
+under the `vcs_versioning.*` groups below. The corresponding `setuptools_scm.*`
+groups are deprecated. To support earlier releases, register the same name and
+target in both groups. The loader prefers the `vcs_versioning.*` registration
+and emits a `DeprecationWarning` when it loads a legacy-only registration.
+
 ## Adding a new SCM
 
-`setuptools-scm` provides two entrypoints for adding new SCMs:
+For a new SCM, [register a workdir discovery factory](#adding-a-workdir-discovery-factory).
+Existing marker-based plugins can continue to use the following hooks:
 
-`setuptools_scm.parse_scm`
+`vcs_versioning.parse_scm` and `vcs_versioning.parse_scm_fallback`
 :   A function used to parse the metadata of the current workdir
     using the name of the control directory/file of your SCM as the
-    entrypoint's name. E.g. for the built-in entrypoint for Git the
-    entrypoint is named `.git` and references `setuptools_scm.git:parse`
+    entrypoint's name. Both groups run after workdir discovery. The fallback
+    group searches the configured fallback root if the primary group yields no version.
 
     The return value MUST be a [`vcs_versioning.ScmVersion`][] instance
     created by the function [`vcs_versioning._version_schemes.meta`][].
 
-`setuptools_scm.files_command`
+`vcs_versioning.files_command` and `vcs_versioning.files_command_fallback`
 :  Either a string containing a shell command that prints all SCM-managed
    files in its current working directory or a callable, that given a
    pathname will return that list.
 
    Also uses the name of your SCM control directory as the name of the entrypoint.
+   Fallback file finders run after the primary finders.
 
 
 ### api reference for scm version objects
@@ -108,7 +116,9 @@ something a factory can control. Rank by how much the workdir knows:
 
 ## Version number construction
 
-### `setuptools_scm.version_scheme`
+<a id="setuptools_scmversion_scheme"></a>
+
+### `vcs_versioning.version_scheme`
 
 Configures how the version number is constructed given a
 [ScmVersion][vcs_versioning.ScmVersion] instance and should return a string
@@ -231,7 +241,9 @@ representing the version.
     - Tag `0.4.2` with a `major` fragment → version `1.0.0.devN`
     - Tag `2.3.1` with a `removal` fragment → version `3.0.0.devN`
 
-### `setuptools_scm.local_scheme`
+<a id="setuptools_scmlocal_scheme"></a>
+
+### `vcs_versioning.local_scheme`
 
 Configures how the local part of a version is rendered given a
 [ScmVersion][vcs_versioning.ScmVersion] instance. A callable should return a string

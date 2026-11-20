@@ -586,7 +586,7 @@ def test_no_matching_entrypoints(config_key: str) -> None:
     with pytest.raises(
         ValueError,
         match=(
-            r'Couldn\'t find any implementations for entrypoint "setuptools_scm\..*?"'
+            r'Couldn\'t find any implementations for entrypoint "vcs_versioning\..*?"'
             ' with value "nonexistent"'
         ),
     ):
@@ -682,7 +682,7 @@ def test_all_entrypoints_return_none() -> None:
     with pytest.raises(
         ValueError,
         match=(
-            'None of the "setuptools_scm.version_scheme" entrypoints matching'
+            'None of the "vcs_versioning.version_scheme" entrypoints matching'
             r" .*? returned a value."
         ),
     ):

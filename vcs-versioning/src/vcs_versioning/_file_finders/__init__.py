@@ -156,8 +156,8 @@ def _warn_on_missing_vcs_command(path: _t.PathT, marker: str, tool: str) -> None
 
 
 _FILE_FINDER_GROUPS = (
-    "setuptools_scm.files_command",
-    "setuptools_scm.files_command_fallback",
+    "vcs_versioning.files_command",
+    "vcs_versioning.files_command_fallback",
 )
 
 _scm_search_failed: contextvars.ContextVar[bool] = contextvars.ContextVar(
@@ -225,6 +225,7 @@ def find_files(path: _t.PathT = "") -> list[str]:
     loaded and only their VCS commands run.
     """
     from .._discover import iter_marker_entrypoints
+    from .._entrypoints import load_entry_point
 
     # absolute: ``Path(".").parents`` is empty, so a relative root would
     # never reach the marker of an enclosing checkout
@@ -246,7 +247,7 @@ def find_files(path: _t.PathT = "") -> list[str]:
                     continue
                 attempted.add(ep)
                 log.debug("file finder %s selected by marker in %s", ep.name, wd)
-                command: Callable[[_t.PathT], list[str]] = ep.load()
+                command: Callable[[_t.PathT], list[str]] = load_entry_point(ep)
                 res: list[str] = command(path)
                 if res:
                     return res

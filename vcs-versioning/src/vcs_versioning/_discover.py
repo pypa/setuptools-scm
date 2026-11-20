@@ -60,8 +60,9 @@ def iter_marker_entrypoints(
     """
     log.debug("looking for ep %s in %s", entrypoint, root)
 
+    candidates = tuple(_entrypoints.iter_entry_points(entrypoint))
     for wd in walk_potential_roots(root, search_parents):
-        for ep in _entrypoints.entry_points(group=entrypoint):
+        for ep in candidates:
             if ep.value in _BLOCKED_EP_TARGETS:
                 continue
             if match_entrypoint(wd, ep.name):
