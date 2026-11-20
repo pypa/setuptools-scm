@@ -627,6 +627,8 @@ This typically happens when:
 1. **Building from working directory**: You're running `python -m build` directly in your repository
 2. **Sdist extraction**: A build tool extracts your sdist to build wheels, but the extracted directory isn't a Git repository
 
+GitHub Actions annotates `.gitattributes` when your checkout leaves `export-subst` unset for `.git_archival.txt` or an archive still contains the unexpanded commit ID placeholder.
+
 #### Recommended build workflows
 
 **For development builds:**
