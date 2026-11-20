@@ -116,6 +116,25 @@ def run_git(
     )
 
 
+def _warn_on_missing_export_subst(
+    config: Configuration, wd: GitWorkdir | None = None
+) -> None:
+    if config.env._env.get("GITHUB_ACTIONS") != "true":
+        return
+    if wd is not None:
+        if not (wd.path / ".git_archival.txt").is_file():
+            return
+        # Let Git resolve attribute patterns, macros and overrides.
+        result = wd.run_git(["check-attr", "export-subst", "--", ".git_archival.txt"])
+        if result.returncode or result.stdout.endswith(": set"):
+            return
+    print(
+        "::warning file=.gitattributes::Add '.git_archival.txt export-subst' to "
+        ".gitattributes so git archive records the version in .git_archival.txt.",
+        file=sys.stderr,
+    )
+
+
 class GitWorkdir(Workdir):
     """experimental, may change at any time"""
 
@@ -165,6 +184,8 @@ class GitWorkdir(Workdir):
 
         result = cls(Path(real_wd))
         result._config = config
+        if config is not None:
+            _warn_on_missing_export_subst(config, result)
         return result
 
     def is_dirty(self) -> bool:
@@ -801,6 +822,7 @@ def archival_to_version(
     if node is None:
         return None
     elif "$FORMAT" in node.upper():
+        _warn_on_missing_export_subst(config)
         warnings.warn(
             "unprocessed git archival found (no export subst applied)", stacklevel=2
         )

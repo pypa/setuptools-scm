@@ -772,6 +772,50 @@ def test_git_archival_from_unfiltered() -> None:
     assert version is None
 
 
+@pytest.mark.issue(1435)
+@pytest.mark.parametrize(
+    ("actions", "attributes", "expect_warning"),
+    [
+        ("true", "", True),
+        ("true", "*.txt export-subst\n.git_archival.txt -export-subst", True),
+        ("true", "*.txt export-subst", False),
+        ("false", "", False),
+    ],
+)
+def test_git_archive_substitution_annotation(
+    wd: WorkDir,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    actions: str,
+    attributes: str,
+    expect_warning: bool,
+) -> None:
+    monkeypatch.setenv("GITHUB_ACTIONS", actions)
+    wd.write(
+        ".git_archival.txt",
+        "node: $Format:%H$\nref-names: $Format:%D$\n"
+        "describe-name: $Format:%(describe:unsupported)$\n",
+    )
+    if attributes:
+        wd.write(".gitattributes", attributes)
+    wd.add_and_commit()
+    wd("git tag v1.0")
+
+    assert wd.get_version() == "1.0"
+    annotation = "::warning file=.gitattributes::"
+    checkout_warned = annotation in capsys.readouterr().err
+
+    archive = tmp_path / "source.zip"
+    wd(["git", "archive", "--format=zip", "-o", str(archive), "HEAD"])
+    extracted = tmp_path / "source"
+    shutil.unpack_archive(archive, extracted)
+    archived_version = WorkDir(extracted).get_version(fallback_version="0.1")
+    assert archived_version == ("1.0" if attributes == "*.txt export-subst" else "0.1")
+    archive_warned = annotation in capsys.readouterr().err
+    assert (checkout_warned, archive_warned) == (expect_warning, expect_warning)
+
+
 def test_fail_on_missing_submodules_no_gitmodules(wd: WorkDir) -> None:
     """Test that fail_on_missing_submodules does nothing when no .gitmodules exists."""
     wd.commit_testfile()
