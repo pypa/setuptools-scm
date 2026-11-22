@@ -309,7 +309,7 @@ def _read_pretended_version_for(
     *,
     env: Mapping[str, str] | None = None,
 ) -> ScmVersion | None:
-    """read a a overridden version from the environment
+    """read an overridden version from the environment
 
     tries ``SETUPTOOLS_SCM_PRETEND_VERSION``
     and ``SETUPTOOLS_SCM_PRETEND_VERSION_FOR_$UPPERCASE_DIST_NAME``
