@@ -2,6 +2,12 @@
 
 <!-- towncrier release notes start -->
 
+## 2.6.1 (2026-10-09)
+
+### Documentation
+
+- Point the documentation links in error messages at the URLs Read the Docs serves now, without the `/en/` language prefix. ([#1547](https://github.com/pypa/setuptools-scm/issues/1547))
+
 ## 2.6.0 (2026-10-06)
 
 ### Added
