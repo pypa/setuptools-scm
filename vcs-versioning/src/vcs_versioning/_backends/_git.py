@@ -324,6 +324,7 @@ class GitWorkdir(Workdir):
         effective_pre_parse = _GIT_PRE_PARSE_FUNCTIONS.get(
             config.scm.git.pre_parse, warn_on_shallow
         )
+        annotate_missing_export_subst(self, config)
         return _git_parse_inner(config, self, pre_parse=effective_pre_parse)
 
     def list_tracked_files(self, path: Path | str = "") -> list[str]:
@@ -430,6 +431,55 @@ def _warn_if_describe_command_overrides_strict(
         _describe_outcome(strict.stdout, config),
         config_location(config),
     )
+
+
+def is_workflow_checkout(wd: GitWorkdir, config: Configuration) -> bool:
+    """Whether *wd* has the commit the current GitHub Actions run is about."""
+    run = config.env.github_actions
+    return run is not None and wd.node() == run.sha
+
+
+EXPORT_SUBST_ANNOTATION = (
+    "{archival} is not marked export-subst, so git archive and the source"
+    " archives GitHub serves for this repository ship it with unexpanded"
+    " $Format placeholders, and builds from those archives cannot determine"
+    " the version. Add '{archival} export-subst' to .gitattributes."
+)
+
+
+def annotate_missing_export_subst(wd: GitWorkdir, config: Configuration) -> None:
+    """Annotate the workflow run's own checkout when export-subst is unset.
+
+    Only a checkout of ``GITHUB_SHA`` qualifies: that is the repository the
+    run is about, and the only one its maintainers can fix (:issue:`1435`).
+    """
+    run = config.env.github_actions
+    if run is None:
+        return
+    paths = config._resolved_paths
+    candidates = {
+        (directory / ".git_archival.txt").resolve()
+        for directory in (paths.scm_probe_root, paths.project_dir)
+    }
+    archivals = sorted(p for p in candidates if p.is_file())
+    if not archivals or not is_workflow_checkout(wd, config):
+        return
+    checkout = wd.path.resolve()
+    for archival in archivals:
+        try:
+            relative = archival.relative_to(checkout).as_posix()
+        except ValueError:
+            continue
+        # Git resolves the patterns, macros and -export-subst overrides.
+        attr = wd.run_git(["check-attr", "export-subst", "--", relative])
+        if attr.returncode or attr.stdout.endswith(": set"):
+            continue
+        run.warn_once(
+            f"export-subst:{archival}",
+            title=".git_archival.txt is not expanded by git archive",
+            message=EXPORT_SUBST_ANNOTATION.format(archival=relative),
+            file=checkout / ".gitattributes",
+        )
 
 
 def warn_on_shallow(wd: GitWorkdir) -> None:
@@ -554,6 +604,7 @@ def parse(
                 config.scm.git.pre_parse, warn_on_shallow
             )
 
+        annotate_missing_export_subst(wd, config)
         return _git_parse_inner(
             config, wd, describe_command=describe_command, pre_parse=effective_pre_parse
         )

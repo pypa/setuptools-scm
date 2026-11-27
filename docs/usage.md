@@ -607,6 +607,11 @@ tagging style.
 .git_archival.txt  export-subst
 ```
 
+When a GitHub Actions run versions its own checkout (the commit in
+`GITHUB_SHA`) and `.git_archival.txt` is not marked `export-subst`,
+vcs-versioning emits a workflow warning on `.gitattributes`, so a missing
+attribute shows up in CI before an archive without a version is released.
+
 Finally, commit both files:
 
 ```commandline
