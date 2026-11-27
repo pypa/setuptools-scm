@@ -93,12 +93,17 @@ def _check_tag_regex(value: str | Pattern[str] | None) -> Pattern[str]:
     if not value:
         regex = DEFAULT_TAG_REGEX
     else:
-        regex = re.compile(value)
+        try:
+            regex = re.compile(value)
+        except re.error as e:
+            raise ValueError(
+                f"Expected tag.regex {value!r} to be a valid regular expression: {e}"
+            ) from e
 
     group_names = regex.groupindex.keys()
     if regex.groups == 0 or (regex.groups > 1 and "version" not in group_names):
         raise ValueError(
-            f"Expected tag_regex '{regex.pattern}' to contain a single match group or"
+            f"Expected tag.regex '{regex.pattern}' to contain a single match group or"
             " a group named 'version' to identify the version part of any tag."
         )
 
@@ -267,10 +272,7 @@ class TagConfiguration:
         """Create TagConfiguration from configuration data."""
         if data is None:
             return cls()
-        tag_data = data.copy()
-        if "regex" in tag_data and isinstance(tag_data["regex"], str):
-            tag_data["regex"] = re.compile(tag_data["regex"])
-        return cls(**tag_data)
+        return cls(**data)
 
 
 class _TagRegexDescriptor:

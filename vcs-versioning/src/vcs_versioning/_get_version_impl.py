@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import dataclasses
 import logging
-import re
 import warnings
 from pathlib import Path
 from re import Pattern
@@ -389,11 +388,6 @@ def parse_tag_regex(tag_regex: str | Pattern[str]) -> Pattern[str]:
     This ensures get_version() emits the deprecation warning for empty strings
     before Configuration.__post_init__ runs.
     """
-    if isinstance(tag_regex, str):
-        if tag_regex == "":
-            warnings.warn(EMPTY_TAG_REGEX_DEPRECATION, stacklevel=3)
-            return _config.DEFAULT_TAG_REGEX
-        else:
-            return re.compile(tag_regex)
-    else:
-        return tag_regex
+    if tag_regex == "":
+        warnings.warn(EMPTY_TAG_REGEX_DEPRECATION, stacklevel=3)
+    return _config._check_tag_regex(tag_regex)
