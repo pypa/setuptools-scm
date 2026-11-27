@@ -2,6 +2,25 @@
 
 <!-- towncrier release notes start -->
 
+## 2.7.0 (2026-11-27)
+
+### Added
+
+- On GitHub Actions, emit a workflow warning on `.gitattributes` when the run's own checkout (the commit in `GITHUB_SHA`) has a `.git_archival.txt` that is not marked `export-subst`, so archives without a version are caught before release. The warning for a version file outside the project root is annotated the same way. ([#1435](https://github.com/pypa/setuptools-scm/issues/1435))
+
+
+### Fixed
+
+- Warn when file discovery finds Git, Mercurial, or Jujutsu metadata but the corresponding executable is missing and no other finder returns files. ([#1404](https://github.com/pypa/setuptools-scm/issues/1404))
+- Parse a `tag` given in `PRETEND_METADATA` into a version, so overriding the base version no longer crashes formatting with `AttributeError: 'str' object has no attribute 'public'`. ([#1572](https://github.com/pypa/setuptools-scm/issues/1572))
+- Report a `tag.regex` that `re` cannot compile as a `ValueError` naming the option, instead of letting `re.error` escape; error messages now name `tag.regex` rather than the deprecated `tag_regex`. ([#1580](https://github.com/pypa/setuptools-scm/issues/1580))
+
+
+### Documentation
+
+- Point the documentation links in error messages at the URLs Read the Docs serves now, without the `/en/` language prefix. ([#1547](https://github.com/pypa/setuptools-scm/issues/1547))
+- Document that two tags giving the same version (`v1.0` and `1.0`) on different commits build the same version without a warning. ([#1568](https://github.com/pypa/setuptools-scm/issues/1568))
+
 ## 2.6.0 (2026-10-06)
 
 ### Added
