@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import dataclasses
-import hashlib
-import os
 import sys
 from collections.abc import Mapping
 from pathlib import Path
@@ -30,7 +28,6 @@ class GitHubActionsRun:
 
     sha: str
     workspace: Path | None
-    runner_temp: Path | None = None
 
     @classmethod
     def from_env(cls, env: Mapping[str, str]) -> GitHubActionsRun | None:
@@ -40,33 +37,7 @@ class GitHubActionsRun:
         if not sha:
             return None
         workspace = env.get("GITHUB_WORKSPACE")
-        runner_temp = env.get("RUNNER_TEMP")
-        return cls(
-            sha=sha,
-            workspace=Path(workspace) if workspace else None,
-            runner_temp=Path(runner_temp) if runner_temp else None,
-        )
-
-    def _claim_for_job(self, key: str) -> bool:
-        """Whether no other process in this job has emitted *key* yet.
-
-        A build frontend runs the backend in several processes, and each
-        would annotate once; GitHub shows every copy.  ``RUNNER_TEMP`` is
-        emptied between jobs, so a marker there limits it to one per job.
-        """
-        if self.runner_temp is None:
-            return True
-        digest = hashlib.sha256(f"{self.sha}\0{key}".encode()).hexdigest()
-        marker = self.runner_temp / "vcs-versioning-annotations" / digest
-        try:
-            marker.parent.mkdir(parents=True, exist_ok=True)
-            # O_EXCL: concurrent backend processes must not both win.
-            os.close(os.open(marker, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
-        except FileExistsError:
-            return False
-        except OSError:
-            return True
-        return True
+        return cls(sha=sha, workspace=Path(workspace) if workspace else None)
 
     def _workspace_relative(self, path: Path) -> str | None:
         if self.workspace is None or not path.exists():
@@ -79,7 +50,7 @@ class GitHubActionsRun:
     def warn_once(
         self, key: str, *, title: str, message: str, file: Path | None = None
     ) -> None:
-        """Emit a ``::warning`` workflow command at most once per job.
+        """Emit a ``::warning`` workflow command at most once per process.
 
         Written to stderr so that commands printing machine-readable output
         on stdout stay parseable; the runner picks up both streams.
@@ -90,8 +61,6 @@ class GitHubActionsRun:
         if guard in _diagnostics_reported:
             return
         _diagnostics_reported.add(guard)
-        if not self._claim_for_job(key):
-            return
 
         properties = [f"title={_escape_property(title)}"]
         relative = self._workspace_relative(file) if file is not None else None

@@ -27,7 +27,6 @@ def run_on(wd: WorkDir, monkeypatch: pytest.MonkeyPatch, sha: str) -> None:
     monkeypatch.setenv("GITHUB_ACTIONS", "true")
     monkeypatch.setenv("GITHUB_SHA", sha)
     monkeypatch.setenv("GITHUB_WORKSPACE", str(wd.cwd))
-    monkeypatch.delenv("RUNNER_TEMP", raising=False)
 
 
 def commit_archival(wd: WorkDir, gitattributes: str | None) -> None:
@@ -170,36 +169,6 @@ def test_workflow_command_values_are_escaped(
     assert capsys.readouterr().err == (
         "::warning file=a%2Cb%3Ac,title=t%3A 1%2C 2::100%25%0Anext\n"
     )
-
-
-@pytest.mark.issue(1435)
-def test_marker_in_runner_temp_limits_annotation_to_one_per_job(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """Each build-backend process starts with an empty once-per-process guard."""
-    from vcs_versioning._backends._scm_workdir import _diagnostics_reported
-
-    run = GitHubActionsRun(sha="0" * 40, workspace=None, runner_temp=tmp_path)
-    run.warn_once("k", title="t", message="first process")
-    _diagnostics_reported.clear()
-    run.warn_once("k", title="t", message="second process")
-    run.warn_once("other", title="t", message="other key")
-
-    assert capsys.readouterr().err == (
-        "::warning title=t::first process\n::warning title=t::other key\n"
-    )
-
-
-def test_unusable_runner_temp_still_annotates(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    not_a_dir = tmp_path / "file"
-    not_a_dir.write_text("")
-    run = GitHubActionsRun(sha="0" * 40, workspace=None, runner_temp=not_a_dir)
-
-    run.warn_once("k", title="t", message="m")
-
-    assert capsys.readouterr().err == "::warning title=t::m\n"
 
 
 @pytest.mark.parametrize(
