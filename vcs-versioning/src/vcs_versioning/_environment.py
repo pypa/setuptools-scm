@@ -19,6 +19,8 @@ from collections.abc import Mapping, MutableMapping
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Literal
 
+from ._github_actions import GitHubActionsRun
+
 if TYPE_CHECKING:
     from pytest import MonkeyPatch
 
@@ -102,6 +104,7 @@ class VcsEnvironment:
     _explicit_overrides: frozenset[str] = dataclasses.field(
         default=frozenset(), repr=False, compare=False
     )
+    github_actions: GitHubActionsRun | None = None
 
     def log_level(self) -> int:
         """Logging level derived from the debug setting."""
@@ -235,6 +238,7 @@ class VcsEnvironment:
             tool_names=all_names,
             debug=debug,
             _env=env,
+            github_actions=GitHubActionsRun.from_env(env),
         )
 
     def build_config(self, **kwargs: Any) -> _config.Configuration:

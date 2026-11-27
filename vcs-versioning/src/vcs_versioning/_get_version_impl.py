@@ -94,6 +94,21 @@ def _resolve_version(config: Configuration) -> ScmVersion | None:
     return None
 
 
+def _annotate_on_workflow_checkout(
+    root: Path, config: Configuration, *, key: str, title: str, message: str
+) -> None:
+    from ._backends._git import GitWorkdir, is_workflow_checkout
+
+    run = config.env.github_actions
+    if run is None:
+        return
+    wd = GitWorkdir.from_potential_worktree(root, config)
+    if wd is None or not is_workflow_checkout(wd, config):
+        return
+    file = Path(config.relative_to) if config.relative_to else None
+    run.warn_once(key, title=title, message=message, file=file)
+
+
 def _warn_if_tracked(target: Path, root: Path, config: Configuration) -> bool:
     """Warn when *target* is tracked in version control (#468).
 
@@ -112,10 +127,16 @@ def _warn_if_tracked(target: Path, root: Path, config: Configuration) -> bool:
     try:
         resolved_target.relative_to(resolved_root)
     except ValueError:
-        # todo: emit as GitHub Actions warning via ::warning:: syntax
-        warnings.warn(
-            f"version file target {target} resolves outside of the project root {root}",
-            stacklevel=2,
+        message = (
+            f"version file target {target} resolves outside of the project root {root}"
+        )
+        warnings.warn(message, stacklevel=2)
+        _annotate_on_workflow_checkout(
+            root,
+            config,
+            key=f"version-file-outside-root:{resolved_target}",
+            title="version file is outside the project root",
+            message=message,
         )
         return False
 
