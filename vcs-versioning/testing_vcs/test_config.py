@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import re
 import warnings
+from collections.abc import Callable
 
 import pytest
 from vcs_versioning import Configuration
 from vcs_versioning._config import DEFAULT_TAG_REGEX, TagConfiguration
+from vcs_versioning._get_version_impl import get_version
 
 
 @pytest.mark.parametrize(
@@ -99,9 +101,37 @@ def test_config_bad_regex(tag_regex: str) -> None:
     with pytest.raises(
         ValueError,
         match=(
-            f"Expected tag_regex '{re.escape(tag_regex)}' to contain a single match"
+            f"Expected tag.regex '{re.escape(tag_regex)}' to contain a single match"
             " group or a group named 'version' to identify the version part of any"
             " tag."
         ),
     ):
         Configuration(tag=TagConfiguration(regex=re.compile(tag_regex)))
+
+
+@pytest.mark.parametrize("tag_regex", ["[vV", "(unclosed", "a{2,1}", "*"])
+@pytest.mark.parametrize(
+    "make_config",
+    [
+        pytest.param(lambda r: TagConfiguration.from_data({"regex": r}), id="tag"),
+        pytest.param(
+            lambda r: Configuration.from_data(
+                relative_to=".", data={"tag": {"regex": r}}
+            ),
+            id="config-tag",
+        ),
+        pytest.param(
+            lambda r: get_version(tag_regex=r, fallback_version="1.0"),
+            id="get_version",
+        ),
+    ],
+)
+def test_uncompilable_regex(
+    tag_regex: str, make_config: Callable[[str], object]
+) -> None:
+    match = rf"Expected tag.regex {re.escape(repr(tag_regex))} to be a valid"
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        with pytest.raises(ValueError, match=match) as excinfo:
+            make_config(tag_regex)
+    assert isinstance(excinfo.value.__cause__, re.error)
