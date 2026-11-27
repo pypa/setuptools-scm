@@ -89,11 +89,30 @@ DEFAULT_VERSION_SCHEME = "guess-next-dev"
 DEFAULT_LOCAL_SCHEME = "node-and-date"
 
 
+def _compile_tag_regex(value: str | Pattern[str]) -> Pattern[str]:
+    """Compile a user-supplied tag regex, naming the option when it is broken.
+
+    ``re.compile`` reports a malformed pattern from inside the ``re`` module
+    (``re.error: unterminated character set at position 0``): the text came
+    from ``tag_regex``/``tag.regex``, so the failure has to say so, and
+    ``re.error`` is not a ``ValueError`` -- a caller catching config errors
+    would not see it at all.
+    """
+    if isinstance(value, Pattern):
+        return value
+    try:
+        return re.compile(value)
+    except (re.error, TypeError) as e:
+        raise ValueError(
+            f"Expected tag_regex {value!r} to be a valid regular expression: {e}"
+        ) from e
+
+
 def _check_tag_regex(value: str | Pattern[str] | None) -> Pattern[str]:
     if not value:
         regex = DEFAULT_TAG_REGEX
     else:
-        regex = re.compile(value)
+        regex = _compile_tag_regex(value)
 
     group_names = regex.groupindex.keys()
     if regex.groups == 0 or (regex.groups > 1 and "version" not in group_names):
@@ -269,7 +288,7 @@ class TagConfiguration:
             return cls()
         tag_data = data.copy()
         if "regex" in tag_data and isinstance(tag_data["regex"], str):
-            tag_data["regex"] = re.compile(tag_data["regex"])
+            tag_data["regex"] = _compile_tag_regex(tag_data["regex"])
         return cls(**tag_data)
 
 
